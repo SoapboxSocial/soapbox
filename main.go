@@ -14,7 +14,8 @@ import (
 )
 
 type SDPPayload struct {
-	SDP string `json:"sdp"`
+	Room string `json:"room,omitempty"`
+	SDP  string `json:"sdp"`
 	Type string `json:"type"`
 }
 
@@ -55,7 +56,7 @@ func main() {
 
 		resp := SDPPayload{
 			Type: strings.ToLower(sdp.Type.String()),
-			SDP: sdp.SDP,
+			SDP:  sdp.SDP,
 		}
 
 		err = json.NewEncoder(w).Encode(resp)

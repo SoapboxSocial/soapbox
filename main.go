@@ -13,16 +13,15 @@ import (
 	"github.com/ephemeral-networks/voicely/pkg/rooms"
 )
 
-type Payload struct {
-	Payload map[string]interface{} `json:"payload"`
-	Type    string                 `json:"type"`
+type SDPPayload struct {
+	SDP string `json:"sdp"`
+	Type string `json:"type"`
 }
 
 func main() {
 	room := rooms.NewRoom()
 
 	http.HandleFunc("/join", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("ok")
 		b, err := ioutil.ReadAll(r.Body)
 		defer r.Body.Close()
 		if err != nil {
@@ -30,19 +29,14 @@ func main() {
 			return
 		}
 
-		payload := &Payload{}
+		payload := &SDPPayload{}
 		err = json.Unmarshal(b, payload)
 		if err != nil {
-			// @todo
+			log.Printf("failed to decode payload: %s\n", err.Error())
 			return
 		}
 
-		if payload.Type != "SessionDescription" {
-			// @todo
-			return
-		}
-
-		err, t := getType(payload.Payload["type"].(string))
+		err, t := getType(payload.Type)
 		if err != nil {
 			// @todo more errors this shit is invalid
 			return
@@ -50,24 +44,21 @@ func main() {
 
 		p := webrtc.SessionDescription{
 			Type: t,
-			SDP:  payload.Payload["sdp"].(string),
+			SDP:  payload.SDP,
 		}
 
-		err, resp := room.Join(r.RemoteAddr, p)
+		err, sdp := room.Join(r.RemoteAddr, p)
 		if err != nil {
 			// @todo handle
 			return
 		}
 
-		pack := Payload{
-			Type:    "SessionDescription",
-			Payload: make(map[string]interface{}),
+		resp := SDPPayload{
+			Type: strings.ToLower(sdp.Type.String()),
+			SDP: sdp.SDP,
 		}
 
-		pack.Payload["sdp"] = resp.SDP
-		pack.Payload["type"] = strings.ToLower(resp.Type.String())
-
-		err = json.NewEncoder(w).Encode(pack)
+		err = json.NewEncoder(w).Encode(resp)
 		if err != nil {
 			fmt.Println(err)
 		}

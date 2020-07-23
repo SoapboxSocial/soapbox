@@ -1,17 +1,25 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
 
 	"github.com/gorilla/websocket"
+	"github.com/pion/webrtc"
 )
 
 var upgrader = websocket.Upgrader{} // use default options
 type Msg struct {
 	messageType int
 	p []byte
+}
+
+type Payload struct {
+	Payload map[string]interface{}
+	Type string
 }
 
 var conns = make(map[net.Addr]chan Msg)
@@ -46,6 +54,23 @@ func test(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 
+			payload := &Payload{}
+			err = json.Unmarshal(message, payload)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+
+			if payload.Type == "SessionDescription" {
+				p := webrtc.SessionDescription{
+					Type: getType(payload.Payload["type"].(string)),
+					SDP: payload.Payload["sdp"].(string),
+				}
+
+				fmt.Println(p)
+			}
+
+
 			m := Msg{mt, message}
 
 			for ip, peer := range conns {
@@ -65,4 +90,17 @@ func test(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+}
+
+func getType(t string) webrtc.SDPType {
+	switch t {
+	case "offer":
+		return webrtc.SDPTypeOffer
+	case "prAnswer":
+		return webrtc.SDPTypePranswer
+	case "answer":
+		return webrtc.SDPTypeAnswer
+	}
+
+	panic("fuck")
 }

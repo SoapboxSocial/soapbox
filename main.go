@@ -33,8 +33,15 @@ type ConnectionRequest struct {
 	remote net.Addr
 }
 
+type Peer struct {
+	isMuted    bool
+	connection *webrtc.PeerConnection
+	track      *webrtc.Track
+	api *webrtc.API
+}
+
 type Room struct {
-	peers []*webrtc.PeerConnection
+	peers []*Peer
 }
 
 var conns = make(map[net.Addr]chan Msg)
@@ -42,7 +49,7 @@ var requests = make(chan ConnectionRequest)
 
 func main() {
 	log.SetFlags(0)
-	http.HandleFunc("/", test)
+	http.HandleFunc("/", connect)
 	go func() {
 		log.Fatal(http.ListenAndServe(":8080", nil))
 	}()
@@ -51,7 +58,6 @@ func main() {
 }
 
 func server() {
-
 	var localTrack *webrtc.Track
 
 	for {
@@ -191,7 +197,7 @@ func server() {
 	}
 }
 
-func test(w http.ResponseWriter, r *http.Request) {
+func connect(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Print("upgrade:", err)

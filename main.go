@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/gorilla/mux"
 	"github.com/pion/webrtc"
 
 	"github.com/ephemeral-networks/voicely/pkg/rooms"
@@ -21,7 +22,10 @@ type SDPPayload struct {
 func main() {
 	room := rooms.NewRoom()
 
-	http.HandleFunc("/join", func(w http.ResponseWriter, r *http.Request) {
+	r := mux.NewRouter()
+
+
+	r.HandleFunc("/v1/rooms/{id:[0-9]+}/join", func(w http.ResponseWriter, r *http.Request) {
 		b, err := ioutil.ReadAll(r.Body)
 		defer r.Body.Close()
 		if err != nil {
@@ -64,7 +68,7 @@ func main() {
 		}
 	})
 
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":8080", r))
 }
 
 func getType(t string) (error, webrtc.SDPType) {

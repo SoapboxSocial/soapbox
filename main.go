@@ -14,7 +14,6 @@ import (
 )
 
 type SDPPayload struct {
-	Room string `json:"room,omitempty"`
 	SDP  string `json:"sdp"`
 	Type string `json:"type"`
 }

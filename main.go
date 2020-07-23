@@ -24,7 +24,6 @@ func main() {
 
 	r := mux.NewRouter()
 
-
 	r.HandleFunc("/v1/rooms/{id:[0-9]+}/join", func(w http.ResponseWriter, r *http.Request) {
 		b, err := ioutil.ReadAll(r.Body)
 		defer r.Body.Close()

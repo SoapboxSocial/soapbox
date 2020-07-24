@@ -24,8 +24,6 @@ func main() {
 
 	manager := rooms.NewRoomManager()
 
-	manager.CreateRoom()
-
 	r := mux.NewRouter()
 
 	r.HandleFunc("/v1/rooms", func(w http.ResponseWriter, r *http.Request) {

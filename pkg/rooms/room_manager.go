@@ -29,6 +29,16 @@ func (rm *RoomManger) GetRoom(i int) (*Room, error) {
 	return rm.rooms[i], nil
 }
 
+// @todo this will probably be very inefficient at scale lol
+func (rm *RoomManger) MapRooms(fn func(*Room)) {
+	rm.RLock()
+	defer rm.RUnlock()
+
+	for _, r := range rm.rooms {
+		fn(r)
+	}
+}
+
 func (rm *RoomManger) CreateRoom() *Room {
 	rm.Lock()
 	defer rm.Unlock()

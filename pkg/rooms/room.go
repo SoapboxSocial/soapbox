@@ -33,6 +33,10 @@ func NewRoom(id int) *Room {
 	return &Room{id: id, track: nil, peers: make(map[string]*Peer)}
 }
 
+func (r Room) GetID() int {
+	return r.id
+}
+
 func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.SessionDescription, error) {
 	mediaEngine := webrtc.MediaEngine{}
 	err := mediaEngine.PopulateFromSDP(offer)

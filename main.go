@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gorilla/mux"
@@ -20,9 +21,15 @@ type SDPPayload struct {
 }
 
 func main() {
-	room := rooms.NewRoom()
+
+	rooms := rooms.NewRoomManager()
+	rooms.CreateRoom() // @todo this needs to be in the create func
 
 	r := mux.NewRouter()
+
+	r.HandleFunc("/v1/rooms/create", func(writer http.ResponseWriter, r *http.Request) {
+		// @todo implement room
+	})
 
 	r.HandleFunc("/v1/rooms/{id:[0-9]+}/join", func(w http.ResponseWriter, r *http.Request) {
 		b, err := ioutil.ReadAll(r.Body)
@@ -50,9 +57,21 @@ func main() {
 			SDP:  payload.SDP,
 		}
 
-		err, sdp := room.Join(r.RemoteAddr, p)
+		vars := mux.Vars(r)
+		id, err := strconv.Atoi(vars["id"])
+		if err != nil {
+			return
+		}
+
+		room, err := rooms.GetRoom(id)
 		if err != nil {
 			// @todo handle
+			return
+		}
+
+		sdp, err := room.Join(r.RemoteAddr, p)
+		if err != nil {
+			// @todo
 			return
 		}
 

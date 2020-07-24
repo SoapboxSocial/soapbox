@@ -19,16 +19,17 @@ type Peer struct {
 // @todo we need to figure out how to multiplex nicely
 
 type Room struct {
+	id int
 	track *webrtc.Track
 
 	peers map[string]*Peer
 }
 
-func NewRoom() *Room {
-	return &Room{track: nil, peers: make(map[string]*Peer)}
+func NewRoom(id int) *Room {
+	return &Room{id: id, track: nil, peers: make(map[string]*Peer)}
 }
 
-func (r *Room) Join(addr string, offer webrtc.SessionDescription) (error, *webrtc.SessionDescription) {
+func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.SessionDescription, error) {
 	mediaEngine := webrtc.MediaEngine{}
 	err := mediaEngine.PopulateFromSDP(offer)
 	if err != nil {
@@ -55,7 +56,7 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (error, *webrt
 	// Create a new RTCPeerConnection
 	peerConnection, err := api.NewPeerConnection(peerConnectionConfig)
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 
 	if r.track != nil {
@@ -64,7 +65,7 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (error, *webrt
 
 	// Allow us to receive 1 video track
 	if _, err = peerConnection.AddTransceiverFromKind(webrtc.RTPCodecTypeAudio); err != nil {
-		return err, nil
+		return nil, err
 	}
 
 	peerConnection.OnSignalingStateChange(func(state webrtc.SignalingState) {
@@ -119,13 +120,13 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (error, *webrt
 	// Set the remote SessionDescription
 	err = peerConnection.SetRemoteDescription(offer)
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 
 	// Create answer
 	answer, err := peerConnection.CreateAnswer(nil)
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 
 	// Create channel that is blocked until ICE Gathering is complete
@@ -134,7 +135,7 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (error, *webrt
 	// Sets the LocalDescription, and starts our UDP listeners
 	err = peerConnection.SetLocalDescription(answer)
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 	// Block until ICE Gathering is complete, disabling trickle ICE
 	// we do this because we only can exchange one signaling message
@@ -149,15 +150,26 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (error, *webrt
 		api:        api,
 	}
 
+	// @todo this needs be elsewhere
 	go func() {
 		track := <-localTrackChan
 
 		r.peers[addr].track = track
 
-		if r.track == nil {
-			r.track = track
+		if r.track != nil {
+			return
+		}
+
+		r.track = track
+
+		for a, p := range r.peers {
+			if a == addr {
+				continue
+			}
+
+			p.connection.AddTrack(r.track)
 		}
 	}()
 
-	return nil, peerConnection.LocalDescription()
+	return peerConnection.LocalDescription(), nil
 }

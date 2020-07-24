@@ -114,6 +114,11 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 				panic(readErr)
 			}
 
+			// @todo
+			// if peer.isMuted { return }
+			// for peers that are not me: track.write
+
+
 			// ErrClosedPipe means we don't have any subscribers, this is ok if no peers have connected yet
 			if _, err = localTrack.Write(rtpBuf[:i]); err != nil && err != io.ErrClosedPipe {
 				panic(err)

@@ -18,6 +18,10 @@ type Peer struct {
 
 // @todo we need to figure out how to multiplex nicely
 
+// @todo what needs to happen is the following
+//  - every connection has an input track
+//  - every connection reads from their remote tracks and writes to the others if they are unmuted.
+
 type Room struct {
 	id int
 	track *webrtc.Track
@@ -156,18 +160,8 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 
 		r.peers[addr].track = track
 
-		if r.track != nil {
-			return
-		}
-
-		r.track = track
-
-		for a, p := range r.peers {
-			if a == addr {
-				continue
-			}
-
-			p.connection.AddTrack(r.track)
+		if r.track == nil {
+			r.track = track
 		}
 	}()
 

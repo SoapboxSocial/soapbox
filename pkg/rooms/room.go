@@ -1,6 +1,7 @@
 package rooms
 
 import (
+	"fmt"
 	"io"
 	"sync"
 	"time"
@@ -93,11 +94,14 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 	}
 
 	peerConnection.OnSignalingStateChange(func(state webrtc.SignalingState) {
+		fmt.Println(state)
 		// @todo
 	})
 
 	peerConnection.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
-		if state == webrtc.PeerConnectionStateClosed || state == webrtc.PeerConnectionStateFailed || state == webrtc.PeerConnectionStateDisconnected {
+		// @Todo this is can't use Disconnect, we instead should have an endpoint for a peer to savely leave.
+		if state == webrtc.PeerConnectionStateClosed || state == webrtc.PeerConnectionStateFailed {
+		//	// @todo this seems like it could be buggy
 			delete(r.peers, addr)
 			r.disconnected <-true
 		}

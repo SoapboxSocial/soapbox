@@ -43,8 +43,29 @@ func (rm *RoomManger) CreateRoom() *Room {
 	rm.Lock()
 	defer rm.Unlock()
 
-	r := NewRoom(len(rm.rooms))
+	listener := make(chan bool)
+
+	r := NewRoom(len(rm.rooms), listener)
 	rm.rooms = append(rm.rooms, r)
+
+	id := len(rm.rooms) - 1
+
+	// @todo this can be done in a nicer way
+
+	go func() {
+		for {
+			<-listener
+
+			// @todo if the owner left, elect a new one
+
+			if r.PeerCount() == 0 {
+				rm.Lock()
+				rm.rooms[id] = nil
+				rm.Unlock()
+				return
+			}
+		}
+	}()
 
 	return r
 }

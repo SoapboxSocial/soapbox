@@ -1,12 +1,28 @@
 package rooms
 
 import (
+	"fmt"
 	"io"
+	"sync"
 	"time"
 
 	"github.com/pion/rtcp"
 	"github.com/pion/webrtc"
 )
+
+var config = webrtc.Configuration{
+	ICEServers: []webrtc.ICEServer{
+		{
+			URLs: []string{
+				"stun:stun.l.google.com:19302",
+				"stun:stun1.l.google.com:19302",
+				"stun:stun2.l.google.com:19302",
+				"stun:stun3.l.google.com:19302",
+				"stun:stun4.l.google.com:19302",
+			},
+		},
+	},
+}
 
 type Peer struct {
 	isOwner    bool
@@ -23,18 +39,33 @@ type Peer struct {
 //  - every connection reads from their remote tracks and writes to the others if they are unmuted.
 
 type Room struct {
-	id int
+	sync.RWMutex
+
+	id    int
 	track *webrtc.Track
 
 	peers map[string]*Peer
+
+	disconnected chan<- bool
 }
 
-func NewRoom(id int) *Room {
-	return &Room{id: id, track: nil, peers: make(map[string]*Peer)}
+func NewRoom(id int, disconnected chan bool) *Room {
+	return &Room{
+		id:           id,
+		track:        nil,
+		peers:        make(map[string]*Peer),
+		disconnected: disconnected,
+	}
 }
 
-func (r Room) GetID() int {
+func (r *Room) GetID() int {
 	return r.id
+}
+
+func (r *Room) PeerCount() int {
+	r.RLock()
+	defer r.RUnlock()
+	return len(r.peers)
 }
 
 func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.SessionDescription, error) {
@@ -47,22 +78,8 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 	// Create the API object with the MediaEngine
 	api := webrtc.NewAPI(webrtc.WithMediaEngine(mediaEngine))
 
-	peerConnectionConfig := webrtc.Configuration{
-		ICEServers: []webrtc.ICEServer{
-			{
-				URLs: []string{
-					"stun:stun.l.google.com:19302",
-					"stun:stun1.l.google.com:19302",
-					"stun:stun2.l.google.com:19302",
-					"stun:stun3.l.google.com:19302",
-					"stun:stun4.l.google.com:19302",
-				},
-			},
-		},
-	}
-
 	// Create a new RTCPeerConnection
-	peerConnection, err := api.NewPeerConnection(peerConnectionConfig)
+	peerConnection, err := api.NewPeerConnection(config)
 	if err != nil {
 		return nil, err
 	}
@@ -77,12 +94,16 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 	}
 
 	peerConnection.OnSignalingStateChange(func(state webrtc.SignalingState) {
+		fmt.Println(state)
 		// @todo
 	})
 
 	peerConnection.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
+		// @Todo this is can't use Disconnect, we instead should have an endpoint for a peer to savely leave.
 		if state == webrtc.PeerConnectionStateClosed || state == webrtc.PeerConnectionStateFailed {
+		//	// @todo this seems like it could be buggy
 			delete(r.peers, addr)
+			r.disconnected <-true
 		}
 	})
 
@@ -121,7 +142,6 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 			// @todo
 			// if peer.isMuted { return }
 			// for peers that are not me: track.write
-
 
 			// ErrClosedPipe means we don't have any subscribers, this is ok if no peers have connected yet
 			if _, err = localTrack.Write(rtpBuf[:i]); err != nil && err != io.ErrClosedPipe {

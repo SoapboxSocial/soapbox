@@ -30,6 +30,10 @@ func main() {
 		data := make([]int, 0)
 
 		manager.MapRooms(func(room *rooms.Room) {
+			if room == nil {
+				return
+			}
+
 			data = append(data, room.GetID())
 		})
 

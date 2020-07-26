@@ -175,8 +175,7 @@ func main() {
 
 	}).Methods("POST")
 
-	r.HandleFunc("/v1/login/pin", func(writer http.ResponseWriter, r *http.Request) {
-
+	r.HandleFunc("/v1/login/pin", func(w http.ResponseWriter, r *http.Request) {
 		token := r.Form.Get("token")
 		pin := r.Form.Get("pin")
 

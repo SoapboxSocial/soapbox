@@ -155,20 +155,50 @@ func main() {
 	//   - submit received email pin
 	//   - if pin match, login
 
-	//var emails = make(map[string]string);
+	var pins = make(map[string]string)
 
 	r.HandleFunc("/v1/login/start", func(w http.ResponseWriter, r *http.Request) {
-		//pin := EncodeToString(6)
-	})
+		email := r.Form.Get("email")
+		fmt.Println(email)
+
+		// @todo check that email is set
+		token := GenerateToken()
+		pin := GeneratePin()
+
+		pins[token] = pin
+
+		// @todo cleanup
+		err := json.NewEncoder(w).Encode(map[string]string{"token": token})
+		if err != nil {
+			fmt.Println(err)
+		}
+
+	}).Methods("POST")
 
 	r.HandleFunc("/v1/login/pin", func(writer http.ResponseWriter, r *http.Request) {
 
-	})
+		token := r.Form.Get("token")
+		pin := r.Form.Get("pin")
+
+		if pins[token] != pin {
+			// @todo send failure
+			return
+		}
+
+		// @todo start session
+	}).Methods("POST")
 
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
 
-func EncodeToString(max int) string {
+func GenerateToken() string {
+	b := make([]byte, 16)
+	rand.Read(b)
+	return fmt.Sprintf("%x", b)
+}
+
+func GeneratePin() string {
+	max := 6
 	b := make([]byte, max)
 	n, err := io.ReadAtLeast(rand.Reader, b, max)
 	if n != max {

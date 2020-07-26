@@ -16,7 +16,7 @@ import (
 )
 
 type SDPPayload struct {
-	ID   int    `json:"id,omitempty"`
+	ID   *int    `json:"id,omitempty"`
 	SDP  string `json:"sdp"`
 	Type string `json:"type"`
 }
@@ -78,8 +78,10 @@ func main() {
 			return
 		}
 
+		id := room.GetID()
+
 		resp := SDPPayload{
-			ID:   room.GetID(),
+			ID:   &id,
 			Type: strings.ToLower(sdp.Type.String()),
 			SDP:  sdp.SDP,
 		}

@@ -1,8 +1,10 @@
 package main
 
 import (
+	"crypto/rand"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -147,8 +149,38 @@ func main() {
 		}
 	}).Methods("POST")
 
+	// @todo so this is how login will work:
+	//   - users submits email
+	//   - check if exists, generate token, send pin
+	//   - submit received email pin
+	//   - if pin match, login
+
+	//var emails = make(map[string]string);
+
+	r.HandleFunc("/v1/login/start", func(w http.ResponseWriter, r *http.Request) {
+		//pin := EncodeToString(6)
+	})
+
+	r.HandleFunc("/v1/login/pin", func(writer http.ResponseWriter, r *http.Request) {
+
+	})
+
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
+
+func EncodeToString(max int) string {
+	b := make([]byte, max)
+	n, err := io.ReadAtLeast(rand.Reader, b, max)
+	if n != max {
+		panic(err)
+	}
+	for i := 0; i < len(b); i++ {
+		b[i] = table[int(b[i])%len(table)]
+	}
+	return string(b)
+}
+
+var table = [...]byte{'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'}
 
 func getType(t string) (error, webrtc.SDPType) {
 	switch t {

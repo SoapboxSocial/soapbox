@@ -2,6 +2,7 @@ package rooms
 
 import (
 	"fmt"
+	"log"
 	"sync"
 )
 
@@ -59,6 +60,7 @@ func (rm *RoomManger) CreateRoom() *Room {
 			// @todo if the owner left, elect a new one
 
 			if r.PeerCount() == 0 {
+				log.Printf("room %d closed\n", id)
 				rm.Lock()
 				rm.rooms[id] = nil
 				rm.Unlock()

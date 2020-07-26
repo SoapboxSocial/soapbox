@@ -100,7 +100,8 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 	peerConnection.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
 		fmt.Println(state)
 		// @todo, this does not seem completely safe
-		if state == webrtc.PeerConnectionStateClosed || state == webrtc.PeerConnectionStateFailed || state == webrtc.PeerConnectionStateDisconnected {
+		// @todo disconnected here is certainly not reliable
+		if state == webrtc.PeerConnectionStateClosed || state == webrtc.PeerConnectionStateFailed /* || state == webrtc.PeerConnectionStateDisconnected */ {
 		//	// @todo this seems like it could be buggy
 			delete(r.peers, addr)
 			r.disconnected <-true

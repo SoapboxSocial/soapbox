@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
-	"github.com/pion/webrtc"
+	"github.com/pion/webrtc/v3"
 
 	"github.com/ephemeral-networks/voicely/pkg/rooms"
 )

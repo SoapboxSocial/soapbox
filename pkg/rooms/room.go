@@ -3,6 +3,7 @@ package rooms
 import (
 	"fmt"
 	"io"
+	"math/rand"
 	"sync"
 	"time"
 
@@ -29,6 +30,7 @@ type Peer struct {
 	isMuted    bool
 	connection *webrtc.PeerConnection
 	track      *webrtc.Track
+	output     *webrtc.Track
 	api        *webrtc.API
 }
 
@@ -41,8 +43,7 @@ type Peer struct {
 type Room struct {
 	sync.RWMutex
 
-	id    int
-	track *webrtc.Track
+	id int
 
 	peers map[string]*Peer
 
@@ -52,7 +53,6 @@ type Room struct {
 func NewRoom(id int, disconnected chan bool) *Room {
 	return &Room{
 		id:           id,
-		track:        nil,
 		peers:        make(map[string]*Peer),
 		disconnected: disconnected,
 	}
@@ -84,9 +84,14 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 		return nil, err
 	}
 
-	if r.track != nil {
-		peerConnection.AddTrack(r.track)
+	codecs := mediaEngine.GetCodecsByKind(webrtc.RTPCodecTypeAudio)
+
+	outputTrack, err := peerConnection.NewTrack(codecs[0].PayloadType, rand.Uint32(), "audio0", "pion")
+	if err != nil {
+		panic(err)
 	}
+
+	peerConnection.AddTrack(outputTrack)
 
 	// Allow us to receive 1 video track
 	if _, err = peerConnection.AddTransceiverFromKind(webrtc.RTPCodecTypeAudio); err != nil {
@@ -102,9 +107,9 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 		// @todo, this does not seem completely safe
 		// @todo disconnected here is certainly not reliable
 		if state == webrtc.PeerConnectionStateClosed || state == webrtc.PeerConnectionStateFailed /* || state == webrtc.PeerConnectionStateDisconnected */ {
-		//	// @todo this seems like it could be buggy
+			//	// @todo this seems like it could be buggy
 			delete(r.peers, addr)
-			r.disconnected <-true
+			r.disconnected <- true
 		}
 	})
 
@@ -133,21 +138,28 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 		}
 		localTrackChan <- localTrack
 
-		rtpBuf := make([]byte, 1400)
 		for {
-			i, readErr := remoteTrack.Read(rtpBuf)
+			i, readErr := remoteTrack.ReadRTP()
 			if readErr != nil {
 				panic(readErr)
 			}
 
-			// @todo
-			// if peer.isMuted { return }
-			// for peers that are not me: track.write
+			r.RLock()
+			for _, p := range r.peers {
+				if p.output == nil {
+					continue
+				}
 
-			// ErrClosedPipe means we don't have any subscribers, this is ok if no peers have connected yet
-			if _, err = localTrack.Write(rtpBuf[:i]); err != nil && err != io.ErrClosedPipe {
-				panic(err)
+				if p.connection == peerConnection {
+					continue
+				}
+
+				if err = p.output.WriteRTP(i); err != nil && err != io.ErrClosedPipe {
+					panic(err) // @todo this should not be panic
+				}
 			}
+
+			r.RUnlock()
 		}
 	})
 
@@ -177,10 +189,10 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 	<-gatherComplete
 
 	r.peers[addr] = &Peer{
-		isOwner:    r.track == nil,
+		isOwner:    len(r.peers) == 0,
 		isMuted:    false,
 		connection: peerConnection,
-		track:      nil,
+		output:     outputTrack,
 		api:        api,
 	}
 
@@ -189,10 +201,6 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 		track := <-localTrackChan
 
 		r.peers[addr].track = track
-
-		if r.track == nil {
-			r.track = track
-		}
 	}()
 
 	return peerConnection.LocalDescription(), nil

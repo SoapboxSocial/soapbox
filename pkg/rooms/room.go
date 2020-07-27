@@ -213,3 +213,16 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 
 	return peerConnection.LocalDescription(), nil
 }
+
+func (r *Room) setupDataChannel(peer *webrtc.PeerConnection) {
+	peer.OnDataChannel(func(d *webrtc.DataChannel) {
+		d.OnOpen(func() {
+			// @todo
+		})
+
+		d.OnMessage(func(msg webrtc.DataChannelMessage) {
+			// @todo incoming message handling
+		})
+	})
+
+}

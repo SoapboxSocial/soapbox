@@ -145,7 +145,7 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 		}
 		localTrackChan <- localTrack
 
-		r.handleTrack(peerConnection, remoteTrack)
+		r.handleTrack(addr, peerConnection, remoteTrack)
 	})
 
 	// Set the remote SessionDescription
@@ -173,6 +173,7 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 	// in a production application you should exchange ICE Candidates via OnICECandidate
 	<-gatherComplete
 
+	r.Lock()
 	r.peers[addr] = &Peer{
 		isOwner:    len(r.peers) == 0,
 		isMuted:    false,
@@ -180,18 +181,21 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 		output:     outputTrack,
 		api:        api,
 	}
+	r.Unlock()
 
 	// @todo this needs be elsewhere
 	go func() {
 		track := <-localTrackChan
 
+		r.Lock()
 		r.peers[addr].track = track
+		r.Unlock()
 	}()
 
 	return peerConnection.LocalDescription(), nil
 }
 
-func (r *Room) handleTrack(peer *webrtc.PeerConnection, remote *webrtc.Track) {
+func (r *Room) handleTrack(id string, peer *webrtc.PeerConnection, remote *webrtc.Track) {
 	for {
 		i, readErr := remote.ReadRTP()
 		if readErr != nil {
@@ -201,23 +205,26 @@ func (r *Room) handleTrack(peer *webrtc.PeerConnection, remote *webrtc.Track) {
 		}
 
 		r.RLock()
-		for _, p := range r.peers {
-			if p.output == nil {
-				continue
-			}
 
-			if p.connection == peer {
-				continue
-			}
+		if !r.peers[id].isMuted {
+			for _, p := range r.peers {
 
-			err := p.output.WriteRTP(i)
-			if err != nil && err != io.ErrClosedPipe {
-				log.Printf("failed to write to track: %s", err.Error())
-				peer.Close()
-				return
+				if p.output == nil {
+					continue
+				}
+
+				if p.connection == peer {
+					continue
+				}
+
+				err := p.output.WriteRTP(i)
+				if err != nil && err != io.ErrClosedPipe {
+					log.Printf("failed to write to track: %s", err.Error())
+					peer.Close()
+					return
+				}
 			}
 		}
-
 		r.RUnlock()
 	}
 }

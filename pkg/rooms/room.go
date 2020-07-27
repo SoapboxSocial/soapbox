@@ -197,7 +197,7 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 
 func (r *Room) handleTrack(id string, peer *webrtc.PeerConnection, remote *webrtc.Track) {
 	for {
-		i, readErr := remote.ReadRTP()
+		packet, readErr := remote.ReadRTP()
 		if readErr != nil {
 			log.Printf("failed to read from remote track: %s", readErr.Error())
 			peer.Close()
@@ -217,7 +217,7 @@ func (r *Room) handleTrack(id string, peer *webrtc.PeerConnection, remote *webrt
 					continue
 				}
 
-				err := p.output.WriteRTP(i)
+				err := p.output.WriteRTP(packet)
 				if err != nil && err != io.ErrClosedPipe {
 					log.Printf("failed to write to track: %s", err.Error())
 					peer.Close()

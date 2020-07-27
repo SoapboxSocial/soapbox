@@ -121,7 +121,11 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 		go func() {
 			ticker := time.NewTicker(3 * time.Second)
 			for range ticker.C {
-				if rtcpSendErr := peerConnection.WriteRTCP([]rtcp.Packet{&rtcp.SliceLossIndication{MediaSSRC: remoteTrack.SSRC()}}); rtcpSendErr != nil {
+				rtcpSendErr := peerConnection.WriteRTCP([]rtcp.Packet{
+					&rtcp.SliceLossIndication{MediaSSRC: remoteTrack.SSRC()},
+				})
+
+				if rtcpSendErr != nil {
 					// @todo
 				}
 			}
@@ -141,34 +145,7 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 		}
 		localTrackChan <- localTrack
 
-		for {
-			i, readErr := remoteTrack.ReadRTP()
-			if readErr != nil {
-				log.Printf("failed to read from remote track: %s", newTrackErr.Error())
-				peerConnection.Close()
-				return
-			}
-
-			r.RLock()
-			for _, p := range r.peers {
-				if p.output == nil {
-					continue
-				}
-
-				if p.connection == peerConnection {
-					continue
-				}
-
-				err = p.output.WriteRTP(i)
-				if err != nil && err != io.ErrClosedPipe {
-					log.Printf("failed to write to track: %s", newTrackErr.Error())
-					peerConnection.Close()
-					return
-				}
-			}
-
-			r.RUnlock()
-		}
+		r.handleTrack(peerConnection, remoteTrack)
 	})
 
 	// Set the remote SessionDescription
@@ -212,4 +189,35 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 	}()
 
 	return peerConnection.LocalDescription(), nil
+}
+
+func (r *Room) handleTrack(peer *webrtc.PeerConnection, remote *webrtc.Track) {
+	for {
+		i, readErr := remote.ReadRTP()
+		if readErr != nil {
+			log.Printf("failed to read from remote track: %s", readErr.Error())
+			peer.Close()
+			return
+		}
+
+		r.RLock()
+		for _, p := range r.peers {
+			if p.output == nil {
+				continue
+			}
+
+			if p.connection == peer {
+				continue
+			}
+
+			err := p.output.WriteRTP(i)
+			if err != nil && err != io.ErrClosedPipe {
+				log.Printf("failed to write to track: %s", err.Error())
+				peer.Close()
+				return
+			}
+		}
+
+		r.RUnlock()
+	}
 }

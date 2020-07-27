@@ -86,10 +86,6 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 		return nil, err
 	}
 
-	//if r.track != nil {
-	//	peerConnection.AddTrack(r.track)
-	//}
-
 	codecs := mediaEngine.GetCodecsByKind(webrtc.RTPCodecTypeAudio)
 
 	outputTrack, err := peerConnection.NewTrack(codecs[0].PayloadType, rand.Uint32(), "audio", "pion")
@@ -144,9 +140,8 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 		}
 		localTrackChan <- localTrack
 
-		rtpBuf := make([]byte, 1400)
 		for {
-			i, readErr := remoteTrack.Read(rtpBuf)
+			i, readErr := remoteTrack.ReadRTP()
 			if readErr != nil {
 				panic(readErr)
 			}
@@ -161,8 +156,8 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 					continue
 				}
 
-				if _, err = p.output.Write(rtpBuf[:i]); err != nil && err != io.ErrClosedPipe {
-					panic(err)
+				if err = p.output.WriteRTP(i); err != nil && err != io.ErrClosedPipe {
+					panic(err) // @todo this should not be panic
 				}
 			}
 

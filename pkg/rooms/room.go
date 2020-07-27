@@ -43,8 +43,7 @@ type Peer struct {
 type Room struct {
 	sync.RWMutex
 
-	id    int
-	track *webrtc.Track
+	id int
 
 	peers map[string]*Peer
 
@@ -54,7 +53,6 @@ type Room struct {
 func NewRoom(id int, disconnected chan bool) *Room {
 	return &Room{
 		id:           id,
-		track:        nil,
 		peers:        make(map[string]*Peer),
 		disconnected: disconnected,
 	}
@@ -88,7 +86,7 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 
 	codecs := mediaEngine.GetCodecsByKind(webrtc.RTPCodecTypeAudio)
 
-	outputTrack, err := peerConnection.NewTrack(codecs[0].PayloadType, rand.Uint32(), "audio", "pion")
+	outputTrack, err := peerConnection.NewTrack(codecs[0].PayloadType, rand.Uint32(), "audio0", "pion")
 	if err != nil {
 		panic(err)
 	}
@@ -109,9 +107,9 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 		// @todo, this does not seem completely safe
 		// @todo disconnected here is certainly not reliable
 		if state == webrtc.PeerConnectionStateClosed || state == webrtc.PeerConnectionStateFailed /* || state == webrtc.PeerConnectionStateDisconnected */ {
-		//	// @todo this seems like it could be buggy
+			//	// @todo this seems like it could be buggy
 			delete(r.peers, addr)
-			r.disconnected <-true
+			r.disconnected <- true
 		}
 	})
 
@@ -191,11 +189,10 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 	<-gatherComplete
 
 	r.peers[addr] = &Peer{
-		isOwner:    r.track == nil,
+		isOwner:    len(r.peers) == 0,
 		isMuted:    false,
 		connection: peerConnection,
-		track:      nil,
-		output: outputTrack,
+		output:     outputTrack,
 		api:        api,
 	}
 
@@ -204,10 +201,6 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 		track := <-localTrackChan
 
 		r.peers[addr].track = track
-
-		if r.track == nil {
-			r.track = track
-		}
 	}()
 
 	return peerConnection.LocalDescription(), nil

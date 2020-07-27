@@ -3,6 +3,7 @@ package rooms
 import (
 	"fmt"
 	"io"
+	"log"
 	"math/rand"
 	"sync"
 	"time"
@@ -72,7 +73,7 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 	mediaEngine := webrtc.MediaEngine{}
 	err := mediaEngine.PopulateFromSDP(offer)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	// Create the API object with the MediaEngine
@@ -88,7 +89,7 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 
 	outputTrack, err := peerConnection.NewTrack(codecs[0].PayloadType, rand.Uint32(), "audio0", "pion")
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	peerConnection.AddTrack(outputTrack)
@@ -134,14 +135,18 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 		)
 
 		if newTrackErr != nil {
-			panic(newTrackErr)
+			log.Printf("failed to create new track: %s", newTrackErr.Error())
+			peerConnection.Close()
+			return
 		}
 		localTrackChan <- localTrack
 
 		for {
 			i, readErr := remoteTrack.ReadRTP()
 			if readErr != nil {
-				panic(readErr)
+				log.Printf("failed to read from remote track: %s", newTrackErr.Error())
+				peerConnection.Close()
+				return
 			}
 
 			r.RLock()
@@ -154,8 +159,11 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 					continue
 				}
 
-				if err = p.output.WriteRTP(i); err != nil && err != io.ErrClosedPipe {
-					panic(err) // @todo this should not be panic
+				err = p.output.WriteRTP(i)
+				if err != nil && err != io.ErrClosedPipe {
+					log.Printf("failed to write to track: %s", newTrackErr.Error())
+					peerConnection.Close()
+					return
 				}
 			}
 

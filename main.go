@@ -150,6 +150,11 @@ func main() {
 		members := make([]string, 0)
 
 		room.MapPeers(func(s string, _ rooms.Peer) {
+			// @todo will need changing
+			if s == r.RemoteAddr {
+				return
+			}
+
 			members = append(members, s)
 		})
 

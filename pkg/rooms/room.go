@@ -8,8 +8,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/pion/rtcp"
 	"github.com/pion/webrtc/v3"
+
+	"github.com/ephemeral-networks/voicely/pkg/pb"
 )
 
 var config = webrtc.Configuration{
@@ -140,6 +143,8 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 			}
 		}()
 
+		go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_JOINED, From: addr})
+
 		// Create a local track, all our SFU clients will be fed via this track
 		localTrack, newTrackErr := peerConnection.NewTrack(
 			remoteTrack.PayloadType(),
@@ -217,6 +222,30 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 	}()
 
 	return peerConnection.LocalDescription(), nil
+}
+
+// @todo event part
+func (r *Room) notify(event *pb.RoomEvent) {
+	r.RLock()
+	defer r.RUnlock()
+
+	data, err := proto.Marshal(event)
+	if err != nil {
+		// @todo
+		return
+	}
+
+	for id, p := range r.peers {
+		if id == event.From {
+			continue
+		}
+
+		err := p.dataChannel.Send(data)
+		if err != nil {
+			// @todo
+			log.Printf("failed to write to data channel: %s\n", err.Error())
+		}
+	}
 }
 
 func (r *Room) setupDataChannel(addr string, peer *webrtc.PeerConnection) {

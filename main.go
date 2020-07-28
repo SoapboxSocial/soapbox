@@ -95,21 +95,7 @@ func main() {
 		}
 
 		id := room.GetID()
-
-		members := make([]string, 0)
-
-		room.MapPeers(func(s string, _ rooms.Peer) {
-			members = append(members, s)
-		})
-
-		resp := &JoinPayload{
-			Members: members,
-			SDP: SDPPayload{
-				ID:   &id,
-				Type: strings.ToLower(sdp.Type.String()),
-				SDP:  sdp.SDP,
-			},
-		}
+		resp := &SDPPayload{ID: &id, Type: strings.ToLower(sdp.Type.String()), SDP: sdp.SDP}
 
 		err = json.NewEncoder(w).Encode(resp)
 		if err != nil {
@@ -161,9 +147,19 @@ func main() {
 			return
 		}
 
-		resp := SDPPayload{
-			Type: strings.ToLower(sdp.Type.String()),
-			SDP:  sdp.SDP,
+		members := make([]string, 0)
+
+		room.MapPeers(func(s string, _ rooms.Peer) {
+			members = append(members, s)
+		})
+
+		resp := &JoinPayload{
+			Members: members,
+			SDP: SDPPayload{
+				ID:   &id,
+				Type: strings.ToLower(sdp.Type.String()),
+				SDP:  sdp.SDP,
+			},
 		}
 
 		err = json.NewEncoder(w).Encode(resp)

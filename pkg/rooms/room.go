@@ -246,6 +246,10 @@ func (r *Room) notify(event *pb.RoomEvent) {
 			continue
 		}
 
+		if p.dataChannel == nil {
+			continue
+		}
+
 		err := p.dataChannel.Send(data)
 		if err != nil {
 			// @todo

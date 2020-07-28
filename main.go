@@ -96,10 +96,19 @@ func main() {
 
 		id := room.GetID()
 
-		resp := SDPPayload{
-			ID:   &id,
-			Type: strings.ToLower(sdp.Type.String()),
-			SDP:  sdp.SDP,
+		members := make([]string, 0)
+
+		room.MapPeers(func(s string, _ rooms.Peer) {
+			members = append(members, s)
+		})
+
+		resp := &JoinPayload{
+			Members: members,
+			SDP: SDPPayload{
+				ID:   &id,
+				Type: strings.ToLower(sdp.Type.String()),
+				SDP:  sdp.SDP,
+			},
 		}
 
 		err = json.NewEncoder(w).Encode(resp)

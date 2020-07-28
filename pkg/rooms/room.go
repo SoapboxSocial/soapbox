@@ -63,6 +63,15 @@ func NewRoom(id int, disconnected chan bool) *Room {
 	}
 }
 
+func (r *Room) MapPeers(fn func(string, Peer)) {
+	r.RLock()
+	defer r.RUnlock()
+
+	for i, peer := range r.peers {
+		fn(i, *peer)
+	}
+}
+
 func (r *Room) GetID() int {
 	return r.id
 }

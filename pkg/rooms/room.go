@@ -33,6 +33,7 @@ type Peer struct {
 	track      *webrtc.Track
 	output     *webrtc.Track
 	api        *webrtc.API
+	dataChannel *webrtc.DataChannel
 }
 
 // @todo we need to figure out how to multiplex nicely
@@ -113,6 +114,18 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 			r.disconnected <- true
 		}
 	})
+
+	r.Lock()
+	r.peers[addr] = &Peer{
+		isOwner:    len(r.peers) == 0,
+		isMuted:    false,
+		connection: peerConnection,
+		output:     outputTrack,
+		api:        api,
+	}
+	r.Unlock()
+
+	r.setupDataChannel(addr, peerConnection)
 
 	var localTrackChan = make(chan *webrtc.Track)
 	// Set a handler forf when a new remote track starts, this just distributes all our packets
@@ -196,14 +209,6 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 	// in a production application you should exchange ICE Candidates via OnICECandidate
 	<-gatherComplete
 
-	r.peers[addr] = &Peer{
-		isOwner:    len(r.peers) == 0,
-		isMuted:    false,
-		connection: peerConnection,
-		output:     outputTrack,
-		api:        api,
-	}
-
 	// @todo this needs be elsewhere
 	go func() {
 		track := <-localTrackChan
@@ -214,15 +219,24 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 	return peerConnection.LocalDescription(), nil
 }
 
-func (r *Room) setupDataChannel(peer *webrtc.PeerConnection) {
+func (r *Room) setupDataChannel(addr string, peer *webrtc.PeerConnection) {
 	peer.OnDataChannel(func(d *webrtc.DataChannel) {
 		d.OnOpen(func() {
-			// @todo
+			r.Lock()
+			defer r.Unlock()
+
+			r.peers[addr].dataChannel = d
+		})
+
+		d.OnClose(func() {
+			r.Lock()
+			defer r.Unlock()
+
+			r.peers[addr].dataChannel = nil
 		})
 
 		d.OnMessage(func(msg webrtc.DataChannelMessage) {
 			// @todo incoming message handling
 		})
 	})
-
 }

@@ -61,6 +61,7 @@ func (rm *RoomManger) CreateRoom() *Room {
 
 			if r.PeerCount() == 0 {
 				log.Printf("room %d closed\n", id)
+				log.Printf("current room count: %d\n", len(rm.rooms))
 				rm.Lock()
 				rm.rooms[id] = nil
 				rm.Unlock()

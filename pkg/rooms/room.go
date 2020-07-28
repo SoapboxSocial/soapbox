@@ -105,6 +105,11 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 		return nil, err
 	}
 
+	channel, err := peerConnection.CreateDataChannel("data", nil)
+	if err != nil {
+		return nil, err
+	}
+
 	peerConnection.AddTrack(outputTrack)
 
 	// Allow us to receive 1 video track
@@ -136,7 +141,7 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 	}
 	r.Unlock()
 
-	r.setupDataChannel(addr, peerConnection)
+	r.setupDataChannel(addr, peerConnection, channel)
 
 	var localTrackChan = make(chan *webrtc.Track)
 	// Set a handler forf when a new remote track starts, this just distributes all our packets
@@ -233,6 +238,13 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 }
 
 func (r *Room) peerDisconnected(addr string) {
+	r.Lock()
+	defer r.Unlock()
+
+	if r.peers[addr] == nil {
+		return
+	}
+
 	delete(r.peers, addr)
 	r.disconnected <- true
 
@@ -267,7 +279,11 @@ func (r *Room) notify(event *pb.RoomEvent) {
 	}
 }
 
-func (r *Room) setupDataChannel(addr string, peer *webrtc.PeerConnection) {
+func (r *Room) setupDataChannel(addr string, peer *webrtc.PeerConnection, channel *webrtc.DataChannel) {
+	channel.OnClose(func() {
+		r.peerDisconnected(addr)
+	})
+
 	peer.OnDataChannel(func(d *webrtc.DataChannel) {
 		d.OnOpen(func() {
 			r.Lock()
@@ -277,18 +293,7 @@ func (r *Room) setupDataChannel(addr string, peer *webrtc.PeerConnection) {
 		})
 
 		d.OnClose(func() {
-			r.Lock()
-			defer r.Unlock()
-
-			r.peers[addr].dataChannel = nil
-		})
-
-		d.OnClose(func() {
 			r.peerDisconnected(addr)
-		})
-
-		d.OnMessage(func(msg webrtc.DataChannelMessage) {
-			// @todo incoming message handling
 		})
 	})
 }

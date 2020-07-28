@@ -8,8 +8,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/pion/rtcp"
 	"github.com/pion/webrtc/v3"
+
+	"github.com/ephemeral-networks/voicely/pkg/pb"
 )
 
 var config = webrtc.Configuration{
@@ -57,6 +60,15 @@ func NewRoom(id int, disconnected chan bool) *Room {
 		id:           id,
 		peers:        make(map[string]*Peer),
 		disconnected: disconnected,
+	}
+}
+
+func (r *Room) MapPeers(fn func(string, Peer)) {
+	r.RLock()
+	defer r.RUnlock()
+
+	for i, peer := range r.peers {
+		fn(i, *peer)
 	}
 }
 
@@ -110,8 +122,7 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 		// @todo disconnected here is certainly not reliable
 		if state == webrtc.PeerConnectionStateClosed || state == webrtc.PeerConnectionStateFailed /* || state == webrtc.PeerConnectionStateDisconnected */ {
 			//	// @todo this seems like it could be buggy
-			delete(r.peers, addr)
-			r.disconnected <- true
+			r.peerDisconnected(addr)
 		}
 	})
 
@@ -138,6 +149,8 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 				}
 			}
 		}()
+
+		go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_JOINED, From: addr})
 
 		// Create a local track, all our SFU clients will be fed via this track
 		localTrack, newTrackErr := peerConnection.NewTrack(
@@ -234,4 +247,39 @@ func (r *Room) setupDataChannel(addr string, peer *webrtc.PeerConnection) {
 			// @todo incoming message handling
 		})
 	})
+}
+
+func (r *Room) peerDisconnected(addr string) {
+	delete(r.peers, addr)
+	r.disconnected <- true
+
+	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_LEFT, From: addr})
+}
+
+// @todo event part
+func (r *Room) notify(event *pb.RoomEvent) {
+	r.RLock()
+	defer r.RUnlock()
+
+	data, err := proto.Marshal(event)
+	if err != nil {
+		// @todo
+		return
+	}
+
+	for id, p := range r.peers {
+		if id == event.From {
+			continue
+		}
+
+		if p.dataChannel == nil {
+			continue
+		}
+
+		err := p.dataChannel.Send(data)
+		if err != nil {
+			// @todo
+			log.Printf("failed to write to data channel: %s\n", err.Error())
+		}
+	}
 }

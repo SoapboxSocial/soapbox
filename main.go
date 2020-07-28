@@ -15,10 +15,20 @@ import (
 	"github.com/ephemeral-networks/voicely/pkg/rooms"
 )
 
+type RoomPayload struct {
+	ID      int      `json:"id"`
+	Members []string `json:"members"`
+}
+
 type SDPPayload struct {
-	ID   *int    `json:"id,omitempty"`
+	ID   *int   `json:"id,omitempty"`
 	SDP  string `json:"sdp"`
 	Type string `json:"type"`
+}
+
+type JoinPayload struct {
+	Members []string   `json:"members"`
+	SDP     SDPPayload `json:"sdp"`
 }
 
 func main() {
@@ -28,17 +38,23 @@ func main() {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/v1/rooms", func(w http.ResponseWriter, r *http.Request) {
-		data := make([]int, 0)
+		data := make([]RoomPayload, 0)
 
 		manager.MapRooms(func(room *rooms.Room) {
 			if room == nil {
 				return
 			}
 
-			data = append(data, room.GetID())
+			r := RoomPayload{ID: room.GetID(), Members: make([]string, 0)}
+
+			room.MapPeers(func(s string, peer rooms.Peer) {
+				r.Members = append(r.Members, s)
+			})
+
+			data = append(data, r)
 		})
 
-		err := json.NewEncoder(w).Encode(data)
+		err := jsonEncode(w, data)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -79,14 +95,9 @@ func main() {
 		}
 
 		id := room.GetID()
+		resp := &SDPPayload{ID: &id, Type: strings.ToLower(sdp.Type.String()), SDP: sdp.SDP}
 
-		resp := SDPPayload{
-			ID:   &id,
-			Type: strings.ToLower(sdp.Type.String()),
-			SDP:  sdp.SDP,
-		}
-
-		err = json.NewEncoder(w).Encode(resp)
+		err = jsonEncode(w, resp)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -136,18 +147,38 @@ func main() {
 			return
 		}
 
-		resp := SDPPayload{
-			Type: strings.ToLower(sdp.Type.String()),
-			SDP:  sdp.SDP,
+		members := make([]string, 0)
+
+		room.MapPeers(func(s string, _ rooms.Peer) {
+			// @todo will need changing
+			if s == r.RemoteAddr {
+				return
+			}
+
+			members = append(members, s)
+		})
+
+		resp := &JoinPayload{
+			Members: members,
+			SDP: SDPPayload{
+				ID:   &id,
+				Type: strings.ToLower(sdp.Type.String()),
+				SDP:  sdp.SDP,
+			},
 		}
 
-		err = json.NewEncoder(w).Encode(resp)
+		err = jsonEncode(w, resp)
 		if err != nil {
 			fmt.Println(err)
 		}
 	}).Methods("POST")
 
 	log.Fatal(http.ListenAndServe(":8080", r))
+}
+
+func jsonEncode(w http.ResponseWriter, v interface{}) error {
+	w.Header().Set("Content-Type", "application/json")
+	return json.NewEncoder(w).Encode(v)
 }
 
 func getType(t string) (error, webrtc.SDPType) {

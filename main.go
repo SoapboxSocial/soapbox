@@ -54,7 +54,7 @@ func main() {
 			data = append(data, r)
 		})
 
-		err := json.NewEncoder(w).Encode(data)
+		err := jsonEncode(w, data)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -97,7 +97,7 @@ func main() {
 		id := room.GetID()
 		resp := &SDPPayload{ID: &id, Type: strings.ToLower(sdp.Type.String()), SDP: sdp.SDP}
 
-		err = json.NewEncoder(w).Encode(resp)
+		err = jsonEncode(w, resp)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -167,13 +167,18 @@ func main() {
 			},
 		}
 
-		err = json.NewEncoder(w).Encode(resp)
+		err = jsonEncode(w, resp)
 		if err != nil {
 			fmt.Println(err)
 		}
 	}).Methods("POST")
 
 	log.Fatal(http.ListenAndServe(":8080", r))
+}
+
+func jsonEncode(w http.ResponseWriter, v interface{}) error {
+	w.Header().Set("Content-Type", "application/json")
+	return json.NewEncoder(w).Encode(v)
 }
 
 func getType(t string) (error, webrtc.SDPType) {

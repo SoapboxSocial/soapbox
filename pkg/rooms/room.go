@@ -283,6 +283,10 @@ func (r *Room) setupDataChannel(addr string, peer *webrtc.PeerConnection) {
 			r.peers[addr].dataChannel = nil
 		})
 
+		d.OnClose(func() {
+			r.peerDisconnected(addr)
+		})
+
 		d.OnMessage(func(msg webrtc.DataChannelMessage) {
 			// @todo incoming message handling
 		})

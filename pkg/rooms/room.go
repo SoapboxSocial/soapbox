@@ -113,8 +113,7 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 		// @todo disconnected here is certainly not reliable
 		if state == webrtc.PeerConnectionStateClosed || state == webrtc.PeerConnectionStateFailed /* || state == webrtc.PeerConnectionStateDisconnected */ {
 			//	// @todo this seems like it could be buggy
-			delete(r.peers, addr)
-			r.disconnected <- true
+			r.peerDisconnected(addr)
 		}
 	})
 
@@ -222,6 +221,13 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 	}()
 
 	return peerConnection.LocalDescription(), nil
+}
+
+func (r *Room) peerDisconnected(addr string) {
+	delete(r.peers, addr)
+	r.disconnected <- true
+
+	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_LEFT, From: addr})
 }
 
 // @todo event part

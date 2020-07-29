@@ -179,17 +179,12 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 			}
 		}()
 
-		type Member struct {
-			ID   string `json:"id"`
-			Role string `json:"role"`
-		}
-
 		data, err := json.Marshal(struct {
 			ID   string `json:"id"`
 			Role string `json:"role"`
 		}{ID: addr, Role: string(role)})
 		if err != nil {
-			// @todo
+			log.Printf("failed to encode: %s\n", err.Error())
 		}
 
 		// @todo handle join here, sending a member encoded as json
@@ -268,34 +263,6 @@ func (r *Room) peerDisconnected(addr string) {
 	r.disconnected <- true
 
 	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_LEFT, From: addr})
-}
-
-// @todo event part
-func (r *Room) notify(event *pb.RoomEvent) {
-	r.RLock()
-	defer r.RUnlock()
-
-	data, err := proto.Marshal(event)
-	if err != nil {
-		// @todo
-		return
-	}
-
-	for id, p := range r.peers {
-		if id == event.From {
-			continue
-		}
-
-		if p.dataChannel == nil {
-			continue
-		}
-
-		err := p.dataChannel.Send(data)
-		if err != nil {
-			// @todo
-			log.Printf("failed to write to data channel: %s\n", err.Error())
-		}
-	}
 }
 
 func (r *Room) setupDataChannel(addr string, peer *webrtc.PeerConnection, channel *webrtc.DataChannel) {
@@ -385,4 +352,31 @@ func (r *Room) onRemoveSpeaker(from, peer string) {
 	r.peers[peer].role = Speaker
 
 	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_REMOVED_SPEAKER, From: from, Data: []byte(peer)})
+}
+
+func (r *Room) notify(event *pb.RoomEvent) {
+	r.RLock()
+	defer r.RUnlock()
+
+	data, err := proto.Marshal(event)
+	if err != nil {
+		// @todo
+		return
+	}
+
+	for id, p := range r.peers {
+		if id == event.From {
+			continue
+		}
+
+		if p.dataChannel == nil {
+			continue
+		}
+
+		err := p.dataChannel.Send(data)
+		if err != nil {
+			// @todo
+			log.Printf("failed to write to data channel: %s\n", err.Error())
+		}
+	}
 }

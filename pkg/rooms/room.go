@@ -255,6 +255,8 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 		r.peers[addr].track = track
 	}()
 
+	log.Printf("new peer joined: %s", addr)
+
 	return peerConnection.LocalDescription(), nil
 }
 
@@ -386,7 +388,7 @@ func (r *Room) onRemoveSpeaker(from, peer string) {
 	if r.peers[from].role != OWNER {
 		return
 	}
-	r.peers[peer].role = SPEAKER
+	r.peers[peer].role = AUDIENCE
 
 	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_REMOVED_SPEAKER, From: from, Data: []byte(peer)})
 }

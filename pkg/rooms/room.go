@@ -29,14 +29,26 @@ var config = webrtc.Configuration{
 	},
 }
 
+type PeerRole string
+
+const (
+	Owner    PeerRole = "owner"
+	Speaker  PeerRole = "speaker"
+	Audience PeerRole = "audience"
+)
+
 type Peer struct {
-	isOwner    bool
-	isMuted    bool
-	connection *webrtc.PeerConnection
-	track      *webrtc.Track
-	output     *webrtc.Track
-	api        *webrtc.API
+	role        PeerRole
+	isMuted     bool
+	connection  *webrtc.PeerConnection
+	track       *webrtc.Track
+	output      *webrtc.Track
+	api         *webrtc.API
 	dataChannel *webrtc.DataChannel
+}
+
+func (p *Peer) CanSpeak() bool {
+	return p.role != Audience
 }
 
 // @todo we need to figure out how to multiplex nicely
@@ -132,8 +144,13 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 	})
 
 	r.Lock()
+	role := Audience
+	if len(r.peers) == 0 {
+		role = Owner
+	}
+
 	r.peers[addr] = &Peer{
-		isOwner:    len(r.peers) == 0,
+		role:       role,
 		isMuted:    false,
 		connection: peerConnection,
 		output:     outputTrack,
@@ -181,6 +198,10 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 			}
 
 			r.RLock()
+			if !r.peers[addr].CanSpeak() {
+				continue
+			}
+
 			for _, p := range r.peers {
 				if p.output == nil {
 					continue
@@ -280,9 +301,21 @@ func (r *Room) notify(event *pb.RoomEvent) {
 }
 
 func (r *Room) setupDataChannel(addr string, peer *webrtc.PeerConnection, channel *webrtc.DataChannel) {
+	handler := func(msg webrtc.DataChannelMessage) {
+		cmd := &pb.RoomCommand{}
+		err := proto.Unmarshal(msg.Data, cmd)
+		if err != nil {
+			log.Printf("failed to decode data channel message: %s\n", err.Error())
+		}
+
+		r.onCommand(addr, cmd)
+	}
+
 	channel.OnClose(func() {
 		r.peerDisconnected(addr)
 	})
+
+	channel.OnMessage(handler)
 
 	peer.OnDataChannel(func(d *webrtc.DataChannel) {
 		d.OnOpen(func() {
@@ -295,5 +328,40 @@ func (r *Room) setupDataChannel(addr string, peer *webrtc.PeerConnection, channe
 		d.OnClose(func() {
 			r.peerDisconnected(addr)
 		})
+
+		d.OnMessage(handler)
 	})
+}
+
+func (r *Room) onCommand(from string, command *pb.RoomCommand) {
+	switch command.Type {
+	case pb.RoomCommand_ADD_SPEAKER:
+		r.onAddSpeaker(from, string(command.Data))
+	case pb.RoomCommand_REMOVE_SPEAKER:
+		r.onRemoveSpeaker(from, string(command.Data))
+	}
+}
+
+func (r *Room) onAddSpeaker(from, peer string) {
+	r.Lock()
+	defer r.Unlock()
+
+	if r.peers[from].role != Owner {
+		return
+	}
+	r.peers[peer].role = Speaker
+
+	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_ADDED_SPEAKER, From: from, Data: []byte(peer)})
+}
+
+func (r *Room) onRemoveSpeaker(from, peer string) {
+	r.Lock()
+	defer r.Unlock()
+
+	if r.peers[from].role != Owner {
+		return
+	}
+	r.peers[peer].role = Speaker
+
+	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_REMOVED_SPEAKER, From: from, Data: []byte(peer)})
 }

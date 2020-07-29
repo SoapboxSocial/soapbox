@@ -26,11 +26,12 @@ func (rm *RoomManger) GetRoom(i int) (*Room, error) {
 	rm.RLock()
 	defer rm.RUnlock()
 
-	if len(rm.rooms) <= i {
+	r, ok := rm.rooms[i]
+	if !ok {
 		return nil, fmt.Errorf("room %d does not exist", i)
 	}
 
-	return rm.rooms[i], nil
+	return r, nil
 }
 
 // @todo this will probably be very inefficient at scale lol

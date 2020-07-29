@@ -34,6 +34,7 @@ type SDPPayload struct {
 type JoinPayload struct {
 	Members []Member   `json:"members"`
 	SDP     SDPPayload `json:"sdp"`
+	Role    string     `json:"role"` // @todo find better name
 }
 
 func main() {
@@ -170,6 +171,7 @@ func main() {
 				Type: strings.ToLower(sdp.Type.String()),
 				SDP:  sdp.SDP,
 			},
+			Role: string(room.GetRoleForPeer(r.RemoteAddr)),
 		}
 
 		err = jsonEncode(w, resp)

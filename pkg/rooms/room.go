@@ -100,6 +100,12 @@ func (r *Room) PeerCount() int {
 	return len(r.peers)
 }
 
+func (r *Room) GetRoleForPeer(id string) PeerRole {
+	r.RLock()
+	defer r.RUnlock()
+	return r.peers[id].role
+}
+
 func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.SessionDescription, error) {
 	mediaEngine := webrtc.MediaEngine{}
 	err := mediaEngine.PopulateFromSDP(offer)

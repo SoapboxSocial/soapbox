@@ -76,3 +76,8 @@ func (rm *RoomManger) CreateRoom() *Room {
 	return r
 }
 
+func (rm *RoomManger) RemoveRoom(id int) {
+	rm.Lock()
+	defer rm.Unlock()
+	delete(rm.rooms, id)
+}

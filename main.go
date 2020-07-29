@@ -31,6 +31,15 @@ type JoinPayload struct {
 	SDP     SDPPayload `json:"sdp"`
 }
 
+type ErrorCode int
+
+const (
+	ErrorCodeRoomNotFound ErrorCode = 1
+	ErrorCodeRoomFailedToJoin       = 2
+	ErrorCodeInvalidRequestBody     = 3
+	ErrorCodeFailedToCreateRoom     = 4
+)
+
 func main() {
 
 	manager := rooms.NewRoomManager()
@@ -64,13 +73,14 @@ func main() {
 		b, err := ioutil.ReadAll(r.Body)
 		defer r.Body.Close()
 		if err != nil {
-			http.Error(w, err.Error(), 500)
+			jsonError(w, 400, ErrorCodeInvalidRequestBody, "invalid request body")
 			return
 		}
 
 		payload := &SDPPayload{}
 		err = json.Unmarshal(b, payload)
 		if err != nil {
+			jsonError(w, 400, ErrorCodeInvalidRequestBody, "invalid request body")
 			log.Printf("failed to decode payload: %s\n", err.Error())
 			return
 		}
@@ -90,7 +100,8 @@ func main() {
 
 		sdp, err := room.Join(r.RemoteAddr, p)
 		if err != nil {
-			// @todo
+			manager.RemoveRoom(room.GetID())
+			jsonError(w, 500, ErrorCodeFailedToCreateRoom, "failed to create room")
 			return
 		}
 
@@ -99,6 +110,7 @@ func main() {
 
 		err = jsonEncode(w, resp)
 		if err != nil {
+			manager.RemoveRoom(room.GetID())
 			fmt.Println(err)
 		}
 	}).Methods("POST")
@@ -107,13 +119,14 @@ func main() {
 		b, err := ioutil.ReadAll(r.Body)
 		defer r.Body.Close()
 		if err != nil {
-			http.Error(w, err.Error(), 500)
+			jsonError(w, 400, ErrorCodeInvalidRequestBody, "invalid request body")
 			return
 		}
 
 		payload := &SDPPayload{}
 		err = json.Unmarshal(b, payload)
 		if err != nil {
+			jsonError(w, 400, ErrorCodeInvalidRequestBody, "invalid request body")
 			log.Printf("failed to decode payload: %s\n", err.Error())
 			return
 		}
@@ -137,13 +150,13 @@ func main() {
 
 		room, err := manager.GetRoom(id)
 		if err != nil {
-			// @todo handle
+			jsonError(w, 404, ErrorCodeRoomNotFound, "room not found")
 			return
 		}
 
 		sdp, err := room.Join(r.RemoteAddr, p)
 		if err != nil {
-			// @todo
+			jsonError(w, 500, ErrorCodeRoomFailedToJoin, "failed to join room")
 			return
 		}
 
@@ -174,6 +187,26 @@ func main() {
 	}).Methods("POST")
 
 	log.Fatal(http.ListenAndServe(":8080", r))
+}
+
+func jsonError(w http.ResponseWriter, responseCode int, code ErrorCode, msg string) {
+	type ErrorResponse struct {
+		Code ErrorCode `json:"code"`
+		Message string `json:"message"`
+	}
+
+	resp, err := json.Marshal(ErrorResponse{Code: code, Message: msg})
+	if err != nil {
+		log.Println("failed encoding error")
+		return
+	}
+
+	w.WriteHeader(responseCode)
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(resp)
+	if err != nil {
+		log.Printf("failed to encode response: %s", err.Error())
+	}
 }
 
 func jsonEncode(w http.ResponseWriter, v interface{}) error {

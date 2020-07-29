@@ -155,14 +155,13 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 		role = OWNER
 	}
 
-	peer := &Peer{
+	r.peers[addr] = &Peer{
 		role:       role,
 		isMuted:    false,
 		connection: peerConnection,
 		output:     outputTrack,
 		api:        api,
 	}
-	r.peers[addr] = peer
 	r.Unlock()
 
 	r.setupDataChannel(addr, peerConnection, channel)

@@ -1,6 +1,7 @@
 package rooms
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/pion/rtcp"
+	"github.com/pion/rtp"
 	"github.com/pion/webrtc/v3"
 
 	"github.com/ephemeral-networks/voicely/pkg/pb"
@@ -29,14 +31,30 @@ var config = webrtc.Configuration{
 	},
 }
 
+type PeerRole string
+
+const (
+	OWNER    PeerRole = "owner"
+	SPEAKER  PeerRole = "speaker"
+	AUDIENCE PeerRole = "audience"
+)
+
 type Peer struct {
-	isOwner    bool
-	isMuted    bool
-	connection *webrtc.PeerConnection
-	track      *webrtc.Track
-	output     *webrtc.Track
-	api        *webrtc.API
+	role        PeerRole
+	isMuted     bool
+	connection  *webrtc.PeerConnection
+	track       *webrtc.Track
+	output      *webrtc.Track
+	api         *webrtc.API
 	dataChannel *webrtc.DataChannel
+}
+
+func (p Peer) CanSpeak() bool {
+	return p.role != AUDIENCE
+}
+
+func (p Peer) Role() PeerRole {
+	return p.role
 }
 
 // @todo we need to figure out how to multiplex nicely
@@ -80,6 +98,12 @@ func (r *Room) PeerCount() int {
 	r.RLock()
 	defer r.RUnlock()
 	return len(r.peers)
+}
+
+func (r *Room) GetRoleForPeer(id string) PeerRole {
+	r.RLock()
+	defer r.RUnlock()
+	return r.peers[id].role
 }
 
 func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.SessionDescription, error) {
@@ -132,8 +156,13 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 	})
 
 	r.Lock()
+	role := SPEAKER
+	if len(r.peers) == 0 {
+		role = OWNER
+	}
+
 	r.peers[addr] = &Peer{
-		isOwner:    len(r.peers) == 0,
+		role:       role,
 		isMuted:    false,
 		connection: peerConnection,
 		output:     outputTrack,
@@ -156,7 +185,16 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 			}
 		}()
 
-		go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_JOINED, From: addr})
+		data, err := json.Marshal(struct {
+			ID   string `json:"id"`
+			Role string `json:"role"`
+		}{ID: addr, Role: string(role)})
+		if err != nil {
+			log.Printf("failed to encode: %s\n", err.Error())
+		}
+
+		// @todo handle join here, sending a member encoded as json
+		go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_JOINED, From: addr, Data: data})
 
 		// Create a local track, all our SFU clients will be fed via this track
 		localTrack, newTrackErr := peerConnection.NewTrack(
@@ -175,30 +213,13 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 		for {
 			i, readErr := remoteTrack.ReadRTP()
 			if readErr != nil {
-				log.Printf("failed to read from remote track: %s", newTrackErr.Error())
+				log.Printf("failed to read from remote track: %s", readErr.Error())
 				peerConnection.Close()
 				return
 			}
 
-			r.RLock()
-			for _, p := range r.peers {
-				if p.output == nil {
-					continue
-				}
-
-				if p.connection == peerConnection {
-					continue
-				}
-
-				err = p.output.WriteRTP(i)
-				if err != nil && err != io.ErrClosedPipe {
-					log.Printf("failed to write to track: %s", newTrackErr.Error())
-					peerConnection.Close()
-					return
-				}
-			}
-
-			r.RUnlock()
+			// @todo maybe if we push into a channel here, we can read from it, and see if concurrency issue still occurs.
+			r.forwardPacket(addr, i)
 		}
 	})
 
@@ -234,6 +255,8 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 		r.peers[addr].track = track
 	}()
 
+	log.Printf("new peer joined: %s", addr)
+
 	return peerConnection.LocalDescription(), nil
 }
 
@@ -245,13 +268,131 @@ func (r *Room) peerDisconnected(addr string) {
 		return
 	}
 
+	role := r.peers[addr].role
+
+	r.peers[addr].connection.Close()
 	delete(r.peers, addr)
 	r.disconnected <- true
 
 	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_LEFT, From: addr})
+
+	if role == OWNER {
+		go r.electOwner()
+	}
+
 }
 
-// @todo event part
+func (r *Room) electOwner() {
+	r.Lock()
+	defer r.Unlock()
+
+	speaker := first(r.peers, func(peer *Peer) bool {
+		return peer.role == SPEAKER
+	})
+
+	if speaker != "" {
+		r.peers[speaker].role = OWNER
+	} else {
+		for k, v := range r.peers {
+			v.role = OWNER
+			speaker = k
+			break
+		}
+	}
+
+	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_CHANGED_OWNER, Data: []byte(speaker)})
+}
+
+func (r *Room) setupDataChannel(addr string, peer *webrtc.PeerConnection, channel *webrtc.DataChannel) {
+	handler := func(msg webrtc.DataChannelMessage) {
+		cmd := &pb.RoomCommand{}
+		err := proto.Unmarshal(msg.Data, cmd)
+		if err != nil {
+			log.Printf("failed to decode data channel message: %s\n", err.Error())
+		}
+
+		r.onCommand(addr, cmd)
+	}
+
+	channel.OnClose(func() {
+		r.peerDisconnected(addr)
+	})
+
+	channel.OnMessage(handler)
+
+	peer.OnDataChannel(func(d *webrtc.DataChannel) {
+		d.OnOpen(func() {
+			r.Lock()
+			defer r.Unlock()
+
+			r.peers[addr].dataChannel = d
+		})
+
+		d.OnClose(func() {
+			r.peerDisconnected(addr)
+		})
+
+		d.OnMessage(handler)
+	})
+}
+
+func (r *Room) forwardPacket(from string, packet *rtp.Packet) {
+	r.RLock()
+	defer r.RUnlock()
+
+	if !r.peers[from].CanSpeak() {
+		return
+	}
+
+	for id, p := range r.peers {
+		if p.output == nil {
+			continue
+		}
+
+		if id == from {
+			continue
+		}
+
+		err := p.output.WriteRTP(packet)
+		if err != nil && err != io.ErrClosedPipe {
+			log.Printf("failed to write to track: %s", err.Error())
+		}
+	}
+}
+
+func (r *Room) onCommand(from string, command *pb.RoomCommand) {
+	switch command.Type {
+	case pb.RoomCommand_ADD_SPEAKER:
+		r.onAddSpeaker(from, string(command.Data))
+	case pb.RoomCommand_REMOVE_SPEAKER:
+		r.onRemoveSpeaker(from, string(command.Data))
+	}
+}
+
+func (r *Room) onAddSpeaker(from, peer string) {
+	r.Lock()
+	defer r.Unlock()
+
+	if r.peers[from].role != OWNER {
+		return
+	}
+	r.peers[peer].role = SPEAKER
+
+	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_ADDED_SPEAKER, From: from, Data: []byte(peer)})
+}
+
+func (r *Room) onRemoveSpeaker(from, peer string) {
+	r.Lock()
+	defer r.Unlock()
+
+	if r.peers[from].role != OWNER {
+		return
+	}
+	r.peers[peer].role = AUDIENCE
+
+	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_REMOVED_SPEAKER, From: from, Data: []byte(peer)})
+}
+
 func (r *Room) notify(event *pb.RoomEvent) {
 	r.RLock()
 	defer r.RUnlock()
@@ -279,21 +420,12 @@ func (r *Room) notify(event *pb.RoomEvent) {
 	}
 }
 
-func (r *Room) setupDataChannel(addr string, peer *webrtc.PeerConnection, channel *webrtc.DataChannel) {
-	channel.OnClose(func() {
-		r.peerDisconnected(addr)
-	})
+func first(peers map[string]*Peer, fn func(*Peer) bool) string {
+	for i, peer := range peers {
+		if fn(peer) {
+			return i
+		}
+	}
 
-	peer.OnDataChannel(func(d *webrtc.DataChannel) {
-		d.OnOpen(func() {
-			r.Lock()
-			defer r.Unlock()
-
-			r.peers[addr].dataChannel = d
-		})
-
-		d.OnClose(func() {
-			r.peerDisconnected(addr)
-		})
-	})
+	return ""
 }

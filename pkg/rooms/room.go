@@ -1,6 +1,7 @@
 package rooms
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/pion/rtcp"
+	"github.com/pion/rtp"
 	"github.com/pion/webrtc/v3"
 
 	"github.com/ephemeral-networks/voicely/pkg/pb"
@@ -177,8 +179,21 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 			}
 		}()
 
+		type Member struct {
+			ID   string `json:"id"`
+			Role string `json:"role"`
+		}
+
+		data, err := json.Marshal(struct {
+			ID   string `json:"id"`
+			Role string `json:"role"`
+		}{ID: addr, Role: string(role)})
+		if err != nil {
+			// @todo
+		}
+
 		// @todo handle join here, sending a member encoded as json
-		go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_JOINED, From: addr})
+		go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_JOINED, From: addr, Data: data})
 
 		// Create a local track, all our SFU clients will be fed via this track
 		localTrack, newTrackErr := peerConnection.NewTrack(
@@ -202,29 +217,7 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 				return
 			}
 
-			r.RLock()
-			if !r.peers[addr].CanSpeak() {
-				continue
-			}
-
-			for _, p := range r.peers {
-				if p.output == nil {
-					continue
-				}
-
-				if p.connection == peerConnection {
-					continue
-				}
-
-				err = p.output.WriteRTP(i)
-				if err != nil && err != io.ErrClosedPipe {
-					log.Printf("failed to write to track: %s", newTrackErr.Error())
-					peerConnection.Close()
-					return
-				}
-			}
-
-			r.RUnlock()
+			go r.forwardPacket(addr, i)
 		}
 	})
 
@@ -336,6 +329,29 @@ func (r *Room) setupDataChannel(addr string, peer *webrtc.PeerConnection, channe
 
 		d.OnMessage(handler)
 	})
+}
+
+func (r *Room) forwardPacket(from string, packet *rtp.Packet) {
+	r.RLock()
+	defer r.RUnlock()
+	if !r.peers[from].CanSpeak() {
+		return
+	}
+
+	for id, p := range r.peers {
+		if p.output == nil {
+			continue
+		}
+
+		if id == from {
+			continue
+		}
+
+		err := p.output.WriteRTP(packet)
+		if err != nil && err != io.ErrClosedPipe {
+			log.Printf("failed to write to track: %s", err.Error())
+		}
+	}
 }
 
 func (r *Room) onCommand(from string, command *pb.RoomCommand) {

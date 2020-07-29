@@ -332,7 +332,7 @@ func (r *Room) forwardPacket(from string, packet *rtp.Packet) {
 		r.RUnlock()
 
 		if err := recover(); err != nil {
-			fmt.Println("fuck there is some concurrency shit that needs major fixing")
+			fmt.Println("EMERGENCY: CONCURRENCY ISSUE IN FORWARD PACKET")
 		}
 	}()
 

@@ -49,9 +49,10 @@ func (rm *RoomManger) CreateRoom() *Room {
 	defer rm.Unlock()
 
 	listener := make(chan bool)
-	r := NewRoom(rm.nextID, listener)
 
 	id := rm.nextID
+	r := NewRoom(id, listener)
+
 	rm.rooms[id] = r
 	rm.nextID++
 

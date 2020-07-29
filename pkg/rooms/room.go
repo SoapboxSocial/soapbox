@@ -34,9 +34,9 @@ var config = webrtc.Configuration{
 type PeerRole string
 
 const (
-	Owner    PeerRole = "owner"
-	Speaker  PeerRole = "speaker"
-	Audience PeerRole = "audience"
+	OWNER    PeerRole = "owner"
+	SPEAKER  PeerRole = "speaker"
+	AUDIENCE PeerRole = "audience"
 )
 
 type Peer struct {
@@ -50,7 +50,7 @@ type Peer struct {
 }
 
 func (p Peer) CanSpeak() bool {
-	return p.role != Audience
+	return p.role != AUDIENCE
 }
 
 func (p Peer) Role() PeerRole {
@@ -150,9 +150,9 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 	})
 
 	r.Lock()
-	role := Audience
+	role := SPEAKER
 	if len(r.peers) == 0 {
-		role = Owner
+		role = OWNER
 	}
 
 	r.peers[addr] = &Peer{
@@ -259,10 +259,38 @@ func (r *Room) peerDisconnected(addr string) {
 		return
 	}
 
+	role := r.peers[addr].role
+
 	delete(r.peers, addr)
 	r.disconnected <- true
 
 	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_LEFT, From: addr})
+
+	if role == OWNER {
+		go r.electOwner()
+	}
+
+}
+
+func (r *Room) electOwner() {
+	r.Lock()
+	defer r.Unlock()
+
+	speaker := first(r.peers, func(peer *Peer) bool {
+		return peer.role == SPEAKER
+	})
+
+	if speaker != "" {
+		r.peers[speaker].role = OWNER
+	} else {
+		for k, v := range r.peers {
+			v.role = OWNER
+			speaker = k
+			break
+		}
+	}
+
+	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_CHANGED_OWNER, Data: []byte(speaker)})
 }
 
 func (r *Room) setupDataChannel(addr string, peer *webrtc.PeerConnection, channel *webrtc.DataChannel) {
@@ -334,10 +362,10 @@ func (r *Room) onAddSpeaker(from, peer string) {
 	r.Lock()
 	defer r.Unlock()
 
-	if r.peers[from].role != Owner {
+	if r.peers[from].role != OWNER {
 		return
 	}
-	r.peers[peer].role = Speaker
+	r.peers[peer].role = SPEAKER
 
 	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_ADDED_SPEAKER, From: from, Data: []byte(peer)})
 }
@@ -346,10 +374,10 @@ func (r *Room) onRemoveSpeaker(from, peer string) {
 	r.Lock()
 	defer r.Unlock()
 
-	if r.peers[from].role != Owner {
+	if r.peers[from].role != OWNER {
 		return
 	}
-	r.peers[peer].role = Speaker
+	r.peers[peer].role = SPEAKER
 
 	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_REMOVED_SPEAKER, From: from, Data: []byte(peer)})
 }
@@ -379,4 +407,14 @@ func (r *Room) notify(event *pb.RoomEvent) {
 			log.Printf("failed to write to data channel: %s\n", err.Error())
 		}
 	}
+}
+
+func first(peers map[string]*Peer, fn func(*Peer) bool) string {
+	for i, peer := range peers {
+		if fn(peer) {
+			return i
+		}
+	}
+
+	return ""
 }

@@ -34,10 +34,10 @@ type JoinPayload struct {
 type ErrorCode int
 
 const (
-	ErrorCodeRoomNotFound ErrorCode = 1
-	ErrorCodeRoomFailedToJoin       = 2
-	ErrorCodeInvalidRequestBody     = 3
-	ErrorCodeFailedToCreateRoom     = 4
+	ErrorCodeRoomNotFound       ErrorCode = 1
+	ErrorCodeRoomFailedToJoin             = 2
+	ErrorCodeInvalidRequestBody           = 3
+	ErrorCodeFailedToCreateRoom           = 4
 )
 
 func main() {
@@ -191,8 +191,8 @@ func main() {
 
 func jsonError(w http.ResponseWriter, responseCode int, code ErrorCode, msg string) {
 	type ErrorResponse struct {
-		Code ErrorCode `json:"code"`
-		Message string `json:"message"`
+		Code    ErrorCode `json:"code"`
+		Message string    `json:"message"`
 	}
 
 	resp, err := json.Marshal(ErrorResponse{Code: code, Message: msg})

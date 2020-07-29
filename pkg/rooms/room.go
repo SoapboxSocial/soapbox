@@ -212,7 +212,7 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 				return
 			}
 
-			go r.forwardPacket(addr, i)
+			r.forwardPacket(addr, i)
 		}
 	})
 
@@ -328,7 +328,14 @@ func (r *Room) setupDataChannel(addr string, peer *webrtc.PeerConnection, channe
 
 func (r *Room) forwardPacket(from string, packet *rtp.Packet) {
 	r.RLock()
-	defer r.RUnlock()
+	defer func() {
+		r.RUnlock()
+
+		if err := recover(); err != nil {
+			fmt.Println("fuck there is some concurrency shit that needs major fixing")
+		}
+	}()
+
 	if !r.peers[from].CanSpeak() {
 		return
 	}

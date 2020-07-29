@@ -177,6 +177,7 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 			}
 		}()
 
+		// @todo handle join here, sending a member encoded as json
 		go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_JOINED, From: addr})
 
 		// Create a local track, all our SFU clients will be fed via this track

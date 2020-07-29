@@ -212,6 +212,7 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 				return
 			}
 
+			// @todo maybe if we push into a channel here, we can read from it, and see if concurrency issue still occurs.
 			r.forwardPacket(addr, i)
 		}
 	})

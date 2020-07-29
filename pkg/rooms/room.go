@@ -155,13 +155,14 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 		role = OWNER
 	}
 
-	r.peers[addr] = &Peer{
+	peer := &Peer{
 		role:       role,
 		isMuted:    false,
 		connection: peerConnection,
 		output:     outputTrack,
 		api:        api,
 	}
+	r.peers[addr] = peer
 	r.Unlock()
 
 	r.setupDataChannel(addr, peerConnection, channel)
@@ -207,7 +208,7 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 		for {
 			i, readErr := remoteTrack.ReadRTP()
 			if readErr != nil {
-				log.Printf("failed to read from remote track: %s", newTrackErr.Error())
+				log.Printf("failed to read from remote track: %s", readErr.Error())
 				peerConnection.Close()
 				return
 			}
@@ -262,6 +263,7 @@ func (r *Room) peerDisconnected(addr string) {
 
 	role := r.peers[addr].role
 
+	r.peers[addr].connection.Close()
 	delete(r.peers, addr)
 	r.disconnected <- true
 
@@ -329,13 +331,7 @@ func (r *Room) setupDataChannel(addr string, peer *webrtc.PeerConnection, channe
 
 func (r *Room) forwardPacket(from string, packet *rtp.Packet) {
 	r.RLock()
-	defer func() {
-		r.RUnlock()
-
-		if err := recover(); err != nil {
-			fmt.Println("EMERGENCY: CONCURRENCY ISSUE IN FORWARD PACKET")
-		}
-	}()
+	defer r.RUnlock()
 
 	if !r.peers[from].CanSpeak() {
 		return

@@ -10,12 +10,15 @@ type RoomManger struct {
 	sync.RWMutex
 
 	// @todo in the future this will need to be a map with IDs probably
-	rooms []*Room
+	rooms map[int]*Room
+
+	nextID int
 }
 
 func NewRoomManager() *RoomManger {
 	return &RoomManger{
-		rooms: make([]*Room, 0),
+		rooms: make(map[int]*Room, 0),
+		nextID: 0,
 	}
 }
 
@@ -45,13 +48,13 @@ func (rm *RoomManger) CreateRoom() *Room {
 	defer rm.Unlock()
 
 	listener := make(chan bool)
-
 	r := NewRoom(len(rm.rooms), listener)
-	rm.rooms = append(rm.rooms, r)
 
-	id := len(rm.rooms) - 1
+	id := rm.nextID
+	rm.rooms[id] = r
+	rm.nextID++
 
-	// @todo this can be done in a nicer way
+	log.Printf("room %d created - current room count: %d\n", id, len(rm.rooms))
 
 	go func() {
 		for {
@@ -60,12 +63,11 @@ func (rm *RoomManger) CreateRoom() *Room {
 			// @todo if the owner left, elect a new one
 
 			if r.PeerCount() == 0 {
-				log.Printf("room %d closed\n", id)
-				log.Printf("current room count: %d\n", len(rm.rooms))
 				rm.Lock()
-				rm.rooms[id] = nil
+				delete(rm.rooms, id)
 				rm.Unlock()
-				return
+
+				log.Printf("room %d closed - current room count: %d\n", id, len(rm.rooms))
 			}
 		}
 	}()

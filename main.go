@@ -15,9 +15,14 @@ import (
 	"github.com/ephemeral-networks/voicely/pkg/rooms"
 )
 
+type Member struct {
+	ID   string `json:"id"`
+	Role string `json:"role"`
+}
+
 type RoomPayload struct {
 	ID      int      `json:"id"`
-	Members []string `json:"members"`
+	Members []Member `json:"members"`
 }
 
 type SDPPayload struct {
@@ -27,7 +32,7 @@ type SDPPayload struct {
 }
 
 type JoinPayload struct {
-	Members []string   `json:"members"`
+	Members []Member   `json:"members"`
 	SDP     SDPPayload `json:"sdp"`
 }
 
@@ -45,10 +50,10 @@ func main() {
 				return
 			}
 
-			r := RoomPayload{ID: room.GetID(), Members: make([]string, 0)}
+			r := RoomPayload{ID: room.GetID(), Members: make([]Member, 0)}
 
 			room.MapPeers(func(s string, peer rooms.Peer) {
-				r.Members = append(r.Members, s)
+				r.Members = append(r.Members, Member{s, string(peer.Role())})
 			})
 
 			data = append(data, r)
@@ -147,15 +152,15 @@ func main() {
 			return
 		}
 
-		members := make([]string, 0)
+		members := make([]Member, 0)
 
-		room.MapPeers(func(s string, _ rooms.Peer) {
+		room.MapPeers(func(s string, peer rooms.Peer) {
 			// @todo will need changing
 			if s == r.RemoteAddr {
 				return
 			}
 
-			members = append(members, s)
+			members = append(members, Member{s, string(peer.Role())})
 		})
 
 		resp := &JoinPayload{

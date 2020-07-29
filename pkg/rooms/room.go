@@ -47,8 +47,12 @@ type Peer struct {
 	dataChannel *webrtc.DataChannel
 }
 
-func (p *Peer) CanSpeak() bool {
+func (p Peer) CanSpeak() bool {
 	return p.role != Audience
+}
+
+func (p Peer) Role() PeerRole {
+	return p.role
 }
 
 // @todo we need to figure out how to multiplex nicely

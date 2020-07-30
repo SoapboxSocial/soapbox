@@ -22,19 +22,19 @@ type Member struct {
 
 type RoomPayload struct {
 	ID      int      `json:"id"`
-	Name string `json:"name,omitempty"`
+	Name    string   `json:"name,omitempty"`
 	Members []Member `json:"members"`
 }
 
 type SDPPayload struct {
 	Name *string `json:"name,omitempty"`
-	ID   *int   `json:"id,omitempty"`
-	SDP  string `json:"sdp"`
-	Type string `json:"type"`
+	ID   *int    `json:"id,omitempty"`
+	SDP  string  `json:"sdp"`
+	Type string  `json:"type"`
 }
 
 type JoinPayload struct {
-	Name string `json:"name"`
+	Name    string     `json:"name,omitempty"`
 	Members []Member   `json:"members"`
 	SDP     SDPPayload `json:"sdp"`
 	Role    string     `json:"role"` // @todo find better name

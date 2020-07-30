@@ -22,16 +22,19 @@ type Member struct {
 
 type RoomPayload struct {
 	ID      int      `json:"id"`
+	Name string `json:"name,omitempty"`
 	Members []Member `json:"members"`
 }
 
 type SDPPayload struct {
+	Name *string `json:"name,omitempty"`
 	ID   *int   `json:"id,omitempty"`
 	SDP  string `json:"sdp"`
 	Type string `json:"type"`
 }
 
 type JoinPayload struct {
+	Name string `json:"name"`
 	Members []Member   `json:"members"`
 	SDP     SDPPayload `json:"sdp"`
 	Role    string     `json:"role"` // @todo find better name
@@ -52,6 +55,11 @@ func main() {
 			}
 
 			r := RoomPayload{ID: room.GetID(), Members: make([]Member, 0)}
+
+			name := room.GetName()
+			if name != "" {
+				r.Name = name
+			}
 
 			room.MapPeers(func(s string, peer rooms.Peer) {
 				r.Members = append(r.Members, Member{s, string(peer.Role())})
@@ -92,7 +100,12 @@ func main() {
 			SDP:  payload.SDP,
 		}
 
-		room := manager.CreateRoom()
+		name := ""
+		if payload.Name != nil {
+			name = *payload.Name
+		}
+
+		room := manager.CreateRoom(name)
 
 		sdp, err := room.Join(r.RemoteAddr, p)
 		if err != nil {
@@ -172,6 +185,11 @@ func main() {
 				SDP:  sdp.SDP,
 			},
 			Role: string(room.GetRoleForPeer(r.RemoteAddr)),
+		}
+
+		name := room.GetName()
+		if name != "" {
+			resp.Name = name
 		}
 
 		err = jsonEncode(w, resp)

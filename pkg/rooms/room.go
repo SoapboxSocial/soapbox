@@ -66,16 +66,18 @@ func (p Peer) Role() PeerRole {
 type Room struct {
 	sync.RWMutex
 
-	id int
+	id   int
+	name string
 
 	peers map[string]*Peer
 
 	disconnected chan<- bool
 }
 
-func NewRoom(id int, disconnected chan bool) *Room {
+func NewRoom(id int, name string, disconnected chan bool) *Room {
 	return &Room{
 		id:           id,
+		name:         name,
 		peers:        make(map[string]*Peer),
 		disconnected: disconnected,
 	}
@@ -92,6 +94,10 @@ func (r *Room) MapPeers(fn func(string, Peer)) {
 
 func (r *Room) GetID() int {
 	return r.id
+}
+
+func (r *Room) GetName() string {
+	return r.name
 }
 
 func (r *Room) PeerCount() int {

@@ -4,3 +4,5 @@ CREATE TABLE IF NOT EXISTS users (
   username VARCHAR(100) NOT NULL,
   email VARCHAR(254) NOT NULL,
 );
+
+CREATE INDEX idx_email ON users (email);

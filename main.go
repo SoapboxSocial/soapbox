@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/rand"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,10 +12,15 @@ import (
 	"strconv"
 	"strings"
 
+	_ "github.com/lib/pq"
+
 	"github.com/gorilla/mux"
 	"github.com/pion/webrtc/v3"
 
+	"github.com/ephemeral-networks/voicely/pkg/api/login"
 	"github.com/ephemeral-networks/voicely/pkg/rooms"
+	"github.com/ephemeral-networks/voicely/pkg/sessions"
+	"github.com/ephemeral-networks/voicely/pkg/users"
 )
 
 type Member struct {
@@ -65,6 +71,19 @@ const (
 )
 
 func main() {
+
+	db, err := sql.Open(
+		"postgres",
+		"host=127.0.0.1 port=5432 password=voicely dbname=voicely sslmode=disable",
+		)
+
+	if err != nil {
+		panic(err)
+	}
+
+	s := &sessions.SessionManager{}
+	ub := users.NewUserBackend(db)
+	login := login.NewLogin(ub, s)
 
 	manager := rooms.NewRoomManager()
 
@@ -232,95 +251,12 @@ func main() {
 	//   - submit received email pin
 	//   - if pin match, login
 
-	r.HandleFunc("/v1/login/start", func(w http.ResponseWriter, r *http.Request) {
-		err := r.ParseForm()
-		if err != nil {
-			// @todo
-			fmt.Println("fuck")
-			return
-		}
-		email := r.Form.Get("email")
-		if email == "" {
-			// @todo
-			return
-		}
-
-		// @todo check that email is set
-		token := GenerateToken()
-		pin := GeneratePin()
-
-		tokens[token] = LoginState{Email: email, Pin: pin}
-
-		// @todo cleanup
-		err = json.NewEncoder(w).Encode(map[string]string{"token": token})
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		log.Println("pin:" + pin)
-
-	}).Methods("POST")
-
-	r.HandleFunc("/v1/login/pin", func(w http.ResponseWriter, r *http.Request) {
-		err := r.ParseForm()
-		if err != nil {
-			// @todo
-			fmt.Println("fuck")
-			return
-		}
-
-		token := r.Form.Get("token")
-		pin := r.Form.Get("pin")
-
-		state := tokens[token]
-		if state.Pin != pin {
-			// @todo send failure
-			return
-		}
-
-		fmt.Println(state)
-
-		log.Println("success")
-
-		// @todo make account if not exist
-
-		// @todo start session
-	}).Methods("POST")
-
-	r.HandleFunc("/v1/login/register", func(writer http.ResponseWriter, r *http.Request) {
-		err := r.ParseForm()
-		if err != nil {
-			// @todo
-			fmt.Println("fuck")
-			return
-		}
-
-		//token := r.Form.Get("token")
-	})
+	r.HandleFunc("/v1/login/start", login.Start).Methods("POST")
+	r.HandleFunc("/v1/login/pin", login.SubmitPin).Methods("POST")
+	r.HandleFunc("/v1/login/register", login.Register).Methods("POST")
 
 	log.Fatal(http.ListenAndServe(":8080", r))
 }
-
-func GenerateToken() string {
-	b := make([]byte, 16)
-	rand.Read(b)
-	return fmt.Sprintf("%x", b)
-}
-
-func GeneratePin() string {
-	max := 6
-	b := make([]byte, max)
-	n, err := io.ReadAtLeast(rand.Reader, b, max)
-	if n != max {
-		panic(err)
-	}
-	for i := 0; i < len(b); i++ {
-		b[i] = table[int(b[i])%len(table)]
-	}
-	return string(b)
-}
-
-var table = []byte{'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'}
 
 func jsonError(w http.ResponseWriter, responseCode int, code ErrorCode, msg string) {
 	type ErrorResponse struct {

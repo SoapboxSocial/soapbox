@@ -25,8 +25,8 @@ postgresql-setup initdb
 systemctl start postgresql
 systemctl enable postgresql
 
-sudo su - postgres -c "psql -a -w -f /var/www/voicely/db/database.sql"
-sudo su - postgres -c "psql -t voicely -a -w -f /var/www/voicely/db/tables.sql"
+sudo su - postgres -c "psql -a -w -f /var/www/db/database.sql"
+sudo su - postgres -c "psql -t voicely -a -w -f /var/www/db/tables.sql"
 
 rm /var/lib/pgsql/data/pg_hba.conf
 ln -s /vagrant/conf/postgres.conf /var/lib/pgsql/data/pg_hba.conf

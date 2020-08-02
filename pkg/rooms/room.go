@@ -7,7 +7,6 @@ import (
 	"log"
 	"math/rand"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -42,7 +41,7 @@ const (
 
 type Peer struct {
 	role        PeerRole
-	isMuted     int32
+	isMuted     bool
 	connection  *webrtc.PeerConnection
 	track       *webrtc.Track
 	output      *webrtc.Track
@@ -171,7 +170,6 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 
 	r.peers[addr] = &Peer{
 		role:       role,
-		isMuted:    false,
 		connection: peerConnection,
 		output:     outputTrack,
 		api:        api,
@@ -402,29 +400,33 @@ func (r *Room) onRemoveSpeaker(from, peer string) {
 	}
 	r.peers[peer].role = AUDIENCE
 
-	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_REMOVED_SPEAKER, From: from, Data: []byte(peer)})
+	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_REMOVED_SPEAKER, From: from})
 }
 
 func (r *Room) onMuteSpeaker(from string) {
 	peer := r.peers[from]
-	if atomic.LoadInt32(&peer.isMuted) == 1 { // TODO does it make sense to even do this check?
+	if peer.isMuted { // TODO does it make sense to even do this check?
 		return
 	}
-	// TODO does it still make sense to lock even when using atomic counter?
-	atomic.StoreInt32(&peer.isMuted, 1)
+	r.Lock()
+	peer.isMuted = true
+	r.Unlock()
 
-	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_MUTED_SPEAKER, From: from, Data: []byte{}}) // TODO send the empty byte arr?
+	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_MUTED_SPEAKER, From: from})
+	log.Printf("user %s muted", from)
 }
 
 func (r *Room) onUnmuteSpeaker(from string) {
 	peer := r.peers[from]
-	if atomic.LoadInt32(&peer.isMuted) == 0 { // TODO does it make sense to even do this check?
+	if !peer.isMuted { // TODO does it make sense to even do this check?
 		return
 	}
-	// TODO does it still make sense to lock even when using atomic counter?
-	atomic.StoreInt32(&peer.isMuted, 0)
+	r.Lock()
+	peer.isMuted = false
+	r.Unlock()
 
 	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_UNMUTED_SPEAKER, From: from, Data: []byte{}}) // TODO send the empty byte arr?
+	log.Printf("user %s unmuted", from)
 }
 
 func (r *Room) notify(event *pb.RoomEvent) {

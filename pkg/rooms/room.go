@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -41,7 +42,7 @@ const (
 
 type Peer struct {
 	role        PeerRole
-	isMuted     bool
+	isMuted     int32
 	connection  *webrtc.PeerConnection
 	track       *webrtc.Track
 	output      *webrtc.Track
@@ -373,6 +374,10 @@ func (r *Room) onCommand(from string, command *pb.RoomCommand) {
 		r.onAddSpeaker(from, string(command.Data))
 	case pb.RoomCommand_REMOVE_SPEAKER:
 		r.onRemoveSpeaker(from, string(command.Data))
+	case pb.RoomCommand_MUTE_SPEAKER:
+		r.onMuteSpeaker(from)
+	case pb.RoomCommand_UNMUTE_SPEAKER:
+		r.onUnmuteSpeaker(from)
 	}
 }
 
@@ -398,6 +403,28 @@ func (r *Room) onRemoveSpeaker(from, peer string) {
 	r.peers[peer].role = AUDIENCE
 
 	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_REMOVED_SPEAKER, From: from, Data: []byte(peer)})
+}
+
+func (r *Room) onMuteSpeaker(from string) {
+	peer := r.peers[from]
+	if atomic.LoadInt32(&peer.isMuted) == 1 { // TODO does it make sense to even do this check?
+		return
+	}
+	// TODO does it still make sense to lock even when using atomic counter?
+	atomic.StoreInt32(&peer.isMuted, 1)
+
+	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_MUTED_SPEAKER, From: from, Data: []byte{}}) // TODO send the empty byte arr?
+}
+
+func (r *Room) onUnmuteSpeaker(from string) {
+	peer := r.peers[from]
+	if atomic.LoadInt32(&peer.isMuted) == 0 { // TODO does it make sense to even do this check?
+		return
+	}
+	// TODO does it still make sense to lock even when using atomic counter?
+	atomic.StoreInt32(&peer.isMuted, 0)
+
+	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_UNMUTED_SPEAKER, From: from, Data: []byte{}}) // TODO send the empty byte arr?
 }
 
 func (r *Room) notify(event *pb.RoomEvent) {

@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"sync"
 
+	httputil "github.com/ephemeral-networks/voicely/pkg/http"
 	"github.com/ephemeral-networks/voicely/pkg/sessions"
 	"github.com/ephemeral-networks/voicely/pkg/users"
 )
@@ -30,6 +31,7 @@ type loginState struct {
 	User *users.User `json:"user,omitempty"`
 }
 
+// @todo should we call this handler?
 type Login struct {
 	sync.Mutex
 
@@ -105,7 +107,7 @@ func (l *Login) SubmitPin(w http.ResponseWriter, r *http.Request) {
 
 	l.sessions.NewSession(token, *user)
 
-	err = jsonEncode(w, loginState{State: LoginStateSuccess, User: user})
+	err = httputil.JsonEncode(w, loginState{State: LoginStateSuccess, User: user})
 	if err != nil {
 		// @todo
 		return
@@ -114,7 +116,7 @@ func (l *Login) SubmitPin(w http.ResponseWriter, r *http.Request) {
 
 func (l *Login) enterRegistrationState(w http.ResponseWriter, token string, email string) {
 	l.registrations[token] = email
-	err := jsonEncode(w, loginState{State: LoginStateRegister})
+	err := httputil.JsonEncode(w, loginState{State: LoginStateRegister})
 	if err != nil {
 		// @todo
 		return
@@ -163,16 +165,11 @@ func (l *Login) Register(w http.ResponseWriter, r *http.Request) {
 
 	l.sessions.NewSession(token, user)
 
-	err = jsonEncode(w, user)
+	err = httputil.JsonEncode(w, user)
 	if err != nil {
 		// @todo
 		return
 	}
-}
-
-func jsonEncode(w http.ResponseWriter, v interface{}) error {
-	w.Header().Set("Content-Type", "application/json")
-	return json.NewEncoder(w).Encode(v)
 }
 
 func generateToken() string {

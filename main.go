@@ -42,6 +42,19 @@ type JoinPayload struct {
 	Role    string     `json:"role"` // @todo find better name
 }
 
+// this represents a server session
+type Session struct {
+	User          int
+	Token         string
+}
+
+type LoginState struct {
+	Email string
+	Pin   string
+}
+
+var tokens = make(map[string]LoginState)
+
 func main() {
 
 	manager := rooms.NewRoomManager()
@@ -206,16 +219,18 @@ func main() {
 	//   - submit received email pin
 	//   - if pin match, login
 
-	type LoginState struct {
-		Email string
-		Pin string
-	}
-
-	var tokens = make(map[string]LoginState)
-
 	r.HandleFunc("/v1/login/start", func(w http.ResponseWriter, r *http.Request) {
+		err := r.ParseForm()
+		if err != nil {
+			// @todo
+			fmt.Println("fuck")
+			return
+		}
 		email := r.Form.Get("email")
-		fmt.Println(email)
+		if email == "" {
+			// @todo
+			return
+		}
 
 		// @todo check that email is set
 		token := GenerateToken()
@@ -224,14 +239,23 @@ func main() {
 		tokens[token] = LoginState{Email: email, Pin: pin}
 
 		// @todo cleanup
-		err := json.NewEncoder(w).Encode(map[string]string{"token": token})
+		err = json.NewEncoder(w).Encode(map[string]string{"token": token})
 		if err != nil {
 			fmt.Println(err)
 		}
 
+		log.Println("pin:" + pin)
+
 	}).Methods("POST")
 
 	r.HandleFunc("/v1/login/pin", func(w http.ResponseWriter, r *http.Request) {
+		err := r.ParseForm()
+		if err != nil {
+			// @todo
+			fmt.Println("fuck")
+			return
+		}
+
 		token := r.Form.Get("token")
 		pin := r.Form.Get("pin")
 
@@ -241,10 +265,25 @@ func main() {
 			return
 		}
 
+		fmt.Println(state)
+
+		log.Println("success")
+
 		// @todo make account if not exist
 
 		// @todo start session
 	}).Methods("POST")
+
+	r.HandleFunc("/v1/login/register", func(writer http.ResponseWriter, r *http.Request) {
+		err := r.ParseForm()
+		if err != nil {
+			// @todo
+			fmt.Println("fuck")
+			return
+		}
+
+		//token := r.Form.Get("token")
+	})
 
 	log.Fatal(http.ListenAndServe(":8080", r))
 }

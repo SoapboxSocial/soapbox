@@ -5,6 +5,7 @@ go 1.14
 require (
 	github.com/golang/protobuf v1.4.2
 	github.com/gorilla/mux v1.7.4
+	github.com/lib/pq v1.8.0 // indirect
 	github.com/lucas-clemente/quic-go v0.17.3 // indirect
 	github.com/marten-seemann/qtls v0.10.0 // indirect
 	github.com/pion/rtcp v1.2.3

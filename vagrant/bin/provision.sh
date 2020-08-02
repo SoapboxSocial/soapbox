@@ -19,6 +19,18 @@ mkdir -p $GOPATH/{bin,pkg,src}
 
 source ~/.bashrc
 
+yum install -y postgresql-server postgresql-contrib
+postgresql-setup initdb
+
+systemctl start postgresql
+systemctl enable postgresql
+
+sudo su - postgres -c "psql -a -w -f /var/www/voicely/database/database.sql"
+sudo su - postgres -c "psql -t voicely -a -w -f /var/www/voicely/database/tables.sql"
+
+rm /var/lib/pgsql/data/pg_hba.conf
+ln -s /vagrant/conf/postgres.conf /var/lib/pgsql/data/pg_hba.conf
+
 sudo rm -rf /etc/nginx/nginx.conf
 sudo ln -s /vagrant/conf/nginx.conf /etc/nginx/nginx.conf
 

@@ -14,6 +14,8 @@ const (
 	ErrorCodeRoomFailedToJoin             = 2
 	ErrorCodeInvalidRequestBody           = 3
 	ErrorCodeFailedToCreateRoom           = 4
+	ErrorCodeMissingParameter             = 5
+	ErrorCodeFailedToRegister             = 6
 )
 
 // JsonError writes an Error to the ResponseWriter with the provided information.

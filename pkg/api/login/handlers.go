@@ -145,23 +145,23 @@ func (l *Login) Register(w http.ResponseWriter, r *http.Request) {
 
 	username := r.Form.Get("username")
 	if username == "" {
-		// @todo bad request
+		httputil.JsonError(w, 400, httputil.ErrorCodeMissingParameter, "missing parameter: username")
 		return
 	}
 
-	displayname := r.Form.Get("display_name")
-	if displayname == "" {
-		// @todo bad request
+	name := r.Form.Get("display_name")
+	if name == "" {
+		httputil.JsonError(w, 400, httputil.ErrorCodeMissingParameter, "missing parameter: display_name")
 		return
 	}
 
-	lastID, err := l.users.CreateUser(email, displayname, username)
+	lastID, err := l.users.CreateUser(email, name, username)
 	if err != nil {
-		// @todo
+		httputil.JsonError(w, 500, httputil.ErrorCodeFailedToRegister, "failed to register")
 		return
 	}
 
-	user := users.User{ID: lastID, DisplayName: displayname, Username: username, Email: email}
+	user := users.User{ID: lastID, DisplayName: name, Username: username, Email: email}
 
 	l.sessions.NewSession(token, user)
 

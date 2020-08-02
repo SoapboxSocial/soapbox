@@ -2,6 +2,7 @@ package login
 
 import (
 	"crypto/rand"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -21,10 +22,20 @@ type tokenState struct {
 	pin string
 }
 
+const LoginStateRegister = "register"
+const LoginStateSuccess = "success"
+
+type loginState struct {
+	State string `json:"state"`
+	User *users.User `json:"user,omitempty"`
+}
+
 type Login struct {
 	sync.Mutex
 
 	tokens map[string]tokenState
+
+	registrations map[string]string
 
 	users *users.UserBackend
 	sessions *sessions.SessionManager
@@ -81,13 +92,33 @@ func (l *Login) SubmitPin(w http.ResponseWriter, r *http.Request) {
 
 	delete(l.tokens, token)
 
-	fmt.Println(state)
+	user, err := l.users.FindByEmail(state.email)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			l.enterRegistrationState(w, token, state.email)
+			return
+		}
 
-	log.Println("success")
+		// @todo
+		return
+	}
 
-	// @todo make account if not exist
+	l.sessions.NewSession(token, *user)
 
-	// @todo start session
+	err = jsonEncode(w, loginState{State: LoginStateSuccess, User: user})
+	if err != nil {
+		// @todo
+		return
+	}
+}
+
+func (l *Login) enterRegistrationState(w http.ResponseWriter, token string, email string) {
+	l.registrations[token] = email
+	err := jsonEncode(w, loginState{State: LoginStateRegister})
+	if err != nil {
+		// @todo
+		return
+	}
 }
 
 func (l *Login) Register(w http.ResponseWriter, r *http.Request) {
@@ -104,6 +135,12 @@ func (l *Login) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	email, ok := l.registrations[token]
+	if !ok {
+		// @todo bad request
+		return
+	}
+
 	username := r.Form.Get("username")
 	if username == "" {
 		// @todo bad request
@@ -116,9 +153,27 @@ func (l *Login) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//token := r.Form.Get("token")
+	lastID, err := l.users.CreateUser(email, displayname, username)
+	if err != nil {
+		// @todo
+		return
+	}
+
+	user := users.User{ID: lastID, DisplayName: displayname, Username: username, Email: email}
+
+	l.sessions.NewSession(token, user)
+
+	err = jsonEncode(w, user)
+	if err != nil {
+		// @todo
+		return
+	}
 }
 
+func jsonEncode(w http.ResponseWriter, v interface{}) error {
+	w.Header().Set("Content-Type", "application/json")
+	return json.NewEncoder(w).Encode(v)
+}
 
 func generateToken() string {
 	b := make([]byte, 16)

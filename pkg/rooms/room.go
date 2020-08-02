@@ -198,7 +198,8 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 		data, err := json.Marshal(struct {
 			ID   string `json:"id"`
 			Role string `json:"role"`
-		}{ID: addr, Role: string(role)})
+			IsMuted bool `json:"isMuted"`
+		}{ID: addr, Role: string(role), IsMuted: false})
 		if err != nil {
 			log.Printf("failed to encode: %s\n", err.Error())
 		}

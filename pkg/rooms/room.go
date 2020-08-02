@@ -410,7 +410,7 @@ func (r *Room) onRemoveSpeaker(from, peer string) {
 
 func (r *Room) onMuteSpeaker(from string) {
 	peer := r.peers[from]
-	if peer.isMuted { // TODO does it make sense to even do this check?
+	if peer.isMuted {
 		return
 	}
 	r.Lock()
@@ -423,7 +423,7 @@ func (r *Room) onMuteSpeaker(from string) {
 
 func (r *Room) onUnmuteSpeaker(from string) {
 	peer := r.peers[from]
-	if !peer.isMuted { // TODO does it make sense to even do this check?
+	if !peer.isMuted {
 		return
 	}
 	r.Lock()

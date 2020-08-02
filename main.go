@@ -12,15 +12,34 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
-	"github.com/pion/webrtc"
+	"github.com/pion/webrtc/v3"
 
 	"github.com/ephemeral-networks/voicely/pkg/rooms"
 )
 
+type Member struct {
+	ID   string `json:"id"`
+	Role string `json:"role"`
+}
+
+type RoomPayload struct {
+	ID      int      `json:"id"`
+	Name    string   `json:"name,omitempty"`
+	Members []Member `json:"members"`
+}
+
 type SDPPayload struct {
+	Name *string `json:"name,omitempty"`
 	ID   *int    `json:"id,omitempty"`
-	SDP  string `json:"sdp"`
-	Type string `json:"type"`
+	SDP  string  `json:"sdp"`
+	Type string  `json:"type"`
+}
+
+type JoinPayload struct {
+	Name    string     `json:"name,omitempty"`
+	Members []Member   `json:"members"`
+	SDP     SDPPayload `json:"sdp"`
+	Role    string     `json:"role"` // @todo find better name
 }
 
 func main() {
@@ -30,17 +49,28 @@ func main() {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/v1/rooms", func(w http.ResponseWriter, r *http.Request) {
-		data := make([]int, 0)
+		data := make([]RoomPayload, 0)
 
 		manager.MapRooms(func(room *rooms.Room) {
 			if room == nil {
 				return
 			}
 
-			data = append(data, room.GetID())
+			r := RoomPayload{ID: room.GetID(), Members: make([]Member, 0)}
+
+			name := room.GetName()
+			if name != "" {
+				r.Name = name
+			}
+
+			room.MapPeers(func(s string, peer rooms.Peer) {
+				r.Members = append(r.Members, Member{s, string(peer.Role())})
+			})
+
+			data = append(data, r)
 		})
 
-		err := json.NewEncoder(w).Encode(data)
+		err := jsonEncode(w, data)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -72,7 +102,12 @@ func main() {
 			SDP:  payload.SDP,
 		}
 
-		room := manager.CreateRoom()
+		name := ""
+		if payload.Name != nil {
+			name = *payload.Name
+		}
+
+		room := manager.CreateRoom(name)
 
 		sdp, err := room.Join(r.RemoteAddr, p)
 		if err != nil {
@@ -81,14 +116,9 @@ func main() {
 		}
 
 		id := room.GetID()
+		resp := &SDPPayload{ID: &id, Type: strings.ToLower(sdp.Type.String()), SDP: sdp.SDP}
 
-		resp := SDPPayload{
-			ID:   &id,
-			Type: strings.ToLower(sdp.Type.String()),
-			SDP:  sdp.SDP,
-		}
-
-		err = json.NewEncoder(w).Encode(resp)
+		err = jsonEncode(w, resp)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -138,12 +168,33 @@ func main() {
 			return
 		}
 
-		resp := SDPPayload{
-			Type: strings.ToLower(sdp.Type.String()),
-			SDP:  sdp.SDP,
+		members := make([]Member, 0)
+
+		room.MapPeers(func(s string, peer rooms.Peer) {
+			// @todo will need changing
+			if s == r.RemoteAddr {
+				return
+			}
+
+			members = append(members, Member{s, string(peer.Role())})
+		})
+
+		resp := &JoinPayload{
+			Members: members,
+			SDP: SDPPayload{
+				ID:   &id,
+				Type: strings.ToLower(sdp.Type.String()),
+				SDP:  sdp.SDP,
+			},
+			Role: string(room.GetRoleForPeer(r.RemoteAddr)),
 		}
 
-		err = json.NewEncoder(w).Encode(resp)
+		name := room.GetName()
+		if name != "" {
+			resp.Name = name
+		}
+
+		err = jsonEncode(w, resp)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -179,6 +230,7 @@ func main() {
 		token := r.Form.Get("token")
 		pin := r.Form.Get("pin")
 
+		// @todo should store email too
 		if pins[token] != pin {
 			// @todo send failure
 			return
@@ -210,6 +262,11 @@ func GeneratePin() string {
 }
 
 var table = []byte{'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'}
+
+func jsonEncode(w http.ResponseWriter, v interface{}) error {
+	w.Header().Set("Content-Type", "application/json")
+	return json.NewEncoder(w).Encode(v)
+}
 
 func getType(t string) (error, webrtc.SDPType) {
 	switch t {

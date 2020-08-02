@@ -10,12 +10,15 @@ type RoomManger struct {
 	sync.RWMutex
 
 	// @todo in the future this will need to be a map with IDs probably
-	rooms []*Room
+	rooms map[int]*Room
+
+	nextID int
 }
 
 func NewRoomManager() *RoomManger {
 	return &RoomManger{
-		rooms: make([]*Room, 0),
+		rooms:  make(map[int]*Room, 0),
+		nextID: 0,
 	}
 }
 
@@ -23,11 +26,12 @@ func (rm *RoomManger) GetRoom(i int) (*Room, error) {
 	rm.RLock()
 	defer rm.RUnlock()
 
-	if len(rm.rooms) <= i {
+	r, ok := rm.rooms[i]
+	if !ok {
 		return nil, fmt.Errorf("room %d does not exist", i)
 	}
 
-	return rm.rooms[i], nil
+	return r, nil
 }
 
 // @todo this will probably be very inefficient at scale lol
@@ -40,18 +44,19 @@ func (rm *RoomManger) MapRooms(fn func(*Room)) {
 	}
 }
 
-func (rm *RoomManger) CreateRoom() *Room {
+func (rm *RoomManger) CreateRoom(name string) *Room {
 	rm.Lock()
 	defer rm.Unlock()
 
 	listener := make(chan bool)
 
-	r := NewRoom(len(rm.rooms), listener)
-	rm.rooms = append(rm.rooms, r)
+	id := rm.nextID
+	r := NewRoom(id, name, listener)
 
-	id := len(rm.rooms) - 1
+	rm.rooms[id] = r
+	rm.nextID++
 
-	// @todo this can be done in a nicer way
+	log.Printf("room %d created - current room count: %d\n", id, len(rm.rooms))
 
 	go func() {
 		for {
@@ -60,15 +65,14 @@ func (rm *RoomManger) CreateRoom() *Room {
 			// @todo if the owner left, elect a new one
 
 			if r.PeerCount() == 0 {
-				log.Printf("room %d closed\n", id)
 				rm.Lock()
-				rm.rooms[id] = nil
+				delete(rm.rooms, id)
 				rm.Unlock()
-				return
+
+				log.Printf("room %d closed - current room count: %d\n", id, len(rm.rooms))
 			}
 		}
 	}()
 
 	return r
 }
-

@@ -12,6 +12,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pion/webrtc/v3"
 
+	httputil "github.com/ephemeral-networks/voicely/pkg/http"
 	"github.com/ephemeral-networks/voicely/pkg/rooms"
 )
 
@@ -39,15 +40,6 @@ type JoinPayload struct {
 	SDP     SDPPayload `json:"sdp"`
 	Role    string     `json:"role"` // @todo find better name
 }
-
-type ErrorCode int
-
-const (
-	ErrorCodeRoomNotFound       ErrorCode = 1
-	ErrorCodeRoomFailedToJoin             = 2
-	ErrorCodeInvalidRequestBody           = 3
-	ErrorCodeFailedToCreateRoom           = 4
-)
 
 func main() {
 
@@ -77,7 +69,7 @@ func main() {
 			data = append(data, r)
 		})
 
-		err := jsonEncode(w, data)
+		err := httputil.JsonEncode(w, data)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -87,14 +79,14 @@ func main() {
 		b, err := ioutil.ReadAll(r.Body)
 		defer r.Body.Close()
 		if err != nil {
-			jsonError(w, 400, ErrorCodeInvalidRequestBody, "invalid request body")
+			httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
 			return
 		}
 
 		payload := &SDPPayload{}
 		err = json.Unmarshal(b, payload)
 		if err != nil {
-			jsonError(w, 400, ErrorCodeInvalidRequestBody, "invalid request body")
+			httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
 			log.Printf("failed to decode payload: %s\n", err.Error())
 			return
 		}
@@ -120,14 +112,14 @@ func main() {
 		sdp, err := room.Join(r.RemoteAddr, p)
 		if err != nil {
 			manager.RemoveRoom(room.GetID())
-			jsonError(w, 500, ErrorCodeFailedToCreateRoom, "failed to create room")
+			httputil.JsonError(w, 500, httputil.ErrorCodeFailedToCreateRoom, "failed to create room")
 			return
 		}
 
 		id := room.GetID()
 		resp := &SDPPayload{ID: &id, Type: strings.ToLower(sdp.Type.String()), SDP: sdp.SDP}
 
-		err = jsonEncode(w, resp)
+		err = httputil.JsonEncode(w, resp)
 		if err != nil {
 			manager.RemoveRoom(room.GetID())
 			fmt.Println(err)
@@ -138,14 +130,14 @@ func main() {
 		b, err := ioutil.ReadAll(r.Body)
 		defer r.Body.Close()
 		if err != nil {
-			jsonError(w, 400, ErrorCodeInvalidRequestBody, "invalid request body")
+			httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
 			return
 		}
 
 		payload := &SDPPayload{}
 		err = json.Unmarshal(b, payload)
 		if err != nil {
-			jsonError(w, 400, ErrorCodeInvalidRequestBody, "invalid request body")
+			httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
 			log.Printf("failed to decode payload: %s\n", err.Error())
 			return
 		}
@@ -169,13 +161,13 @@ func main() {
 
 		room, err := manager.GetRoom(id)
 		if err != nil {
-			jsonError(w, 404, ErrorCodeRoomNotFound, "room not found")
+			httputil.JsonError(w, 404, httputil.ErrorCodeRoomNotFound, "room not found")
 			return
 		}
 
 		sdp, err := room.Join(r.RemoteAddr, p)
 		if err != nil {
-			jsonError(w, 500, ErrorCodeRoomFailedToJoin, "failed to join room")
+			httputil.JsonError(w, 500, httputil.ErrorCodeRoomFailedToJoin, "failed to join room")
 			return
 		}
 
@@ -205,38 +197,13 @@ func main() {
 			resp.Name = name
 		}
 
-		err = jsonEncode(w, resp)
+		err = httputil.JsonEncode(w, resp)
 		if err != nil {
 			fmt.Println(err)
 		}
 	}).Methods("POST")
 
 	log.Fatal(http.ListenAndServe(":8080", r))
-}
-
-func jsonError(w http.ResponseWriter, responseCode int, code ErrorCode, msg string) {
-	type ErrorResponse struct {
-		Code    ErrorCode `json:"code"`
-		Message string    `json:"message"`
-	}
-
-	resp, err := json.Marshal(ErrorResponse{Code: code, Message: msg})
-	if err != nil {
-		log.Println("failed encoding error")
-		return
-	}
-
-	w.WriteHeader(responseCode)
-	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(resp)
-	if err != nil {
-		log.Printf("failed to encode response: %s", err.Error())
-	}
-}
-
-func jsonEncode(w http.ResponseWriter, v interface{}) error {
-	w.Header().Set("Content-Type", "application/json")
-	return json.NewEncoder(w).Encode(v)
 }
 
 func getType(t string) (error, webrtc.SDPType) {

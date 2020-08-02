@@ -206,7 +206,12 @@ func main() {
 	//   - submit received email pin
 	//   - if pin match, login
 
-	var pins = make(map[string]string)
+	type LoginState struct {
+		Email string
+		Pin string
+	}
+
+	var tokens = make(map[string]LoginState)
 
 	r.HandleFunc("/v1/login/start", func(w http.ResponseWriter, r *http.Request) {
 		email := r.Form.Get("email")
@@ -216,7 +221,7 @@ func main() {
 		token := GenerateToken()
 		pin := GeneratePin()
 
-		pins[token] = pin
+		tokens[token] = LoginState{Email: email, Pin: pin}
 
 		// @todo cleanup
 		err := json.NewEncoder(w).Encode(map[string]string{"token": token})
@@ -230,11 +235,13 @@ func main() {
 		token := r.Form.Get("token")
 		pin := r.Form.Get("pin")
 
-		// @todo should store email too
-		if pins[token] != pin {
+		state := tokens[token]
+		if state.Pin != pin {
 			// @todo send failure
 			return
 		}
+
+		// @todo make account if not exist
 
 		// @todo start session
 	}).Methods("POST")

@@ -57,6 +57,10 @@ func (p Peer) Role() PeerRole {
 	return p.role
 }
 
+func (p Peer) IsMuted() bool {
+	return p.isMuted
+}
+
 // @todo we need to figure out how to multiplex nicely
 
 // @todo what needs to happen is the following

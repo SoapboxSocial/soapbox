@@ -22,7 +22,7 @@ func NewUserBackend(db *sql.DB) *UserBackend {
 // @todo check for sql injections
 
 func (ub *UserBackend) FindByEmail(email string) (*User, error) {
-	row := ub.db.QueryRow("SELECT id, display_name, username, email FROM users WHERE email = ?", email)
+	row := ub.db.QueryRow("SELECT id, display_name, username, email FROM users WHERE email = $1;", email)
 
 	user := &User{}
 	err := row.Scan(user.ID, user.DisplayName, user.Username, user.Email)
@@ -34,7 +34,7 @@ func (ub *UserBackend) FindByEmail(email string) (*User, error) {
 }
 
 func (ub *UserBackend) CreateUser(email string, displayName string, username string) (int64, error) {
-	res, err := ub.db.Exec("INSERT INTO users (display_name, username, email) VALUES ($1, $2, $3)", displayName, username, email)
+	res, err := ub.db.Exec("INSERT INTO users (display_name, username, email) VALUES ($1, $2, $3);", displayName, username, email)
 	if err != nil {
 		return 0, err
 	}

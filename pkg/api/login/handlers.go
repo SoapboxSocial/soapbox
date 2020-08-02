@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	httputil "github.com/ephemeral-networks/voicely/pkg/http"
 	"github.com/ephemeral-networks/voicely/pkg/sessions"
@@ -17,18 +18,21 @@ import (
 
 // Contains the login handlers
 
-// @todo find a btter name
-type tokenState struct {
-	email string
-	pin string
-}
+const expiration = 8760 * time.Hour
 
 const LoginStateRegister = "register"
 const LoginStateSuccess = "success"
 
+// @todo better names
 type loginState struct {
-	State string `json:"state"`
-	User *users.User `json:"user,omitempty"`
+	State      string      `json:"state"`
+	User       *users.User `json:"user,omitempty"`
+	Expiration *int        `json:"expiration,omitempty"`
+}
+
+type tokenState struct {
+	email string
+	pin   string
 }
 
 // @todo should we call this handler?
@@ -39,12 +43,17 @@ type Login struct {
 
 	registrations map[string]string
 
-	users *users.UserBackend
+	users    *users.UserBackend
 	sessions *sessions.SessionManager
 }
 
 func NewLogin(ub *users.UserBackend, manager *sessions.SessionManager) Login {
-	return Login{tokens: make(map[string]tokenState), users: ub, sessions: manager}
+	return Login{
+		tokens: make(map[string]tokenState),
+		registrations: make(map[string]string),
+		users: ub,
+		sessions: manager,
+	}
 }
 
 func (l *Login) Start(w http.ResponseWriter, r *http.Request) {
@@ -72,7 +81,7 @@ func (l *Login) Start(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err)
 	}
 
-	log.Println("pin:" + pin)
+	log.Println("pin: " + pin)
 }
 
 func (l *Login) SubmitPin(w http.ResponseWriter, r *http.Request) {
@@ -101,13 +110,19 @@ func (l *Login) SubmitPin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		log.Println(err)
+
 		// @todo
 		return
 	}
 
 	l.sessions.NewSession(token, *user)
 
-	err = httputil.JsonEncode(w, loginState{State: LoginStateSuccess, User: user})
+	future := time.Now()
+	future.Add(expiration)
+	expiry := future.Second()
+
+	err = httputil.JsonEncode(w, loginState{State: LoginStateSuccess, User: user, Expiration: &expiry})
 	if err != nil {
 		// @todo
 		return
@@ -115,6 +130,7 @@ func (l *Login) SubmitPin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (l *Login) enterRegistrationState(w http.ResponseWriter, token string, email string) {
+	log.Println("yay")
 	l.registrations[token] = email
 	err := httputil.JsonEncode(w, loginState{State: LoginStateRegister})
 	if err != nil {

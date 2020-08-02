@@ -17,7 +17,7 @@ type RoomManger struct {
 
 func NewRoomManager() *RoomManger {
 	return &RoomManger{
-		rooms: make(map[int]*Room, 0),
+		rooms:  make(map[int]*Room, 0),
 		nextID: 0,
 	}
 }
@@ -44,14 +44,15 @@ func (rm *RoomManger) MapRooms(fn func(*Room)) {
 	}
 }
 
-func (rm *RoomManger) CreateRoom() *Room {
+func (rm *RoomManger) CreateRoom(name string) *Room {
 	rm.Lock()
 	defer rm.Unlock()
 
 	listener := make(chan bool)
-	r := NewRoom(len(rm.rooms), listener)
 
 	id := rm.nextID
+	r := NewRoom(id, name, listener)
+
 	rm.rooms[id] = r
 	rm.nextID++
 

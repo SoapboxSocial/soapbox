@@ -15,20 +15,29 @@ import (
 	"github.com/ephemeral-networks/voicely/pkg/rooms"
 )
 
+type Member struct {
+	ID   string `json:"id"`
+	Role string `json:"role"`
+}
+
 type RoomPayload struct {
 	ID      int      `json:"id"`
-	Members []string `json:"members"`
+	Name    string   `json:"name,omitempty"`
+	Members []Member `json:"members"`
 }
 
 type SDPPayload struct {
-	ID   *int   `json:"id,omitempty"`
-	SDP  string `json:"sdp"`
-	Type string `json:"type"`
+	Name *string `json:"name,omitempty"`
+	ID   *int    `json:"id,omitempty"`
+	SDP  string  `json:"sdp"`
+	Type string  `json:"type"`
 }
 
 type JoinPayload struct {
-	Members []string   `json:"members"`
+	Name    string     `json:"name,omitempty"`
+	Members []Member   `json:"members"`
 	SDP     SDPPayload `json:"sdp"`
+	Role    string     `json:"role"` // @todo find better name
 }
 
 type ErrorCode int
@@ -54,10 +63,15 @@ func main() {
 				return
 			}
 
-			r := RoomPayload{ID: room.GetID(), Members: make([]string, 0)}
+			r := RoomPayload{ID: room.GetID(), Members: make([]Member, 0)}
+
+			name := room.GetName()
+			if name != "" {
+				r.Name = name
+			}
 
 			room.MapPeers(func(s string, peer rooms.Peer) {
-				r.Members = append(r.Members, s)
+				r.Members = append(r.Members, Member{s, string(peer.Role())})
 			})
 
 			data = append(data, r)
@@ -96,7 +110,12 @@ func main() {
 			SDP:  payload.SDP,
 		}
 
-		room := manager.CreateRoom()
+		name := ""
+		if payload.Name != nil {
+			name = *payload.Name
+		}
+
+		room := manager.CreateRoom(name)
 
 		sdp, err := room.Join(r.RemoteAddr, p)
 		if err != nil {
@@ -160,15 +179,15 @@ func main() {
 			return
 		}
 
-		members := make([]string, 0)
+		members := make([]Member, 0)
 
-		room.MapPeers(func(s string, _ rooms.Peer) {
+		room.MapPeers(func(s string, peer rooms.Peer) {
 			// @todo will need changing
 			if s == r.RemoteAddr {
 				return
 			}
 
-			members = append(members, s)
+			members = append(members, Member{s, string(peer.Role())})
 		})
 
 		resp := &JoinPayload{
@@ -178,6 +197,12 @@ func main() {
 				Type: strings.ToLower(sdp.Type.String()),
 				SDP:  sdp.SDP,
 			},
+			Role: string(room.GetRoleForPeer(r.RemoteAddr)),
+		}
+
+		name := room.GetName()
+		if name != "" {
+			resp.Name = name
 		}
 
 		err = jsonEncode(w, resp)

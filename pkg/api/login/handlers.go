@@ -69,7 +69,8 @@ func (l *Login) Start(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// @todo check that email is set
+	// @todo validate email
+
 	token := generateToken()
 	pin := generatePin()
 
@@ -125,9 +126,7 @@ func (l *Login) SubmitPin(w http.ResponseWriter, r *http.Request) {
 
 	l.sessions.NewSession(token, *user)
 
-	future := time.Now()
-	future.Add(expiration)
-	expiry := future.Second()
+	expiry := getExpiry()
 
 	err = httputil.JsonEncode(w, loginState{State: LoginStateSuccess, User: user, Expiration: &expiry})
 	if err != nil {
@@ -192,6 +191,12 @@ func (l *Login) Register(w http.ResponseWriter, r *http.Request) {
 		// @todo
 		return
 	}
+}
+
+func getExpiry() int {
+	future := time.Now()
+	future.Add(expiration)
+	return future.Second()
 }
 
 func generateToken() string {

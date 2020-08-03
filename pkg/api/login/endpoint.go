@@ -108,9 +108,8 @@ func (l *LoginEndpoint) SubmitPin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// @todo do a specific error
 	if state.pin != pin {
-		httputil.JsonError(w, 500, httputil.ErrorCodeFailedToLogin, "")
+		httputil.JsonError(w, 400, httputil.ErrorCodeIncorrectPin, "")
 		return
 	}
 

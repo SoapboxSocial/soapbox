@@ -20,6 +20,7 @@ const (
 	ErrorCodeInvalidUsername
 	ErrorCodeUsernameAlreadyExists
 	ErrorCodeFailedToLogin
+	ErrorCodeIncorrectPin
 	ErrorCodeUnauthorized
 )
 

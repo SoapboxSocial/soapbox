@@ -28,15 +28,9 @@ func JsonError(w http.ResponseWriter, responseCode int, code ErrorCode, msg stri
 		Message string    `json:"message"`
 	}
 
-	resp, err := json.Marshal(ErrorResponse{Code: code, Message: msg})
-	if err != nil {
-		log.Println("failed encoding error")
-		return
-	}
-
 	w.WriteHeader(responseCode)
-	w.Header().Set("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(resp)
+
+	err := JsonEncode(w, ErrorResponse{Code: code, Message: msg})
 	if err != nil {
 		log.Printf("failed to encode response: %s", err.Error())
 	}

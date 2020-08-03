@@ -27,7 +27,6 @@ const expiration = 8760 * time.Hour
 
 const sendgrid_api = "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"
 
-
 const LoginStateRegister = "register"
 const LoginStateSuccess = "success"
 

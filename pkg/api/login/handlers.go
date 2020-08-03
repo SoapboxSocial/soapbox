@@ -51,10 +51,10 @@ type Login struct {
 
 func NewLogin(ub *users.UserBackend, manager *sessions.SessionManager) Login {
 	return Login{
-		tokens: make(map[string]tokenState),
+		tokens:        make(map[string]tokenState),
 		registrations: make(map[string]string),
-		users: ub,
-		sessions: manager,
+		users:         ub,
+		sessions:      manager,
 	}
 }
 
@@ -211,6 +211,7 @@ func validateEmail(email string) bool {
 }
 
 var usernameRegex = regexp.MustCompile("^([A-Za-z0-9_]+)*$")
+
 func validateUsername(username string) bool {
 	return len(username) < 100 && len(username) > 2 && usernameRegex.MatchString(username)
 }

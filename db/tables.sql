@@ -6,3 +6,4 @@ CREATE TABLE IF NOT EXISTS users (
 );
 
 CREATE INDEX idx_email ON users (email);
+CREATE UNIQUE INDEX idx_username ON users (username);

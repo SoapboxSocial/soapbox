@@ -20,7 +20,6 @@ func NewUserBackend(db *sql.DB) *UserBackend {
 }
 
 // @todo check for sql injections
-
 func (ub *UserBackend) FindByEmail(email string) (*User, error) {
 	row := ub.db.QueryRow("SELECT id, display_name, username, email FROM users WHERE email = $1;", email)
 

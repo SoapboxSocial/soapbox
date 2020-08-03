@@ -95,7 +95,14 @@ func (l *Login) SubmitPin(w http.ResponseWriter, r *http.Request) {
 	token := r.Form.Get("token")
 	pin := r.Form.Get("pin")
 
-	state := l.tokens[token]
+	fmt.Println(token, " ", pin)
+
+	state, ok := l.tokens[token]
+	if !ok {
+		// @todo bad request
+		return
+	}
+
 	if state.pin != pin {
 		// @todo send failure
 		return
@@ -130,7 +137,6 @@ func (l *Login) SubmitPin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (l *Login) enterRegistrationState(w http.ResponseWriter, token string, email string) {
-	log.Println("yay")
 	l.registrations[token] = email
 	err := httputil.JsonEncode(w, loginState{State: LoginStateRegister})
 	if err != nil {

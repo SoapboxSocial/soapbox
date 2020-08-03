@@ -192,12 +192,15 @@ func (l *Login) Register(w http.ResponseWriter, r *http.Request) {
 
 	user := users.User{ID: lastID, DisplayName: name, Username: username, Email: email}
 
-	l.sessions.NewSession(token, user)
-
-	err = httputil.JsonEncode(w, user)
+	err = l.sessions.NewSession(token, user, expiration)
 	if err != nil {
 		httputil.JsonError(w, 500, httputil.ErrorCodeFailedToLogin, "")
 		return
+	}
+
+	err = httputil.JsonEncode(w, user)
+	if err != nil {
+		log.Println("error writing response: " + err.Error())
 	}
 }
 

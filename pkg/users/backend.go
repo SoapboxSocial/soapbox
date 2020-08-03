@@ -1,9 +1,12 @@
 package users
 
-import "database/sql"
+import (
+	"database/sql"
+	"strings"
+)
 
 type User struct {
-	ID          int64  `json:"id"`
+	ID          int  `json:"id"`
 	DisplayName string `json:"display_name"`
 	Username    string `json:"username"`
 	Email       string `json:"email"`
@@ -19,12 +22,14 @@ func NewUserBackend(db *sql.DB) *UserBackend {
 	}
 }
 
-// @todo check for sql injections
 func (ub *UserBackend) FindByEmail(email string) (*User, error) {
-	row := ub.db.QueryRow("SELECT id, display_name, username, email FROM users WHERE email = $1;", email)
+	stmt, err := ub.db.Prepare("SELECT id, display_name, username, email FROM users WHERE email = $1;")
+	if err != nil {
+		return nil, err
+	}
 
 	user := &User{}
-	err := row.Scan(&user.ID, &user.DisplayName, &user.Username, &user.Email)
+	err = stmt.QueryRow(email).Scan(&user.ID, &user.DisplayName, &user.Username, &user.Email)
 	if err != nil {
 		return nil, err
 	}
@@ -32,11 +37,17 @@ func (ub *UserBackend) FindByEmail(email string) (*User, error) {
 	return user, nil
 }
 
-func (ub *UserBackend) CreateUser(email string, displayName string, username string) (int64, error) {
-	res, err := ub.db.Exec("INSERT INTO users (display_name, username, email) VALUES ($1, $2, $3);", displayName, username, email)
+func (ub *UserBackend) CreateUser(email string, displayName string, username string) (int, error) {
+	stmt, err := ub.db.Prepare("INSERT INTO users (display_name, username, email) VALUES ($1, $2, $3) RETURNING id;")
 	if err != nil {
 		return 0, err
 	}
 
-	return res.LastInsertId()
+	var id int
+	err = stmt.QueryRow(displayName, strings.ToLower(username), email).Scan(&id)
+	if err != nil {
+		return 0, err
+	}
+
+	return id, nil
 }

@@ -172,10 +172,12 @@ func (l *Login) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	username := r.Form.Get("username")
-	if username == "" {
-		httputil.JsonError(w, 400, httputil.ErrorCodeMissingParameter, "missing parameter: username")
+	if !validateUsername(username) {
+		httputil.JsonError(w, 400, httputil.ErrorCodeInvalidUsername, "invalid parameter: username")
 		return
 	}
+
+	// @todo check that the username is valid
 
 	name := r.Form.Get("display_name")
 	if name == "" {
@@ -185,6 +187,11 @@ func (l *Login) Register(w http.ResponseWriter, r *http.Request) {
 
 	lastID, err := l.users.CreateUser(email, name, username)
 	if err != nil {
+		if err.Error() == "pq: duplicate key value violates unique constraint \"idx_username\"" {
+			httputil.JsonError(w, 400, httputil.ErrorCodeUsernameAlreadyExists, "username already exists")
+			return
+		}
+
 		httputil.JsonError(w, 500, httputil.ErrorCodeFailedToRegister, "failed to register")
 		return
 	}
@@ -204,6 +211,11 @@ var emailRegex = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z
 
 func validateEmail(email string) bool {
 	return len(email) < 254 && emailRegex.MatchString(email)
+}
+
+var usernameRegex = regexp.MustCompile("^([A-Za-z0-9_]+)*$")
+func validateUsername(username string) bool {
+	return len(username) < 100 && usernameRegex.MatchString(username)
 }
 
 func getExpiry() int {

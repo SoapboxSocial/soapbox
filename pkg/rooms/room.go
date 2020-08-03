@@ -413,10 +413,11 @@ func (r *Room) onMuteSpeaker(from string) {
 	peer := r.peers[from]
 	r.RUnlock()
 
-	r.Lock()
 	if peer.isMuted {
 		return
 	}
+	
+	r.Lock()
 	peer.isMuted = true
 	r.Unlock()
 

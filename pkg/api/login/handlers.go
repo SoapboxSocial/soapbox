@@ -65,15 +65,11 @@ func (l *Login) Start(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Println("ok")
-
 	email := strings.ToLower(r.Form.Get("email"))
 	if !validateEmail(email) {
 		httputil.JsonError(w, 400, httputil.ErrorCodeInvalidEmail, "invalid email")
 		return
 	}
-
-	log.Println("ok 2")
 
 	// @todo validate email
 
@@ -88,8 +84,6 @@ func (l *Login) Start(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Println(err)
 	}
-
-	log.Println("pin: " + pin)
 }
 
 func (l *Login) SubmitPin(w http.ResponseWriter, r *http.Request) {
@@ -197,6 +191,7 @@ func (l *Login) Register(w http.ResponseWriter, r *http.Request) {
 
 	err = l.sessions.NewSession(token, user, expiration)
 	if err != nil {
+		fmt.Println(err)
 		httputil.JsonError(w, 500, httputil.ErrorCodeFailedToLogin, "")
 		return
 	}

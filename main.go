@@ -234,9 +234,9 @@ func main() {
 	//   - submit received email pin
 	//   - if pin match, loginHandlers
 
-	r.HandleFunc("/v1/loginHandlers/start", loginHandlers.Start).Methods("POST")
-	r.HandleFunc("/v1/loginHandlers/pin", loginHandlers.SubmitPin).Methods("POST")
-	r.HandleFunc("/v1/loginHandlers/register", loginHandlers.Register).Methods("POST")
+	r.HandleFunc("/v1/login/start", loginHandlers.Start).Methods("POST")
+	r.HandleFunc("/v1/login/pin", loginHandlers.SubmitPin).Methods("POST")
+	r.HandleFunc("/v1/login/register", loginHandlers.Register).Methods("POST")
 
 	log.Fatal(http.ListenAndServe(":8080", r))
 }

@@ -19,7 +19,7 @@ sudo yum install -y golang
 
 sudo yum install -y supervisor
 
-sudo yum install redis
+sudo yum install -y redis
 
 rm -rf /etc/supervisord.conf
 sudo ln -s /vagrant/conf/supervisord.conf /etc/supervisord.conf
@@ -33,7 +33,7 @@ mkdir -p $GOPATH/{bin,pkg,src}
 source ~/.bashrc
 
 yum install -y postgresql-server postgresql-contrib
-postgresql-setup initdb
+postgresql-setup initdbyim
 
 systemctl start postgresql
 systemctl enable postgresql

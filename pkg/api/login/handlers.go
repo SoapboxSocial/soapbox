@@ -92,7 +92,7 @@ func (l *Login) Start(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(map[string]string{"token": token})
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 }
 
@@ -105,8 +105,6 @@ func (l *Login) SubmitPin(w http.ResponseWriter, r *http.Request) {
 
 	token := r.Form.Get("token")
 	pin := r.Form.Get("pin")
-
-	fmt.Println(token, " ", pin)
 
 	state, ok := l.tokens[token]
 	if !ok {
@@ -201,7 +199,7 @@ func (l *Login) Register(w http.ResponseWriter, r *http.Request) {
 
 	err = l.sessions.NewSession(token, user, expiration)
 	if err != nil {
-		fmt.Println(err)
+		log.Println("failed to create session: ", err.Error())
 		httputil.JsonError(w, 500, httputil.ErrorCodeFailedToLogin, "")
 		return
 	}

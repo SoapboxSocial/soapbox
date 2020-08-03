@@ -13,6 +13,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/sendgrid/sendgrid-go"
+	"github.com/sendgrid/sendgrid-go/helpers/mail"
+
 	httputil "github.com/ephemeral-networks/voicely/pkg/http"
 	"github.com/ephemeral-networks/voicely/pkg/sessions"
 	"github.com/ephemeral-networks/voicely/pkg/users"
@@ -21,6 +24,9 @@ import (
 // Contains the login handlers
 
 const expiration = 8760 * time.Hour
+
+const sendgrid_api = "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"
+
 
 const LoginStateRegister = "register"
 const LoginStateSuccess = "success"
@@ -77,9 +83,14 @@ func (l *Login) Start(w http.ResponseWriter, r *http.Request) {
 	pin := generatePin()
 
 	l.tokens[token] = tokenState{email: email, pin: pin}
-	log.Println("pin: " + pin)
 
-	// @todo cleanup
+	// @todo check errors
+	err = sendEmail(email, pin)
+	if err != nil {
+		log.Println("failed to send code: ", err.Error())
+		httputil.JsonError(w, 500, httputil.ErrorCodeFailedToLogin, "failed to send code")
+	}
+
 	err = json.NewEncoder(w).Encode(map[string]string{"token": token})
 	if err != nil {
 		fmt.Println(err)
@@ -200,6 +211,20 @@ func (l *Login) Register(w http.ResponseWriter, r *http.Request) {
 	err = httputil.JsonEncode(w, loginState{State: LoginStateSuccess, User: &user, ExpiresIn: &expires})
 	if err != nil {
 		log.Println("error writing response: " + err.Error())
+	}
+}
+
+func sendEmail(recipient string, pin string) error {
+	from := mail.NewEmail("Voicely", "no-reply@spksy.app")
+	subject := "Voicely Pin"
+	to := mail.NewEmail("", recipient)
+	plainTextContent := "Your login pin is: " + pin
+	htmlContent := fmt.Sprintf("Your login pin is: <strong>%s</strong>", pin)
+	message := mail.NewSingleEmail(from, subject, to, plainTextContent, htmlContent)
+	client := sendgrid.NewSendClient(sendgrid_api)
+	_, err := client.Send(message)
+	if err != nil {
+		return err
 	}
 }
 

@@ -1,6 +1,7 @@
 package rooms
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -205,7 +206,7 @@ func (r *Room) Join(id int, offer webrtc.SessionDescription) (*webrtc.SessionDes
 		}
 
 		// @todo, we should probably only set the peer here.
-		go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_JOINED, From: id, Data: data})
+		go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_JOINED, From: int64(id), Data: data})
 
 		// Create a local track, all our SFU clients will be fed via this track
 		localTrack, newTrackErr := peerConnection.NewTrack(
@@ -287,7 +288,7 @@ func (r *Room) peerDisconnected(id int) {
 	delete(r.peers, id)
 	r.disconnected <- true
 
-	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_LEFT, From: id})
+	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_LEFT, From: int64(id)})
 
 	if role == OWNER {
 		go r.electOwner()
@@ -313,7 +314,7 @@ func (r *Room) electOwner() {
 		}
 	}
 
-	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_CHANGED_OWNER, Data: []byte(speaker)})
+	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_CHANGED_OWNER, Data: intToBytes(speaker)})
 }
 
 func (r *Room) setupDataChannel(id int, peer *webrtc.PeerConnection, channel *webrtc.DataChannel) {
@@ -376,9 +377,9 @@ func (r *Room) forwardPacket(from int, packet *rtp.Packet) {
 func (r *Room) onCommand(from int, command *pb.RoomCommand) {
 	switch command.Type {
 	case pb.RoomCommand_ADD_SPEAKER:
-		r.onAddSpeaker(from, string(command.Data))
+		r.onAddSpeaker(from, command.Data)
 	case pb.RoomCommand_REMOVE_SPEAKER:
-		r.onRemoveSpeaker(from, string(command.Data))
+		r.onRemoveSpeaker(from, command.Data)
 	case pb.RoomCommand_MUTE_SPEAKER:
 		r.onMuteSpeaker(from)
 	case pb.RoomCommand_UNMUTE_SPEAKER:
@@ -386,28 +387,28 @@ func (r *Room) onCommand(from int, command *pb.RoomCommand) {
 	}
 }
 
-func (r *Room) onAddSpeaker(from, peer int) {
+func (r *Room) onAddSpeaker(from int, peer []byte) {
 	r.Lock()
 	defer r.Unlock()
 
 	if r.peers[from].role != OWNER {
 		return
 	}
-	r.peers[peer].role = SPEAKER
+	r.peers[bytesToInt(peer)].role = SPEAKER
 
-	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_ADDED_SPEAKER, From: from, Data: []byte(peer)})
+	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_ADDED_SPEAKER, From: int64(from), Data: peer})
 }
 
-func (r *Room) onRemoveSpeaker(from, peer int) {
+func (r *Room) onRemoveSpeaker(from int, peer []byte) {
 	r.Lock()
 	defer r.Unlock()
 
 	if r.peers[from].role != OWNER {
 		return
 	}
-	r.peers[peer].role = AUDIENCE
+	r.peers[bytesToInt(peer)].role = AUDIENCE
 
-	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_REMOVED_SPEAKER, From: from})
+	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_REMOVED_SPEAKER, From: int64(from), Data: peer})
 }
 
 func (r *Room) onMuteSpeaker(from int) {
@@ -423,7 +424,7 @@ func (r *Room) onMuteSpeaker(from int) {
 	peer.isMuted = true
 	r.Unlock()
 
-	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_MUTED_SPEAKER, From: from})
+	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_MUTED_SPEAKER, From: int64(from)})
 	log.Printf("user %s muted", from)
 }
 
@@ -439,7 +440,7 @@ func (r *Room) onUnmuteSpeaker(from int) {
 	peer.isMuted = false
 	r.Unlock()
 
-	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_UNMUTED_SPEAKER, From: from})
+	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_UNMUTED_SPEAKER, From: int64(from)})
 	log.Printf("user %s unmuted", from)
 }
 
@@ -454,7 +455,7 @@ func (r *Room) notify(event *pb.RoomEvent) {
 	}
 
 	for id, p := range r.peers {
-		if id == event.From {
+		if int64(id) == event.From {
 			continue
 		}
 
@@ -478,4 +479,14 @@ func first(peers map[int]*Peer, fn func(*Peer) bool) int {
 	}
 
 	return 0
+}
+
+func intToBytes(val int) []byte {
+	bytes := make([]byte, 4)
+	binary.LittleEndian.PutUint64(bytes, uint64(val))
+	return bytes
+}
+
+func bytesToInt(val []byte) int {
+	return int(binary.LittleEndian.Uint64(val))
 }

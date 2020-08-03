@@ -24,7 +24,7 @@ import (
 )
 
 type Member struct {
-	ID      string `json:"id"`
+	ID      int `json:"id"`
 	Role    string `json:"role"`
 	IsMuted bool   `json:"is_muted"`
 }
@@ -84,8 +84,8 @@ func main() {
 				r.Name = name
 			}
 
-			room.MapPeers(func(s string, peer rooms.Peer) {
-				r.Members = append(r.Members, Member{s, string(peer.Role()), peer.IsMuted()})
+			room.MapPeers(func(id int, peer rooms.Peer) {
+				r.Members = append(r.Members, Member{id, string(peer.Role()), peer.IsMuted()})
 			})
 
 			data = append(data, r)
@@ -195,13 +195,13 @@ func main() {
 
 		members := make([]Member, 0)
 
-		room.MapPeers(func(s string, peer rooms.Peer) {
+		room.MapPeers(func(id int, peer rooms.Peer) {
 			// @todo will need changing
-			if s == r.RemoteAddr {
+			if id == r.RemoteAddr {
 				return
 			}
 
-			members = append(members, Member{s, string(peer.Role()), peer.IsMuted()})
+			members = append(members, Member{id, string(peer.Role()), peer.IsMuted()})
 		})
 
 		resp := &JoinPayload{

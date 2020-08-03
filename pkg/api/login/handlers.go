@@ -77,8 +77,6 @@ func (l *Login) Start(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// @todo validate email
-
 	token := generateToken()
 	pin := generatePin()
 
@@ -109,12 +107,12 @@ func (l *Login) SubmitPin(w http.ResponseWriter, r *http.Request) {
 
 	state, ok := l.tokens[token]
 	if !ok {
-		// @todo bad request
+		httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}
 
 	if state.pin != pin {
-		// @todo send failure
+		httputil.JsonError(w, 500, httputil.ErrorCodeFailedToLogin, "")
 		return
 	}
 
@@ -149,7 +147,6 @@ func (l *Login) enterRegistrationState(w http.ResponseWriter, token string, emai
 	l.registrations[token] = email
 	err := httputil.JsonEncode(w, loginState{State: LoginStateRegister})
 	if err != nil {
-		// @todo
 		return
 	}
 }
@@ -163,13 +160,13 @@ func (l *Login) Register(w http.ResponseWriter, r *http.Request) {
 
 	token := r.Form.Get("token")
 	if token == "" {
-		// @todo
+		httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}
 
 	email, ok := l.registrations[token]
 	if !ok {
-		// @todo bad request
+		httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}
 

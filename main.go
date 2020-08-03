@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -105,6 +106,12 @@ func main() {
 			return
 		}
 
+		user, err := getUserForSession(s, r)
+		if err != nil {
+			httputil.JsonError(w, 401, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
+			return
+		}
+
 		payload := &SDPPayload{}
 		err = json.Unmarshal(b, payload)
 		if err != nil {
@@ -131,7 +138,7 @@ func main() {
 
 		room := manager.CreateRoom(name)
 
-		sdp, err := room.Join(r.RemoteAddr, p)
+		sdp, err := room.Join(user, p)
 		if err != nil {
 			manager.RemoveRoom(room.GetID())
 			httputil.JsonError(w, 500, httputil.ErrorCodeFailedToCreateRoom, "failed to create room")
@@ -153,6 +160,12 @@ func main() {
 		defer r.Body.Close()
 		if err != nil {
 			httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
+			return
+		}
+
+		user, err := getUserForSession(s, r)
+		if err != nil {
+			httputil.JsonError(w, 401, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
 			return
 		}
 
@@ -187,7 +200,7 @@ func main() {
 			return
 		}
 
-		sdp, err := room.Join(r.RemoteAddr, p)
+		sdp, err := room.Join(user, p)
 		if err != nil {
 			httputil.JsonError(w, 500, httputil.ErrorCodeRoomFailedToJoin, "failed to join room")
 			return
@@ -197,7 +210,7 @@ func main() {
 
 		room.MapPeers(func(id int, peer rooms.Peer) {
 			// @todo will need changing
-			if id == r.RemoteAddr {
+			if id == user {
 				return
 			}
 
@@ -211,7 +224,7 @@ func main() {
 				Type: strings.ToLower(sdp.Type.String()),
 				SDP:  sdp.SDP,
 			},
-			Role: string(room.GetRoleForPeer(r.RemoteAddr)),
+			Role: string(room.GetRoleForPeer(user)),
 		}
 
 		name := room.GetName()
@@ -230,6 +243,15 @@ func main() {
 	r.HandleFunc("/v1/login/register", loginHandlers.Register).Methods("POST")
 
 	log.Fatal(http.ListenAndServe(":8080", r))
+}
+
+func getUserForSession(s *sessions.SessionManager, r *http.Request) (int, error) {
+	token := r.Header.Get("Authorization")
+	if token == "" {
+		return 0, errors.New("no authorization")
+	}
+
+	return s.GetUserIDForSession(token)
 }
 
 func getType(t string) (error, webrtc.SDPType) {

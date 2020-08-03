@@ -49,11 +49,7 @@ type JoinPayload struct {
 }
 
 func main() {
-	db, err := sql.Open(
-		"postgres",
-		"host=127.0.0.1 port=5432 user=voicely password=voicely dbname=voicely sslmode=disable",
-	)
-
+	db, err := sql.Open("postgres","host=127.0.0.1 port=5432 user=voicely password=voicely dbname=voicely sslmode=disable")
 	if err != nil {
 		panic(err)
 	}

@@ -47,8 +47,7 @@ type Login struct {
 	sync.Mutex
 
 	// @todo use redis
-	tokens map[string]tokenState
-
+	tokens        map[string]tokenState
 	registrations map[string]string
 
 	users    *users.UserBackend

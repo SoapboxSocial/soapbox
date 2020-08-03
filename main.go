@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
 
 	"github.com/gorilla/mux"
@@ -48,7 +49,6 @@ type JoinPayload struct {
 }
 
 func main() {
-
 	db, err := sql.Open(
 		"postgres",
 		"host=127.0.0.1 port=5432 user=voicely password=voicely dbname=voicely sslmode=disable",
@@ -58,9 +58,15 @@ func main() {
 		panic(err)
 	}
 
-	s := sessions.NewSessionManager()
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+
+	s := sessions.NewSessionManager(rdb)
 	ub := users.NewUserBackend(db)
-	login := login.NewLogin(ub, s)
+	loginHandlers := login.NewLogin(ub, s)
 
 	manager := rooms.NewRoomManager()
 
@@ -222,15 +228,15 @@ func main() {
 		}
 	}).Methods("POST")
 
-	// @todo so this is how login will work:
+	// @todo so this is how loginHandlers will work:
 	//   - users submits email
 	//   - check if exists, generate token, send pin
 	//   - submit received email pin
-	//   - if pin match, login
+	//   - if pin match, loginHandlers
 
-	r.HandleFunc("/v1/login/start", login.Start).Methods("POST")
-	r.HandleFunc("/v1/login/pin", login.SubmitPin).Methods("POST")
-	r.HandleFunc("/v1/login/register", login.Register).Methods("POST")
+	r.HandleFunc("/v1/loginHandlers/start", loginHandlers.Start).Methods("POST")
+	r.HandleFunc("/v1/loginHandlers/pin", loginHandlers.SubmitPin).Methods("POST")
+	r.HandleFunc("/v1/loginHandlers/register", loginHandlers.Register).Methods("POST")
 
 	log.Fatal(http.ListenAndServe(":8080", r))
 }

@@ -19,6 +19,8 @@ sudo yum install -y golang
 
 sudo yum install -y supervisor
 
+sudo yum install redis
+
 rm -rf /etc/supervisord.conf
 sudo ln -s /vagrant/conf/supervisord.conf /etc/supervisord.conf
 sudo mkdir -p /etc/supervisor/conf.d/

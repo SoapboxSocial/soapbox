@@ -46,6 +46,7 @@ type tokenState struct {
 type Login struct {
 	sync.Mutex
 
+	// @todo use redis
 	tokens map[string]tokenState
 
 	registrations map[string]string

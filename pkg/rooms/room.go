@@ -407,7 +407,7 @@ func (r *Room) onRemoveSpeaker(from, peer string) {
 	}
 	r.peers[peer].role = AUDIENCE
 
-	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_REMOVED_SPEAKER, From: from})
+	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_REMOVED_SPEAKER, From: from, Data: []byte(peer)})
 }
 
 func (r *Room) onMuteSpeaker(from string) {

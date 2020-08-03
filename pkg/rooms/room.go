@@ -163,7 +163,7 @@ func (r *Room) Join(id int, offer webrtc.SessionDescription) (*webrtc.SessionDes
 		// @todo disconnected here is certainly not reliable
 		if state == webrtc.PeerConnectionStateClosed || state == webrtc.PeerConnectionStateFailed /* || state == webrtc.PeerConnectionStateDisconnected */ {
 			//	// @todo this seems like it could be buggy
-			r.peerDisconnected(id)
+			//r.peerDisconnected(id)
 		}
 	})
 
@@ -187,6 +187,7 @@ func (r *Room) Join(id int, offer webrtc.SessionDescription) (*webrtc.SessionDes
 	// Set a handler forf when a new remote track starts, this just distributes all our packets
 	// to connected peers
 	peerConnection.OnTrack(func(remoteTrack *webrtc.Track, receiver *webrtc.RTPReceiver) {
+		log.Println("onTrack")
 		go func() {
 			ticker := time.NewTicker(3 * time.Second)
 			for range ticker.C {
@@ -482,7 +483,7 @@ func first(peers map[int]*Peer, fn func(*Peer) bool) int {
 }
 
 func intToBytes(val int) []byte {
-	bytes := make([]byte, 4)
+	bytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(bytes, uint64(val))
 	return bytes
 }

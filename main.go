@@ -228,12 +228,6 @@ func main() {
 		}
 	}).Methods("POST")
 
-	// @todo so this is how loginHandlers will work:
-	//   - users submits email
-	//   - check if exists, generate token, send pin
-	//   - submit received email pin
-	//   - if pin match, loginHandlers
-
 	r.HandleFunc("/v1/login/start", loginHandlers.Start).Methods("POST")
 	r.HandleFunc("/v1/login/pin", loginHandlers.SubmitPin).Methods("POST")
 	r.HandleFunc("/v1/login/register", loginHandlers.Register).Methods("POST")

@@ -19,6 +19,7 @@ const (
 	ErrorCodeInvalidEmail                 = 7
 	ErrorCodeInvalidUsername              = 8
 	ErrorCodeUsernameAlreadyExists        = 9
+	ErrorCodeFailedToLogin        = 10
 )
 
 // JsonError writes an Error to the ResponseWriter with the provided information.

@@ -95,8 +95,7 @@ func (l *Login) Start(w http.ResponseWriter, r *http.Request) {
 func (l *Login) SubmitPin(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
-		// @todo
-		fmt.Println("fuck")
+		httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}
 
@@ -125,9 +124,7 @@ func (l *Login) SubmitPin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		log.Println(err)
-
-		// @todo
+		httputil.JsonError(w, 500, httputil.ErrorCodeFailedToLogin, "")
 		return
 	}
 
@@ -154,8 +151,7 @@ func (l *Login) enterRegistrationState(w http.ResponseWriter, token string, emai
 func (l *Login) Register(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
-		// @todo
-		fmt.Println("fuck")
+		httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}
 
@@ -176,8 +172,6 @@ func (l *Login) Register(w http.ResponseWriter, r *http.Request) {
 		httputil.JsonError(w, 400, httputil.ErrorCodeInvalidUsername, "invalid parameter: username")
 		return
 	}
-
-	// @todo check that the username is valid
 
 	name := r.Form.Get("display_name")
 	if name == "" {
@@ -202,7 +196,7 @@ func (l *Login) Register(w http.ResponseWriter, r *http.Request) {
 
 	err = httputil.JsonEncode(w, user)
 	if err != nil {
-		// @todo
+		httputil.JsonError(w, 500, httputil.ErrorCodeFailedToLogin, "")
 		return
 	}
 }
@@ -215,7 +209,7 @@ func validateEmail(email string) bool {
 
 var usernameRegex = regexp.MustCompile("^([A-Za-z0-9_]+)*$")
 func validateUsername(username string) bool {
-	return len(username) < 100 && usernameRegex.MatchString(username)
+	return len(username) < 100 && len(username) > 2 && usernameRegex.MatchString(username)
 }
 
 func getExpiry() int {

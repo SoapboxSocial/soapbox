@@ -57,6 +57,10 @@ func (p Peer) Role() PeerRole {
 	return p.role
 }
 
+func (p Peer) IsMuted() bool {
+	return p.isMuted
+}
+
 // @todo we need to figure out how to multiplex nicely
 
 // @todo what needs to happen is the following
@@ -170,7 +174,6 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 
 	r.peers[addr] = &Peer{
 		role:       role,
-		isMuted:    false,
 		connection: peerConnection,
 		output:     outputTrack,
 		api:        api,
@@ -195,7 +198,8 @@ func (r *Room) Join(addr string, offer webrtc.SessionDescription) (*webrtc.Sessi
 		data, err := json.Marshal(struct {
 			ID   string `json:"id"`
 			Role string `json:"role"`
-		}{ID: addr, Role: string(role)})
+			IsMuted bool `json:"is_muted"`
+		}{ID: addr, Role: string(role), IsMuted: false})
 		if err != nil {
 			log.Printf("failed to encode: %s\n", err.Error())
 		}
@@ -375,6 +379,10 @@ func (r *Room) onCommand(from string, command *pb.RoomCommand) {
 		r.onAddSpeaker(from, string(command.Data))
 	case pb.RoomCommand_REMOVE_SPEAKER:
 		r.onRemoveSpeaker(from, string(command.Data))
+	case pb.RoomCommand_MUTE_SPEAKER:
+		r.onMuteSpeaker(from)
+	case pb.RoomCommand_UNMUTE_SPEAKER:
+		r.onUnmuteSpeaker(from)
 	}
 }
 
@@ -399,7 +407,40 @@ func (r *Room) onRemoveSpeaker(from, peer string) {
 	}
 	r.peers[peer].role = AUDIENCE
 
-	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_REMOVED_SPEAKER, From: from, Data: []byte(peer)})
+	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_REMOVED_SPEAKER, From: from})
+}
+
+func (r *Room) onMuteSpeaker(from string) {
+	r.RLock()
+	peer := r.peers[from]
+	r.RUnlock()
+
+	if peer.isMuted {
+		return
+	}
+	
+	r.Lock()
+	peer.isMuted = true
+	r.Unlock()
+
+	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_MUTED_SPEAKER, From: from})
+	log.Printf("user %s muted", from)
+}
+
+func (r *Room) onUnmuteSpeaker(from string) {
+	r.RLock()
+	peer := r.peers[from]
+	r.RUnlock()
+
+	if !peer.isMuted {
+		return
+	}
+	r.Lock()
+	peer.isMuted = false
+	r.Unlock()
+
+	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_UNMUTED_SPEAKER, From: from})
+	log.Printf("user %s unmuted", from)
 }
 
 func (r *Room) notify(event *pb.RoomEvent) {

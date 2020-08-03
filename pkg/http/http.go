@@ -16,6 +16,7 @@ const (
 	ErrorCodeFailedToCreateRoom           = 4
 	ErrorCodeMissingParameter             = 5
 	ErrorCodeFailedToRegister             = 6
+	ErrorCodeInvalidEmail                 = 7
 )
 
 // JsonError writes an Error to the ResponseWriter with the provided information.

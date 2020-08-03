@@ -13,6 +13,10 @@ type SessionManager struct {
 	sessions map[string]users.User
 }
 
+func NewSessionManager() *SessionManager {
+	return &SessionManager{sessions: make(map[string]users.User)}
+}
+
 func (sm *SessionManager) NewSession(id string, user users.User) {
 	sm.Lock()
 	defer sm.Unlock()

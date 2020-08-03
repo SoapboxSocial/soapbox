@@ -58,7 +58,7 @@ func main() {
 		panic(err)
 	}
 
-	s := &sessions.SessionManager{}
+	s := sessions.NewSessionManager()
 	ub := users.NewUserBackend(db)
 	login := login.NewLogin(ub, s)
 

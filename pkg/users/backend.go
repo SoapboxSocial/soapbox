@@ -3,10 +3,10 @@ package users
 import "database/sql"
 
 type User struct {
-	ID          int64
-	DisplayName string
-	Username    string
-	Email       string
+	ID          int64  `json:"id"`
+	DisplayName string `json:"display_name"`
+	Username    string `json:"username"`
+	Email       string `json:"email"`
 }
 
 type UserBackend struct {
@@ -24,7 +24,7 @@ func (ub *UserBackend) FindByEmail(email string) (*User, error) {
 	row := ub.db.QueryRow("SELECT id, display_name, username, email FROM users WHERE email = $1;", email)
 
 	user := &User{}
-	err := row.Scan(user.ID, user.DisplayName, user.Username, user.Email)
+	err := row.Scan(&user.ID, &user.DisplayName, &user.Username, &user.Email)
 	if err != nil {
 		return nil, err
 	}

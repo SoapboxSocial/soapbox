@@ -8,6 +8,8 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"regexp"
+	"strings"
 	"sync"
 	"time"
 
@@ -59,15 +61,19 @@ func NewLogin(ub *users.UserBackend, manager *sessions.SessionManager) Login {
 func (l *Login) Start(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
-		// @todo
-		fmt.Println("fuck")
+		httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}
-	email := r.Form.Get("email")
-	if email == "" {
-		// @todo
+
+	log.Println("ok")
+
+	email := strings.ToLower(r.Form.Get("email"))
+	if !validateEmail(email) {
+		httputil.JsonError(w, 400, httputil.ErrorCodeInvalidEmail, "invalid email")
 		return
 	}
+
+	log.Println("ok 2")
 
 	// @todo validate email
 
@@ -75,6 +81,7 @@ func (l *Login) Start(w http.ResponseWriter, r *http.Request) {
 	pin := generatePin()
 
 	l.tokens[token] = tokenState{email: email, pin: pin}
+	log.Println("pin: " + pin)
 
 	// @todo cleanup
 	err = json.NewEncoder(w).Encode(map[string]string{"token": token})
@@ -191,6 +198,12 @@ func (l *Login) Register(w http.ResponseWriter, r *http.Request) {
 		// @todo
 		return
 	}
+}
+
+var emailRegex = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+
+func validateEmail(email string) bool {
+	return len(email) < 254 && emailRegex.MatchString(email)
 }
 
 func getExpiry() int {

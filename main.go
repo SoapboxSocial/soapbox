@@ -63,7 +63,7 @@ func main() {
 
 	s := sessions.NewSessionManager(rdb)
 	ub := users.NewUserBackend(db)
-	loginHandlers := login.NewLogin(ub, s)
+	loginHandlers := login.NewLoginEndpoint(ub, s)
 
 	manager := rooms.NewRoomManager()
 

@@ -42,8 +42,7 @@ type tokenState struct {
 	pin   string
 }
 
-// @todo should we call this handler?
-type Login struct {
+type LoginEndpoint struct {
 	sync.Mutex
 
 	// @todo use redis
@@ -54,8 +53,8 @@ type Login struct {
 	sessions *sessions.SessionManager
 }
 
-func NewLogin(ub *users.UserBackend, manager *sessions.SessionManager) Login {
-	return Login{
+func NewLoginEndpoint(ub *users.UserBackend, manager *sessions.SessionManager) LoginEndpoint {
+	return LoginEndpoint{
 		tokens:        make(map[string]tokenState),
 		registrations: make(map[string]string),
 		users:         ub,
@@ -63,7 +62,7 @@ func NewLogin(ub *users.UserBackend, manager *sessions.SessionManager) Login {
 	}
 }
 
-func (l *Login) Start(w http.ResponseWriter, r *http.Request) {
+func (l *LoginEndpoint) Start(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "")
@@ -81,7 +80,6 @@ func (l *Login) Start(w http.ResponseWriter, r *http.Request) {
 
 	l.tokens[token] = tokenState{email: email, pin: pin}
 
-	// @todo check errors
 	err = sendEmail(email, pin)
 	if err != nil {
 		log.Println("failed to send code: ", err.Error())
@@ -90,11 +88,11 @@ func (l *Login) Start(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewEncoder(w).Encode(map[string]string{"token": token})
 	if err != nil {
-		log.Println(err)
+		log.Println("error writing response: " + err.Error())
 	}
 }
 
-func (l *Login) SubmitPin(w http.ResponseWriter, r *http.Request) {
+func (l *LoginEndpoint) SubmitPin(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "")
@@ -137,20 +135,20 @@ func (l *Login) SubmitPin(w http.ResponseWriter, r *http.Request) {
 	expires := int(expiration.Seconds())
 	err = httputil.JsonEncode(w, loginState{State: LoginStateSuccess, User: user, ExpiresIn: &expires})
 	if err != nil {
-		// @todo
-		return
+		log.Println("error writing response: " + err.Error())
+
 	}
 }
 
-func (l *Login) enterRegistrationState(w http.ResponseWriter, token string, email string) {
+func (l *LoginEndpoint) enterRegistrationState(w http.ResponseWriter, token string, email string) {
 	l.registrations[token] = email
 	err := httputil.JsonEncode(w, loginState{State: LoginStateRegister})
 	if err != nil {
-		return
+		log.Println("error writing response: " + err.Error())
 	}
 }
 
-func (l *Login) Register(w http.ResponseWriter, r *http.Request) {
+func (l *LoginEndpoint) Register(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "")

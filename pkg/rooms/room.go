@@ -430,7 +430,7 @@ func (r *Room) onUnmuteSpeaker(from string) {
 	peer.isMuted = false
 	r.Unlock()
 
-	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_UNMUTED_SPEAKER, From: from, Data: []byte{}}) // TODO send the empty byte arr?
+	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_UNMUTED_SPEAKER, From: from})
 	log.Printf("user %s unmuted", from)
 }
 

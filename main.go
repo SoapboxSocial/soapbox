@@ -18,7 +18,7 @@ import (
 type Member struct {
 	ID      string `json:"id"`
 	Role    string `json:"role"`
-	IsMuted bool   `json:"isMuted"`
+	IsMuted bool   `json:"is_muted"`
 }
 
 type RoomPayload struct {

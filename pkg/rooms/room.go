@@ -411,16 +411,11 @@ func (r *Room) onRemoveSpeaker(from, peer string) {
 }
 
 func (r *Room) onMuteSpeaker(from string) {
-	r.RLock()
-	peer := r.peers[from]
-	r.RUnlock()
-
-	if peer.isMuted {
+	r.Lock()
+	if r.peers[from].isMuted {
 		return
 	}
-	
-	r.Lock()
-	peer.isMuted = true
+	r.peers[from].isMuted = true
 	r.Unlock()
 
 	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_MUTED_SPEAKER, From: from})
@@ -428,15 +423,11 @@ func (r *Room) onMuteSpeaker(from string) {
 }
 
 func (r *Room) onUnmuteSpeaker(from string) {
-	r.RLock()
-	peer := r.peers[from]
-	r.RUnlock()
-
-	if !peer.isMuted {
+	r.Lock()
+	if !r.peers[from].isMuted {
 		return
 	}
-	r.Lock()
-	peer.isMuted = false
+	r.peers[from].isMuted = false
 	r.Unlock()
 
 	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_UNMUTED_SPEAKER, From: from})

@@ -275,6 +275,8 @@ func (r *Room) peerDisconnected(addr string) {
 		return
 	}
 
+	log.Printf("user %s left room %d", addr, r.id)
+
 	role := r.peers[addr].role
 
 	r.peers[addr].connection.Close()

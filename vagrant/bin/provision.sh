@@ -19,6 +19,8 @@ sudo yum install -y golang
 
 sudo yum install -y supervisor
 
+sudo yum install -y redis
+
 rm -rf /etc/supervisord.conf
 sudo ln -s /vagrant/conf/supervisord.conf /etc/supervisord.conf
 sudo mkdir -p /etc/supervisor/conf.d/
@@ -29,6 +31,18 @@ echo 'export PATH="$PATH:${GOPATH//://bin:}/bin"' >> ~/.bashrc
 mkdir -p $GOPATH/{bin,pkg,src}
 
 source ~/.bashrc
+
+yum install -y postgresql-server postgresql-contrib
+postgresql-setup initdbyim
+
+systemctl start postgresql
+systemctl enable postgresql
+
+sudo su - postgres -c "psql -a -w -f /var/www/db/database.sql"
+sudo su - postgres -c "psql -t voicely -a -w -f /var/www/db/tables.sql"
+
+rm /var/lib/pgsql/data/pg_hba.conf
+ln -s /vagrant/conf/postgres.conf /var/lib/pgsql/data/pg_hba.conf
 
 sudo rm -rf /etc/nginx/nginx.conf
 sudo ln -s /vagrant/conf/nginx.conf /etc/nginx/nginx.conf

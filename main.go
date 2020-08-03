@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -9,11 +10,17 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/go-redis/redis/v8"
+	_ "github.com/lib/pq"
+
 	"github.com/gorilla/mux"
 	"github.com/pion/webrtc/v3"
 
+	"github.com/ephemeral-networks/voicely/pkg/api/login"
 	httputil "github.com/ephemeral-networks/voicely/pkg/http"
 	"github.com/ephemeral-networks/voicely/pkg/rooms"
+	"github.com/ephemeral-networks/voicely/pkg/sessions"
+	"github.com/ephemeral-networks/voicely/pkg/users"
 )
 
 type Member struct {
@@ -43,6 +50,20 @@ type JoinPayload struct {
 }
 
 func main() {
+	db, err := sql.Open("postgres","host=127.0.0.1 port=5432 user=voicely password=voicely dbname=voicely sslmode=disable")
+	if err != nil {
+		panic(err)
+	}
+
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+
+	s := sessions.NewSessionManager(rdb)
+	ub := users.NewUserBackend(db)
+	loginHandlers := login.NewLoginEndpoint(ub, s)
 
 	manager := rooms.NewRoomManager()
 
@@ -203,6 +224,10 @@ func main() {
 			fmt.Println(err)
 		}
 	}).Methods("POST")
+
+	r.HandleFunc("/v1/login/start", loginHandlers.Start).Methods("POST")
+	r.HandleFunc("/v1/login/pin", loginHandlers.SubmitPin).Methods("POST")
+	r.HandleFunc("/v1/login/register", loginHandlers.Register).Methods("POST")
 
 	log.Fatal(http.ListenAndServe(":8080", r))
 }

@@ -27,9 +27,9 @@ const LoginStateSuccess = "success"
 
 // @todo better names
 type loginState struct {
-	State      string      `json:"state"`
-	User       *users.User `json:"user,omitempty"`
-	Expiration *int        `json:"expiration,omitempty"`
+	State     string      `json:"state"`
+	User      *users.User `json:"user,omitempty"`
+	ExpiresIn *int        `json:"expires_in,omitempty"`
 }
 
 type tokenState struct {
@@ -128,11 +128,14 @@ func (l *Login) SubmitPin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	l.sessions.NewSession(token, *user)
+	err = l.sessions.NewSession(token, *user, expiration)
+	if err != nil {
+		httputil.JsonError(w, 500, httputil.ErrorCodeFailedToLogin, "")
+		return
+	}
 
-	expiry := getExpiry()
-
-	err = httputil.JsonEncode(w, loginState{State: LoginStateSuccess, User: user, Expiration: &expiry})
+	expires := int(expiration.Seconds())
+	err = httputil.JsonEncode(w, loginState{State: LoginStateSuccess, User: user, ExpiresIn: &expires})
 	if err != nil {
 		// @todo
 		return
@@ -198,7 +201,8 @@ func (l *Login) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = httputil.JsonEncode(w, user)
+	expires := int(expiration.Seconds())
+	err = httputil.JsonEncode(w, loginState{State: LoginStateSuccess, User: &user, ExpiresIn: &expires})
 	if err != nil {
 		log.Println("error writing response: " + err.Error())
 	}
@@ -214,12 +218,6 @@ var usernameRegex = regexp.MustCompile("^([A-Za-z0-9_]+)*$")
 
 func validateUsername(username string) bool {
 	return len(username) < 100 && len(username) > 2 && usernameRegex.MatchString(username)
-}
-
-func getExpiry() int {
-	future := time.Now()
-	future.Add(expiration)
-	return future.Second()
 }
 
 func generateToken() string {

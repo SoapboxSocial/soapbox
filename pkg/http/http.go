@@ -10,16 +10,17 @@ import (
 type ErrorCode int
 
 const (
-	ErrorCodeRoomNotFound       ErrorCode = 1
-	ErrorCodeRoomFailedToJoin             = 2
-	ErrorCodeInvalidRequestBody           = 3
-	ErrorCodeFailedToCreateRoom           = 4
-	ErrorCodeMissingParameter             = 5
-	ErrorCodeFailedToRegister             = 6
-	ErrorCodeInvalidEmail                 = 7
-	ErrorCodeInvalidUsername              = 8
-	ErrorCodeUsernameAlreadyExists        = 9
-	ErrorCodeFailedToLogin        = 10
+	ErrorCodeRoomNotFound ErrorCode = iota
+	ErrorCodeRoomFailedToJoin
+	ErrorCodeInvalidRequestBody
+	ErrorCodeFailedToCreateRoom
+	ErrorCodeMissingParameter
+	ErrorCodeFailedToRegister
+	ErrorCodeInvalidEmail
+	ErrorCodeInvalidUsername
+	ErrorCodeUsernameAlreadyExists
+	ErrorCodeFailedToLogin
+	ErrorCodeUnauthorized
 )
 
 // JsonError writes an Error to the ResponseWriter with the provided information.

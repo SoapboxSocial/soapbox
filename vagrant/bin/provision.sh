@@ -33,7 +33,7 @@ mkdir -p $GOPATH/{bin,pkg,src}
 source ~/.bashrc
 
 yum install -y postgresql-server postgresql-contrib
-postgresql-setup initdbyim
+postgresql-setup initdb
 
 systemctl start postgresql
 systemctl enable postgresql

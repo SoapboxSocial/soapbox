@@ -24,8 +24,9 @@ import (
 )
 
 type Member struct {
-	ID   string `json:"id"`
-	Role string `json:"role"`
+	ID      string `json:"id"`
+	Role    string `json:"role"`
+	IsMuted bool   `json:"is_muted"`
 }
 
 type RoomPayload struct {
@@ -84,7 +85,7 @@ func main() {
 			}
 
 			room.MapPeers(func(s string, peer rooms.Peer) {
-				r.Members = append(r.Members, Member{s, string(peer.Role())})
+				r.Members = append(r.Members, Member{s, string(peer.Role()), peer.IsMuted()})
 			})
 
 			data = append(data, r)
@@ -200,7 +201,7 @@ func main() {
 				return
 			}
 
-			members = append(members, Member{s, string(peer.Role())})
+			members = append(members, Member{s, string(peer.Role()), peer.IsMuted()})
 		})
 
 		resp := &JoinPayload{

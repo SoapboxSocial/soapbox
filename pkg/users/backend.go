@@ -22,6 +22,21 @@ func NewUserBackend(db *sql.DB) *UserBackend {
 	}
 }
 
+func (ub *UserBackend) FindByID(id int) (*User, error) {
+	stmt, err := ub.db.Prepare("SELECT id, display_name, username, email FROM users WHERE id = $1;")
+	if err != nil {
+		return nil, err
+	}
+
+	user := &User{}
+	err = stmt.QueryRow(id).Scan(&user.ID, &user.DisplayName, &user.Username, &user.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
 func (ub *UserBackend) FindByEmail(email string) (*User, error) {
 	stmt, err := ub.db.Prepare("SELECT id, display_name, username, email FROM users WHERE email = $1;")
 	if err != nil {

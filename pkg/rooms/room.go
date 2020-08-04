@@ -40,9 +40,16 @@ const (
 	AUDIENCE PeerRole = "audience"
 )
 
+// Member is used to communicate what peers are part of the chat
+type Member struct {
+	ID          int      `json:"id"`
+	DisplayName string   `json:"display_name"`
+	Role        PeerRole `json:"role"`
+	IsMuted     bool     `json:"is_muted"`
+}
+
 type Peer struct {
-	role        PeerRole
-	isMuted     bool
+	Member
 	connection  *webrtc.PeerConnection
 	track       *webrtc.Track
 	output      *webrtc.Track
@@ -51,15 +58,11 @@ type Peer struct {
 }
 
 func (p Peer) CanSpeak() bool {
-	return p.role != AUDIENCE
+	return p.Member.Role != AUDIENCE
 }
 
-func (p Peer) Role() PeerRole {
-	return p.role
-}
-
-func (p Peer) IsMuted() bool {
-	return p.isMuted
+func (p Peer) GetMember() Member {
+	return p.Member
 }
 
 // @todo we need to figure out how to multiplex nicely
@@ -114,10 +117,10 @@ func (r *Room) PeerCount() int {
 func (r *Room) GetRoleForPeer(id int) PeerRole {
 	r.RLock()
 	defer r.RUnlock()
-	return r.peers[id].role
+	return r.peers[id].Member.Role
 }
 
-func (r *Room) Join(id int, offer webrtc.SessionDescription) (*webrtc.SessionDescription, error) {
+func (r *Room) Join(id int, name string, offer webrtc.SessionDescription) (*webrtc.SessionDescription, error) {
 	mediaEngine := webrtc.MediaEngine{}
 	err := mediaEngine.PopulateFromSDP(offer)
 	if err != nil {
@@ -173,8 +176,9 @@ func (r *Room) Join(id int, offer webrtc.SessionDescription) (*webrtc.SessionDes
 		role = OWNER
 	}
 
+	member := Member{ID: id, DisplayName: name, Role: role, IsMuted: false}
 	r.peers[id] = &Peer{
-		role:       role,
+		Member:     member,
 		connection: peerConnection,
 		output:     outputTrack,
 		api:        api,
@@ -185,7 +189,7 @@ func (r *Room) Join(id int, offer webrtc.SessionDescription) (*webrtc.SessionDes
 
 	var localTrackChan = make(chan *webrtc.Track)
 	// Set a handler forf when a new remote track starts, this just distributes all our packets
-	// to connected peers
+	// to connected gpeers
 	peerConnection.OnTrack(func(remoteTrack *webrtc.Track, receiver *webrtc.RTPReceiver) {
 		log.Println("onTrack")
 		go func() {
@@ -197,11 +201,7 @@ func (r *Room) Join(id int, offer webrtc.SessionDescription) (*webrtc.SessionDes
 			}
 		}()
 
-		data, err := json.Marshal(struct {
-			ID   int `json:"id"`
-			Role string `json:"role"`
-			IsMuted bool `json:"is_muted"`
-		}{ID: id, Role: string(role), IsMuted: false})
+		data, err := json.Marshal(member)
 		if err != nil {
 			log.Printf("failed to encode: %s\n", err.Error())
 		}
@@ -283,7 +283,7 @@ func (r *Room) peerDisconnected(id int) {
 
 	log.Printf("user %d left room %d", id, r.id)
 
-	role := r.peers[id].role
+	role := r.peers[id].Role
 
 	r.peers[id].connection.Close()
 	delete(r.peers, id)
@@ -302,14 +302,14 @@ func (r *Room) electOwner() {
 	defer r.Unlock()
 
 	speaker := first(r.peers, func(peer *Peer) bool {
-		return peer.role == SPEAKER
+		return peer.Role == SPEAKER
 	})
 
 	if speaker != 0 {
-		r.peers[speaker].role = OWNER
+		r.peers[speaker].Role = OWNER
 	} else {
 		for k, v := range r.peers {
-			v.role = OWNER
+			v.Role = OWNER
 			speaker = k
 			break
 		}
@@ -392,10 +392,10 @@ func (r *Room) onAddSpeaker(from int, peer []byte) {
 	r.Lock()
 	defer r.Unlock()
 
-	if r.peers[from].role != OWNER {
+	if r.peers[from].Role != OWNER {
 		return
 	}
-	r.peers[bytesToInt(peer)].role = SPEAKER
+	r.peers[bytesToInt(peer)].Role = SPEAKER
 
 	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_ADDED_SPEAKER, From: int64(from), Data: peer})
 }
@@ -404,10 +404,10 @@ func (r *Room) onRemoveSpeaker(from int, peer []byte) {
 	r.Lock()
 	defer r.Unlock()
 
-	if r.peers[from].role != OWNER {
+	if r.peers[from].Role != OWNER {
 		return
 	}
-	r.peers[bytesToInt(peer)].role = AUDIENCE
+	r.peers[bytesToInt(peer)].Role = AUDIENCE
 
 	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_REMOVED_SPEAKER, From: int64(from), Data: peer})
 }
@@ -417,12 +417,12 @@ func (r *Room) onMuteSpeaker(from int) {
 	peer := r.peers[from]
 	r.RUnlock()
 
-	if peer.isMuted {
+	if peer.IsMuted {
 		return
 	}
-	
+
 	r.Lock()
-	peer.isMuted = true
+	peer.IsMuted = true
 	r.Unlock()
 
 	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_MUTED_SPEAKER, From: int64(from)})
@@ -434,11 +434,11 @@ func (r *Room) onUnmuteSpeaker(from int) {
 	peer := r.peers[from]
 	r.RUnlock()
 
-	if !peer.isMuted {
+	if !peer.IsMuted {
 		return
 	}
 	r.Lock()
-	peer.isMuted = false
+	peer.IsMuted = false
 	r.Unlock()
 
 	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_UNMUTED_SPEAKER, From: int64(from)})

@@ -426,7 +426,7 @@ func (r *Room) onMuteSpeaker(from int) {
 	r.Unlock()
 
 	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_MUTED_SPEAKER, From: int64(from)})
-	log.Printf("user %s muted", from)
+	log.Printf("user %d muted", from)
 }
 
 func (r *Room) onUnmuteSpeaker(from int) {

@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -23,16 +24,10 @@ import (
 	"github.com/ephemeral-networks/voicely/pkg/users"
 )
 
-type Member struct {
-	ID      string `json:"id"`
-	Role    string `json:"role"`
-	IsMuted bool   `json:"is_muted"`
-}
-
 type RoomPayload struct {
-	ID      int      `json:"id"`
-	Name    string   `json:"name,omitempty"`
-	Members []Member `json:"members"`
+	ID      int            `json:"id"`
+	Name    string         `json:"name,omitempty"`
+	Members []rooms.Member `json:"members"`
 }
 
 type SDPPayload struct {
@@ -43,14 +38,14 @@ type SDPPayload struct {
 }
 
 type JoinPayload struct {
-	Name    string     `json:"name,omitempty"`
-	Members []Member   `json:"members"`
-	SDP     SDPPayload `json:"sdp"`
-	Role    string     `json:"role"` // @todo find better name
+	Name    string         `json:"name,omitempty"`
+	Members []rooms.Member `json:"members"`
+	SDP     SDPPayload     `json:"sdp"`
+	Role    string         `json:"role"` // @todo find better name
 }
 
 func main() {
-	db, err := sql.Open("postgres","host=127.0.0.1 port=5432 user=voicely password=voicely dbname=voicely sslmode=disable")
+	db, err := sql.Open("postgres", "host=127.0.0.1 port=5432 user=voicely password=voicely dbname=voicely sslmode=disable")
 	if err != nil {
 		panic(err)
 	}
@@ -77,15 +72,15 @@ func main() {
 				return
 			}
 
-			r := RoomPayload{ID: room.GetID(), Members: make([]Member, 0)}
+			r := RoomPayload{ID: room.GetID(), Members: make([]rooms.Member, 0)}
 
 			name := room.GetName()
 			if name != "" {
 				r.Name = name
 			}
 
-			room.MapPeers(func(s string, peer rooms.Peer) {
-				r.Members = append(r.Members, Member{s, string(peer.Role()), peer.IsMuted()})
+			room.MapPeers(func(id int, peer rooms.Peer) {
+				r.Members = append(r.Members, peer.GetMember())
 			})
 
 			data = append(data, r)
@@ -102,6 +97,18 @@ func main() {
 		defer r.Body.Close()
 		if err != nil {
 			httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
+			return
+		}
+
+		userID, err := getUserForSession(s, r)
+		if err != nil {
+			httputil.JsonError(w, 401, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
+			return
+		}
+
+		user, err := ub.FindByID(userID)
+		if err != nil {
+			httputil.JsonError(w, 500, httputil.ErrorCodeRoomFailedToJoin, "failed to join room")
 			return
 		}
 
@@ -131,7 +138,7 @@ func main() {
 
 		room := manager.CreateRoom(name)
 
-		sdp, err := room.Join(r.RemoteAddr, p)
+		sdp, err := room.Join(userID, user.DisplayName, p)
 		if err != nil {
 			manager.RemoveRoom(room.GetID())
 			httputil.JsonError(w, 500, httputil.ErrorCodeFailedToCreateRoom, "failed to create room")
@@ -153,6 +160,18 @@ func main() {
 		defer r.Body.Close()
 		if err != nil {
 			httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
+			return
+		}
+
+		userID, err := getUserForSession(s, r)
+		if err != nil {
+			httputil.JsonError(w, 401, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
+			return
+		}
+
+		user, err := ub.FindByID(userID)
+		if err != nil {
+			httputil.JsonError(w, 500, httputil.ErrorCodeRoomFailedToJoin, "failed to join room")
 			return
 		}
 
@@ -187,21 +206,21 @@ func main() {
 			return
 		}
 
-		sdp, err := room.Join(r.RemoteAddr, p)
+		sdp, err := room.Join(userID, user.DisplayName, p)
 		if err != nil {
 			httputil.JsonError(w, 500, httputil.ErrorCodeRoomFailedToJoin, "failed to join room")
 			return
 		}
 
-		members := make([]Member, 0)
+		members := make([]rooms.Member, 0)
 
-		room.MapPeers(func(s string, peer rooms.Peer) {
+		room.MapPeers(func(id int, peer rooms.Peer) {
 			// @todo will need changing
-			if s == r.RemoteAddr {
+			if id == userID {
 				return
 			}
 
-			members = append(members, Member{s, string(peer.Role()), peer.IsMuted()})
+			members = append(members, peer.GetMember())
 		})
 
 		resp := &JoinPayload{
@@ -211,7 +230,7 @@ func main() {
 				Type: strings.ToLower(sdp.Type.String()),
 				SDP:  sdp.SDP,
 			},
-			Role: string(room.GetRoleForPeer(r.RemoteAddr)),
+			Role: string(room.GetRoleForPeer(userID)),
 		}
 
 		name := room.GetName()
@@ -230,6 +249,15 @@ func main() {
 	r.HandleFunc("/v1/login/register", loginHandlers.Register).Methods("POST")
 
 	log.Fatal(http.ListenAndServe(":8080", r))
+}
+
+func getUserForSession(s *sessions.SessionManager, r *http.Request) (int, error) {
+	token := r.Header.Get("Authorization")
+	if token == "" {
+		return 0, errors.New("no authorization")
+	}
+
+	return s.GetUserIDForSession(token)
 }
 
 func getType(t string) (error, webrtc.SDPType) {

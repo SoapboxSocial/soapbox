@@ -170,6 +170,8 @@ func (r *Room) Join(id int, name string, offer webrtc.SessionDescription) (*webr
 		}
 	})
 
+	// @todo check if same peer is connecting with different devices is still around
+
 	r.Lock()
 	role := SPEAKER
 	if len(r.peers) == 0 {

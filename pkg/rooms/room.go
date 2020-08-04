@@ -57,7 +57,7 @@ type Peer struct {
 	dataChannel *webrtc.DataChannel
 }
 
-func (p Peer) CanSpeak() bool {
+func (p Peer) canSpeak() bool {
 	return p.Member.Role != AUDIENCE
 }
 
@@ -355,7 +355,7 @@ func (r *Room) forwardPacket(from int, packet *rtp.Packet) {
 	r.RLock()
 	defer r.RUnlock()
 
-	if !r.peers[from].CanSpeak() {
+	if !r.peers[from].canSpeak() {
 		return
 	}
 

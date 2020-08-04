@@ -166,7 +166,7 @@ func (r *Room) Join(id int, name string, offer webrtc.SessionDescription) (*webr
 		// @todo disconnected here is certainly not reliable
 		if state == webrtc.PeerConnectionStateClosed || state == webrtc.PeerConnectionStateFailed /* || state == webrtc.PeerConnectionStateDisconnected */ {
 			//	// @todo this seems like it could be buggy
-			//r.peerDisconnected(id)
+			r.peerDisconnected(id)
 		}
 	})
 

@@ -6,10 +6,10 @@ import (
 )
 
 type User struct {
-	ID          int    `json:"id"`
-	DisplayName string `json:"display_name"`
-	Username    string `json:"username"`
-	Email       string `json:"email"`
+	ID          int     `json:"id"`
+	DisplayName string  `json:"display_name"`
+	Username    string  `json:"username"`
+	Email       *string `json:"email,omitempty"`
 }
 
 type UserBackend struct {

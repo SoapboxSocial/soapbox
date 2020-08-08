@@ -3,7 +3,6 @@ package rooms
 import (
 	"encoding/binary"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"math/rand"
@@ -160,12 +159,7 @@ func (r *Room) Join(id int, name string, offer webrtc.SessionDescription) (*webr
 	})
 
 	peerConnection.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
-		fmt.Println(state)
-		// @todo I think this should work.
-		// @todo, this does not seem completely safe
-		// @todo disconnected here is certainly not reliable
-		if state == webrtc.PeerConnectionStateClosed || state == webrtc.PeerConnectionStateFailed /* || state == webrtc.PeerConnectionStateDisconnected */ {
-			//	// @todo this seems like it could be buggy
+		if state == webrtc.PeerConnectionStateClosed || state == webrtc.PeerConnectionStateFailed || state == webrtc.PeerConnectionStateDisconnected {
 			r.peerDisconnected(id)
 		}
 	})

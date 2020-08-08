@@ -22,6 +22,7 @@ const (
 	ErrorCodeFailedToLogin
 	ErrorCodeIncorrectPin
 	ErrorCodeUserNotFound
+	ErrorCodeFailedToGetUser
 	ErrorCodeUnauthorized
 )
 

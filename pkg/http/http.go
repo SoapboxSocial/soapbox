@@ -21,6 +21,7 @@ const (
 	ErrorCodeUsernameAlreadyExists
 	ErrorCodeFailedToLogin
 	ErrorCodeIncorrectPin
+	ErrorCodeUserNotFound
 	ErrorCodeUnauthorized
 )
 

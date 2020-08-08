@@ -1,6 +1,8 @@
 package users
 
 import (
+	"database/sql"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -24,13 +26,19 @@ func (u *UsersEndpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {
 
 	i, err := strconv.Atoi(id)
 	if err != nil {
-		// @todo
+		httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 		return
 	}
 
 	user, err := u.ub.FindByID(i)
 	if err != nil {
-		// @todo
+		if err == sql.ErrNoRows {
+			httputil.JsonError(w, 404, httputil.ErrorCodeUserNotFound, "user not found")
+			return
+		}
+
+		// @todo more specific error
+		httputil.JsonError(w, 500, httputil.ErrorCodeUserNotFound, "")
 		return
 	}
 
@@ -38,6 +46,6 @@ func (u *UsersEndpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {
 
 	err = httputil.JsonEncode(w, user)
 	if err != nil {
-		// @todo log
+		log.Printf("failed to write user response: %s\n", err.Error())
 	}
 }

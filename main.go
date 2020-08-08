@@ -61,7 +61,7 @@ func main() {
 	ub := users.NewUserBackend(db)
 	loginHandlers := login.NewLoginEndpoint(ub, s)
 
-	usersEndpoints := usersapi.NewUsersEndpoint(ub)
+	usersEndpoints := usersapi.NewUsersEndpoint(ub, s)
 
 	manager := rooms.NewRoomManager()
 

@@ -18,6 +18,7 @@ import (
 	"github.com/pion/webrtc/v3"
 
 	"github.com/ephemeral-networks/voicely/pkg/api/login"
+	usersapi "github.com/ephemeral-networks/voicely/pkg/api/users"
 	httputil "github.com/ephemeral-networks/voicely/pkg/http"
 	"github.com/ephemeral-networks/voicely/pkg/rooms"
 	"github.com/ephemeral-networks/voicely/pkg/sessions"
@@ -59,6 +60,8 @@ func main() {
 	s := sessions.NewSessionManager(rdb)
 	ub := users.NewUserBackend(db)
 	loginHandlers := login.NewLoginEndpoint(ub, s)
+
+	usersEndpoints := usersapi.NewUsersEndpoint(ub, s)
 
 	manager := rooms.NewRoomManager()
 
@@ -247,6 +250,7 @@ func main() {
 	r.HandleFunc("/v1/login/start", loginHandlers.Start).Methods("POST")
 	r.HandleFunc("/v1/login/pin", loginHandlers.SubmitPin).Methods("POST")
 	r.HandleFunc("/v1/login/register", loginHandlers.Register).Methods("POST")
+	r.HandleFunc("/v1/users/{id}", usersEndpoints.GetUserByID).Methods("GET")
 
 	log.Fatal(http.ListenAndServe(":8080", r))
 }

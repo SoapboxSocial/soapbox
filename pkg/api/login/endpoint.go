@@ -167,7 +167,7 @@ func (l *LoginEndpoint) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	username := r.Form.Get("username")
+	username := strings.ToLower(r.Form.Get("username"))
 	if !validateUsername(username) {
 		httputil.JsonError(w, 400, httputil.ErrorCodeInvalidUsername, "invalid parameter: username")
 		return
@@ -190,7 +190,7 @@ func (l *LoginEndpoint) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := users.User{ID: lastID, DisplayName: name, Username: username, Email: email}
+	user := users.User{ID: lastID, DisplayName: name, Username: username, Email: &email}
 
 	err = l.sessions.NewSession(token, user, expiration)
 	if err != nil {
@@ -228,7 +228,7 @@ func validateEmail(email string) bool {
 	return len(email) < 254 && emailRegex.MatchString(email)
 }
 
-var usernameRegex = regexp.MustCompile("^([A-Za-z0-9_]+)*$")
+var usernameRegex = regexp.MustCompile("^([a-z0-9_]+)*$")
 
 func validateUsername(username string) bool {
 	return len(username) < 100 && len(username) > 2 && usernameRegex.MatchString(username)

@@ -37,7 +37,6 @@ func (u *UsersEndpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// @todo more specific error
 		httputil.JsonError(w, 500, httputil.ErrorCodeFailedToGetUser, "")
 		return
 	}

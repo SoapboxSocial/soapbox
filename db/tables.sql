@@ -13,4 +13,5 @@ CREATE TABLE IF NOT EXISTS followers (
     following INT NOT NULL,
     FOREIGN KEY (follower) REFERENCES users(id),
     FOREIGN KEY (following) REFERENCES users(id),
+    PRIMARY KEY (follower, following)
 );

@@ -62,3 +62,11 @@ func (u *UsersEndpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {
 		log.Printf("failed to write user response: %s\n", err.Error())
 	}
 }
+
+func (u *UsersEndpoint) GetFollowersForUser(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func (u *UsersEndpoint) GetFollowedByForUser(w http.ResponseWriter, r *http.Request) {
+
+}

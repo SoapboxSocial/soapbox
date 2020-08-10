@@ -248,10 +248,10 @@ func main() {
 		}
 	}).Methods("POST")
 
-	loginRoutes := r.PathPrefix("/v1/login").Subrouter()
-	loginRoutes.HandleFunc("/start", loginHandlers.Start).Methods("POST")
-	loginRoutes.HandleFunc("/pin", loginHandlers.SubmitPin).Methods("POST")
-	loginRoutes.HandleFunc("/register", loginHandlers.Register).Methods("POST")
+	loginRoutes := r.PathPrefix("/v1/login").Methods("POST").Subrouter()
+	loginRoutes.HandleFunc("/start", loginHandlers.Start)
+	loginRoutes.HandleFunc("/pin", loginHandlers.SubmitPin)
+	loginRoutes.HandleFunc("/register", loginHandlers.Register)
 
 	userRoutes := r.PathPrefix("/v1/users").Subrouter()
 	userRoutes.HandleFunc("/{id:[0-9]+}", usersEndpoints.GetUserByID).Methods("GET")

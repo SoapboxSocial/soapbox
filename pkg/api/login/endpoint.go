@@ -69,6 +69,8 @@ func (l *LoginEndpoint) Start(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println(r.Form.Get("email"))
+
 	email := strings.ToLower(r.Form.Get("email"))
 	if !validateEmail(email) {
 		httputil.JsonError(w, 400, httputil.ErrorCodeInvalidEmail, "invalid email")

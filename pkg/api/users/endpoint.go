@@ -26,15 +26,22 @@ func NewUsersEndpoint(ub *users.UserBackend, fb *followers.FollowersBackend, sm 
 
 func (u *UsersEndpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
-	id := params["id"]
 
-	i, err := strconv.Atoi(id)
+	id, err := strconv.Atoi(params["id"])
 	if err != nil {
 		httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 		return
 	}
 
-	user, err := u.ub.FindByID(i)
+	caller := r.Context().Value("id").(int)
+
+	var user *users.Profile
+	if caller == id {
+		user, err = u.ub.GetMyProfile(id)
+	} else {
+		user, err = u.ub.ProfileByID(id, caller)
+	}
+
 	if err != nil {
 		if err == sql.ErrNoRows {
 			httputil.JsonError(w, 404, httputil.ErrorCodeUserNotFound, "user not found")
@@ -44,8 +51,6 @@ func (u *UsersEndpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {
 		httputil.JsonError(w, 500, httputil.ErrorCodeFailedToGetUser, "")
 		return
 	}
-
-	user.Email = nil
 
 	err = httputil.JsonEncode(w, user)
 	if err != nil {
@@ -112,6 +117,7 @@ func (u *UsersEndpoint) FollowUser(w http.ResponseWriter, r *http.Request) {
 	err = u.fb.FollowUser(r.Context().Value("id").(int), id)
 	if err != nil {
 		httputil.JsonError(w, 500, httputil.ErrorCodeInvalidRequestBody, "failed to follow")
+		return
 	}
 
 	httputil.JsonSuccess(w)
@@ -133,6 +139,7 @@ func (u *UsersEndpoint) UnfollowUser(w http.ResponseWriter, r *http.Request) {
 	err = u.fb.UnfollowUser(r.Context().Value("id").(int), id)
 	if err != nil {
 		httputil.JsonError(w, 500, httputil.ErrorCodeInvalidRequestBody, "failed to unfollow")
+		return
 	}
 
 	httputil.JsonSuccess(w)

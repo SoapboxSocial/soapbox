@@ -260,8 +260,8 @@ func main() {
 	userRoutes.HandleFunc("/{id:[0-9]+}", usersEndpoints.GetUserByID).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/followers", usersEndpoints.GetFollowersForUser).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/following", usersEndpoints.GetFollowedByForUser).Methods("GET")
-	userRoutes.HandleFunc("/{id:[0-9]+}/follow", usersEndpoints.FollowUser).Methods("POST")
-	userRoutes.HandleFunc("/{id:[0-9]+}/unfollow", usersEndpoints.UnfollowUser).Methods("POST")
+	userRoutes.HandleFunc("/follow", usersEndpoints.FollowUser).Methods("POST")
+	userRoutes.HandleFunc("/unfollow", usersEndpoints.UnfollowUser).Methods("POST")
 
 	amw := middleware.NewAuthenticationMiddleware(s)
 	userRoutes.Use(amw.Middleware)

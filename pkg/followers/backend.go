@@ -45,7 +45,7 @@ func (fb *FollowersBackend) UnfollowUser(follower int, user int) error {
 }
 
 func (fb *FollowersBackend) GetAllUsersFollowing(id int) ([]*users.User, error) {
-	stmt, err := fb.db.Prepare("SELECT users.id, users.display_name, users.username  FROM users INNER JOIN followers ON (users.id = followers.follower) WHERE followers.user_id = $1;")
+	stmt, err := fb.db.Prepare("SELECT users.id, users.display_name, users.username FROM users INNER JOIN followers ON (users.id = followers.follower) WHERE followers.user_id = $1;")
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +60,7 @@ func (fb *FollowersBackend) GetAllUsersFollowing(id int) ([]*users.User, error) 
 	for rows.Next() {
 		user := &users.User{}
 
-		err := rows.Scan(user.ID, user.DisplayName, user.Username)
+		err := rows.Scan(&user.ID, &user.DisplayName, &user.Username)
 		if err != nil {
 			return nil, err // @todo
 		}
@@ -72,7 +72,7 @@ func (fb *FollowersBackend) GetAllUsersFollowing(id int) ([]*users.User, error) 
 }
 
 func (fb *FollowersBackend) GetAllUsersFollowedBy(id int) ([]*users.User, error) {
-	stmt, err := fb.db.Prepare("SELECT users.id, users.display_name, users.username  FROM users INNER JOIN followers ON (users.id = followers.follower) WHERE followers.follower = $1;")
+	stmt, err := fb.db.Prepare("SELECT users.id, users.display_name, users.username FROM users INNER JOIN followers ON (users.id = followers.user_id) WHERE followers.follower = $1;")
 	if err != nil {
 		return nil, err
 	}

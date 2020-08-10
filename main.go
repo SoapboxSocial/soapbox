@@ -18,6 +18,7 @@ import (
 	"github.com/pion/webrtc/v3"
 
 	"github.com/ephemeral-networks/voicely/pkg/api/login"
+	"github.com/ephemeral-networks/voicely/pkg/api/middleware"
 	usersapi "github.com/ephemeral-networks/voicely/pkg/api/users"
 	httputil "github.com/ephemeral-networks/voicely/pkg/http"
 	"github.com/ephemeral-networks/voicely/pkg/rooms"
@@ -59,9 +60,6 @@ func main() {
 
 	s := sessions.NewSessionManager(rdb)
 	ub := users.NewUserBackend(db)
-	loginHandlers := login.NewLoginEndpoint(ub, s)
-
-	usersEndpoints := usersapi.NewUsersEndpoint(ub, s)
 
 	manager := rooms.NewRoomManager()
 
@@ -247,10 +245,19 @@ func main() {
 		}
 	}).Methods("POST")
 
-	r.HandleFunc("/v1/login/start", loginHandlers.Start).Methods("POST")
-	r.HandleFunc("/v1/login/pin", loginHandlers.SubmitPin).Methods("POST")
-	r.HandleFunc("/v1/login/register", loginHandlers.Register).Methods("POST")
-	r.HandleFunc("/v1/users/{id}", usersEndpoints.GetUserByID).Methods("GET")
+	loginRoutes := r.PathPrefix("/v1/login").Methods("POST").Subrouter()
+
+	loginHandlers := login.NewLoginEndpoint(ub, s)
+	loginRoutes.HandleFunc("/start", loginHandlers.Start)
+	loginRoutes.HandleFunc("/pin", loginHandlers.SubmitPin)
+	loginRoutes.HandleFunc("/register", loginHandlers.Register)
+
+	userRoutes := r.PathPrefix("/v1/users").Subrouter()
+
+	usersEndpoints := usersapi.NewUsersEndpoint(ub, s)
+	userRoutes.HandleFunc("/{id:[0-9]+}", usersEndpoints.GetUserByID).Methods("GET")
+	amw := middleware.NewAuthenticationMiddleware(s)
+	userRoutes.Use(amw.Middleware)
 
 	log.Fatal(http.ListenAndServe(":8080", r))
 }

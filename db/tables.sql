@@ -10,8 +10,8 @@ CREATE UNIQUE INDEX idx_username ON users (username);
 
 CREATE TABLE IF NOT EXISTS followers (
     follower INT NOT NULL,
-    following INT NOT NULL,
+    user_id INT NOT NULL,
     FOREIGN KEY (follower) REFERENCES users(id),
-    FOREIGN KEY (following) REFERENCES users(id),
-    PRIMARY KEY (follower, following)
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    PRIMARY KEY (follower, user_id)
 );

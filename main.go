@@ -60,9 +60,6 @@ func main() {
 
 	s := sessions.NewSessionManager(rdb)
 	ub := users.NewUserBackend(db)
-	loginHandlers := login.NewLoginEndpoint(ub, s)
-
-	usersEndpoints := usersapi.NewUsersEndpoint(ub, s)
 
 	manager := rooms.NewRoomManager()
 
@@ -249,11 +246,15 @@ func main() {
 	}).Methods("POST")
 
 	loginRoutes := r.PathPrefix("/v1/login").Methods("POST").Subrouter()
+
+	loginHandlers := login.NewLoginEndpoint(ub, s)
 	loginRoutes.HandleFunc("/start", loginHandlers.Start)
 	loginRoutes.HandleFunc("/pin", loginHandlers.SubmitPin)
 	loginRoutes.HandleFunc("/register", loginHandlers.Register)
 
 	userRoutes := r.PathPrefix("/v1/users").Subrouter()
+
+	usersEndpoints := usersapi.NewUsersEndpoint(ub, s)
 	userRoutes.HandleFunc("/{id:[0-9]+}", usersEndpoints.GetUserByID).Methods("GET")
 	amw := middleware.NewAuthenticationMiddleware(s)
 	userRoutes.Use(amw.Middleware)

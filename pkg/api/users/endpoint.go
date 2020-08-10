@@ -23,18 +23,6 @@ func NewUsersEndpoint(ub *users.UserBackend, sm *sessions.SessionManager) *Users
 }
 
 func (u *UsersEndpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {
-	token := r.Header.Get("Authorization")
-	if token == "" {
-		httputil.JsonError(w, 401, httputil.ErrorCodeUnauthorized, "unauthorized")
-		return
-	}
-
-	s, err := u.sm.GetUserIDForSession(token)
-	if err != nil || s == 0 {
-		httputil.JsonError(w, 401, httputil.ErrorCodeUnauthorized, "unauthorized")
-		return
-	}
-
 	params := mux.Vars(r)
 	id := params["id"]
 

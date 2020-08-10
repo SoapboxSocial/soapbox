@@ -21,7 +21,7 @@ type UsersEndpoint struct {
 }
 
 func NewUsersEndpoint(ub *users.UserBackend, fb *followers.FollowersBackend, sm *sessions.SessionManager) *UsersEndpoint {
-	return &UsersEndpoint{ub: ub, sm: sm}
+	return &UsersEndpoint{ub: ub, fb: fb, sm: sm}
 }
 
 func (u *UsersEndpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {

@@ -20,6 +20,7 @@ import (
 	"github.com/ephemeral-networks/voicely/pkg/api/login"
 	"github.com/ephemeral-networks/voicely/pkg/api/middleware"
 	usersapi "github.com/ephemeral-networks/voicely/pkg/api/users"
+	"github.com/ephemeral-networks/voicely/pkg/followers"
 	httputil "github.com/ephemeral-networks/voicely/pkg/http"
 	"github.com/ephemeral-networks/voicely/pkg/rooms"
 	"github.com/ephemeral-networks/voicely/pkg/sessions"
@@ -60,6 +61,7 @@ func main() {
 
 	s := sessions.NewSessionManager(rdb)
 	ub := users.NewUserBackend(db)
+	fb := followers.NewFollowersBackend(db)
 
 	manager := rooms.NewRoomManager()
 
@@ -254,8 +256,13 @@ func main() {
 
 	userRoutes := r.PathPrefix("/v1/users").Subrouter()
 
-	usersEndpoints := usersapi.NewUsersEndpoint(ub, s)
+	usersEndpoints := usersapi.NewUsersEndpoint(ub, fb, s)
 	userRoutes.HandleFunc("/{id:[0-9]+}", usersEndpoints.GetUserByID).Methods("GET")
+	userRoutes.HandleFunc("/{id:[0-9]+}/followers", usersEndpoints.GetFollowersForUser).Methods("GET")
+	userRoutes.HandleFunc("/{id:[0-9]+}/following", usersEndpoints.GetFollowedByForUser).Methods("GET")
+	userRoutes.HandleFunc("/follow", usersEndpoints.FollowUser).Methods("POST")
+	userRoutes.HandleFunc("/unfollow", usersEndpoints.UnfollowUser).Methods("POST")
+
 	amw := middleware.NewAuthenticationMiddleware(s)
 	userRoutes.Use(amw.Middleware)
 

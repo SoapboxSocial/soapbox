@@ -23,6 +23,7 @@ const (
 	ErrorCodeIncorrectPin
 	ErrorCodeUserNotFound
 	ErrorCodeFailedToGetUser
+	ErrorCodeFailedToGetFollowers
 	ErrorCodeUnauthorized
 )
 
@@ -36,6 +37,18 @@ func JsonError(w http.ResponseWriter, responseCode int, code ErrorCode, msg stri
 	w.WriteHeader(responseCode)
 
 	err := JsonEncode(w, ErrorResponse{Code: code, Message: msg})
+	if err != nil {
+		log.Printf("failed to encode response: %s", err.Error())
+	}
+}
+
+func JsonSuccess(w http.ResponseWriter) {
+	type SuccessResponse struct {
+		Success bool `json:"success"`
+	}
+
+	w.WriteHeader(200)
+	err := JsonEncode(w, SuccessResponse{Success: true})
 	if err != nil {
 		log.Printf("failed to encode response: %s", err.Error())
 	}

@@ -21,8 +21,8 @@ type Profile struct {
 	Username    string `json:"username"`
 	Followers   int    `json:"followers"`
 	Following   int    `json:"following"`
-	FollowedBy  *bool   `json:"followed_by,omitempty"`
-	IsFollowing *bool   `json:"is_following,omitempty"`
+	FollowedBy  *bool  `json:"followed_by,omitempty"`
+	IsFollowing *bool  `json:"is_following,omitempty"`
 }
 
 type UserBackend struct {

@@ -183,7 +183,6 @@ func (r *Room) Join(id int, name string, offer webrtc.SessionDescription) (*webr
 
 	r.setupDataChannel(id, peerConnection, channel)
 
-	var localTrackChan = make(chan *webrtc.Track)
 	// Set a handler forf when a new remote track starts, this just distributes all our packets
 	// to connected gpeers
 	peerConnection.OnTrack(func(remoteTrack *webrtc.Track, receiver *webrtc.RTPReceiver) {
@@ -217,7 +216,10 @@ func (r *Room) Join(id int, name string, offer webrtc.SessionDescription) (*webr
 			peerConnection.Close()
 			return
 		}
-		localTrackChan <- localTrack
+
+		r.Lock()
+		r.peers[id].track = localTrack
+		r.Unlock()
 
 		for {
 			i, readErr := remoteTrack.ReadRTP()
@@ -256,13 +258,6 @@ func (r *Room) Join(id int, name string, offer webrtc.SessionDescription) (*webr
 	// we do this because we only can exchange one signaling message
 	// in a production application you should exchange ICE Candidates via OnICECandidate
 	<-gatherComplete
-
-	// @todo this needs be elsewhere
-	go func() {
-		track := <-localTrackChan
-
-		r.peers[id].track = track
-	}()
 
 	log.Printf("new peer joined: %d", id)
 

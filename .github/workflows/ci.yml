@@ -30,7 +30,6 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@master
-      - name: check
-        uses: grandcolline/golang-github-actions@v1.1.0
+      - uses: grandcolline/golang-github-actions@v1.1.0
         with:
-          run: lint
+          run: fmt

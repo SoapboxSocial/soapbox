@@ -42,6 +42,7 @@ func JsonError(w http.ResponseWriter, responseCode int, code ErrorCode, msg stri
 	}
 }
 
+// JsonSuccess writes a success message to the writer.
 func JsonSuccess(w http.ResponseWriter) {
 	type SuccessResponse struct {
 		Success bool `json:"success"`

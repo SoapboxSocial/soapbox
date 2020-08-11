@@ -30,6 +30,4 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@master
-      - uses: grandcolline/golang-github-actions@v1.1.0
-        with:
-          run: fmt
+      - uses: reviewdog/action-golangci-lint@v1

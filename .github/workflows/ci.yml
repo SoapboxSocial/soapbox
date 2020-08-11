@@ -29,11 +29,8 @@ jobs:
         platform: [ubuntu-latest]
     runs-on: ${{ matrix.platform }}
     steps:
-      - name: Install Go
-        uses: actions/setup-go@v2
+      - uses: actions/checkout@master
+      - name: check
+        uses: grandcolline/golang-github-actions@v1.1.0
         with:
-          go-version: ${{ matrix.go-version }}
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Run golangci-lint
-        uses: actions-contrib/golangci-lint@v1
+          run: lint

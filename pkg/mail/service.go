@@ -8,10 +8,10 @@ import (
 )
 
 type Service struct {
-	client sendgrid.Client
+	client *sendgrid.Client
 }
 
-func NewMailService(client sendgrid.Client) *Service {
+func NewMailService(client *sendgrid.Client) *Service {
 	return &Service{client: client}
 }
 
@@ -22,10 +22,7 @@ func (s *Service) SendPinEmail(recipient, pin string) error {
 	plainTextContent := "Your login pin is: " + pin
 	htmlContent := fmt.Sprintf("Your login pin is: <strong>%s</strong>", pin)
 	message := mail.NewSingleEmail(from, subject, to, plainTextContent, htmlContent)
-	_, err := s.client.Send(message)
-	if err != nil {
-		return err
-	}
 
-	return nil
+	_, err := s.client.Send(message)
+	return err
 }

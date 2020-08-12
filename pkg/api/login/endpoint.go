@@ -48,15 +48,16 @@ type LoginEndpoint struct {
 	users    *users.UserBackend
 	sessions *sessions.SessionManager
 
-	mail mail.Service
+	mail *mail.Service
 }
 
-func NewLoginEndpoint(ub *users.UserBackend, manager *sessions.SessionManager) LoginEndpoint {
+func NewLoginEndpoint(ub *users.UserBackend, manager *sessions.SessionManager, mail *mail.Service) LoginEndpoint {
 	return LoginEndpoint{
 		tokens:        make(map[string]tokenState),
 		registrations: make(map[string]string),
 		users:         ub,
 		sessions:      manager,
+		mail:          mail,
 	}
 }
 

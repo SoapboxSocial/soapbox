@@ -13,6 +13,7 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
+	"github.com/sendgrid/sendgrid-go"
 
 	"github.com/gorilla/mux"
 	"github.com/pion/webrtc/v3"
@@ -22,6 +23,7 @@ import (
 	usersapi "github.com/ephemeral-networks/voicely/pkg/api/users"
 	"github.com/ephemeral-networks/voicely/pkg/followers"
 	httputil "github.com/ephemeral-networks/voicely/pkg/http"
+	"github.com/ephemeral-networks/voicely/pkg/mail"
 	"github.com/ephemeral-networks/voicely/pkg/rooms"
 	"github.com/ephemeral-networks/voicely/pkg/sessions"
 	"github.com/ephemeral-networks/voicely/pkg/users"
@@ -46,6 +48,9 @@ type JoinPayload struct {
 	SDP     SDPPayload     `json:"sdp"`
 	Role    string         `json:"role"` // @todo find better name
 }
+
+// @todo do this in config
+const sendgrid_api = "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"
 
 func main() {
 	db, err := sql.Open("postgres", "host=127.0.0.1 port=5432 user=voicely password=voicely dbname=voicely sslmode=disable")
@@ -249,7 +254,8 @@ func main() {
 
 	loginRoutes := r.PathPrefix("/v1/login").Methods("POST").Subrouter()
 
-	loginHandlers := login.NewLoginEndpoint(ub, s)
+	ms := mail.NewMailService(sendgrid.NewSendClient(sendgrid_api))
+	loginHandlers := login.NewLoginEndpoint(ub, s, ms)
 	loginRoutes.HandleFunc("/start", loginHandlers.Start)
 	loginRoutes.HandleFunc("/pin", loginHandlers.SubmitPin)
 	loginRoutes.HandleFunc("/register", loginHandlers.Register)

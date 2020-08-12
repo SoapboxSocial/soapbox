@@ -1,5 +1,9 @@
 version = 1
 
+exclude_patterns = [
+  "pkg/pb/**",
+]
+
 [[analyzers]]
 name = "go"
 enabled = true

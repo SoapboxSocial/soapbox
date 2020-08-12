@@ -17,7 +17,7 @@ type RoomManger struct {
 
 func NewRoomManager() *RoomManger {
 	return &RoomManger{
-		rooms:  make(map[int]*Room, 0),
+		rooms:  make(map[int]*Room),
 		nextID: 0,
 	}
 }

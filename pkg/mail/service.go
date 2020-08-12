@@ -1,8 +1,6 @@
 package mail
 
 import (
-	"fmt"
-
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
@@ -16,12 +14,13 @@ func NewMailService(client *sendgrid.Client) *Service {
 }
 
 func (s *Service) SendPinEmail(recipient, pin string) error {
-	from := mail.NewEmail("Voicely", "no-reply@spksy.app")
-	subject := "Voicely Pin"
-	to := mail.NewEmail("", recipient)
-	plainTextContent := "Your login pin is: " + pin
-	htmlContent := fmt.Sprintf("Your login pin is: <strong>%s</strong>", pin)
-	message := mail.NewSingleEmail(from, subject, to, plainTextContent, htmlContent)
+	message := mail.NewV3MailInit(
+		mail.NewEmail("Voicely", "no-reply@spksy.app"),
+		"Voicely Login Pin",
+		mail.NewEmail("", recipient),
+		mail.NewContent("text/plain", "Your login pin is: " + pin),
+	)
+
 
 	_, err := s.client.Send(message)
 	return err

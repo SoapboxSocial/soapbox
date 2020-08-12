@@ -13,10 +13,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/sendgrid/sendgrid-go"
-	"github.com/sendgrid/sendgrid-go/helpers/mail"
-
 	httputil "github.com/ephemeral-networks/voicely/pkg/http"
+	"github.com/ephemeral-networks/voicely/pkg/mail"
 	"github.com/ephemeral-networks/voicely/pkg/sessions"
 	"github.com/ephemeral-networks/voicely/pkg/users"
 )
@@ -24,8 +22,6 @@ import (
 // Contains the login handlers
 
 const expiration = 8760 * time.Hour
-
-const sendgrid_api = "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"
 
 const LoginStateRegister = "register"
 const LoginStateSuccess = "success"
@@ -51,14 +47,17 @@ type LoginEndpoint struct {
 
 	users    *users.UserBackend
 	sessions *sessions.SessionManager
+
+	mail *mail.Service
 }
 
-func NewLoginEndpoint(ub *users.UserBackend, manager *sessions.SessionManager) LoginEndpoint {
+func NewLoginEndpoint(ub *users.UserBackend, manager *sessions.SessionManager, mail *mail.Service) LoginEndpoint {
 	return LoginEndpoint{
 		tokens:        make(map[string]tokenState),
 		registrations: make(map[string]string),
 		users:         ub,
 		sessions:      manager,
+		mail:          mail,
 	}
 }
 
@@ -82,7 +81,7 @@ func (l *LoginEndpoint) Start(w http.ResponseWriter, r *http.Request) {
 
 	l.tokens[token] = tokenState{email: email, pin: pin}
 
-	err = sendEmail(email, pin)
+	err = l.mail.SendPinEmail(email, pin)
 	if err != nil {
 		log.Println("failed to send code: ", err.Error())
 		httputil.JsonError(w, 500, httputil.ErrorCodeFailedToLogin, "failed to send code")
@@ -206,22 +205,6 @@ func (l *LoginEndpoint) Register(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println("error writing response: " + err.Error())
 	}
-}
-
-func sendEmail(recipient string, pin string) error {
-	from := mail.NewEmail("Voicely", "no-reply@spksy.app")
-	subject := "Voicely Pin"
-	to := mail.NewEmail("", recipient)
-	plainTextContent := "Your login pin is: " + pin
-	htmlContent := fmt.Sprintf("Your login pin is: <strong>%s</strong>", pin)
-	message := mail.NewSingleEmail(from, subject, to, plainTextContent, htmlContent)
-	client := sendgrid.NewSendClient(sendgrid_api)
-	_, err := client.Send(message)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 var emailRegex = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")

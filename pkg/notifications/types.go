@@ -28,7 +28,7 @@ func NewRoomNotification(id int, creator string) Notification {
 	}
 }
 
-func NewRoomNotificationWithName(id int, creator string, name string) Notification {
+func NewRoomNotificationWithName(id int, creator, name string) Notification {
 	return Notification{
 		Category: NEW_ROOM,
 		Alert: Alert{

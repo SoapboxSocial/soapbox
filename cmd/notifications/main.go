@@ -108,7 +108,6 @@ func onRoomCreation(event *notifications.Event) error {
 	}
 
 	for _, target := range targets {
-		fmt.Println(target)
 		err = service.Send(target, notification)
 		if err != nil {
 			log.Printf("failed to send to target \"%s\" with error: %s", target, err.Error())

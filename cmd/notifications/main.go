@@ -38,7 +38,7 @@ func main() {
 
 	authKey, err := token.AuthKeyFromFile("/conf/authkey.p8")
 	if err != nil {
-		log.Fatal("token error:", err)
+		panic(err)
 	}
 
 	client := apns2.NewTokenClient(&token.Token{

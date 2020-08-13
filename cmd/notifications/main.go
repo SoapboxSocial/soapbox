@@ -36,7 +36,7 @@ func main() {
 	devicesBackend = devices.NewDevicesBackend(db)
 	userBackend = users.NewUserBackend(db)
 
-	authKey, err := token.AuthKeyFromFile("/vagrant/conf/AuthKey_82439YH93F.p8")
+	authKey, err := token.AuthKeyFromFile("/conf/authkey.p8")
 	if err != nil {
 		log.Fatal("token error:", err)
 	}

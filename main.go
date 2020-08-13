@@ -170,13 +170,11 @@ func main() {
 			return
 		}
 
-		go func() {
-			queue.Push(notifications.Event{
-				Type: notifications.EventTypeRoomCreation,
-				Creator: userID,
-				Params: map[string]interface{}{"name": name, "id": id},
-			})
-		}()
+		queue.Push(notifications.Event{
+			Type: notifications.EventTypeRoomCreation,
+			Creator: userID,
+			Params: map[string]interface{}{"name": name, "id": id},
+		})
 
 	}).Methods("POST")
 

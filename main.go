@@ -18,10 +18,10 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pion/webrtc/v3"
 
+	devicesapi "github.com/ephemeral-networks/voicely/pkg/api/devices"
 	"github.com/ephemeral-networks/voicely/pkg/api/login"
 	"github.com/ephemeral-networks/voicely/pkg/api/middleware"
 	usersapi "github.com/ephemeral-networks/voicely/pkg/api/users"
-	devicesapi "github.com/ephemeral-networks/voicely/pkg/api/devices"
 	"github.com/ephemeral-networks/voicely/pkg/devices"
 	"github.com/ephemeral-networks/voicely/pkg/followers"
 	httputil "github.com/ephemeral-networks/voicely/pkg/http"

@@ -21,7 +21,7 @@ func NewRoomNotification(id int, creator string) Notification {
 	return Notification{
 		Category: NEW_ROOM,
 		Alert: Alert{
-			Key: "new_room_notification",
+			Key:       "new_room_notification",
 			Arguments: []string{creator},
 		},
 		Arguments: map[string]interface{}{"id": id},
@@ -32,7 +32,7 @@ func NewRoomNotificationWithName(id int, creator, name string) Notification {
 	return Notification{
 		Category: NEW_ROOM,
 		Alert: Alert{
-			Key: "new_room_with_name_notification",
+			Key:       "new_room_with_name_notification",
 			Arguments: []string{creator, name},
 		},
 		Arguments: map[string]interface{}{"id": id},

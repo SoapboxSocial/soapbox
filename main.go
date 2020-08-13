@@ -21,6 +21,8 @@ import (
 	"github.com/ephemeral-networks/voicely/pkg/api/login"
 	"github.com/ephemeral-networks/voicely/pkg/api/middleware"
 	usersapi "github.com/ephemeral-networks/voicely/pkg/api/users"
+	devicesapi "github.com/ephemeral-networks/voicely/pkg/api/devices"
+	"github.com/ephemeral-networks/voicely/pkg/devices"
 	"github.com/ephemeral-networks/voicely/pkg/followers"
 	httputil "github.com/ephemeral-networks/voicely/pkg/http"
 	"github.com/ephemeral-networks/voicely/pkg/mail"
@@ -67,6 +69,8 @@ func main() {
 	s := sessions.NewSessionManager(rdb)
 	ub := users.NewUserBackend(db)
 	fb := followers.NewFollowersBackend(db)
+
+	devicesBackend := devices.NewDevicesBackend(db)
 
 	manager := rooms.NewRoomManager()
 
@@ -271,6 +275,12 @@ func main() {
 
 	amw := middleware.NewAuthenticationMiddleware(s)
 	userRoutes.Use(amw.Middleware)
+
+	devicesRoutes := r.PathPrefix("/v1/devices").Subrouter()
+
+	devicesEndpoint := devicesapi.NewDevicesEndpoint(devicesBackend)
+	devicesRoutes.HandleFunc("/add", devicesEndpoint.AddDevice).Methods("POST")
+	devicesRoutes.Use(amw.Middleware)
 
 	log.Fatal(http.ListenAndServe(":8080", r))
 }

@@ -21,5 +21,5 @@ CREATE TABLE IF NOT EXISTS followers (
 CREATE TABLE IF NOT exists devices (
     token VARCHAR(64) PRIMARY KEY,
     user_id INT NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) DELETE ON CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );

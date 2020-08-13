@@ -2,7 +2,6 @@ package notifications
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/sideshow/apns2"
 )
@@ -25,8 +24,6 @@ func (s *Service) Send(target string, notification Notification) error {
 	if err != nil {
 		return err
 	}
-
-	fmt.Println(string(data))
 
 	payload := &apns2.Notification{}
 	payload.DeviceToken = target

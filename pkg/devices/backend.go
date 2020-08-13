@@ -54,3 +54,30 @@ func (db *DevicesBackend) GetDevicesForUser(id int) ([]string, error) {
 
 	return result, nil
 }
+
+func (db *DevicesBackend) FetchAllFollowerDevices(id int) ([]string, error) {
+	stmt, err := db.db.Prepare("SELECT devices.token FROM devices INNER JOIN followers ON (devices.user_id = followers.follower) WHERE followers.user_id = $1;")
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := stmt.Query(id)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]string, 0)
+
+	for rows.Next() {
+		var token string
+
+		err := rows.Scan(&token)
+		if err != nil {
+			return nil, err // @todo
+		}
+
+		result = append(result, token)
+	}
+
+	return result, nil
+}

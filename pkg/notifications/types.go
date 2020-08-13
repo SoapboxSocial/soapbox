@@ -8,7 +8,7 @@ const (
 
 type Alert struct {
 	Key       string   `json:"loc-key"`
-	Arguments []string `json:"log-args"`
+	Arguments []string `json:"loc-args"`
 }
 
 type Notification struct {

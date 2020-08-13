@@ -30,5 +30,14 @@ func main() {
 }
 
 func handleEvent(event *notifications.Event) {
+	switch event.Type {
+	case notifications.EventTypeRoomCreation:
+		onRoomCreation(event)
+	default:
+		log.Printf("unknown event type \"%d\"", event.Type)
+	}
+}
 
+func onRoomCreation(event *notifications.Event) {
+	// @todo gather all followers with devices
 }

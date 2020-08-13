@@ -26,6 +26,7 @@ import (
 	"github.com/ephemeral-networks/voicely/pkg/followers"
 	httputil "github.com/ephemeral-networks/voicely/pkg/http"
 	"github.com/ephemeral-networks/voicely/pkg/mail"
+	"github.com/ephemeral-networks/voicely/pkg/notifications"
 	"github.com/ephemeral-networks/voicely/pkg/rooms"
 	"github.com/ephemeral-networks/voicely/pkg/sessions"
 	"github.com/ephemeral-networks/voicely/pkg/users"
@@ -65,6 +66,8 @@ func main() {
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
+
+	queue := notifications.NewNotificationQueue(rdb)
 
 	s := sessions.NewSessionManager(rdb)
 	ub := users.NewUserBackend(db)
@@ -164,7 +167,17 @@ func main() {
 		if err != nil {
 			manager.RemoveRoom(room.GetID())
 			fmt.Println(err)
+			return
 		}
+
+		go func() {
+			queue.Push(notifications.Event{
+				Type: notifications.EventTypeRoomCreation,
+				Creator: userID,
+				Params: map[string]interface{}{"name": name, "id": id},
+			})
+		}()
+
 	}).Methods("POST")
 
 	r.HandleFunc("/v1/rooms/{id:[0-9]+}/join", func(w http.ResponseWriter, r *http.Request) {

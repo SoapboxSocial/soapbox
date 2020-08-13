@@ -12,8 +12,8 @@ CREATE TABLE IF NOT EXISTS followers (
     follower INT NOT NULL,
     user_id INT NOT NULL,
     CHECK (user_id != follower),
-    FOREIGN KEY (follower) REFERENCES users(id),
-    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (follower) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     PRIMARY KEY (follower, user_id)
 );
 
@@ -21,5 +21,5 @@ CREATE TABLE IF NOT EXISTS followers (
 CREATE TABLE IF NOT exists devices (
     token VARCHAR(64) PRIMARY KEY,
     user_id INT NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) DELETE ON CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) DELETE ON CASCADE
 );

@@ -52,7 +52,6 @@ mkdir -p $GOPATH/src/github.com/ephemeral-networks/
 sudo ln -s /var/www/ $GOPATH/src/github.com/ephemeral-networks/voicely
 
 cd $GOPATH/src/github.com/ephemeral-networks/voicely && sudo go build -o /usr/local/bin/voicely main.go
-cd $GOPATH/src/github.com/ephemeral-networks/cmd/notifications && sudo go build -o /usr/local/bin/notifications main.go
 
 touch /vagrant/provisioned
 

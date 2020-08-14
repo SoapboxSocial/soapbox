@@ -21,7 +21,6 @@ func (s *Service) SendPinEmail(recipient, pin string) error {
 		mail.NewContent("text/plain", "Your login pin is: " + pin),
 	)
 
-
 	_, err := s.client.Send(message)
 	return err
 }

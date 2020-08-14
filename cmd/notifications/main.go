@@ -45,7 +45,7 @@ func main() {
 		AuthKey: authKey,
 		KeyID:   "82439YH93F",
 		TeamID:  "Z9LC5GZ33U",
-	})
+	}).Production()
 
 	service = notifications.NewService("com.voicely.voicely", client)
 

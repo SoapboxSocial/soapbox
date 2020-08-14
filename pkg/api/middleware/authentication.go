@@ -46,8 +46,7 @@ func (h authenticationHandler) Middleware(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := WithUserID(req.Context(), id)
-		r := req.WithContext(ctx)
+		r := req.WithContext(WithUserID(req.Context(), id))
 
 		next.ServeHTTP(w, r)
 	})

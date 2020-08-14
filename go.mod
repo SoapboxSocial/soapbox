@@ -17,7 +17,6 @@ require (
 	github.com/sendgrid/sendgrid-go v3.6.1+incompatible
 	go.opentelemetry.io/otel v0.10.0 // indirect
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de // indirect
-	golang.org/x/net v0.0.0-20200707034311-ab3426394381 // indirect
 	golang.org/x/sys v0.0.0-20200810151505-1b9f1253b3ed // indirect
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	google.golang.org/grpc v1.31.0 // indirect

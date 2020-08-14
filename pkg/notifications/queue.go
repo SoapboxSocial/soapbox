@@ -2,7 +2,6 @@ package notifications
 
 import (
 	"encoding/json"
-	"errors"
 
 	"github.com/go-redis/redis/v8"
 )
@@ -31,6 +30,15 @@ func NewNotificationQueue(db *redis.Client) *Queue {
 	}
 }
 
+func (q *Queue) Len() int {
+	val, err := q.db.LLen(q.db.Context(), queueName).Result()
+	if err != nil {
+		return 0
+	}
+
+	return int(val)
+}
+
 func (q *Queue) Push(event Event) {
 	data, err := json.Marshal(event)
 	if err != nil {
@@ -41,14 +49,13 @@ func (q *Queue) Push(event Event) {
 }
 
 func (q *Queue) Pop() (*Event, error) {
-	if q.db.LLen(q.db.Context(), queueName).Val() == 0 {
-		return nil, errors.New("no data")
+	result, err := q.db.LPop(q.db.Context(), queueName).Result()
+	if err != nil {
+		return nil, err
 	}
 
-	result := q.db.LPop(q.db.Context(), queueName)
-
 	event := &Event{}
-	err := json.Unmarshal([]byte(result.Val()), event)
+	err = json.Unmarshal([]byte(result), event)
 	if err != nil {
 		return nil, err
 	}

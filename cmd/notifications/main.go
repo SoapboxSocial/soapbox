@@ -49,12 +49,12 @@ func main() {
 	service = notifications.NewService("com.voicely.voicely", client)
 
 	for {
+		if queue.Len() == 0 {
+			continue
+		}
+
 		event, err := queue.Pop()
 		if err != nil {
-			if err.Error() == "no data" {
-				continue
-			}
-
 			log.Printf("failed to pop from queue: %s\n", err)
 			continue
 		}

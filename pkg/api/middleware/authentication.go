@@ -22,13 +22,13 @@ func (h authenticationHandler) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		token := req.Header.Get("Authorization")
 		if token == "" {
-			httputil.JsonError(w, 401, httputil.ErrorCodeUnauthorized, "unauthorized")
+			httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeUnauthorized, "unauthorized")
 			return
 		}
 
 		id, err := h.sm.GetUserIDForSession(token)
 		if err != nil || id == 0 {
-			httputil.JsonError(w, 401, httputil.ErrorCodeUnauthorized, "unauthorized")
+			httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeUnauthorized, "unauthorized")
 			return
 		}
 

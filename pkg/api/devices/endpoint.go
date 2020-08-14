@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	auth "github.com/ephemeral-networks/voicely/pkg/api/middleware"
 	"github.com/ephemeral-networks/voicely/pkg/devices"
 	httputil "github.com/ephemeral-networks/voicely/pkg/http"
 )
@@ -31,7 +32,13 @@ func (d *DevicesEndpoint) AddDevice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = d.db.AddDeviceForUser(r.Context().Value("id").(int), token)
+	userID, ok := auth.GetUserIDFromContext(r.Context())
+	if !ok {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	err = d.db.AddDeviceForUser(userID, token)
 	if err != nil {
 		log.Println("failed to create session: ", err.Error())
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToStoreDevice, "failed")

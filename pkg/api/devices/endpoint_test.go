@@ -1,7 +1,6 @@
 package devices_test
 
 import (
-	"context"
 	"errors"
 	"io/ioutil"
 	"log"
@@ -14,6 +13,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 
 	"github.com/ephemeral-networks/voicely/pkg/api/devices"
+	auth "github.com/ephemeral-networks/voicely/pkg/api/middleware"
 	backend "github.com/ephemeral-networks/voicely/pkg/devices"
 )
 
@@ -32,7 +32,7 @@ func TestDevicesEndpoint_AddDevice(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	req := r.WithContext(context.WithValue(r.Context(), "id", session))
+	req := r.WithContext(auth.WithUserID(r.Context(), session))
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
@@ -94,7 +94,7 @@ func TestDevicesEndpoint_AddDeviceWithBackendError(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	req := r.WithContext(context.WithValue(r.Context(), "id", session))
+	req := r.WithContext(auth.WithUserID(r.Context(), session))
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 

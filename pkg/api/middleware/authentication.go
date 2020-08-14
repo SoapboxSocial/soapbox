@@ -13,8 +13,13 @@ type key string
 const userID key = "id"
 
 func GetUserIDFromContext(ctx context.Context) (int, bool) {
-	id, ok := ctx.Value(userID).(int)
+	val := ctx.Value(userID)
+	id, ok := val.(int)
 	return id, ok
+}
+
+func WithUserID(ctx context.Context, id int) context.Context {
+	return context.WithValue(ctx, userID, id)
 }
 
 type authenticationHandler struct {
@@ -41,7 +46,7 @@ func (h authenticationHandler) Middleware(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(req.Context(), userID, id)
+		ctx := WithUserID(req.Context(), id)
 		r := req.WithContext(ctx)
 
 		next.ServeHTTP(w, r)

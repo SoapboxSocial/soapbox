@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"log"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
@@ -50,6 +51,8 @@ func main() {
 
 	for {
 		if queue.Len() == 0 {
+			// @todo think about this timeout
+			time.Sleep(1 * time.Second)
 			continue
 		}
 

@@ -104,7 +104,7 @@ func main() {
 		b, err := ioutil.ReadAll(r.Body)
 		defer r.Body.Close()
 		if err != nil {
-			httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
+			httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
 			return
 		}
 
@@ -116,14 +116,14 @@ func main() {
 
 		user, err := ub.FindByID(userID)
 		if err != nil {
-			httputil.JsonError(w, 500, httputil.ErrorCodeRoomFailedToJoin, "failed to join room")
+			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeRoomFailedToJoin, "failed to join room")
 			return
 		}
 
 		payload := &SDPPayload{}
 		err = json.Unmarshal(b, payload)
 		if err != nil {
-			httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
+			httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
 			log.Printf("failed to decode payload: %s\n", err.Error())
 			return
 		}
@@ -149,7 +149,7 @@ func main() {
 		sdp, err := room.Join(userID, user.DisplayName, p)
 		if err != nil {
 			manager.RemoveRoom(room.GetID())
-			httputil.JsonError(w, 500, httputil.ErrorCodeFailedToCreateRoom, "failed to create room")
+			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToCreateRoom, "failed to create room")
 			return
 		}
 
@@ -167,7 +167,7 @@ func main() {
 		b, err := ioutil.ReadAll(r.Body)
 		defer r.Body.Close()
 		if err != nil {
-			httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
+			httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
 			return
 		}
 
@@ -179,14 +179,14 @@ func main() {
 
 		user, err := ub.FindByID(userID)
 		if err != nil {
-			httputil.JsonError(w, 500, httputil.ErrorCodeRoomFailedToJoin, "failed to join room")
+			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeRoomFailedToJoin, "failed to join room")
 			return
 		}
 
 		payload := &SDPPayload{}
 		err = json.Unmarshal(b, payload)
 		if err != nil {
-			httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
+			httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
 			log.Printf("failed to decode payload: %s\n", err.Error())
 			return
 		}
@@ -210,13 +210,13 @@ func main() {
 
 		room, err := manager.GetRoom(id)
 		if err != nil {
-			httputil.JsonError(w, 404, httputil.ErrorCodeRoomNotFound, "room not found")
+			httputil.JsonError(w, http.StatusNotFound, httputil.ErrorCodeRoomNotFound, "room not found")
 			return
 		}
 
 		sdp, err := room.Join(userID, user.DisplayName, p)
 		if err != nil {
-			httputil.JsonError(w, 500, httputil.ErrorCodeRoomFailedToJoin, "failed to join room")
+			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeRoomFailedToJoin, "failed to join room")
 			return
 		}
 

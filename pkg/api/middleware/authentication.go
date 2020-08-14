@@ -8,6 +8,15 @@ import (
 	"github.com/ephemeral-networks/voicely/pkg/sessions"
 )
 
+type key string
+
+const userID key = "id"
+
+func GetUserFromContext(ctx context.Context) (int, bool) {
+	id, ok := ctx.Value(userID).(int)
+	return id, ok
+}
+
 type authenticationHandler struct {
 	sm *sessions.SessionManager
 }
@@ -32,7 +41,7 @@ func (h authenticationHandler) Middleware(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(req.Context(), "id", id)
+		ctx := context.WithValue(req.Context(), userID, id)
 		r := req.WithContext(ctx)
 
 		next.ServeHTTP(w, r)

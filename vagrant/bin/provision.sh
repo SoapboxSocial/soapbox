@@ -25,6 +25,7 @@ rm -rf /etc/supervisord.conf
 sudo ln -s /vagrant/conf/supervisord.conf /etc/supervisord.conf
 sudo mkdir -p /etc/supervisor/conf.d/
 sudo ln -s /vagrant/conf/voicely.conf /etc/supervisor/conf.d/voicely.conf
+sudo ln -s /vagrant/conf/notifications.conf /etc/supervisor/conf.d/notifications.conf
 
 echo 'export GOPATH="/home/vagrant/go"' >> ~/.bashrc
 echo 'export PATH="$PATH:${GOPATH//://bin:}/bin"' >> ~/.bashrc

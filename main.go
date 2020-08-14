@@ -18,12 +18,15 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pion/webrtc/v3"
 
+	devicesapi "github.com/ephemeral-networks/voicely/pkg/api/devices"
 	"github.com/ephemeral-networks/voicely/pkg/api/login"
 	"github.com/ephemeral-networks/voicely/pkg/api/middleware"
 	usersapi "github.com/ephemeral-networks/voicely/pkg/api/users"
+	"github.com/ephemeral-networks/voicely/pkg/devices"
 	"github.com/ephemeral-networks/voicely/pkg/followers"
 	httputil "github.com/ephemeral-networks/voicely/pkg/http"
 	"github.com/ephemeral-networks/voicely/pkg/mail"
+	"github.com/ephemeral-networks/voicely/pkg/notifications"
 	"github.com/ephemeral-networks/voicely/pkg/rooms"
 	"github.com/ephemeral-networks/voicely/pkg/sessions"
 	"github.com/ephemeral-networks/voicely/pkg/users"
@@ -64,9 +67,13 @@ func main() {
 		DB:       0,  // use default DB
 	})
 
+	queue := notifications.NewNotificationQueue(rdb)
+
 	s := sessions.NewSessionManager(rdb)
 	ub := users.NewUserBackend(db)
 	fb := followers.NewFollowersBackend(db)
+
+	devicesBackend := devices.NewDevicesBackend(db)
 
 	manager := rooms.NewRoomManager()
 
@@ -160,7 +167,15 @@ func main() {
 		if err != nil {
 			manager.RemoveRoom(room.GetID())
 			fmt.Println(err)
+			return
 		}
+
+		queue.Push(notifications.Event{
+			Type:    notifications.EventTypeRoomCreation,
+			Creator: userID,
+			Params:  map[string]interface{}{"name": name, "id": id},
+		})
+
 	}).Methods("POST")
 
 	r.HandleFunc("/v1/rooms/{id:[0-9]+}/join", func(w http.ResponseWriter, r *http.Request) {
@@ -271,6 +286,12 @@ func main() {
 
 	amw := middleware.NewAuthenticationMiddleware(s)
 	userRoutes.Use(amw.Middleware)
+
+	devicesRoutes := r.PathPrefix("/v1/devices").Subrouter()
+
+	devicesEndpoint := devicesapi.NewDevicesEndpoint(devicesBackend)
+	devicesRoutes.HandleFunc("/add", devicesEndpoint.AddDevice).Methods("POST")
+	devicesRoutes.Use(amw.Middleware)
 
 	log.Fatal(http.ListenAndServe(":8080", r))
 }

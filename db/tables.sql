@@ -16,3 +16,10 @@ CREATE TABLE IF NOT EXISTS followers (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     PRIMARY KEY (follower, user_id)
 );
+
+-- Check token length
+CREATE TABLE IF NOT exists devices (
+    token VARCHAR(64) PRIMARY KEY,
+    user_id INT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);

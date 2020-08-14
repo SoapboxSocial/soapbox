@@ -18,7 +18,7 @@ func (s *Service) SendPinEmail(recipient, pin string) error {
 		mail.NewEmail("Voicely", "no-reply@spksy.app"),
 		"Voicely Login Pin",
 		mail.NewEmail("", recipient),
-		mail.NewContent("text/plain", "Your login pin is: " + pin),
+		mail.NewContent("text/plain", "Your login pin is: "+pin),
 	)
 
 	_, err := s.client.Send(message)

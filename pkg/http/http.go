@@ -25,6 +25,7 @@ const (
 	ErrorCodeFailedToGetUser
 	ErrorCodeFailedToGetFollowers
 	ErrorCodeUnauthorized
+	ErrorCodeFailedToStoreDevice
 )
 
 // JsonError writes an Error to the ResponseWriter with the provided information.

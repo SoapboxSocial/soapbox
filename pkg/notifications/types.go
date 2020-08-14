@@ -42,7 +42,7 @@ func NewRoomNotificationWithName(id int, creator, name string) *Notification {
 
 func NewFollowerNotification(id int, follower string) *Notification {
 	return &Notification{
-		Category: NEW_ROOM,
+		Category: NEW_FOLLOWER,
 		Alert: Alert{
 			Key:       "new_follower_notification",
 			Arguments: []string{follower},

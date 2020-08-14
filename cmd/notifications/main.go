@@ -80,7 +80,7 @@ func handleEvent(event *notifications.Event) {
 
 	targets, notification, err := handler(event)
 	if err != nil {
-		log.Printf("handler \"%d\" failed with error: %s", event.Type, err.Error())
+		log.Printf("handler \"%d\" failed with error: %s\n", event.Type, err.Error())
 	}
 
 	if notification == nil {
@@ -91,7 +91,7 @@ func handleEvent(event *notifications.Event) {
 	for _, target := range targets {
 		err := service.Send(target, *notification)
 		if err != nil {
-			log.Printf("failed to send to target \"%s\" with error: %s", target, err.Error())
+			log.Printf("failed to send to target \"%s\" with error: %s\n", target, err.Error())
 		}
 	}
 }

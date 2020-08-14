@@ -8,6 +8,7 @@ import (
 
 	"github.com/gorilla/mux"
 
+	auth "github.com/ephemeral-networks/voicely/pkg/api/middleware"
 	"github.com/ephemeral-networks/voicely/pkg/followers"
 	httputil "github.com/ephemeral-networks/voicely/pkg/http"
 	"github.com/ephemeral-networks/voicely/pkg/sessions"
@@ -33,7 +34,11 @@ func (u *UsersEndpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	caller := r.Context().Value("id").(int)
+	caller, ok := auth.GetUserIDFromContext(r.Context())
+	if !ok {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
 
 	var user *users.Profile
 	if caller == id {
@@ -114,7 +119,13 @@ func (u *UsersEndpoint) FollowUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = u.fb.FollowUser(r.Context().Value("id").(int), id)
+	userID, ok := auth.GetUserIDFromContext(r.Context())
+	if !ok {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	err = u.fb.FollowUser(userID, id)
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "failed to follow")
 		return
@@ -136,7 +147,13 @@ func (u *UsersEndpoint) UnfollowUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = u.fb.UnfollowUser(r.Context().Value("id").(int), id)
+	userID, ok := auth.GetUserIDFromContext(r.Context())
+	if !ok {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	err = u.fb.UnfollowUser(userID, id)
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "failed to unfollow")
 		return

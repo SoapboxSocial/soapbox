@@ -12,7 +12,7 @@ type key string
 
 const userID key = "id"
 
-func GetUserFromContext(ctx context.Context) (int, bool) {
+func GetUserIDFromContext(ctx context.Context) (int, bool) {
 	id, ok := ctx.Value(userID).(int)
 	return id, ok
 }

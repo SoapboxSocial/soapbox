@@ -34,7 +34,7 @@ func (u *UsersEndpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	caller, ok := auth.GetUserFromContext(r.Context())
+	caller, ok := auth.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 		return
@@ -119,7 +119,7 @@ func (u *UsersEndpoint) FollowUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, ok := auth.GetUserFromContext(r.Context())
+	userID, ok := auth.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 		return
@@ -147,7 +147,7 @@ func (u *UsersEndpoint) UnfollowUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, ok := auth.GetUserFromContext(r.Context())
+	userID, ok := auth.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 		return

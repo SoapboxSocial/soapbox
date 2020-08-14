@@ -41,6 +41,8 @@ func main() {
 		panic(err)
 	}
 
+	// @todo add flag for which enviroment
+
 	client := apns2.NewTokenClient(&token.Token{
 		AuthKey: authKey,
 		KeyID:   "82439YH93F",

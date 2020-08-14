@@ -64,13 +64,13 @@ func NewLoginEndpoint(ub *users.UserBackend, manager *sessions.SessionManager, m
 func (l *LoginEndpoint) Start(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
-		httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "")
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}
 
 	email := strings.ToLower(r.Form.Get("email"))
 	if !validateEmail(email) {
-		httputil.JsonError(w, 400, httputil.ErrorCodeInvalidEmail, "invalid email")
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidEmail, "invalid email")
 		return
 	}
 
@@ -82,7 +82,7 @@ func (l *LoginEndpoint) Start(w http.ResponseWriter, r *http.Request) {
 	err = l.mail.SendPinEmail(email, pin)
 	if err != nil {
 		log.Println("failed to send code: ", err.Error())
-		httputil.JsonError(w, 500, httputil.ErrorCodeFailedToLogin, "failed to send code")
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToLogin, "failed to send code")
 	}
 
 	err = json.NewEncoder(w).Encode(map[string]string{"token": token})
@@ -94,7 +94,7 @@ func (l *LoginEndpoint) Start(w http.ResponseWriter, r *http.Request) {
 func (l *LoginEndpoint) SubmitPin(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
-		httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "")
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}
 
@@ -103,12 +103,12 @@ func (l *LoginEndpoint) SubmitPin(w http.ResponseWriter, r *http.Request) {
 
 	state, ok := l.tokens[token]
 	if !ok {
-		httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "")
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}
 
 	if state.pin != pin {
-		httputil.JsonError(w, 400, httputil.ErrorCodeIncorrectPin, "")
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeIncorrectPin, "")
 		return
 	}
 
@@ -121,13 +121,13 @@ func (l *LoginEndpoint) SubmitPin(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		httputil.JsonError(w, 500, httputil.ErrorCodeFailedToLogin, "")
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToLogin, "")
 		return
 	}
 
 	err = l.sessions.NewSession(token, *user, expiration)
 	if err != nil {
-		httputil.JsonError(w, 500, httputil.ErrorCodeFailedToLogin, "")
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToLogin, "")
 		return
 	}
 
@@ -150,42 +150,42 @@ func (l *LoginEndpoint) enterRegistrationState(w http.ResponseWriter, token stri
 func (l *LoginEndpoint) Register(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
-		httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "")
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}
 
 	token := r.Form.Get("token")
 	if token == "" {
-		httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "")
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}
 
 	email, ok := l.registrations[token]
 	if !ok {
-		httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "")
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}
 
 	username := strings.ToLower(r.Form.Get("username"))
 	if !validateUsername(username) {
-		httputil.JsonError(w, 400, httputil.ErrorCodeInvalidUsername, "invalid parameter: username")
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidUsername, "invalid parameter: username")
 		return
 	}
 
 	name := r.Form.Get("display_name")
 	if name == "" {
-		httputil.JsonError(w, 400, httputil.ErrorCodeMissingParameter, "missing parameter: display_name")
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeMissingParameter, "missing parameter: display_name")
 		return
 	}
 
 	lastID, err := l.users.CreateUser(email, name, username)
 	if err != nil {
 		if err.Error() == "pq: duplicate key value violates unique constraint \"idx_username\"" {
-			httputil.JsonError(w, 400, httputil.ErrorCodeUsernameAlreadyExists, "username already exists")
+			httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeUsernameAlreadyExists, "username already exists")
 			return
 		}
 
-		httputil.JsonError(w, 500, httputil.ErrorCodeFailedToRegister, "failed to register")
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToRegister, "failed to register")
 		return
 	}
 
@@ -194,7 +194,7 @@ func (l *LoginEndpoint) Register(w http.ResponseWriter, r *http.Request) {
 	err = l.sessions.NewSession(token, user, expiration)
 	if err != nil {
 		log.Println("failed to create session: ", err.Error())
-		httputil.JsonError(w, 500, httputil.ErrorCodeFailedToLogin, "")
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToLogin, "")
 		return
 	}
 

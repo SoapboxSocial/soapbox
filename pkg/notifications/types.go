@@ -3,8 +3,8 @@ package notifications
 type NotificationCategory string
 
 const (
-	NEW_ROOM NotificationCategory = "NEW_ROOM"
-	NEW_FOLLOWER NotificationCategory = "NEW_FOLLOWER"
+	NEW_ROOM     NotificationCategory = "NEW_ROOM"
+	NEW_FOLLOWER                      = "NEW_FOLLOWER"
 )
 
 type Alert struct {

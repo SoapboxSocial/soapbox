@@ -119,7 +119,6 @@ func onRoomCreation(event *notifications.Event) ([]string, *notifications.Notifi
 		return nil, nil, errors.New("failed to recover room ID")
 	}
 
-
 	displayName, err := getDisplayName(event.Creator)
 	if err != nil {
 		return nil, nil, err

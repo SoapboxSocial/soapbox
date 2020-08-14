@@ -120,7 +120,6 @@ func TestDevicesEndpoint_AddDeviceWithBackendError(t *testing.T) {
 	}
 }
 
-
 func TestDevicesEndpoint_AddDeviceWithoutForm(t *testing.T) {
 	req, err := http.NewRequest("POST", "/v1/devices/add", nil)
 	if err != nil {

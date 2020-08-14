@@ -46,7 +46,7 @@ func (db *DevicesBackend) GetDevicesForUser(id int) ([]string, error) {
 
 		err := rows.Scan(&token)
 		if err != nil {
-			return nil, err // @todo
+			return nil, err
 		}
 
 		result = append(result, token)
@@ -73,7 +73,7 @@ func (db *DevicesBackend) FetchAllFollowerDevices(id int) ([]string, error) {
 
 		err := rows.Scan(&token)
 		if err != nil {
-			return nil, err // @todo
+			return nil, err
 		}
 
 		result = append(result, token)

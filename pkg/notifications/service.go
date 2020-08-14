@@ -25,10 +25,11 @@ func (s *Service) Send(target string, notification Notification) error {
 		return err
 	}
 
-	payload := &apns2.Notification{}
-	payload.DeviceToken = target
-	payload.Topic = s.topic
-	payload.Payload = data
+	payload := &apns2.Notification{
+		DeviceToken: target,
+		Topic: s.topic,
+		Payload: data,
+	}
 
 	// @todo handle response properly
 	_, err = s.client.Push(payload)

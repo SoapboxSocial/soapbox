@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"errors"
 	"log"
 	"time"
 
@@ -18,6 +19,8 @@ import (
 var devicesBackend *devices.DevicesBackend
 var userBackend *users.UserBackend
 var service *notifications.Service
+
+type handlerFunc func(*notifications.Event) ([]string, *notifications.Notification, error)
 
 func main() {
 	rdb := redis.NewClient(&redis.Options{
@@ -75,50 +78,81 @@ func handleEvent(event *notifications.Event) {
 		return
 	}
 
-	err := handler(event)
+	targets, notification, err := handler(event)
 	if err != nil {
 		log.Printf("handler \"%d\" failed with error: %s", event.Type, err.Error())
 	}
+
+	if notification == nil {
+		log.Println("notification unexpectedly nil")
+		return
+	}
+
+	for _, target := range targets {
+		err := service.Send(target, *notification)
+		if err != nil {
+			log.Printf("failed to send to target \"%s\" with error: %s", target, err.Error())
+		}
+	}
 }
 
-func getHandler(eventType notifications.EventType) func(*notifications.Event) error {
+func getHandler(eventType notifications.EventType) handlerFunc {
 	switch eventType {
 	case notifications.EventTypeRoomCreation:
 		return onRoomCreation
+	case notifications.EventTypeNewFollower:
+		return onNewFollower
 	default:
 		return nil
 	}
 }
 
-func onRoomCreation(event *notifications.Event) error {
+func onRoomCreation(event *notifications.Event) ([]string, *notifications.Notification, error) {
 	targets, err := devicesBackend.FetchAllFollowerDevices(event.Creator)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
 	name := event.Params["name"].(string)
-	room := int(event.Params["id"].(float64))
+	room, ok := event.Params["id"].(float64)
+	if !ok {
+		return nil, nil, errors.New("failed to recover room ID")
+	}
+
 
 	displayName, err := getDisplayName(event.Creator)
 	if err != nil {
-		return err
+		return nil, nil, err
 	}
 
-	var notification notifications.Notification
-	if name == "" {
-		notification = notifications.NewRoomNotification(room, displayName)
-	} else {
-		notification = notifications.NewRoomNotificationWithName(room, displayName, name)
-	}
-
-	for _, target := range targets {
-		err = service.Send(target, notification)
-		if err != nil {
-			log.Printf("failed to send to target \"%s\" with error: %s", target, err.Error())
+	notification := func() *notifications.Notification {
+		if name == "" {
+			return notifications.NewRoomNotification(int(room), displayName)
 		}
+
+		return notifications.NewRoomNotificationWithName(int(room), displayName, name)
+	}()
+
+	return targets, notification, nil
+}
+
+func onNewFollower(event *notifications.Event) ([]string, *notifications.Notification, error) {
+	targetID, ok := event.Params["id"].(float64)
+	if !ok {
+		return nil, nil, errors.New("failed to recover target ID")
 	}
 
-	return nil
+	targets, err := devicesBackend.GetDevicesForUser(int(targetID))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	displayName, err := getDisplayName(event.Creator)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return targets, notifications.NewFollowerNotification(event.Creator, displayName), nil
 }
 
 func getDisplayName(id int) (string, error) {

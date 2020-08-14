@@ -11,6 +11,7 @@ import (
 	auth "github.com/ephemeral-networks/voicely/pkg/api/middleware"
 	"github.com/ephemeral-networks/voicely/pkg/followers"
 	httputil "github.com/ephemeral-networks/voicely/pkg/http"
+	"github.com/ephemeral-networks/voicely/pkg/notifications"
 	"github.com/ephemeral-networks/voicely/pkg/sessions"
 	"github.com/ephemeral-networks/voicely/pkg/users"
 )
@@ -19,10 +20,12 @@ type UsersEndpoint struct {
 	ub *users.UserBackend
 	fb *followers.FollowersBackend
 	sm *sessions.SessionManager
+
+	queue *notifications.Queue
 }
 
-func NewUsersEndpoint(ub *users.UserBackend, fb *followers.FollowersBackend, sm *sessions.SessionManager) *UsersEndpoint {
-	return &UsersEndpoint{ub: ub, fb: fb, sm: sm}
+func NewUsersEndpoint(ub *users.UserBackend, fb *followers.FollowersBackend, sm *sessions.SessionManager, queue *notifications.Queue) *UsersEndpoint {
+	return &UsersEndpoint{ub: ub, fb: fb, sm: sm, queue: queue}
 }
 
 func (u *UsersEndpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {
@@ -132,6 +135,12 @@ func (u *UsersEndpoint) FollowUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httputil.JsonSuccess(w)
+
+	u.queue.Push(notifications.Event{
+		Type: notifications.EventTypeNewFollower,
+		Creator: userID,
+		Params: map[string]interface{}{"id": id},
+	})
 }
 
 func (u *UsersEndpoint) UnfollowUser(w http.ResponseWriter, r *http.Request) {

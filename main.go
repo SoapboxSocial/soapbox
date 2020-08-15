@@ -17,12 +17,15 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pion/webrtc/v3"
 
+	devicesapi "github.com/ephemeral-networks/voicely/pkg/api/devices"
 	"github.com/ephemeral-networks/voicely/pkg/api/login"
 	"github.com/ephemeral-networks/voicely/pkg/api/middleware"
 	usersapi "github.com/ephemeral-networks/voicely/pkg/api/users"
+	"github.com/ephemeral-networks/voicely/pkg/devices"
 	"github.com/ephemeral-networks/voicely/pkg/followers"
 	httputil "github.com/ephemeral-networks/voicely/pkg/http"
 	"github.com/ephemeral-networks/voicely/pkg/mail"
+	"github.com/ephemeral-networks/voicely/pkg/notifications"
 	"github.com/ephemeral-networks/voicely/pkg/rooms"
 	"github.com/ephemeral-networks/voicely/pkg/sessions"
 	"github.com/ephemeral-networks/voicely/pkg/users"
@@ -63,9 +66,13 @@ func main() {
 		DB:       0,  // use default DB
 	})
 
+	queue := notifications.NewNotificationQueue(rdb)
+
 	s := sessions.NewSessionManager(rdb)
 	ub := users.NewUserBackend(db)
 	fb := followers.NewFollowersBackend(db)
+
+	devicesBackend := devices.NewDevicesBackend(db)
 
 	manager := rooms.NewRoomManager()
 
@@ -107,7 +114,7 @@ func main() {
 		b, err := ioutil.ReadAll(r.Body)
 		defer r.Body.Close()
 		if err != nil {
-			httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
+			httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
 			return
 		}
 
@@ -119,14 +126,14 @@ func main() {
 
 		user, err := ub.FindByID(userID)
 		if err != nil {
-			httputil.JsonError(w, 500, httputil.ErrorCodeRoomFailedToJoin, "failed to join room")
+			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeRoomFailedToJoin, "failed to join room")
 			return
 		}
 
 		payload := &SDPPayload{}
 		err = json.Unmarshal(b, payload)
 		if err != nil {
-			httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
+			httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
 			log.Printf("failed to decode payload: %s\n", err.Error())
 			return
 		}
@@ -152,7 +159,7 @@ func main() {
 		sdp, err := room.Join(userID, user.DisplayName, p)
 		if err != nil {
 			manager.RemoveRoom(room.GetID())
-			httputil.JsonError(w, 500, httputil.ErrorCodeFailedToCreateRoom, "failed to create room")
+			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToCreateRoom, "failed to create room")
 			return
 		}
 
@@ -163,14 +170,22 @@ func main() {
 		if err != nil {
 			manager.RemoveRoom(room.GetID())
 			fmt.Println(err)
+			return
 		}
+
+		queue.Push(notifications.Event{
+			Type:    notifications.EventTypeRoomCreation,
+			Creator: userID,
+			Params:  map[string]interface{}{"name": name, "id": id},
+		})
+
 	})
 
 	roomRoutes.HandleFunc("/{id:[0-9]+}/join", func(w http.ResponseWriter, r *http.Request) {
 		b, err := ioutil.ReadAll(r.Body)
 		defer r.Body.Close()
 		if err != nil {
-			httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
+			httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
 			return
 		}
 
@@ -182,14 +197,14 @@ func main() {
 
 		user, err := ub.FindByID(userID)
 		if err != nil {
-			httputil.JsonError(w, 500, httputil.ErrorCodeRoomFailedToJoin, "failed to join room")
+			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeRoomFailedToJoin, "failed to join room")
 			return
 		}
 
 		payload := &SDPPayload{}
 		err = json.Unmarshal(b, payload)
 		if err != nil {
-			httputil.JsonError(w, 400, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
+			httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
 			log.Printf("failed to decode payload: %s\n", err.Error())
 			return
 		}
@@ -213,13 +228,13 @@ func main() {
 
 		room, err := manager.GetRoom(id)
 		if err != nil {
-			httputil.JsonError(w, 404, httputil.ErrorCodeRoomNotFound, "room not found")
+			httputil.JsonError(w, http.StatusNotFound, httputil.ErrorCodeRoomNotFound, "room not found")
 			return
 		}
 
 		sdp, err := room.Join(userID, user.DisplayName, p)
 		if err != nil {
-			httputil.JsonError(w, 500, httputil.ErrorCodeRoomFailedToJoin, "failed to join room")
+			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeRoomFailedToJoin, "failed to join room")
 			return
 		}
 
@@ -274,6 +289,12 @@ func main() {
 	userRoutes.HandleFunc("/unfollow", usersEndpoints.UnfollowUser).Methods("POST")
 
 	userRoutes.Use(amw.Middleware)
+
+	devicesRoutes := r.PathPrefix("/v1/devices").Subrouter()
+
+	devicesEndpoint := devicesapi.NewDevicesEndpoint(devicesBackend)
+	devicesRoutes.HandleFunc("/add", devicesEndpoint.AddDevice).Methods("POST")
+	devicesRoutes.Use(amw.Middleware)
 
 	log.Fatal(http.ListenAndServe(":8080", r))
 }

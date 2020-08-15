@@ -79,6 +79,9 @@ func main() {
 
 	r := mux.NewRouter()
 
+	r.MethodNotAllowedHandler = http.HandlerFunc(httputil.NotAllowedHandler)
+	r.NotFoundHandler = http.HandlerFunc(httputil.NotFoundHandler)
+
 	r.HandleFunc("/v1/rooms", func(w http.ResponseWriter, r *http.Request) {
 		data := make([]RoomPayload, 0)
 

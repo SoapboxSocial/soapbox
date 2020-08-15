@@ -21,7 +21,6 @@ require (
 	github.com/sideshow/apns2 v0.20.0
 	go.opentelemetry.io/otel v0.10.0 // indirect
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de // indirect
-	golang.org/x/sys v0.0.0-20200810151505-1b9f1253b3ed // indirect
 	golang.org/x/net v0.0.0-20200813134508-3edf25e44fcc // indirect
 	golang.org/x/sys v0.0.0-20200810151505-1b9f1253b3ed // indirect
 	golang.org/x/text v0.3.3 // indirect

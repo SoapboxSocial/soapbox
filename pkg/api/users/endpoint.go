@@ -170,3 +170,27 @@ func (u *UsersEndpoint) UnfollowUser(w http.ResponseWriter, r *http.Request) {
 
 	httputil.JsonSuccess(w)
 }
+
+func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	userID, ok := auth.GetUserIDFromContext(r.Context())
+	if !ok {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	name := r.Form.Get("display_name")
+
+	err = u.ub.UpdateUser(userID, name)
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "failed to edit")
+		return
+	}
+
+	httputil.JsonSuccess(w)
+}

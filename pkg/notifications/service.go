@@ -27,8 +27,8 @@ func (s *Service) Send(target string, notification Notification) error {
 
 	payload := &apns2.Notification{
 		DeviceToken: target,
-		Topic: s.topic,
-		Payload: data,
+		Topic:       s.topic,
+		Payload:     data,
 	}
 
 	// @todo handle response properly

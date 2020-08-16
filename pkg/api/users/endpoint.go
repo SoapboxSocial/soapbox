@@ -137,9 +137,9 @@ func (u *UsersEndpoint) FollowUser(w http.ResponseWriter, r *http.Request) {
 	httputil.JsonSuccess(w)
 
 	u.queue.Push(notifications.Event{
-		Type: notifications.EventTypeNewFollower,
+		Type:    notifications.EventTypeNewFollower,
 		Creator: userID,
-		Params: map[string]interface{}{"id": id},
+		Params:  map[string]interface{}{"id": id},
 	})
 }
 

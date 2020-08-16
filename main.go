@@ -15,6 +15,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/sendgrid/sendgrid-go"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/pion/webrtc/v3"
 
@@ -297,7 +298,19 @@ func main() {
 	devicesRoutes.HandleFunc("/add", devicesEndpoint.AddDevice).Methods("POST")
 	devicesRoutes.Use(amw.Middleware)
 
-	log.Fatal(http.ListenAndServe(":8080", r))
+	headersOk := handlers.AllowedHeaders([]string{
+		"Content-Type",
+		"X-Requested-With",
+		"Accept",
+		"Accept-Language",
+		"Accept-Encoding",
+		"Content-Language",
+		"Origin",
+	})
+	originsOk := handlers.AllowedOrigins([]string{"*"})
+	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS"})
+
+	log.Fatal(http.ListenAndServe(":8080", handlers.CORS(originsOk, headersOk, methodsOk)(r)))
 }
 
 func getUserForSession(s *sessions.SessionManager, r *http.Request) (int, error) {

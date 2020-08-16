@@ -277,7 +277,7 @@ func main() {
 
 	userRoutes := r.PathPrefix("/v1/users").Subrouter()
 
-	usersEndpoints := usersapi.NewUsersEndpoint(ub, fb, s)
+	usersEndpoints := usersapi.NewUsersEndpoint(ub, fb, s, queue)
 	userRoutes.HandleFunc("/{id:[0-9]+}", usersEndpoints.GetUserByID).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/followers", usersEndpoints.GetFollowersForUser).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/following", usersEndpoints.GetFollowedByForUser).Methods("GET")

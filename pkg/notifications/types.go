@@ -3,7 +3,8 @@ package notifications
 type NotificationCategory string
 
 const (
-	NEW_ROOM NotificationCategory = "NEW_ROOM"
+	NEW_ROOM     NotificationCategory = "NEW_ROOM"
+	NEW_FOLLOWER NotificationCategory = "NEW_FOLLOWER"
 )
 
 type Alert struct {
@@ -17,8 +18,8 @@ type Notification struct {
 	Arguments map[string]interface{} `json:"arguments"`
 }
 
-func NewRoomNotification(id int, creator string) Notification {
-	return Notification{
+func NewRoomNotification(id int, creator string) *Notification {
+	return &Notification{
 		Category: NEW_ROOM,
 		Alert: Alert{
 			Key:       "new_room_notification",
@@ -28,12 +29,23 @@ func NewRoomNotification(id int, creator string) Notification {
 	}
 }
 
-func NewRoomNotificationWithName(id int, creator, name string) Notification {
-	return Notification{
+func NewRoomNotificationWithName(id int, creator, name string) *Notification {
+	return &Notification{
 		Category: NEW_ROOM,
 		Alert: Alert{
 			Key:       "new_room_with_name_notification",
 			Arguments: []string{creator, name},
+		},
+		Arguments: map[string]interface{}{"id": id},
+	}
+}
+
+func NewFollowerNotification(id int, follower string) *Notification {
+	return &Notification{
+		Category: NEW_FOLLOWER,
+		Alert: Alert{
+			Key:       "new_follower_notification",
+			Arguments: []string{follower},
 		},
 		Arguments: map[string]interface{}{"id": id},
 	}

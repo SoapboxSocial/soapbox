@@ -45,6 +45,10 @@ sudo su - postgres -c "psql -t voicely -a -w -f /var/www/db/tables.sql"
 rm /var/lib/pgsql/data/pg_hba.conf
 ln -s /vagrant/conf/postgres.conf /var/lib/pgsql/data/pg_hba.conf
 
+wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.8.1-x86_64.rpm
+wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.8.1-x86_64.rpm.sha512
+sudo rpm --install elasticsearch-7.8.1-x86_64.rpm
+
 sudo rm -rf /etc/nginx/nginx.conf
 sudo ln -s /vagrant/conf/nginx.conf /etc/nginx/nginx.conf
 

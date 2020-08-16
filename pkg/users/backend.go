@@ -128,3 +128,13 @@ func (ub *UserBackend) CreateUser(email string, displayName string, username str
 
 	return id, nil
 }
+
+func (ub *UserBackend) UpdateUser(id int, displayName string) error {
+	stmt, err := ub.db.Prepare("UPDATE users SET display_name = $1 WHERE id = $2;")
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(displayName, id)
+	return err
+}

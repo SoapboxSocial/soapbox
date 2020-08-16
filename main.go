@@ -283,6 +283,7 @@ func main() {
 	userRoutes.HandleFunc("/{id:[0-9]+}/following", usersEndpoints.GetFollowedByForUser).Methods("GET")
 	userRoutes.HandleFunc("/follow", usersEndpoints.FollowUser).Methods("POST")
 	userRoutes.HandleFunc("/unfollow", usersEndpoints.UnfollowUser).Methods("POST")
+	userRoutes.HandleFunc("/edit", usersEndpoints.EditUser).Methods("POST")
 
 	amw := middleware.NewAuthenticationMiddleware(s)
 	userRoutes.Use(amw.Middleware)

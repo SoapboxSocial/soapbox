@@ -2,8 +2,12 @@ package users
 
 import (
 	"database/sql"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -193,4 +197,53 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httputil.JsonSuccess(w)
+}
+
+func (u *UsersEndpoint) UploadProfilePicture(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseMultipartForm(10 << 20)
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	userID, ok := auth.GetUserIDFromContext(r.Context())
+	if !ok {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	file, _, err := r.FormFile("profile")
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+	defer file.Close()
+
+	tempFile, err := ioutil.TempFile("/var/www/cdn/images/", "*.png")
+	if err != nil {
+		fmt.Println(err)
+	}
+	defer tempFile.Close()
+
+	fileBytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	_, err = tempFile.Write(fileBytes)
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	err = u.ub.UpdateUserImage(userID, filepath.Base(tempFile.Name()))
+	if err != nil {
+		defer os.Remove(tempFile.Name())
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+
+	}
+
+	httputil.JsonEncode(w, filepath.Base(tempFile.Name()))
 }

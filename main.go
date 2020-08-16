@@ -288,6 +288,7 @@ func main() {
 	userRoutes.HandleFunc("/follow", usersEndpoints.FollowUser).Methods("POST")
 	userRoutes.HandleFunc("/unfollow", usersEndpoints.UnfollowUser).Methods("POST")
 	userRoutes.HandleFunc("/edit", usersEndpoints.EditUser).Methods("POST")
+	userRoutes.HandleFunc("/edit/image", usersEndpoints.UploadProfilePicture).Methods("POST")
 
 	amw := middleware.NewAuthenticationMiddleware(s)
 	userRoutes.Use(amw.Middleware)

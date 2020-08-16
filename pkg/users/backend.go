@@ -23,6 +23,7 @@ type Profile struct {
 	Following   int    `json:"following"`
 	FollowedBy  *bool  `json:"followed_by,omitempty"`
 	IsFollowing *bool  `json:"is_following,omitempty"`
+	Image       string `json:"image"`
 }
 
 type UserBackend struct {
@@ -37,7 +38,7 @@ func NewUserBackend(db *sql.DB) *UserBackend {
 
 func (ub *UserBackend) GetMyProfile(id int) (*Profile, error) {
 	query := `SELECT 
-       id, display_name, username,
+       id, display_name, username, image,
        (SELECT COUNT(*) FROM followers WHERE user_id = id) AS followers,
        (SELECT COUNT(*) FROM followers WHERE follower = id) AS following FROM users WHERE id = $1;`
 
@@ -47,7 +48,14 @@ func (ub *UserBackend) GetMyProfile(id int) (*Profile, error) {
 	}
 
 	profile := &Profile{}
-	err = stmt.QueryRow(id).Scan(&profile.ID, &profile.DisplayName, &profile.Username, &profile.Followers, &profile.Following)
+	err = stmt.QueryRow(id).Scan(
+		&profile.ID,
+		&profile.DisplayName,
+		&profile.Username,
+		&profile.Image,
+		&profile.Followers,
+		&profile.Following,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +65,7 @@ func (ub *UserBackend) GetMyProfile(id int) (*Profile, error) {
 
 func (ub *UserBackend) ProfileByID(id int, from int) (*Profile, error) {
 	query := `SELECT 
-       id, display_name, username,
+       id, display_name, username, image,
        (SELECT COUNT(*) FROM followers WHERE user_id = id) AS followers,
        (SELECT COUNT(*) FROM followers WHERE follower = id) AS following,
        (SELECT COUNT(*) FROM followers WHERE follower = id AND user_id = $1) AS followed_by,
@@ -71,7 +79,17 @@ func (ub *UserBackend) ProfileByID(id int, from int) (*Profile, error) {
 	profile := &Profile{}
 
 	var followedBy, isFollowing int
-	err = stmt.QueryRow(from, from, id).Scan(&profile.ID, &profile.DisplayName, &profile.Username, &profile.Followers, &profile.Following, &followedBy, &isFollowing)
+	err = stmt.QueryRow(from, from, id).Scan(
+		&profile.ID,
+		&profile.DisplayName,
+		&profile.Username,
+		&profile.Image,
+		&profile.Followers,
+		&profile.Following,
+		&followedBy,
+		&isFollowing,
+	)
+
 	if err != nil {
 		return nil, err
 	}
@@ -136,5 +154,15 @@ func (ub *UserBackend) UpdateUser(id int, displayName string) error {
 	}
 
 	_, err = stmt.Exec(displayName, id)
+	return err
+}
+
+func (ub *UserBackend) UpdateUserImage(id int, path string) error {
+	stmt, err := ub.db.Prepare("UPDATE users SET image = $1 WHERE id = $2;")
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(path, id)
 	return err
 }

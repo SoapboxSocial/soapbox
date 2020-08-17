@@ -185,7 +185,7 @@ func (l *LoginEndpoint) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	file, _, err := r.FormFile("profile")
-	if err != nil && err != http.ErrMissingFile {
+	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}

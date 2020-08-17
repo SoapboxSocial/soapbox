@@ -198,7 +198,7 @@ func (l *LoginEndpoint) Register(w http.ResponseWriter, r *http.Request) {
 
 	lastID, err := l.users.CreateUser(email, name, image, username)
 	if err != nil {
-		l.ib.Remove(image)
+		_ = l.ib.Remove(image)
 
 		if err.Error() == "pq: duplicate key value violates unique constraint \"idx_username\"" {
 			httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeUsernameAlreadyExists, "username already exists")
@@ -213,7 +213,7 @@ func (l *LoginEndpoint) Register(w http.ResponseWriter, r *http.Request) {
 
 	err = l.sessions.NewSession(token, user, expiration)
 	if err != nil {
-		l.ib.Remove(image)
+		_ = l.ib.Remove(image)
 
 		log.Println("failed to create session: ", err.Error())
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToLogin, "")

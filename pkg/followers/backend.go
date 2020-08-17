@@ -16,7 +16,7 @@ func NewFollowersBackend(db *sql.DB) *FollowersBackend {
 	}
 }
 
-func (fb *FollowersBackend) FollowUser(follower int, user int) error {
+func (fb *FollowersBackend) FollowUser(follower, user int) error {
 	stmt, err := fb.db.Prepare("INSERT INTO followers (follower, user_id) VALUES ($1, $2);")
 	if err != nil {
 		return err
@@ -30,7 +30,7 @@ func (fb *FollowersBackend) FollowUser(follower int, user int) error {
 	return nil
 }
 
-func (fb *FollowersBackend) UnfollowUser(follower int, user int) error {
+func (fb *FollowersBackend) UnfollowUser(follower, user int) error {
 	stmt, err := fb.db.Prepare("DELETE FROM followers WHERE follower = $1 AND user_id = $2;")
 	if err != nil {
 		return err

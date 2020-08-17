@@ -64,7 +64,7 @@ func (ub *UserBackend) GetMyProfile(id int) (*Profile, error) {
 	return profile, nil
 }
 
-func (ub *UserBackend) ProfileByID(id int, from int) (*Profile, error) {
+func (ub *UserBackend) ProfileByID(id, from int) (*Profile, error) {
 	query := `SELECT 
        id, display_name, username, image,
        (SELECT COUNT(*) FROM followers WHERE user_id = id) AS followers,

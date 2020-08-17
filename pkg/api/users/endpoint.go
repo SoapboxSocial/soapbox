@@ -227,7 +227,7 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u.ib.Remove(oldPath)
+	_ = u.ib.Remove(oldPath)
 
 	httputil.JsonSuccess(w)
 }

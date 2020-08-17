@@ -147,13 +147,26 @@ func (ub *UserBackend) CreateUser(email string, displayName string, username str
 	return id, nil
 }
 
-func (ub *UserBackend) UpdateUser(id int, displayName string) error {
-	stmt, err := ub.db.Prepare("UPDATE users SET display_name = $1 WHERE id = $2;")
+func (ub *UserBackend) UpdateUser(id int, displayName, image string) error {
+	query := "UPDATE users SET display_name = $1"
+	params := []interface{}{displayName}
+
+	count := "$2"
+	if image != "" {
+		query += ", image = $2"
+		count = "$3"
+		params = append(params, image)
+	}
+
+	query += " WHERE id = " + count + ";"
+	params = append(params, id)
+
+	stmt, err := ub.db.Prepare(query)
 	if err != nil {
 		return err
 	}
 
-	_, err = stmt.Exec(displayName, id)
+	_, err = stmt.Exec(params...)
 	return err
 }
 

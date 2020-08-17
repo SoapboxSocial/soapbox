@@ -8,8 +8,8 @@ import (
 	"image/png"
 	"io/ioutil"
 	"log"
+	"mime/multipart"
 	"net/http"
-	"os"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -187,9 +187,9 @@ func (u *UsersEndpoint) UnfollowUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
+	err := r.ParseMultipartForm(10 << 20)
 	if err != nil {
-		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "kek")
 		return
 	}
 
@@ -200,64 +200,52 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	name := r.Form.Get("display_name")
+	if name == "" {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
 
-	err = u.ub.UpdateUser(userID, name)
+	file, _, err := r.FormFile("profile")
+	if err != nil && err != http.ErrMissingFile {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	image := ""
+	if file != nil {
+		image, err = u.processProfilePicture(file)
+		if err != nil {
+			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+			return
+		}
+	}
+
+	err = u.ub.UpdateUser(userID, name, image)
 	if err != nil {
-		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "failed to edit")
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}
 
 	httputil.JsonSuccess(w)
 }
 
-func (u *UsersEndpoint) UploadProfilePicture(w http.ResponseWriter, r *http.Request) {
-	userID, ok := auth.GetUserIDFromContext(r.Context())
-	if !ok {
-		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
-		return
-	}
-
-	err := r.ParseMultipartForm(10 << 20)
-	if err != nil {
-		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
-		return
-	}
-
-	file, _, err := r.FormFile("profile")
-	if err != nil {
-		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
-		return
-	}
-	defer file.Close()
-
+func (u *UsersEndpoint) processProfilePicture(file multipart.File) (string, error) {
 	imgBytes, err := ioutil.ReadAll(file)
 	if err != nil {
-		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
-		return
+		return "", err
 	}
 
 	pngBytes, err := toPNG(imgBytes)
 	if err != nil {
-		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
-		return
+		return "", err
 	}
 
 	name, err := u.ib.Store(pngBytes)
 	if err != nil {
-		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
-		return
+		return "", err
 	}
 
-	err = u.ub.UpdateUserImage(userID, name)
-	if err != nil {
-		defer os.Remove(name)
-		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
-		return
-
-	}
-
-	// @todo use json success instead
-	_ = httputil.JsonEncode(w, name)
+	return name, nil
 }
 
 func toPNG(imageBytes []byte) ([]byte, error) {
@@ -265,6 +253,7 @@ func toPNG(imageBytes []byte) ([]byte, error) {
 
 	switch contentType {
 	case "image/png":
+		return imageBytes, nil
 	case "image/jpeg":
 		img, err := jpeg.Decode(bytes.NewReader(imageBytes))
 		if err != nil {

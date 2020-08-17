@@ -2,6 +2,7 @@ package images
 
 import (
 	"io/ioutil"
+	"os"
 	"path/filepath"
 )
 
@@ -29,4 +30,8 @@ func (ib *Backend) Store(bytes []byte) (string, error) {
 	}
 
 	return filepath.Base(file.Name()), nil
+}
+
+func (ib *Backend) Remove(name string) error {
+	return os.Remove(ib.path + "/" + name)
 }

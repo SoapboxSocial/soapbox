@@ -17,6 +17,7 @@ require (
 	github.com/pion/rtcp v1.2.3
 	github.com/pion/rtp v1.6.0
 	github.com/pion/webrtc/v3 v3.0.0-beta.1
+	github.com/pkg/errors v0.9.1
 	github.com/sendgrid/rest v2.6.0+incompatible // indirect
 	github.com/sendgrid/sendgrid-go v3.6.1+incompatible
 	github.com/sideshow/apns2 v0.20.0

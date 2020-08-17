@@ -171,12 +171,19 @@ func (ub *UserBackend) UpdateUser(id int, displayName, image string) error {
 	return err
 }
 
-func (ub *UserBackend) UpdateUserImage(id int, path string) error {
-	stmt, err := ub.db.Prepare("UPDATE users SET image = $1 WHERE id = $2;")
+func (ub *UserBackend) GetProfileImage(id int) (string, error) {
+	stmt, err := ub.db.Prepare("SELECT image FROM users WHERE id = $1;")
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	_, err = stmt.Exec(path, id)
-	return err
+	r := stmt.QueryRow(id)
+
+	var name string
+	err = r.Scan(&name)
+	if err != nil {
+		return "", err
+	}
+
+	return name, err
 }

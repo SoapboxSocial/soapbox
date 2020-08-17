@@ -200,6 +200,12 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	oldPath, err := u.ub.GetProfileImage(userID)
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
 	file, _, err := r.FormFile("profile")
 	if err != nil && err != http.ErrMissingFile {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
@@ -213,8 +219,6 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
 			return
 		}
-
-		// @todo fine old file name and remove it after update
 	}
 
 	err = u.ub.UpdateUser(userID, name, image)
@@ -222,6 +226,8 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}
+
+	u.ib.Remove(oldPath)
 
 	httputil.JsonSuccess(w)
 }

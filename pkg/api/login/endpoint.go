@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"regexp"
 	"strings"
@@ -14,6 +16,7 @@ import (
 	"time"
 
 	httputil "github.com/ephemeral-networks/voicely/pkg/http"
+	"github.com/ephemeral-networks/voicely/pkg/images"
 	"github.com/ephemeral-networks/voicely/pkg/mail"
 	"github.com/ephemeral-networks/voicely/pkg/sessions"
 	"github.com/ephemeral-networks/voicely/pkg/users"
@@ -48,16 +51,19 @@ type LoginEndpoint struct {
 	users    *users.UserBackend
 	sessions *sessions.SessionManager
 
+	ib *images.Backend
+
 	mail *mail.Service
 }
 
-func NewLoginEndpoint(ub *users.UserBackend, manager *sessions.SessionManager, mail *mail.Service) LoginEndpoint {
+func NewLoginEndpoint(ub *users.UserBackend, manager *sessions.SessionManager, mail *mail.Service, ib *images.Backend) LoginEndpoint {
 	return LoginEndpoint{
 		tokens:        make(map[string]tokenState),
 		registrations: make(map[string]string),
 		users:         ub,
 		sessions:      manager,
 		mail:          mail,
+		ib:            ib,
 	}
 }
 
@@ -148,7 +154,7 @@ func (l *LoginEndpoint) enterRegistrationState(w http.ResponseWriter, token stri
 }
 
 func (l *LoginEndpoint) Register(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseForm()
+	err := r.ParseMultipartForm(10 << 20)
 	if err != nil {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
 		return
@@ -178,8 +184,22 @@ func (l *LoginEndpoint) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lastID, err := l.users.CreateUser(email, name, username)
+	file, _, err := r.FormFile("profile")
 	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	image, err := l.processProfilePicture(file)
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	lastID, err := l.users.CreateUser(email, name, image, username)
+	if err != nil {
+		_ = l.ib.Remove(image)
+
 		if err.Error() == "pq: duplicate key value violates unique constraint \"idx_username\"" {
 			httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeUsernameAlreadyExists, "username already exists")
 			return
@@ -193,6 +213,8 @@ func (l *LoginEndpoint) Register(w http.ResponseWriter, r *http.Request) {
 
 	err = l.sessions.NewSession(token, user, expiration)
 	if err != nil {
+		_ = l.ib.Remove(image)
+
 		log.Println("failed to create session: ", err.Error())
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToLogin, "")
 		return
@@ -203,6 +225,25 @@ func (l *LoginEndpoint) Register(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println("error writing response: " + err.Error())
 	}
+}
+
+func (l *LoginEndpoint) processProfilePicture(file multipart.File) (string, error) {
+	imgBytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		return "", err
+	}
+
+	pngBytes, err := images.ToPNG(imgBytes)
+	if err != nil {
+		return "", err
+	}
+
+	name, err := l.ib.Store(pngBytes)
+	if err != nil {
+		return "", err
+	}
+
+	return name, nil
 }
 
 var emailRegex = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")

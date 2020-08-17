@@ -2,7 +2,6 @@ package images
 
 import (
 	"io/ioutil"
-	"mime/multipart"
 	"path/filepath"
 )
 
@@ -16,7 +15,7 @@ func NewImagesBackend(path string) *Backend {
 	}
 }
 
-func (ib *Backend) Store(multipartFile multipart.File) (string, error) {
+func (ib *Backend) Store(bytes []byte) (string, error) {
 	file, err := ioutil.TempFile(ib.path, "*.png")
 	if err != nil {
 		return "", err
@@ -24,12 +23,7 @@ func (ib *Backend) Store(multipartFile multipart.File) (string, error) {
 
 	defer file.Close()
 
-	fileBytes, err := ioutil.ReadAll(multipartFile)
-	if err != nil {
-		return "", nil
-	}
-
-	_, err = file.Write(fileBytes)
+	_, err = file.Write(bytes)
 	if err != nil {
 		return "", nil
 	}

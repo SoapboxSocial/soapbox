@@ -1,13 +1,19 @@
 package users
 
 import (
+	"bytes"
 	"database/sql"
+	"fmt"
+	"image/jpeg"
+	"image/png"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 
 	"github.com/gorilla/mux"
+	"github.com/pkg/errors"
 
 	auth "github.com/ephemeral-networks/voicely/pkg/api/middleware"
 	"github.com/ephemeral-networks/voicely/pkg/followers"
@@ -224,9 +230,19 @@ func (u *UsersEndpoint) UploadProfilePicture(w http.ResponseWriter, r *http.Requ
 	}
 	defer file.Close()
 
-	// @todo ensure that image type is correct
+	imgBytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
 
-	name, err := u.ib.Store(file)
+	pngBytes, err := toPNG(imgBytes)
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	name, err := u.ib.Store(pngBytes)
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
 		return
@@ -242,4 +258,26 @@ func (u *UsersEndpoint) UploadProfilePicture(w http.ResponseWriter, r *http.Requ
 
 	// @todo use json success instead
 	_ = httputil.JsonEncode(w, name)
+}
+
+func toPNG(imageBytes []byte) ([]byte, error) {
+	contentType := http.DetectContentType(imageBytes)
+
+	switch contentType {
+	case "image/png":
+	case "image/jpeg":
+		img, err := jpeg.Decode(bytes.NewReader(imageBytes))
+		if err != nil {
+			return nil, errors.Wrap(err, "unable to decode jpeg")
+		}
+
+		buf := new(bytes.Buffer)
+		if err := png.Encode(buf, img); err != nil {
+			return nil, errors.Wrap(err, "unable to encode png")
+		}
+
+		return buf.Bytes(), nil
+	}
+
+	return nil, fmt.Errorf("unable to convert %#v to png", contentType)
 }

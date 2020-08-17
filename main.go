@@ -274,13 +274,12 @@ func main() {
 
 	loginRoutes := r.PathPrefix("/v1/login").Methods("POST").Subrouter()
 
+	ib := images.NewImagesBackend("/cdn/images")
 	ms := mail.NewMailService(sendgrid.NewSendClient(sendgrid_api))
-	loginHandlers := login.NewLoginEndpoint(ub, s, ms)
+	loginHandlers := login.NewLoginEndpoint(ub, s, ms, ib)
 	loginRoutes.HandleFunc("/start", loginHandlers.Start)
 	loginRoutes.HandleFunc("/pin", loginHandlers.SubmitPin)
 	loginRoutes.HandleFunc("/register", loginHandlers.Register)
-
-	ib := images.NewImagesBackend("/cdn/images")
 
 	userRoutes := r.PathPrefix("/v1/users").Subrouter()
 

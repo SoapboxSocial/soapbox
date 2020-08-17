@@ -9,6 +9,7 @@ type User struct {
 	ID          int     `json:"id"`
 	DisplayName string  `json:"display_name"`
 	Username    string  `json:"username"`
+	Image       string  `json:"image"`
 	Email       *string `json:"email,omitempty"`
 }
 
@@ -103,13 +104,13 @@ func (ub *UserBackend) ProfileByID(id int, from int) (*Profile, error) {
 }
 
 func (ub *UserBackend) FindByID(id int) (*User, error) {
-	stmt, err := ub.db.Prepare("SELECT id, display_name, username, email FROM users WHERE id = $1;")
+	stmt, err := ub.db.Prepare("SELECT id, display_name, username, image, email FROM users WHERE id = $1;")
 	if err != nil {
 		return nil, err
 	}
 
 	user := &User{}
-	err = stmt.QueryRow(id).Scan(&user.ID, &user.DisplayName, &user.Username, &user.Email)
+	err = stmt.QueryRow(id).Scan(&user.ID, &user.DisplayName, &user.Username, &user.Image, &user.Email)
 	if err != nil {
 		return nil, err
 	}
@@ -118,13 +119,13 @@ func (ub *UserBackend) FindByID(id int) (*User, error) {
 }
 
 func (ub *UserBackend) FindByEmail(email string) (*User, error) {
-	stmt, err := ub.db.Prepare("SELECT id, display_name, username, email FROM users WHERE email = $1;")
+	stmt, err := ub.db.Prepare("SELECT id, display_name, username, image, email FROM users WHERE email = $1;")
 	if err != nil {
 		return nil, err
 	}
 
 	user := &User{}
-	err = stmt.QueryRow(email).Scan(&user.ID, &user.DisplayName, &user.Username, &user.Email)
+	err = stmt.QueryRow(email).Scan(&user.ID, &user.DisplayName, &user.Username, &user.Image, &user.Email)
 	if err != nil {
 		return nil, err
 	}

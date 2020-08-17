@@ -158,7 +158,7 @@ func main() {
 
 		room := manager.CreateRoom(name)
 
-		sdp, err := room.Join(userID, user.DisplayName, p)
+		sdp, err := room.Join(userID, user.DisplayName, user.Image, p)
 		if err != nil {
 			manager.RemoveRoom(room.GetID())
 			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToCreateRoom, "failed to create room")
@@ -234,7 +234,7 @@ func main() {
 			return
 		}
 
-		sdp, err := room.Join(userID, user.DisplayName, p)
+		sdp, err := room.Join(userID, user.DisplayName, user.Image, p)
 		if err != nil {
 			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeRoomFailedToJoin, "failed to join room")
 			return

@@ -218,6 +218,8 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
 			return
 		}
+
+		// @todo fine old file name and remove it after update
 	}
 
 	err = u.ub.UpdateUser(userID, name, image)

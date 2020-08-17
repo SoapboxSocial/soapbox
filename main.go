@@ -280,7 +280,6 @@ func main() {
 	loginRoutes.HandleFunc("/pin", loginHandlers.SubmitPin)
 	loginRoutes.HandleFunc("/register", loginHandlers.Register)
 
-
 	ib := images.NewImagesBackend("/cdn/images")
 
 	userRoutes := r.PathPrefix("/v1/users").Subrouter()

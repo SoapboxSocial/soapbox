@@ -27,8 +27,14 @@ type UsersEndpoint struct {
 	queue *notifications.Queue
 }
 
-func NewUsersEndpoint(ub *users.UserBackend, fb *followers.FollowersBackend, sm *sessions.SessionManager, queue *notifications.Queue) *UsersEndpoint {
-	return &UsersEndpoint{ub: ub, fb: fb, sm: sm, queue: queue}
+func NewUsersEndpoint(
+	ub *users.UserBackend,
+	fb *followers.FollowersBackend,
+	sm *sessions.SessionManager,
+	queue *notifications.Queue,
+	ib *images.Backend,
+) *UsersEndpoint {
+	return &UsersEndpoint{ub: ub, fb: fb, sm: sm, ib: ib, queue: queue}
 }
 
 func (u *UsersEndpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {

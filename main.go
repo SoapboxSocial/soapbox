@@ -26,6 +26,7 @@ import (
 	"github.com/ephemeral-networks/voicely/pkg/devices"
 	"github.com/ephemeral-networks/voicely/pkg/followers"
 	httputil "github.com/ephemeral-networks/voicely/pkg/http"
+	"github.com/ephemeral-networks/voicely/pkg/images"
 	"github.com/ephemeral-networks/voicely/pkg/mail"
 	"github.com/ephemeral-networks/voicely/pkg/notifications"
 	"github.com/ephemeral-networks/voicely/pkg/rooms"
@@ -279,9 +280,12 @@ func main() {
 	loginRoutes.HandleFunc("/pin", loginHandlers.SubmitPin)
 	loginRoutes.HandleFunc("/register", loginHandlers.Register)
 
+
+	ib := images.NewImagesBackend("/cdn/images")
+
 	userRoutes := r.PathPrefix("/v1/users").Subrouter()
 
-	usersEndpoints := usersapi.NewUsersEndpoint(ub, fb, s, queue)
+	usersEndpoints := usersapi.NewUsersEndpoint(ub, fb, s, queue, ib)
 	userRoutes.HandleFunc("/{id:[0-9]+}", usersEndpoints.GetUserByID).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/followers", usersEndpoints.GetFollowersForUser).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/following", usersEndpoints.GetFollowedByForUser).Methods("GET")

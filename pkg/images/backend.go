@@ -10,6 +10,12 @@ type Backend struct {
 	path string
 }
 
+func NewImagesBackend(path string) *Backend {
+	return &Backend{
+		path: path,
+	}
+}
+
 func (ib *Backend) Store(multipartFile multipart.File) (string, error) {
 	file, err := ioutil.TempFile(ib.path, "*.png")
 	if err != nil {

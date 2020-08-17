@@ -1,7 +1,6 @@
 package devices
 
 import (
-	"log"
 	"net/http"
 
 	auth "github.com/ephemeral-networks/voicely/pkg/api/middleware"
@@ -39,8 +38,7 @@ func (d *DevicesEndpoint) AddDevice(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = d.db.AddDeviceForUser(userID, token)
-	if err != nil {
-		log.Println("failed to create session: ", err.Error())
+	if err != nil && err.Error() != "pq: duplicate key value violates unique constraint \"devices_pkey\"" {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToStoreDevice, "failed")
 		return
 	}

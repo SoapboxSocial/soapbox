@@ -2,12 +2,9 @@ package users
 
 import (
 	"database/sql"
-	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -15,6 +12,7 @@ import (
 	auth "github.com/ephemeral-networks/voicely/pkg/api/middleware"
 	"github.com/ephemeral-networks/voicely/pkg/followers"
 	httputil "github.com/ephemeral-networks/voicely/pkg/http"
+	"github.com/ephemeral-networks/voicely/pkg/images"
 	"github.com/ephemeral-networks/voicely/pkg/notifications"
 	"github.com/ephemeral-networks/voicely/pkg/sessions"
 	"github.com/ephemeral-networks/voicely/pkg/users"
@@ -24,6 +22,7 @@ type UsersEndpoint struct {
 	ub *users.UserBackend
 	fb *followers.FollowersBackend
 	sm *sessions.SessionManager
+	ib *images.Backend
 
 	queue *notifications.Queue
 }
@@ -200,15 +199,15 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (u *UsersEndpoint) UploadProfilePicture(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseMultipartForm(10 << 20)
-	if err != nil {
-		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
-		return
-	}
-
 	userID, ok := auth.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	err := r.ParseMultipartForm(10 << 20)
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}
 
@@ -219,31 +218,22 @@ func (u *UsersEndpoint) UploadProfilePicture(w http.ResponseWriter, r *http.Requ
 	}
 	defer file.Close()
 
-	tempFile, err := ioutil.TempFile("/var/www/cdn/images/", "*.png")
-	if err != nil {
-		fmt.Println(err)
-	}
-	defer tempFile.Close()
+	// @todo ensure that image type is correct
 
-	fileBytes, err := ioutil.ReadAll(file)
+	name, err := u.ib.Store(file)
 	if err != nil {
-		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}
 
-	_, err = tempFile.Write(fileBytes)
+	err = u.ub.UpdateUserImage(userID, name)
 	if err != nil {
-		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
-		return
-	}
-
-	err = u.ub.UpdateUserImage(userID, filepath.Base(tempFile.Name()))
-	if err != nil {
-		defer os.Remove(tempFile.Name())
+		defer os.Remove(name)
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 
 	}
 
-	httputil.JsonEncode(w, filepath.Base(tempFile.Name()))
+	// @todo use json success instead
+	_ = httputil.JsonEncode(w, name)
 }

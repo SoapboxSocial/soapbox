@@ -133,14 +133,14 @@ func (ub *UserBackend) FindByEmail(email string) (*User, error) {
 	return user, nil
 }
 
-func (ub *UserBackend) CreateUser(email string, displayName string, username string) (int, error) {
-	stmt, err := ub.db.Prepare("INSERT INTO users (display_name, username, email) VALUES ($1, $2, $3) RETURNING id;")
+func (ub *UserBackend) CreateUser(email, displayName, image, username string) (int, error) {
+	stmt, err := ub.db.Prepare("INSERT INTO users (display_name, username, email, image) VALUES ($1, $2, $3, $4) RETURNING id;")
 	if err != nil {
 		return 0, err
 	}
 
 	var id int
-	err = stmt.QueryRow(displayName, strings.ToLower(username), email).Scan(&id)
+	err = stmt.QueryRow(displayName, strings.ToLower(username), email, image).Scan(&id)
 	if err != nil {
 		return 0, err
 	}

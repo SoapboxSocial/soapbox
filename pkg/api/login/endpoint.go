@@ -17,6 +17,7 @@ import (
 
 	httputil "github.com/ephemeral-networks/voicely/pkg/http"
 	"github.com/ephemeral-networks/voicely/pkg/images"
+	"github.com/ephemeral-networks/voicely/pkg/indexer"
 	"github.com/ephemeral-networks/voicely/pkg/mail"
 	"github.com/ephemeral-networks/voicely/pkg/sessions"
 	"github.com/ephemeral-networks/voicely/pkg/users"
@@ -54,6 +55,8 @@ type LoginEndpoint struct {
 	ib *images.Backend
 
 	mail *mail.Service
+
+	index *indexer.Queue
 }
 
 func NewLoginEndpoint(ub *users.UserBackend, manager *sessions.SessionManager, mail *mail.Service, ib *images.Backend) LoginEndpoint {
@@ -225,6 +228,11 @@ func (l *LoginEndpoint) Register(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println("error writing response: " + err.Error())
 	}
+
+	l.index.Push(indexer.Event{
+		Type: indexer.EventTypeUserUpdate,
+		Params: map[string]interface{}{"id": lastID},
+	})
 }
 
 func (l *LoginEndpoint) processProfilePicture(file multipart.File) (string, error) {

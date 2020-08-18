@@ -14,6 +14,7 @@ import (
 	"github.com/ephemeral-networks/voicely/pkg/followers"
 	httputil "github.com/ephemeral-networks/voicely/pkg/http"
 	"github.com/ephemeral-networks/voicely/pkg/images"
+	"github.com/ephemeral-networks/voicely/pkg/indexer"
 	"github.com/ephemeral-networks/voicely/pkg/notifications"
 	"github.com/ephemeral-networks/voicely/pkg/sessions"
 	"github.com/ephemeral-networks/voicely/pkg/users"
@@ -25,7 +26,8 @@ type UsersEndpoint struct {
 	sm *sessions.SessionManager
 	ib *images.Backend
 
-	queue *notifications.Queue
+	notify *notifications.Queue
+	index *indexer.Queue
 }
 
 func NewUsersEndpoint(
@@ -35,7 +37,7 @@ func NewUsersEndpoint(
 	queue *notifications.Queue,
 	ib *images.Backend,
 ) *UsersEndpoint {
-	return &UsersEndpoint{ub: ub, fb: fb, sm: sm, ib: ib, queue: queue}
+	return &UsersEndpoint{ub: ub, fb: fb, sm: sm, ib: ib, notify: queue}
 }
 
 func (u *UsersEndpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {
@@ -146,7 +148,7 @@ func (u *UsersEndpoint) FollowUser(w http.ResponseWriter, r *http.Request) {
 
 	httputil.JsonSuccess(w)
 
-	u.queue.Push(notifications.Event{
+	u.notify.Push(notifications.Event{
 		Type:    notifications.EventTypeNewFollower,
 		Creator: userID,
 		Params:  map[string]interface{}{"id": id},
@@ -228,6 +230,11 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_ = u.ib.Remove(oldPath)
+
+	u.index.Push(indexer.Event{
+		Type: indexer.EventTypeUserUpdate,
+		Params: map[string]interface{}{"id": userID},
+	})
 
 	httputil.JsonSuccess(w)
 }

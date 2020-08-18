@@ -56,6 +56,8 @@ type JoinPayload struct {
 // @todo do this in config
 const sendgrid_api = "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"
 
+// @TODO: THINK ABOUT CHANGING QUEUES TO REDIS PUBSUB
+
 func main() {
 	db, err := sql.Open("postgres", "host=127.0.0.1 port=5432 user=voicely password=voicely dbname=voicely sslmode=disable")
 	if err != nil {

@@ -145,7 +145,7 @@ func (l *LoginEndpoint) SubmitPin(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (l *LoginEndpoint) enterRegistrationState(w http.ResponseWriter, token string, email string) {
+func (l *LoginEndpoint) enterRegistrationState(w http.ResponseWriter, token, email string) {
 	l.registrations[token] = email
 	err := httputil.JsonEncode(w, loginState{State: LoginStateRegister})
 	if err != nil {

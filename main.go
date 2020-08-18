@@ -15,6 +15,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/sendgrid/sendgrid-go"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/pion/webrtc/v3"
 
@@ -25,6 +26,7 @@ import (
 	"github.com/ephemeral-networks/voicely/pkg/devices"
 	"github.com/ephemeral-networks/voicely/pkg/followers"
 	httputil "github.com/ephemeral-networks/voicely/pkg/http"
+	"github.com/ephemeral-networks/voicely/pkg/images"
 	"github.com/ephemeral-networks/voicely/pkg/mail"
 	"github.com/ephemeral-networks/voicely/pkg/notifications"
 	"github.com/ephemeral-networks/voicely/pkg/rooms"
@@ -78,6 +80,9 @@ func main() {
 	manager := rooms.NewRoomManager()
 
 	r := mux.NewRouter()
+
+	r.MethodNotAllowedHandler = http.HandlerFunc(httputil.NotAllowedHandler)
+	r.NotFoundHandler = http.HandlerFunc(httputil.NotFoundHandler)
 
 	r.HandleFunc("/v1/rooms", func(w http.ResponseWriter, r *http.Request) {
 		data := make([]RoomPayload, 0)
@@ -153,7 +158,7 @@ func main() {
 
 		room := manager.CreateRoom(name)
 
-		sdp, err := room.Join(userID, user.DisplayName, p)
+		sdp, err := room.Join(userID, user.DisplayName, user.Image, p)
 		if err != nil {
 			manager.RemoveRoom(room.GetID())
 			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToCreateRoom, "failed to create room")
@@ -229,7 +234,7 @@ func main() {
 			return
 		}
 
-		sdp, err := room.Join(userID, user.DisplayName, p)
+		sdp, err := room.Join(userID, user.DisplayName, user.Image, p)
 		if err != nil {
 			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeRoomFailedToJoin, "failed to join room")
 			return
@@ -269,20 +274,22 @@ func main() {
 
 	loginRoutes := r.PathPrefix("/v1/login").Methods("POST").Subrouter()
 
+	ib := images.NewImagesBackend("/cdn/images")
 	ms := mail.NewMailService(sendgrid.NewSendClient(sendgrid_api))
-	loginHandlers := login.NewLoginEndpoint(ub, s, ms)
+	loginHandlers := login.NewLoginEndpoint(ub, s, ms, ib)
 	loginRoutes.HandleFunc("/start", loginHandlers.Start)
 	loginRoutes.HandleFunc("/pin", loginHandlers.SubmitPin)
 	loginRoutes.HandleFunc("/register", loginHandlers.Register)
 
 	userRoutes := r.PathPrefix("/v1/users").Subrouter()
 
-	usersEndpoints := usersapi.NewUsersEndpoint(ub, fb, s, queue)
+	usersEndpoints := usersapi.NewUsersEndpoint(ub, fb, s, queue, ib)
 	userRoutes.HandleFunc("/{id:[0-9]+}", usersEndpoints.GetUserByID).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/followers", usersEndpoints.GetFollowersForUser).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/following", usersEndpoints.GetFollowedByForUser).Methods("GET")
 	userRoutes.HandleFunc("/follow", usersEndpoints.FollowUser).Methods("POST")
 	userRoutes.HandleFunc("/unfollow", usersEndpoints.UnfollowUser).Methods("POST")
+	userRoutes.HandleFunc("/edit", usersEndpoints.EditUser).Methods("POST")
 
 	amw := middleware.NewAuthenticationMiddleware(s)
 	userRoutes.Use(amw.Middleware)
@@ -293,7 +300,19 @@ func main() {
 	devicesRoutes.HandleFunc("/add", devicesEndpoint.AddDevice).Methods("POST")
 	devicesRoutes.Use(amw.Middleware)
 
-	log.Fatal(http.ListenAndServe(":8080", r))
+	headersOk := handlers.AllowedHeaders([]string{
+		"Content-Type",
+		"X-Requested-With",
+		"Accept",
+		"Accept-Language",
+		"Accept-Encoding",
+		"Content-Language",
+		"Origin",
+	})
+	originsOk := handlers.AllowedOrigins([]string{"*"})
+	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS"})
+
+	log.Fatal(http.ListenAndServe(":8080", handlers.CORS(originsOk, headersOk, methodsOk)(r)))
 }
 
 func getUserForSession(s *sessions.SessionManager, r *http.Request) (int, error) {

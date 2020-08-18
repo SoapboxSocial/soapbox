@@ -43,6 +43,7 @@ const (
 type Member struct {
 	ID          int      `json:"id"`
 	DisplayName string   `json:"display_name"`
+	Image       string   `json:"image"`
 	Role        PeerRole `json:"role"`
 	IsMuted     bool     `json:"is_muted"`
 }
@@ -119,7 +120,7 @@ func (r *Room) GetRoleForPeer(id int) PeerRole {
 	return r.peers[id].Member.Role
 }
 
-func (r *Room) Join(id int, name string, offer webrtc.SessionDescription) (*webrtc.SessionDescription, error) {
+func (r *Room) Join(id int, name, image string, offer webrtc.SessionDescription) (*webrtc.SessionDescription, error) {
 	mediaEngine := webrtc.MediaEngine{}
 	err := mediaEngine.PopulateFromSDP(offer)
 	if err != nil {
@@ -172,7 +173,7 @@ func (r *Room) Join(id int, name string, offer webrtc.SessionDescription) (*webr
 		role = OWNER
 	}
 
-	member := Member{ID: id, DisplayName: name, Role: role, IsMuted: false}
+	member := Member{ID: id, DisplayName: name, Image: image, Role: role, IsMuted: false}
 	r.peers[id] = &Peer{
 		Member:     member,
 		connection: peerConnection,

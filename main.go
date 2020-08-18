@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -79,6 +78,8 @@ func main() {
 
 	manager := rooms.NewRoomManager()
 
+	amw := middleware.NewAuthenticationMiddleware(s)
+
 	r := mux.NewRouter()
 
 	r.MethodNotAllowedHandler = http.HandlerFunc(httputil.NotAllowedHandler)
@@ -112,7 +113,9 @@ func main() {
 		}
 	}).Methods("GET")
 
-	r.HandleFunc("/v1/rooms/create", func(w http.ResponseWriter, r *http.Request) {
+	roomRoutes := r.PathPrefix("/v1/rooms").Methods("POST").Subrouter()
+
+	roomRoutes.HandleFunc("/create", func(w http.ResponseWriter, r *http.Request) {
 		b, err := ioutil.ReadAll(r.Body)
 		defer r.Body.Close()
 		if err != nil {
@@ -120,9 +123,9 @@ func main() {
 			return
 		}
 
-		userID, err := getUserForSession(s, r)
-		if err != nil {
-			httputil.JsonError(w, 401, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
+		userID, ok := middleware.GetUserIDFromContext(r.Context())
+		if !ok {
+			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 			return
 		}
 
@@ -181,9 +184,9 @@ func main() {
 			Params:  map[string]interface{}{"name": name, "id": id},
 		})
 
-	}).Methods("POST")
+	})
 
-	r.HandleFunc("/v1/rooms/{id:[0-9]+}/join", func(w http.ResponseWriter, r *http.Request) {
+	roomRoutes.HandleFunc("/{id:[0-9]+}/join", func(w http.ResponseWriter, r *http.Request) {
 		b, err := ioutil.ReadAll(r.Body)
 		defer r.Body.Close()
 		if err != nil {
@@ -191,9 +194,9 @@ func main() {
 			return
 		}
 
-		userID, err := getUserForSession(s, r)
-		if err != nil {
-			httputil.JsonError(w, 401, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
+		userID, ok := middleware.GetUserIDFromContext(r.Context())
+		if !ok {
+			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 			return
 		}
 
@@ -270,7 +273,8 @@ func main() {
 		if err != nil {
 			fmt.Println(err)
 		}
-	}).Methods("POST")
+	})
+	roomRoutes.Use(amw.Middleware)
 
 	loginRoutes := r.PathPrefix("/v1/login").Methods("POST").Subrouter()
 
@@ -291,7 +295,6 @@ func main() {
 	userRoutes.HandleFunc("/unfollow", usersEndpoints.UnfollowUser).Methods("POST")
 	userRoutes.HandleFunc("/edit", usersEndpoints.EditUser).Methods("POST")
 
-	amw := middleware.NewAuthenticationMiddleware(s)
 	userRoutes.Use(amw.Middleware)
 
 	devicesRoutes := r.PathPrefix("/v1/devices").Subrouter()
@@ -313,15 +316,6 @@ func main() {
 	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS"})
 
 	log.Fatal(http.ListenAndServe(":8080", handlers.CORS(originsOk, headersOk, methodsOk)(r)))
-}
-
-func getUserForSession(s *sessions.SessionManager, r *http.Request) (int, error) {
-	token := r.Header.Get("Authorization")
-	if token == "" {
-		return 0, errors.New("no authorization")
-	}
-
-	return s.GetUserIDForSession(token)
 }
 
 func getType(t string) (error, webrtc.SDPType) {

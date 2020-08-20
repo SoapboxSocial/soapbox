@@ -27,7 +27,7 @@ type UsersEndpoint struct {
 	ib *images.Backend
 
 	notify *notifications.Queue
-	index *indexer.Queue
+	index  *indexer.Queue
 }
 
 func NewUsersEndpoint(
@@ -232,7 +232,7 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 	_ = u.ib.Remove(oldPath)
 
 	u.index.Push(indexer.Event{
-		Type: indexer.EventTypeUserUpdate,
+		Type:   indexer.EventTypeUserUpdate,
 		Params: map[string]interface{}{"id": userID},
 	})
 

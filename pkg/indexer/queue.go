@@ -15,8 +15,8 @@ const (
 )
 
 type Event struct {
-	Type    EventType              `json:"type"`
-	Params  map[string]interface{} `json:"params"`
+	Type   EventType              `json:"type"`
+	Params map[string]interface{} `json:"params"`
 }
 
 type Queue struct {

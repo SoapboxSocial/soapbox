@@ -230,7 +230,7 @@ func (l *LoginEndpoint) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	l.index.Push(indexer.Event{
-		Type: indexer.EventTypeUserUpdate,
+		Type:   indexer.EventTypeUserUpdate,
 		Params: map[string]interface{}{"id": lastID},
 	})
 }

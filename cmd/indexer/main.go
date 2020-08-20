@@ -1,15 +1,28 @@
 package main
 
 import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"errors"
+	_ "github.com/lib/pq"
 	"log"
+	"strconv"
+	"strings"
 	"time"
 
+	"github.com/elastic/go-elasticsearch/v7"
+	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/go-redis/redis/v8"
 
 	"github.com/ephemeral-networks/voicely/pkg/indexer"
+	"github.com/ephemeral-networks/voicely/pkg/users"
 )
 
 type handlerFunc func(*indexer.Event) error
+
+var client *elasticsearch.Client
+var userBackend *users.UserBackend
 
 func main() {
 	rdb := redis.NewClient(&redis.Options{
@@ -19,6 +32,18 @@ func main() {
 	})
 
 	queue := indexer.NewIndexerQueue(rdb)
+
+	db, err := sql.Open("postgres", "host=127.0.0.1 port=5432 user=voicely password=voicely dbname=voicely sslmode=disable")
+	if err != nil {
+		panic(err)
+	}
+
+	client, err = elasticsearch.NewDefaultClient()
+	if err != nil {
+		panic(err)
+	}
+
+	userBackend = users.NewUserBackend(db)
 
 	for {
 		if queue.Len() == 0 {
@@ -60,5 +85,31 @@ func getHandler(eventType indexer.EventType) handlerFunc {
 }
 
 func handleUserUpdate(event *indexer.Event) error {
-	return nil
+	id, ok := event.Params["id"].(float64)
+	if !ok {
+		return errors.New("failed to recover user ID")
+	}
+
+	user, err := userBackend.FindByID(int(id))
+	if err != nil {
+		return err
+	}
+
+	user.Email = nil
+
+	body, err := json.Marshal(user)
+
+	req := esapi.IndexRequest{
+		Index:      "users",
+		DocumentID: strconv.Itoa(user.ID),
+		Body:       strings.NewReader(string(body)),
+		Refresh:    "true",
+	}
+
+	res, err := req.Do(context.Background(), client)
+	if err != nil {
+		return err
+	}
+
+	return res.Body.Close()
 }

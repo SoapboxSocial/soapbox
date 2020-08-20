@@ -5,11 +5,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	_ "github.com/lib/pq"
 	"log"
 	"strconv"
 	"strings"
 	"time"
+
+	_ "github.com/lib/pq"
 
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/go-elasticsearch/v7/esapi"

@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
 	"github.com/sendgrid/sendgrid-go"
@@ -75,6 +76,13 @@ func main() {
 	s := sessions.NewSessionManager(rdb)
 	ub := users.NewUserBackend(db)
 	fb := followers.NewFollowersBackend(db)
+
+	client, err := elasticsearch.NewDefaultClient()
+	if err != nil {
+		panic(err)
+	}
+
+	search := users.NewSearchBackend(client)
 
 	devicesBackend := devices.NewDevicesBackend(db)
 
@@ -287,9 +295,12 @@ func main() {
 	loginRoutes.HandleFunc("/pin", loginHandlers.SubmitPin)
 	loginRoutes.HandleFunc("/register", loginHandlers.Register)
 
+	usersEndpoints := usersapi.NewUsersEndpoint(ub, fb, s, queue, ib, search)
+
+	r.HandleFunc("/v1/users/search", usersEndpoints.Search)
+
 	userRoutes := r.PathPrefix("/v1/users").Subrouter()
 
-	usersEndpoints := usersapi.NewUsersEndpoint(ub, fb, s, queue, ib)
 	userRoutes.HandleFunc("/{id:[0-9]+}", usersEndpoints.GetUserByID).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/followers", usersEndpoints.GetFollowersForUser).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/following", usersEndpoints.GetFollowedByForUser).Methods("GET")

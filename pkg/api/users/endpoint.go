@@ -26,6 +26,8 @@ type UsersEndpoint struct {
 	sm *sessions.SessionManager
 	ib *images.Backend
 
+	search *users.Search
+
 	notify *notifications.Queue
 	index  *indexer.Queue
 }
@@ -36,8 +38,9 @@ func NewUsersEndpoint(
 	sm *sessions.SessionManager,
 	queue *notifications.Queue,
 	ib *images.Backend,
+	search *users.Search,
 ) *UsersEndpoint {
-	return &UsersEndpoint{ub: ub, fb: fb, sm: sm, ib: ib, notify: queue}
+	return &UsersEndpoint{ub: ub, fb: fb, sm: sm, ib: ib, search: search, notify: queue}
 }
 
 func (u *UsersEndpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {
@@ -237,6 +240,19 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 	})
 
 	httputil.JsonSuccess(w)
+}
+
+func (u *UsersEndpoint) Search(w http.ResponseWriter, r *http.Request) {
+	resp, err := u.search.FindUsers(r.URL.Query().Get("query"))
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	err = httputil.JsonEncode(w, resp)
+	if err != nil {
+		log.Printf("failed to write search response: %s\n", err.Error())
+	}
 }
 
 func (u *UsersEndpoint) processProfilePicture(file multipart.File) (string, error) {

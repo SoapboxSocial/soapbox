@@ -44,7 +44,7 @@ func (s *Search) FindUsers(input string) ([]User, error) {
 	m := make(map[string]map[string]query)
 	m["query"] = map[string]query{"multi_match": {
 		Query:  input,
-		Fields: []string{"display_name", "username"},
+		Fields: []string{"display_name.ngram", "username.ngram"},
 	},
 	}
 

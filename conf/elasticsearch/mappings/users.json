@@ -1,0 +1,22 @@
+{
+    "properties": {
+      "display_name": {
+        "type": "text",
+        "fields": {
+          "display_name": {"type": "text", "analyzer": "default_analyzer"},
+          "snowball": {"type": "text", "analyzer": "snowball_analyzer"},
+          "shingle": {"type": "text", "analyzer": "shingle_analyzer"},
+          "ngrams": {"type": "text", "analyzer": "ngram_analyzer", "search_analyzer": "search_analyzer"}
+        }
+      },
+      "username": {
+        "type": "text",
+        "fields": {
+          "username": {"type": "text", "analyzer": "default_analyzer"},
+          "snowball": {"type": "text", "analyzer": "snowball_analyzer"},
+          "shingle": {"type": "text", "analyzer": "shingle_analyzer"},
+          "ngrams": {"type": "text", "analyzer": "ngram_analyzer", "search_analyzer": "search_analyzer"}
+        }
+      }
+    }
+  }

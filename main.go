@@ -27,6 +27,7 @@ import (
 	"github.com/ephemeral-networks/voicely/pkg/followers"
 	httputil "github.com/ephemeral-networks/voicely/pkg/http"
 	"github.com/ephemeral-networks/voicely/pkg/images"
+	"github.com/ephemeral-networks/voicely/pkg/indexer"
 	"github.com/ephemeral-networks/voicely/pkg/mail"
 	"github.com/ephemeral-networks/voicely/pkg/notifications"
 	"github.com/ephemeral-networks/voicely/pkg/rooms"
@@ -72,6 +73,7 @@ func main() {
 	})
 
 	queue := notifications.NewNotificationQueue(rdb)
+	index := indexer.NewIndexerQueue(rdb)
 
 	s := sessions.NewSessionManager(rdb)
 	ub := users.NewUserBackend(db)
@@ -290,12 +292,12 @@ func main() {
 
 	ib := images.NewImagesBackend("/cdn/images")
 	ms := mail.NewMailService(sendgrid.NewSendClient(sendgrid_api))
-	loginHandlers := login.NewLoginEndpoint(ub, s, ms, ib)
+	loginHandlers := login.NewLoginEndpoint(ub, s, ms, ib, index)
 	loginRoutes.HandleFunc("/start", loginHandlers.Start)
 	loginRoutes.HandleFunc("/pin", loginHandlers.SubmitPin)
 	loginRoutes.HandleFunc("/register", loginHandlers.Register)
 
-	usersEndpoints := usersapi.NewUsersEndpoint(ub, fb, s, queue, ib, search)
+	usersEndpoints := usersapi.NewUsersEndpoint(ub, fb, s, queue, ib, search, index)
 
 	r.HandleFunc("/v1/users/search", usersEndpoints.Search)
 

@@ -59,7 +59,7 @@ type LoginEndpoint struct {
 	index *indexer.Queue
 }
 
-func NewLoginEndpoint(ub *users.UserBackend, manager *sessions.SessionManager, mail *mail.Service, ib *images.Backend) LoginEndpoint {
+func NewLoginEndpoint(ub *users.UserBackend, manager *sessions.SessionManager, mail *mail.Service, ib *images.Backend, index *indexer.Queue) LoginEndpoint {
 	return LoginEndpoint{
 		tokens:        make(map[string]tokenState),
 		registrations: make(map[string]string),
@@ -67,6 +67,7 @@ func NewLoginEndpoint(ub *users.UserBackend, manager *sessions.SessionManager, m
 		sessions:      manager,
 		mail:          mail,
 		ib:            ib,
+		index:         index,
 	}
 }
 

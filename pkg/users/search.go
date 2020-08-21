@@ -3,7 +3,6 @@ package users
 import (
 	"context"
 	"encoding/json"
-	"strings"
 
 	"github.com/elastic/go-elasticsearch/v7"
 )
@@ -41,23 +40,10 @@ func NewSearchBackend(client *elasticsearch.Client) *Search {
 }
 
 func (s *Search) FindUsers(input string) ([]User, error) {
-	m := make(map[string]map[string]query)
-	m["query"] = map[string]query{"multi_match": {
-		Query:  input,
-		Fields: []string{"display_name.ngram", "username.ngram"},
-	},
-	}
-
-	data, err := json.Marshal(m)
-	if err != nil {
-		return nil, err
-	}
-
-	read := strings.NewReader(string(data))
 	res, err := s.client.Search(
 		s.client.Search.WithContext(context.Background()),
 		s.client.Search.WithIndex("users"),
-		s.client.Search.WithBody(read),
+		s.client.Search.WithQuery(input),
 		s.client.Search.WithTrackTotalHits(true),
 		s.client.Search.WithPretty(),
 	)

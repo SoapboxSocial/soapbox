@@ -39,8 +39,9 @@ func NewUsersEndpoint(
 	queue *notifications.Queue,
 	ib *images.Backend,
 	search *users.Search,
+	index *indexer.Queue,
 ) *UsersEndpoint {
-	return &UsersEndpoint{ub: ub, fb: fb, sm: sm, ib: ib, search: search, notify: queue}
+	return &UsersEndpoint{ub: ub, fb: fb, sm: sm, ib: ib, search: search, notify: queue, index: index}
 }
 
 func (u *UsersEndpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {

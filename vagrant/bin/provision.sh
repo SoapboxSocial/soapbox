@@ -56,6 +56,10 @@ sudo ln -s /vagrant/conf/nginx.conf /etc/nginx/nginx.conf
 mkdir -p $GOPATH/src/github.com/ephemeral-networks/
 sudo ln -s /var/www/ $GOPATH/src/github.com/ephemeral-networks/voicely
 
+sudo mkdir /cdn/images
+sudo chown nginx:nginx -R /cdn/images
+sudo chmod -r 0777 /cdn/images
+
 cd $GOPATH/src/github.com/ephemeral-networks/voicely && sudo go build -o /usr/local/bin/voicely main.go
 cd $GOPATH/src/github.com/ephemeral-networks/voicely/cmd/indexer && sudo go build -o /usr/local/bin/indexer main.go
 

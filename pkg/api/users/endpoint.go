@@ -14,6 +14,7 @@ import (
 	"github.com/ephemeral-networks/voicely/pkg/followers"
 	httputil "github.com/ephemeral-networks/voicely/pkg/http"
 	"github.com/ephemeral-networks/voicely/pkg/images"
+	"github.com/ephemeral-networks/voicely/pkg/indexer"
 	"github.com/ephemeral-networks/voicely/pkg/notifications"
 	"github.com/ephemeral-networks/voicely/pkg/sessions"
 	"github.com/ephemeral-networks/voicely/pkg/users"
@@ -25,7 +26,10 @@ type UsersEndpoint struct {
 	sm *sessions.SessionManager
 	ib *images.Backend
 
-	queue *notifications.Queue
+	search *users.Search
+
+	notify *notifications.Queue
+	index  *indexer.Queue
 }
 
 func NewUsersEndpoint(
@@ -34,8 +38,10 @@ func NewUsersEndpoint(
 	sm *sessions.SessionManager,
 	queue *notifications.Queue,
 	ib *images.Backend,
+	search *users.Search,
+	index *indexer.Queue,
 ) *UsersEndpoint {
-	return &UsersEndpoint{ub: ub, fb: fb, sm: sm, ib: ib, queue: queue}
+	return &UsersEndpoint{ub: ub, fb: fb, sm: sm, ib: ib, search: search, notify: queue, index: index}
 }
 
 func (u *UsersEndpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {
@@ -146,7 +152,7 @@ func (u *UsersEndpoint) FollowUser(w http.ResponseWriter, r *http.Request) {
 
 	httputil.JsonSuccess(w)
 
-	u.queue.Push(notifications.Event{
+	u.notify.Push(notifications.Event{
 		Type:    notifications.EventTypeNewFollower,
 		Creator: userID,
 		Params:  map[string]interface{}{"id": id},
@@ -229,7 +235,31 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 
 	_ = u.ib.Remove(oldPath)
 
+	u.index.Push(indexer.Event{
+		Type:   indexer.EventTypeUserUpdate,
+		Params: map[string]interface{}{"id": userID},
+	})
+
 	httputil.JsonSuccess(w)
+}
+
+func (u *UsersEndpoint) Search(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query().Get("query")
+	if query == "" {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	resp, err := u.search.FindUsers(query)
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	err = httputil.JsonEncode(w, resp)
+	if err != nil {
+		log.Printf("failed to write search response: %s\n", err.Error())
+	}
 }
 
 func (u *UsersEndpoint) processProfilePicture(file multipart.File) (string, error) {

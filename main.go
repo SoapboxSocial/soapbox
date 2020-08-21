@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
 	"github.com/sendgrid/sendgrid-go"
@@ -26,6 +27,7 @@ import (
 	"github.com/ephemeral-networks/voicely/pkg/followers"
 	httputil "github.com/ephemeral-networks/voicely/pkg/http"
 	"github.com/ephemeral-networks/voicely/pkg/images"
+	"github.com/ephemeral-networks/voicely/pkg/indexer"
 	"github.com/ephemeral-networks/voicely/pkg/mail"
 	"github.com/ephemeral-networks/voicely/pkg/notifications"
 	"github.com/ephemeral-networks/voicely/pkg/rooms"
@@ -56,6 +58,8 @@ type JoinPayload struct {
 // @todo do this in config
 const sendgrid_api = "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"
 
+// @TODO: THINK ABOUT CHANGING QUEUES TO REDIS PUBSUB
+
 func main() {
 	db, err := sql.Open("postgres", "host=127.0.0.1 port=5432 user=voicely password=voicely dbname=voicely sslmode=disable")
 	if err != nil {
@@ -69,10 +73,18 @@ func main() {
 	})
 
 	queue := notifications.NewNotificationQueue(rdb)
+	index := indexer.NewIndexerQueue(rdb)
 
 	s := sessions.NewSessionManager(rdb)
 	ub := users.NewUserBackend(db)
 	fb := followers.NewFollowersBackend(db)
+
+	client, err := elasticsearch.NewDefaultClient()
+	if err != nil {
+		panic(err)
+	}
+
+	search := users.NewSearchBackend(client)
 
 	devicesBackend := devices.NewDevicesBackend(db)
 
@@ -280,20 +292,21 @@ func main() {
 
 	ib := images.NewImagesBackend("/cdn/images")
 	ms := mail.NewMailService(sendgrid.NewSendClient(sendgrid_api))
-	loginHandlers := login.NewLoginEndpoint(ub, s, ms, ib)
+	loginHandlers := login.NewLoginEndpoint(ub, s, ms, ib, index)
 	loginRoutes.HandleFunc("/start", loginHandlers.Start)
 	loginRoutes.HandleFunc("/pin", loginHandlers.SubmitPin)
 	loginRoutes.HandleFunc("/register", loginHandlers.Register)
 
 	userRoutes := r.PathPrefix("/v1/users").Subrouter()
 
-	usersEndpoints := usersapi.NewUsersEndpoint(ub, fb, s, queue, ib)
+	usersEndpoints := usersapi.NewUsersEndpoint(ub, fb, s, queue, ib, search, index)
 	userRoutes.HandleFunc("/{id:[0-9]+}", usersEndpoints.GetUserByID).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/followers", usersEndpoints.GetFollowersForUser).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/following", usersEndpoints.GetFollowedByForUser).Methods("GET")
 	userRoutes.HandleFunc("/follow", usersEndpoints.FollowUser).Methods("POST")
 	userRoutes.HandleFunc("/unfollow", usersEndpoints.UnfollowUser).Methods("POST")
 	userRoutes.HandleFunc("/edit", usersEndpoints.EditUser).Methods("POST")
+	userRoutes.HandleFunc("/search", usersEndpoints.Search).Methods("GET")
 
 	userRoutes.Use(amw.Middleware)
 

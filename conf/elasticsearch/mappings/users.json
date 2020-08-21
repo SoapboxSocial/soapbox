@@ -1,0 +1,20 @@
+{
+  "properties": {
+    "display_name": {
+      "type": "text",
+      "analyzer": "ngram_analyzer",
+      "search_analyzer": "standard"
+    },
+    "username": {
+      "type": "text",
+      "analyzer": "ngram_analyzer",
+      "search_analyzer": "standard"
+    },
+    "image": {
+      "type": "text"
+    },
+    "id": {
+      "type": "long"
+    }
+  }
+}

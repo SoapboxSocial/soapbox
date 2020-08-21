@@ -244,7 +244,13 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (u *UsersEndpoint) Search(w http.ResponseWriter, r *http.Request) {
-	resp, err := u.search.FindUsers(r.URL.Query().Get("query"))
+	query := r.URL.Query().Get("query")
+	if query == "" {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	resp, err := u.search.FindUsers(query)
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
 		return

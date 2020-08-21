@@ -299,8 +299,6 @@ func main() {
 
 	usersEndpoints := usersapi.NewUsersEndpoint(ub, fb, s, queue, ib, search, index)
 
-	r.HandleFunc("/v1/users/search", usersEndpoints.Search)
-
 	userRoutes := r.PathPrefix("/v1/users").Subrouter()
 
 	userRoutes.HandleFunc("/{id:[0-9]+}", usersEndpoints.GetUserByID).Methods("GET")
@@ -309,6 +307,7 @@ func main() {
 	userRoutes.HandleFunc("/follow", usersEndpoints.FollowUser).Methods("POST")
 	userRoutes.HandleFunc("/unfollow", usersEndpoints.UnfollowUser).Methods("POST")
 	userRoutes.HandleFunc("/edit", usersEndpoints.EditUser).Methods("POST")
+	userRoutes.HandleFunc("/search", usersEndpoints.Search).Methods("GET")
 
 	userRoutes.Use(amw.Middleware)
 

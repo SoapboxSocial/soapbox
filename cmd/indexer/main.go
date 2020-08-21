@@ -99,6 +99,9 @@ func handleUserUpdate(event *indexer.Event) error {
 	user.Email = nil
 
 	body, err := json.Marshal(user)
+	if err != nil {
+		return err
+	}
 
 	req := esapi.IndexRequest{
 		Index:      "users",

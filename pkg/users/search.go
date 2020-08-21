@@ -7,11 +7,6 @@ import (
 	"github.com/elastic/go-elasticsearch/v7"
 )
 
-type query struct {
-	Query  string   `json:"query"`
-	Fields []string `json:"fields"`
-}
-
 type hits struct {
 	Total    map[string]interface{} `json:"total"`
 	MaxScore float64                `json:"max_score"`

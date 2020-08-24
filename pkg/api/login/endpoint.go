@@ -213,7 +213,13 @@ func (l *LoginEndpoint) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := users.User{ID: lastID, DisplayName: name, Username: username, Email: &email}
+	user := users.User{
+		ID: lastID,
+		DisplayName: name,
+		Username: username,
+		Email: &email,
+		Image: image,
+	}
 
 	err = l.sessions.NewSession(token, user, expiration)
 	if err != nil {

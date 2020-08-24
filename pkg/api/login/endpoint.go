@@ -1,10 +1,12 @@
 package login
 
 import (
+	"context"
 	"crypto/rand"
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/go-redis/redis/v8"
 	"io"
 	"io/ioutil"
 	"log"
@@ -38,15 +40,17 @@ type loginState struct {
 }
 
 type tokenState struct {
-	email string
-	pin   string
+	email string `json:"email"`
+	pin   string `json:"pin"`
 }
 
 type LoginEndpoint struct {
 	sync.Mutex
 
+	rdb *redis.Client
+
 	// @todo use redis
-	tokens        map[string]tokenState
+	//tokens        map[string]tokenState
 	registrations map[string]string
 
 	users    *users.UserBackend
@@ -59,15 +63,15 @@ type LoginEndpoint struct {
 	index *indexer.Queue
 }
 
-func NewLoginEndpoint(ub *users.UserBackend, manager *sessions.SessionManager, mail *mail.Service, ib *images.Backend, index *indexer.Queue) LoginEndpoint {
+func NewLoginEndpoint(ub *users.UserBackend, manager *sessions.SessionManager, mail *mail.Service, ib *images.Backend, index *indexer.Queue, rdb *redis.Client) LoginEndpoint {
 	return LoginEndpoint{
-		tokens:        make(map[string]tokenState),
 		registrations: make(map[string]string),
 		users:         ub,
 		sessions:      manager,
 		mail:          mail,
 		ib:            ib,
 		index:         index,
+		rdb:           rdb,
 	}
 }
 
@@ -87,7 +91,10 @@ func (l *LoginEndpoint) Start(w http.ResponseWriter, r *http.Request) {
 	token := generateToken()
 	pin := generatePin()
 
-	l.tokens[token] = tokenState{email: email, pin: pin}
+	if err := l.setToken(token, tokenState{email: email, pin: pin}); err != nil {
+		log.Println("failed to store token: ", err.Error())
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToStoreDevice, "failed to generate login token") // TODO check err message
+	}
 
 	err = l.mail.SendPinEmail(email, pin)
 	if err != nil {
@@ -111,8 +118,8 @@ func (l *LoginEndpoint) SubmitPin(w http.ResponseWriter, r *http.Request) {
 	token := r.Form.Get("token")
 	pin := r.Form.Get("pin")
 
-	state, ok := l.tokens[token]
-	if !ok {
+	state, err := l.getToken(token)
+	if err != nil {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}
@@ -121,8 +128,6 @@ func (l *LoginEndpoint) SubmitPin(w http.ResponseWriter, r *http.Request) {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeIncorrectPin, "")
 		return
 	}
-
-	delete(l.tokens, token)
 
 	user, err := l.users.FindByEmail(state.email)
 	if err != nil {
@@ -146,6 +151,10 @@ func (l *LoginEndpoint) SubmitPin(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println("error writing response: " + err.Error())
 
+	}
+
+	if err := l.deleteToken(token); err != nil {
+		log.Println("error deleting token: ", err.Error())
 	}
 }
 
@@ -214,11 +223,11 @@ func (l *LoginEndpoint) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user := users.User{
-		ID: lastID,
+		ID:          lastID,
 		DisplayName: name,
-		Username: username,
-		Email: &email,
-		Image: image,
+		Username:    username,
+		Email:       &email,
+		Image:       image,
 	}
 
 	err = l.sessions.NewSession(token, user, expiration)
@@ -290,6 +299,37 @@ func generatePin() string {
 		b[i] = table[int(b[i])%len(table)]
 	}
 	return string(b)
+}
+
+func (l *LoginEndpoint) setToken(token string, state tokenState) error {
+	marshaledState, err := json.Marshal(state)
+	if err != nil {
+		return err
+	}
+	return l.rdb.Set(context.Background(), token, marshaledState, time.Minute*10).Err()
+}
+
+// TODO CLEAN UP AND DOCUMENT
+func (l *LoginEndpoint) getToken(token string) (tokenState, error) {
+	rawState, err := l.rdb.Get(context.Background(), token).Bytes()
+	if err != nil {
+		log.Println("error getting token state: ", err) // TODO err
+		return tokenState{}, err
+	}
+
+	var state tokenState
+	if err := json.Unmarshal(rawState, &state); err != nil {
+		log.Println("error unmarshaling token state: ", err) // TODO err
+		return tokenState{}, err
+	}
+
+	// TODO SOMETHING IS WRONG WITH TOKEN STATE it's not unmarshaling
+
+	return state, nil
+}
+
+func (l *LoginEndpoint) deleteToken(token string) error {
+	return l.rdb.Del(context.Background(), token).Err()
 }
 
 var table = []byte{'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'}

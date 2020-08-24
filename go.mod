@@ -13,8 +13,6 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/lib/pq v1.8.0
 	github.com/lucas-clemente/quic-go v0.18.0 // indirect
-	github.com/marten-seemann/qtls v0.10.0 // indirect
-	github.com/pion/datachannel v1.4.20 // indirect
 	github.com/pion/ice/v2 v2.0.0 // indirect
 	github.com/pion/rtcp v1.2.3
 	github.com/pion/rtp v1.6.0

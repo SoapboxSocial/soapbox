@@ -292,7 +292,7 @@ func main() {
 
 	ib := images.NewImagesBackend("/cdn/images")
 	ms := mail.NewMailService(sendgrid.NewSendClient(sendgrid_api))
-	loginHandlers := login.NewLoginEndpoint(ub, s, ms, ib, index)
+	loginHandlers := login.NewLoginEndpoint(ub, s, ms, ib, index, rdb)
 	loginRoutes.HandleFunc("/start", loginHandlers.Start)
 	loginRoutes.HandleFunc("/pin", loginHandlers.SubmitPin)
 	loginRoutes.HandleFunc("/register", loginHandlers.Register)

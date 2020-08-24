@@ -382,6 +382,8 @@ func (r *Room) onCommand(from int, command *pb.RoomCommand) {
 		r.onMuteSpeaker(from)
 	case pb.RoomCommand_UNMUTE_SPEAKER:
 		r.onUnmuteSpeaker(from)
+	case pb.RoomCommand_REACTION:
+		r.onReaction(from, command.Data)
 	}
 }
 
@@ -395,6 +397,13 @@ func (r *Room) onAddSpeaker(from int, peer []byte) {
 	r.peers[bytesToInt(peer)].Role = SPEAKER
 
 	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_ADDED_SPEAKER, From: int64(from), Data: peer})
+}
+
+func (r *Room) onReaction(from int, reaction []byte) {
+	r.Lock()
+	defer r.Unlock()
+
+	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_REACTED, From: int64(from), Data: reaction})
 }
 
 func (r *Room) onRemoveSpeaker(from int, peer []byte) {

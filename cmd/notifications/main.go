@@ -48,7 +48,7 @@ func main() {
 
 	client := apns2.NewTokenClient(&token.Token{
 		AuthKey: authKey,
-		KeyID:   "82439YH93F", // @todo these should be in config files
+		KeyID:   "65W43TT88Q", // @todo these should be in config files
 		TeamID:  "Z9LC5GZ33U",
 	}).Production()
 

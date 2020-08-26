@@ -11,9 +11,9 @@ import (
 	"github.com/sideshow/apns2"
 	"github.com/sideshow/apns2/token"
 
-	"github.com/ephemeral-networks/voicely/pkg/devices"
-	"github.com/ephemeral-networks/voicely/pkg/notifications"
-	"github.com/ephemeral-networks/voicely/pkg/users"
+	"github.com/ephemeral-networks/soapbox/pkg/devices"
+	"github.com/ephemeral-networks/soapbox/pkg/notifications"
+	"github.com/ephemeral-networks/soapbox/pkg/users"
 )
 
 var devicesBackend *devices.DevicesBackend

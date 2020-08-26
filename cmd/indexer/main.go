@@ -16,8 +16,8 @@ import (
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/go-redis/redis/v8"
 
-	"github.com/ephemeral-networks/voicely/pkg/indexer"
-	"github.com/ephemeral-networks/voicely/pkg/users"
+	"github.com/ephemeral-networks/soapbox/pkg/indexer"
+	"github.com/ephemeral-networks/soapbox/pkg/users"
 )
 
 type handlerFunc func(*indexer.Event) error

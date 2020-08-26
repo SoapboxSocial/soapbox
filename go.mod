@@ -1,4 +1,4 @@
-module github.com/ephemeral-networks/voicely
+module github.com/ephemeral-networks/soapbox
 
 go 1.14
 

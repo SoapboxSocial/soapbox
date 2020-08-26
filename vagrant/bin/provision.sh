@@ -24,7 +24,7 @@ sudo yum install -y redis
 rm -rf /etc/supervisord.conf
 sudo ln -s /vagrant/conf/supervisord.conf /etc/supervisord.conf
 sudo mkdir -p /etc/supervisor/conf.d/
-sudo ln -s /vagrant/conf/voicely.conf /etc/supervisor/conf.d/voicely.conf
+sudo ln -s /vagrant/conf/soapbox.conf /etc/supervisor/conf.d/soapbox.conf
 sudo ln -s /vagrant/conf/notifications.conf /etc/supervisor/conf.d/notifications.conf
 sudo ln -s /vagrant/conf/indexer.conf /etc/supervisor/conf.d/indexer.conf
 

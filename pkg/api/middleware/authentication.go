@@ -4,8 +4,8 @@ import (
 	"context"
 	"net/http"
 
-	httputil "github.com/ephemeral-networks/voicely/pkg/http"
-	"github.com/ephemeral-networks/voicely/pkg/sessions"
+	httputil "github.com/ephemeral-networks/soapbox/pkg/http"
+	"github.com/ephemeral-networks/soapbox/pkg/sessions"
 )
 
 type key string

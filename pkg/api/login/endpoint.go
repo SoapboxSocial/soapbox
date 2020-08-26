@@ -15,12 +15,12 @@ import (
 	"sync"
 	"time"
 
-	httputil "github.com/ephemeral-networks/voicely/pkg/http"
-	"github.com/ephemeral-networks/voicely/pkg/images"
-	"github.com/ephemeral-networks/voicely/pkg/indexer"
-	"github.com/ephemeral-networks/voicely/pkg/mail"
-	"github.com/ephemeral-networks/voicely/pkg/sessions"
-	"github.com/ephemeral-networks/voicely/pkg/users"
+	httputil "github.com/ephemeral-networks/soapbox/pkg/http"
+	"github.com/ephemeral-networks/soapbox/pkg/images"
+	"github.com/ephemeral-networks/soapbox/pkg/indexer"
+	"github.com/ephemeral-networks/soapbox/pkg/mail"
+	"github.com/ephemeral-networks/soapbox/pkg/sessions"
+	"github.com/ephemeral-networks/soapbox/pkg/users"
 )
 
 // Contains the login handlers

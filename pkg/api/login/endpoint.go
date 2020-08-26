@@ -95,10 +95,12 @@ func (l *LoginEndpoint) Start(w http.ResponseWriter, r *http.Request) {
 
 	l.tokens[token] = tokenState{email: email, pin: pin}
 
-	err = l.mail.SendPinEmail(email, pin)
-	if err != nil {
-		log.Println("failed to send code: ", err.Error())
-		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToLogin, "failed to send code")
+	if email != TestEmail {
+		err = l.mail.SendPinEmail(email, pin)
+		if err != nil {
+			log.Println("failed to send code: ", err.Error())
+			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToLogin, "failed to send code")
+		}
 	}
 
 	err = json.NewEncoder(w).Encode(map[string]string{"token": token})

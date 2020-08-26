@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-redis/redis/v8"
 
-	"github.com/ephemeral-networks/voicely/pkg/users"
+	"github.com/ephemeral-networks/soapbox/pkg/users"
 )
 
 type SessionManager struct {

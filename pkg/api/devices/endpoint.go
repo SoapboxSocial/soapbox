@@ -3,9 +3,9 @@ package devices
 import (
 	"net/http"
 
-	auth "github.com/ephemeral-networks/voicely/pkg/api/middleware"
-	"github.com/ephemeral-networks/voicely/pkg/devices"
-	httputil "github.com/ephemeral-networks/voicely/pkg/http"
+	auth "github.com/ephemeral-networks/soapbox/pkg/api/middleware"
+	"github.com/ephemeral-networks/soapbox/pkg/devices"
+	httputil "github.com/ephemeral-networks/soapbox/pkg/http"
 )
 
 type DevicesEndpoint struct {

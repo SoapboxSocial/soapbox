@@ -14,7 +14,7 @@ import (
 	"github.com/pion/rtp"
 	"github.com/pion/webrtc/v3"
 
-	"github.com/ephemeral-networks/voicely/pkg/pb"
+	"github.com/ephemeral-networks/soapbox/pkg/pb"
 )
 
 var config = webrtc.Configuration{

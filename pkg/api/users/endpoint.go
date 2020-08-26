@@ -10,14 +10,14 @@ import (
 
 	"github.com/gorilla/mux"
 
-	auth "github.com/ephemeral-networks/voicely/pkg/api/middleware"
-	"github.com/ephemeral-networks/voicely/pkg/followers"
-	httputil "github.com/ephemeral-networks/voicely/pkg/http"
-	"github.com/ephemeral-networks/voicely/pkg/images"
-	"github.com/ephemeral-networks/voicely/pkg/indexer"
-	"github.com/ephemeral-networks/voicely/pkg/notifications"
-	"github.com/ephemeral-networks/voicely/pkg/sessions"
-	"github.com/ephemeral-networks/voicely/pkg/users"
+	auth "github.com/ephemeral-networks/soapbox/pkg/api/middleware"
+	"github.com/ephemeral-networks/soapbox/pkg/followers"
+	httputil "github.com/ephemeral-networks/soapbox/pkg/http"
+	"github.com/ephemeral-networks/soapbox/pkg/images"
+	"github.com/ephemeral-networks/soapbox/pkg/indexer"
+	"github.com/ephemeral-networks/soapbox/pkg/notifications"
+	"github.com/ephemeral-networks/soapbox/pkg/sessions"
+	"github.com/ephemeral-networks/soapbox/pkg/users"
 )
 
 type UsersEndpoint struct {

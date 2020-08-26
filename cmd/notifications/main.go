@@ -11,9 +11,9 @@ import (
 	"github.com/sideshow/apns2"
 	"github.com/sideshow/apns2/token"
 
-	"github.com/ephemeral-networks/voicely/pkg/devices"
-	"github.com/ephemeral-networks/voicely/pkg/notifications"
-	"github.com/ephemeral-networks/voicely/pkg/users"
+	"github.com/ephemeral-networks/soapbox/pkg/devices"
+	"github.com/ephemeral-networks/soapbox/pkg/notifications"
+	"github.com/ephemeral-networks/soapbox/pkg/users"
 )
 
 var devicesBackend *devices.DevicesBackend
@@ -48,11 +48,11 @@ func main() {
 
 	client := apns2.NewTokenClient(&token.Token{
 		AuthKey: authKey,
-		KeyID:   "82439YH93F", // @todo these should be in config files
+		KeyID:   "65W43TT88Q", // @todo these should be in config files
 		TeamID:  "Z9LC5GZ33U",
 	}).Production()
 
-	service = notifications.NewService("com.voicely.voicely", client)
+	service = notifications.NewService("app.soapbox.soapbox", client)
 
 	for {
 		if queue.Len() == 0 {

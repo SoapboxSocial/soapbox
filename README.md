@@ -1,8 +1,8 @@
-# Voicely
+# Soapbox
 
 ## Running
 
-To run the voicely server locally, it is recommended to use `vagrant`. This can be done by running the following in the `vagrant` directory.
+To run the Soapbox server locally, it is recommended to use `vagrant`. This can be done by running the following in the `vagrant` directory.
 
 ```console
 vagrant up

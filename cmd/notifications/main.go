@@ -52,7 +52,7 @@ func main() {
 		TeamID:  "Z9LC5GZ33U",
 	}).Production()
 
-	service = notifications.NewService("com.voicely.voicely", client)
+	service = notifications.NewService("app.soapbox.soapbox", client)
 
 	for {
 		if queue.Len() == 0 {

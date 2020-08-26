@@ -48,11 +48,11 @@ func main() {
 
 	client := apns2.NewTokenClient(&token.Token{
 		AuthKey: authKey,
-		KeyID:   "65W43TT88Q", // @todo these should be in config files
+		KeyID:   "9U8K3MKG2K", // @todo these should be in config files
 		TeamID:  "Z9LC5GZ33U",
 	}).Production()
 
-	service = notifications.NewService("app.soapbox.soapbox", client)
+	service = notifications.NewService("app.social.soapbox", client)
 
 	for {
 		if queue.Len() == 0 {

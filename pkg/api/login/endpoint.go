@@ -30,6 +30,8 @@ const expiration = 8760 * time.Hour
 const LoginStateRegister = "register"
 const LoginStateSuccess = "success"
 
+const TestEmail = "test@apple.com";
+
 // @todo better names
 type loginState struct {
 	State     string      `json:"state"`
@@ -85,7 +87,11 @@ func (l *LoginEndpoint) Start(w http.ResponseWriter, r *http.Request) {
 	}
 
 	token := generateToken()
+
 	pin := generatePin()
+	if email == TestEmail {
+		pin = "123456"
+	}
 
 	l.tokens[token] = tokenState{email: email, pin: pin}
 

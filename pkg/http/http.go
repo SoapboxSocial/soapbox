@@ -27,7 +27,8 @@ const (
 	ErrorCodeUnauthorized
 	ErrorCodeFailedToStoreDevice
 	ErrorCodeNotFound
-	ErrorCodeAllowed
+	ErrorCodeNotAllowed
+	ErrorCodeRoomFull
 )
 
 // NotFoundHandler handles 404 responses
@@ -37,7 +38,7 @@ func NotFoundHandler(w http.ResponseWriter, r *http.Request) {
 
 // NotAllowed handles 405 responses
 func NotAllowedHandler(w http.ResponseWriter, r *http.Request) {
-	JsonError(w, http.StatusMethodNotAllowed, ErrorCodeAllowed, "not allowed")
+	JsonError(w, http.StatusMethodNotAllowed, ErrorCodeNotAllowed, "not allowed")
 }
 
 // JsonError writes an Error to the ResponseWriter with the provided information.

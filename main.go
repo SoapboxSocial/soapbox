@@ -249,6 +249,11 @@ func main() {
 			return
 		}
 
+		if room.PeerCount() >= 5 {
+			httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeRoomFull, "room is full")
+			return
+		}
+
 		sdp, err := room.Join(userID, user.DisplayName, user.Image, p)
 		if err != nil {
 			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeRoomFailedToJoin, "failed to join room")

@@ -30,7 +30,7 @@ const expiration = 8760 * time.Hour
 const LoginStateRegister = "register"
 const LoginStateSuccess = "success"
 
-const TestEmail = "test@apple.com";
+const TestEmail = "test@apple.com"
 
 // @todo better names
 type loginState struct {
@@ -222,11 +222,11 @@ func (l *LoginEndpoint) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	user := users.User{
-		ID: lastID,
+		ID:          lastID,
 		DisplayName: name,
-		Username: username,
-		Email: &email,
-		Image: image,
+		Username:    username,
+		Email:       &email,
+		Image:       image,
 	}
 
 	err = l.sessions.NewSession(token, user, expiration)

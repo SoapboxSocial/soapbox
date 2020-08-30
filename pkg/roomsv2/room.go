@@ -114,8 +114,6 @@ func (r *Room) onJoin(id int, c *websocket.Conn, offer webrtc.SessionDescription
 		transport: peer,
 	}
 
-	// @todo probably need to do onConnectionState change stuff to remove peers.
-
 	return &answer, nil
 }
 

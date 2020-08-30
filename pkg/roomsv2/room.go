@@ -71,9 +71,10 @@ func (r *Room) Join(id int, offer webrtc.SessionDescription) (*webrtc.SessionDes
 		// @todo
 	})
 
-	peer.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
-		// @todo
-	})
+	// @TODO
+	// peer.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
+	//
+	// })
 
 	r.peers[id] = peer.ID()
 

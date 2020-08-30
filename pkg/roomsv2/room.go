@@ -1,14 +1,18 @@
 package roomsv2
 
 import (
+	"log"
+	"sync"
+
 	sfu "github.com/pion/ion-sfu/pkg"
-	"github.com/pion/ion-sfu/pkg/log"
 	"github.com/pion/webrtc/v3"
 	"github.com/pkg/errors"
 )
 
 // Room represents the a Soapbox room, tracking its state and its peers.
 type Room struct {
+	sync.RWMutex
+
 	id    int
 	sfu   *sfu.SFU
 	peers map[int]string
@@ -55,16 +59,16 @@ func (r *Room) Join(id int, offer webrtc.SessionDescription) (*webrtc.SessionDes
 	})
 
 	peer.OnNegotiationNeeded(func() {
-		log.Debugf("on negotiation needed called")
+		log.Println("on negotiation needed called")
 		offer, err := peer.CreateOffer()
 		if err != nil {
-			log.Errorf("CreateOffer error: %v", err)
+			log.Printf("CreateOffer error: %v\n", err)
 			return
 		}
 
 		err = peer.SetLocalDescription(offer)
 		if err != nil {
-			log.Errorf("SetLocalDescription error: %v", err)
+			log.Printf("SetLocalDescription error: %v\n", err)
 			return
 		}
 
@@ -72,9 +76,16 @@ func (r *Room) Join(id int, offer webrtc.SessionDescription) (*webrtc.SessionDes
 	})
 
 	// @TODO
-	// peer.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
+	//peer.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
+	//	r.Lock()
+	//	delete(r.peers, id)
+	//	r.Unlock()
 	//
-	// })
+	//	err := peer.Close()
+	//	if err != nil {
+	//		log.Printf("peer.Close error: %v\n", err)
+	//	}
+	//})
 
 	r.peers[id] = peer.ID()
 

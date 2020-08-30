@@ -4,10 +4,16 @@ import (
 	"log"
 	"sync"
 
+	"github.com/gorilla/websocket"
 	sfu "github.com/pion/ion-sfu/pkg"
 	"github.com/pion/webrtc/v3"
 	"github.com/pkg/errors"
 )
+
+type Peer struct {
+	transport  *sfu.WebRTCTransport
+	connection *websocket.Conn
+}
 
 // Room represents the a Soapbox room, tracking its state and its peers.
 type Room struct {
@@ -15,7 +21,7 @@ type Room struct {
 
 	id    int
 	sfu   *sfu.SFU
-	peers map[int]string
+	peers map[int]*Peer
 }
 
 // NewRoom returns a room
@@ -23,12 +29,28 @@ func NewRoom(id int, sfu *sfu.SFU) *Room {
 	return &Room{
 		id:    id,
 		sfu:   sfu,
-		peers: make(map[int]string),
+		peers: make(map[int]*Peer),
 	}
 }
 
-// Join adds a user to the session using a webrtc offer.
-func (r *Room) Join(id int, offer webrtc.SessionDescription) (*webrtc.SessionDescription, error) {
+// Handle a peers connection
+func (r *Room) Handle(id int, c *websocket.Conn) {
+	for {
+		_, message, err := c.ReadMessage()
+		if err != nil {
+			log.Printf("ReadMessage error: %v\n", err)
+			r.closePeer(id)
+			return
+		}
+
+		// @todo decode message
+		log.Println(message)
+	}
+}
+
+// onJoin adds a user to the session using a webrtc offer.
+// @TODO: probably pass message, and instead of conn put it into an array?
+func (r *Room) onJoin(id int, c *websocket.Conn, offer webrtc.SessionDescription) (*webrtc.SessionDescription, error) {
 	peer, err := r.sfu.NewWebRTCTransport(string(r.id), offer)
 	if err != nil {
 		return nil, errors.Wrap(err, "join error")
@@ -87,9 +109,21 @@ func (r *Room) Join(id int, offer webrtc.SessionDescription) (*webrtc.SessionDes
 	//	}
 	//})
 
-	r.peers[id] = peer.ID()
+	r.peers[id] = &Peer{
+		connection: c,
+		transport: peer,
+	}
 
 	// @todo probably need to do onConnectionState change stuff to remove peers.
 
 	return &answer, nil
+}
+
+func (r *Room) onAnswer(id int, desc webrtc.SessionDescription) {
+	// @todo handle error
+	_ = r.peers[id].transport.SetRemoteDescription(desc)
+}
+
+func (r *Room) closePeer(id int) {
+
 }

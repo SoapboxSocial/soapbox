@@ -37,9 +37,9 @@ func NewRoom(id int, s *sfu.SFU) *Room {
 }
 
 func (r *Room) Handle(id int, conn *websocket.Conn) {
-	transport, _, err := r.join(id)
+	transport, offer, err := r.join(id)
 	if err != nil {
-		// @todo probably send error
+		log.Printf("failed to join: %v\n", err)
 		_ = conn.Close()
 	}
 
@@ -49,6 +49,17 @@ func (r *Room) Handle(id int, conn *websocket.Conn) {
 		messageQueue: make(chan *pb.RoomEvent, 100),
 	}
 	r.mux.Unlock()
+
+	event := &pb.RoomEvent{Type: pb.RoomEvent_OFFER, From: 0, Data: []byte(offer.SDP)}
+	data, err := proto.Marshal(event)
+	if err != nil {
+
+	}
+
+	err = conn.WriteMessage(websocket.BinaryMessage, data)
+	if err != nil {
+		log.Printf("conn.WriteMessage error: %v\n", err)
+	}
 
 	// @todo write description
 
@@ -63,10 +74,19 @@ func (r *Room) Handle(id int, conn *websocket.Conn) {
 		}
 
 		cmd := &pb.RoomCommand{}
-
 		err = proto.Unmarshal(message, cmd)
 		if err != nil {
 			// @todo
+		}
+
+		switch cmd.Type {
+		case pb.RoomCommand_ANSWER:
+			r.onAnswer(id, webrtc.SessionDescription{
+				Type: webrtc.SDPTypeAnswer,
+				SDP: string(cmd.Data),
+			})
+		default:
+			continue
 		}
 	}
 }

@@ -36,6 +36,12 @@ func NewRoom(id int, s *sfu.SFU) *Room {
 	}
 }
 
+func (r *Room) PeerCount() int {
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+	return len(r.peers)
+}
+
 func (r *Room) Handle(id int, conn *websocket.Conn) {
 	transport, offer, err := r.join(id, conn)
 	if err != nil {
@@ -65,6 +71,7 @@ func (r *Room) Handle(id int, conn *websocket.Conn) {
 		mt, message, err := conn.ReadMessage()
 		if err != nil {
 			// @todo
+			return
 		}
 
 		if mt != websocket.BinaryMessage {
@@ -162,13 +169,14 @@ func (r *Room) join(id int, conn *websocket.Conn) (*sfu.WebRTCTransport, *webrtc
 func (r *Room) onAnswer(id int, desc webrtc.SessionDescription) {
 	r.mux.Lock()
 	peer, ok := r.peers[id]
-	delete(r.peers, id)
 	r.mux.Unlock()
 
 	if !ok {
 		// @todo
 		return
 	}
+
+	log.Print(desc)
 
 	err := peer.transport.SetRemoteDescription(desc)
 	if err != nil {
@@ -178,8 +186,11 @@ func (r *Room) onAnswer(id int, desc webrtc.SessionDescription) {
 
 func (r *Room) closePeer(id int) {
 	r.mux.RLock()
-	peer := r.peers[id]
+	peer, ok := r.peers[id]
 	r.mux.RUnlock()
+	if !ok {
+		return
+	}
 
 	err := peer.transport.Close()
 	if err != nil {

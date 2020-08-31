@@ -8,7 +8,6 @@ import (
 	"github.com/gorilla/websocket"
 	sfu "github.com/pion/ion-sfu/pkg"
 
-	"github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
 	"github.com/soapboxsocial/soapbox/pkg/roomsv2"
@@ -72,11 +71,14 @@ func (r *RoomsEndpoint) Join(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	id, ok := middleware.GetUserIDFromContext(req.Context())
-	if !ok {
-		// @todo error
-		return
-	}
+	//id, ok := middleware.GetUserIDFromContext(req.Context())
+	//if !ok {
+	//	// @todo error
+	//	return
+	//}
+	//
+
+	id := r.room.PeerCount()
 
 	r.room.Handle(id, conn)
 }

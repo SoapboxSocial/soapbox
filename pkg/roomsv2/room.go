@@ -86,7 +86,6 @@ func (r *Room) Handle(id int, conn *websocket.Conn) {
 
 		switch cmd.Type {
 		case pb.RoomCommand_ANSWER:
-			log.Print("answered")
 			r.onAnswer(id, webrtc.SessionDescription{
 				Type: webrtc.SDPTypeAnswer,
 				SDP: string(cmd.Data),
@@ -175,8 +174,6 @@ func (r *Room) onAnswer(id int, desc webrtc.SessionDescription) {
 		// @todo
 		return
 	}
-
-	log.Print(desc)
 
 	err := peer.transport.SetRemoteDescription(desc)
 	if err != nil {

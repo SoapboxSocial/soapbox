@@ -101,21 +101,25 @@ func (r *Room) handle(id int, d *webrtc.DataChannel) {
 		c := r.messageQueue[id]
 		r.RUnlock()
 
-		for {
-			// @todo do we need a select here?
-			msg := <-c
+		go func() {
+			for {
+				msg, ok := <-c
+				if !ok {
+					return
+				}
 
-			data, err := proto.Marshal(msg)
-			if err != nil {
-				log.Printf("proto.Marshal error: %v\n", err)
-				continue
-			}
+				data, err := proto.Marshal(msg)
+				if err != nil {
+					log.Printf("proto.Marshal error: %v\n", err)
+					continue
+				}
 
-			err = d.Send(data)
-			if err != nil {
-				// @todo
+				err = d.Send(data)
+				if err != nil {
+					// @todo
+				}
 			}
-		}
+		}()
 	})
 
 	d.OnMessage(func(msg webrtc.DataChannelMessage) {
@@ -141,7 +145,10 @@ func (r *Room) closePeer(id int) {
 		log.Printf("peer.Close error: %v\n", err)
 	}
 
+	close(r.messageQueue[id])
+
 	delete(r.peers, id)
+	delete(r.messageQueue, id)
 
 	// @todo notify manager
 }

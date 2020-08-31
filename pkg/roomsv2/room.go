@@ -37,7 +37,7 @@ func NewRoom(id int, s *sfu.SFU) *Room {
 }
 
 func (r *Room) Handle(id int, conn *websocket.Conn) {
-	transport, offer, err := r.join(id)
+	transport, offer, err := r.join(id, conn)
 	if err != nil {
 		log.Printf("failed to join: %v\n", err)
 		_ = conn.Close()
@@ -91,7 +91,7 @@ func (r *Room) Handle(id int, conn *websocket.Conn) {
 }
 
 // join adds a user to the session using a webrtc offer.
-func (r *Room) join(id int) (*sfu.WebRTCTransport, *webrtc.SessionDescription, error) {
+func (r *Room) join(id int, conn *websocket.Conn) (*sfu.WebRTCTransport, *webrtc.SessionDescription, error) {
 	me := sfu.MediaEngine{}
 	me.RegisterDefaultCodecs()
 
@@ -124,7 +124,7 @@ func (r *Room) join(id int) (*sfu.WebRTCTransport, *webrtc.SessionDescription, e
 		// @todo
 	})
 
-	c := make(chan *pb.RoomEvent, 100)
+	//c := make(chan *pb.RoomEvent, 100)
 
 	peer.OnNegotiationNeeded(func() {
 		log.Println("on negotiation needed called")
@@ -140,8 +140,16 @@ func (r *Room) join(id int) (*sfu.WebRTCTransport, *webrtc.SessionDescription, e
 			return
 		}
 
-		// @todo
-		c <- &pb.RoomEvent{}
+		event := &pb.RoomEvent{Type: pb.RoomEvent_OFFER, From: 0, Data: []byte(offer.SDP)}
+		data, err := proto.Marshal(event)
+		if err != nil {
+
+		}
+
+		err = conn.WriteMessage(websocket.BinaryMessage, data)
+		if err != nil {
+			log.Printf("conn.WriteMessage error: %v\n", err)
+		}
 	})
 
 	peer.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
@@ -152,9 +160,10 @@ func (r *Room) join(id int) (*sfu.WebRTCTransport, *webrtc.SessionDescription, e
 }
 
 func (r *Room) onAnswer(id int, desc webrtc.SessionDescription) {
-	r.mux.RLock()
+	r.mux.Lock()
 	peer, ok := r.peers[id]
-	r.mux.RUnlock()
+	delete(r.peers, id)
+	r.mux.Unlock()
 
 	if !ok {
 		// @todo

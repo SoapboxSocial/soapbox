@@ -32,23 +32,21 @@ func NewRoom(id int, s *sfu.SFU) *Room {
 }
 
 // Join adds a user to the session using a webrtc offer.
-func (r *Room) Join(id int, offer webrtc.SessionDescription) (*webrtc.SessionDescription, error) {
-	peer, err := r.sfu.NewWebRTCTransport(string(r.id), offer)
+func (r *Room) Join(id int) (*webrtc.SessionDescription, error) {
+	me := sfu.MediaEngine{}
+	me.RegisterDefaultCodecs()
+
+	peer, err := r.sfu.NewWebRTCTransport(string(r.id), me)
 	if err != nil {
 		return nil, errors.Wrap(err, "join error")
 	}
 
-	err = peer.SetRemoteDescription(offer)
+	offer, err := peer.CreateOffer()
 	if err != nil {
 		return nil, errors.Wrap(err, "join error")
 	}
 
-	answer, err := peer.CreateAnswer()
-	if err != nil {
-		return nil, errors.Wrap(err, "join error")
-	}
-
-	err = peer.SetLocalDescription(answer)
+	err = peer.SetLocalDescription(offer)
 	if err != nil {
 		return nil, errors.Wrap(err, "join error")
 	}
@@ -122,7 +120,7 @@ func (r *Room) Join(id int, offer webrtc.SessionDescription) (*webrtc.SessionDes
 		})
 	})
 
-	return &answer, nil
+	return &offer, nil
 }
 
 func (r *Room) onAnswer(id int, desc webrtc.SessionDescription) {

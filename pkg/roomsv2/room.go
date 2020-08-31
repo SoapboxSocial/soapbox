@@ -102,12 +102,7 @@ func (r *Room) handle(id int, d *webrtc.DataChannel) {
 		r.RUnlock()
 
 		go func() {
-			for {
-				msg, ok := <-c
-				if !ok {
-					return
-				}
-
+			for msg := range c {
 				data, err := proto.Marshal(msg)
 				if err != nil {
 					log.Printf("proto.Marshal error: %v\n", err)

@@ -100,6 +100,11 @@ func (r *Room) join(id int) (*sfu.WebRTCTransport, *webrtc.SessionDescription, e
 		return nil, nil, errors.Wrap(err, "join error")
 	}
 
+	_, err = peer.AddTransceiverFromKind(webrtc.RTPCodecTypeAudio)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "join error")
+	}
+
 	offer, err := peer.CreateOffer()
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "join error")

@@ -80,17 +80,9 @@ func (r *Room) Join(id int, offer webrtc.SessionDescription) (*webrtc.SessionDes
 	r.peers[id] = peer
 	r.Unlock()
 
-	// @TODO
-	//peer.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
-	//	r.Lock()
-	//	delete(r.peers, id)
-	//	r.Unlock()
-	//
-	//	err := peer.Close()
-	//	if err != nil {
-	//		log.Printf("peer.Close error: %v\n", err)
-	//	}
-	//})
+	peer.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
+		r.closePeer(id)
+	})
 
 	return &answer, nil
 }

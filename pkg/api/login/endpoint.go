@@ -15,12 +15,12 @@ import (
 	"sync"
 	"time"
 
-	httputil "github.com/ephemeral-networks/soapbox/pkg/http"
-	"github.com/ephemeral-networks/soapbox/pkg/images"
-	"github.com/ephemeral-networks/soapbox/pkg/indexer"
-	"github.com/ephemeral-networks/soapbox/pkg/mail"
-	"github.com/ephemeral-networks/soapbox/pkg/sessions"
-	"github.com/ephemeral-networks/soapbox/pkg/users"
+	httputil "github.com/soapboxsocial/soapbox/pkg/http"
+	"github.com/soapboxsocial/soapbox/pkg/images"
+	"github.com/soapboxsocial/soapbox/pkg/indexer"
+	"github.com/soapboxsocial/soapbox/pkg/mail"
+	"github.com/soapboxsocial/soapbox/pkg/sessions"
+	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
 // Contains the login handlers

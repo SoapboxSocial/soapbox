@@ -1,4 +1,4 @@
-module github.com/ephemeral-networks/soapbox
+module github.com/soapboxsocial/soapbox
 
 go 1.14
 

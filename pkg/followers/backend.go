@@ -3,7 +3,7 @@ package followers
 import (
 	"database/sql"
 
-	"github.com/ephemeral-networks/soapbox/pkg/users"
+	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
 type FollowersBackend struct {

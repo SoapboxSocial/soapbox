@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/gorilla/websocket"
 	sfu "github.com/pion/ion-sfu/pkg"
 
+	"github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
 	"github.com/soapboxsocial/soapbox/pkg/roomsv2"
@@ -18,12 +20,14 @@ type RoomPayload struct {
 }
 
 type RoomsEndpoint struct {
-	room *roomsv2.Room
+	room     *roomsv2.Room
+	upgrader *websocket.Upgrader
 }
 
 func NewRoomsEndpoint(sfu *sfu.SFU) RoomsEndpoint {
 	return RoomsEndpoint{
-		room: roomsv2.NewRoom(1, sfu),
+		room:     roomsv2.NewRoom(1, sfu),
+		upgrader: &websocket.Upgrader{},
 	}
 }
 
@@ -60,5 +64,17 @@ func (r *RoomsEndpoint) List(w http.ResponseWriter, req *http.Request) {
 }
 
 func (r *RoomsEndpoint) Join(w http.ResponseWriter, req *http.Request) {
+	conn, err := r.upgrader.Upgrade(w, req, nil)
+	if err != nil {
+		// @todo
+		return
+	}
 
+	id, ok := middleware.GetUserIDFromContext(req.Context())
+	if !ok {
+		// @todo error
+		return
+	}
+
+	r.room.Handle(id, conn)
 }

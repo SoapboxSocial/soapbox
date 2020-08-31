@@ -22,6 +22,7 @@ import (
 	devicesapi "github.com/soapboxsocial/soapbox/pkg/api/devices"
 	"github.com/soapboxsocial/soapbox/pkg/api/login"
 	"github.com/soapboxsocial/soapbox/pkg/api/middleware"
+	roomsapi "github.com/soapboxsocial/soapbox/pkg/api/rooms"
 	usersapi "github.com/soapboxsocial/soapbox/pkg/api/users"
 	"github.com/soapboxsocial/soapbox/pkg/devices"
 	"github.com/soapboxsocial/soapbox/pkg/followers"
@@ -33,6 +34,8 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
 	"github.com/soapboxsocial/soapbox/pkg/users"
+	sfu "github.com/pion/ion-sfu/pkg"
+
 )
 
 type RoomPayload struct {
@@ -97,33 +100,13 @@ func main() {
 	r.MethodNotAllowedHandler = http.HandlerFunc(httputil.NotAllowedHandler)
 	r.NotFoundHandler = http.HandlerFunc(httputil.NotFoundHandler)
 
-	r.HandleFunc("/v1/rooms", func(w http.ResponseWriter, r *http.Request) {
-		data := make([]RoomPayload, 0)
+	conf := sfu.Config{}
 
-		manager.MapRooms(func(room *rooms.Room) {
-			if room == nil {
-				return
-			}
+	roomSFU := sfu.NewSFU(conf)
 
-			r := RoomPayload{ID: room.GetID(), Members: make([]rooms.Member, 0)}
+	roomHandlers := roomsapi.NewRoomsEndpoint(roomSFU)
 
-			name := room.GetName()
-			if name != "" {
-				r.Name = name
-			}
-
-			room.MapPeers(func(id int, peer rooms.Peer) {
-				r.Members = append(r.Members, peer.GetMember())
-			})
-
-			data = append(data, r)
-		})
-
-		err := httputil.JsonEncode(w, data)
-		if err != nil {
-			fmt.Println(err)
-		}
-	}).Methods("GET")
+	r.HandleFunc("/v1/rooms", roomHandlers.List).Methods("GET")
 
 	roomRoutes := r.PathPrefix("/v1/rooms").Methods("POST").Subrouter()
 
@@ -198,99 +181,100 @@ func main() {
 
 	})
 
-	roomRoutes.HandleFunc("/{id:[0-9]+}/join", func(w http.ResponseWriter, r *http.Request) {
-		b, err := ioutil.ReadAll(r.Body)
-		defer r.Body.Close()
-		if err != nil {
-			httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
-			return
-		}
-
-		userID, ok := middleware.GetUserIDFromContext(r.Context())
-		if !ok {
-			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
-			return
-		}
-
-		user, err := ub.FindByID(userID)
-		if err != nil {
-			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeRoomFailedToJoin, "failed to join room")
-			return
-		}
-
-		payload := &SDPPayload{}
-		err = json.Unmarshal(b, payload)
-		if err != nil {
-			httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
-			log.Printf("failed to decode payload: %s\n", err.Error())
-			return
-		}
-
-		err, t := getType(payload.Type)
-		if err != nil {
-			// @todo more errors this shit is invalid
-			return
-		}
-
-		p := webrtc.SessionDescription{
-			Type: t,
-			SDP:  payload.SDP,
-		}
-
-		vars := mux.Vars(r)
-		id, err := strconv.Atoi(vars["id"])
-		if err != nil {
-			return
-		}
-
-		room, err := manager.GetRoom(id)
-		if err != nil {
-			httputil.JsonError(w, http.StatusNotFound, httputil.ErrorCodeRoomNotFound, "room not found")
-			return
-		}
-
-		if room.PeerCount() >= 5 {
-			httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeRoomFull, "room is full")
-			return
-		}
-
-		sdp, err := room.Join(userID, user.DisplayName, user.Image, p)
-		if err != nil {
-			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeRoomFailedToJoin, "failed to join room")
-			return
-		}
-
-		members := make([]rooms.Member, 0)
-
-		room.MapPeers(func(id int, peer rooms.Peer) {
-			// @todo will need changing
-			if id == userID {
-				return
-			}
-
-			members = append(members, peer.GetMember())
-		})
-
-		resp := &JoinPayload{
-			Members: members,
-			SDP: SDPPayload{
-				ID:   &id,
-				Type: strings.ToLower(sdp.Type.String()),
-				SDP:  sdp.SDP,
-			},
-			Role: string(room.GetRoleForPeer(userID)),
-		}
-
-		name := room.GetName()
-		if name != "" {
-			resp.Name = name
-		}
-
-		err = httputil.JsonEncode(w, resp)
-		if err != nil {
-			fmt.Println(err)
-		}
-	})
+	roomRoutes.HandleFunc("/{id:[0-9]+}/join", roomHandlers.Join)
+	//roomRoutes.HandleFunc("/{id:[0-9]+}/join", func(w http.ResponseWriter, r *http.Request) {
+	//	b, err := ioutil.ReadAll(r.Body)
+	//	defer r.Body.Close()
+	//	if err != nil {
+	//		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
+	//		return
+	//	}
+	//
+	//	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	//	if !ok {
+	//		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+	//		return
+	//	}
+	//
+	//	user, err := ub.FindByID(userID)
+	//	if err != nil {
+	//		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeRoomFailedToJoin, "failed to join room")
+	//		return
+	//	}
+	//
+	//	payload := &SDPPayload{}
+	//	err = json.Unmarshal(b, payload)
+	//	if err != nil {
+	//		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
+	//		log.Printf("failed to decode payload: %s\n", err.Error())
+	//		return
+	//	}
+	//
+	//	err, t := getType(payload.Type)
+	//	if err != nil {
+	//		// @todo more errors this shit is invalid
+	//		return
+	//	}
+	//
+	//	p := webrtc.SessionDescription{
+	//		Type: t,
+	//		SDP:  payload.SDP,
+	//	}
+	//
+	//	vars := mux.Vars(r)
+	//	id, err := strconv.Atoi(vars["id"])
+	//	if err != nil {
+	//		return
+	//	}
+	//
+	//	room, err := manager.GetRoom(id)
+	//	if err != nil {
+	//		httputil.JsonError(w, http.StatusNotFound, httputil.ErrorCodeRoomNotFound, "room not found")
+	//		return
+	//	}
+	//
+	//	if room.PeerCount() >= 5 {
+	//		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeRoomFull, "room is full")
+	//		return
+	//	}
+	//
+	//	sdp, err := room.Join(userID, user.DisplayName, user.Image, p)
+	//	if err != nil {
+	//		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeRoomFailedToJoin, "failed to join room")
+	//		return
+	//	}
+	//
+	//	members := make([]rooms.Member, 0)
+	//
+	//	room.MapPeers(func(id int, peer rooms.Peer) {
+	//		// @todo will need changing
+	//		if id == userID {
+	//			return
+	//		}
+	//
+	//		members = append(members, peer.GetMember())
+	//	})
+	//
+	//	resp := &JoinPayload{
+	//		Members: members,
+	//		SDP: SDPPayload{
+	//			ID:   &id,
+	//			Type: strings.ToLower(sdp.Type.String()),
+	//			SDP:  sdp.SDP,
+	//		},
+	//		Role: string(room.GetRoleForPeer(userID)),
+	//	}
+	//
+	//	name := room.GetName()
+	//	if name != "" {
+	//		resp.Name = name
+	//	}
+	//
+	//	err = httputil.JsonEncode(w, resp)
+	//	if err != nil {
+	//		fmt.Println(err)
+	//	}
+	//})
 	roomRoutes.Use(amw.Middleware)
 
 	loginRoutes := r.PathPrefix("/v1/login").Methods("POST").Subrouter()

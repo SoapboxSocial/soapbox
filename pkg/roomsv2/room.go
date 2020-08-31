@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/gorilla/websocket"
 	sfu "github.com/pion/ion-sfu/pkg"
 	"github.com/pion/webrtc/v3"
 	"github.com/pkg/errors"
@@ -12,14 +13,18 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/pb"
 )
 
+type peer struct {
+	transport *sfu.WebRTCTransport
+	messageQueue chan *pb.RoomEvent
+}
+
 // Room represents the a Soapbox room, tracking its state and its peers.
 type Room struct {
-	sync.RWMutex
+	mux sync.RWMutex
 
 	id    int
 	sfu   *sfu.SFU
-	peers map[int]*sfu.WebRTCTransport
-	messageQueue map[int] chan *pb.RoomEvent
+	peers map[int]*peer
 }
 
 // NewRoom returns a room
@@ -27,28 +32,63 @@ func NewRoom(id int, s *sfu.SFU) *Room {
 	return &Room{
 		id:    id,
 		sfu:   s,
-		peers: make(map[int]*sfu.WebRTCTransport),
+		peers: make(map[int]*peer),
 	}
 }
 
-// Join adds a user to the session using a webrtc offer.
-func (r *Room) Join(id int) (*webrtc.SessionDescription, error) {
+func (r *Room) Handle(id int, conn *websocket.Conn) {
+	transport, _, err := r.join(id)
+	if err != nil {
+		// @todo probably send error
+		_ = conn.Close()
+	}
+
+	r.mux.Lock()
+	r.peers[id] = &peer{
+		transport: transport,
+		messageQueue: make(chan *pb.RoomEvent, 100),
+	}
+	r.mux.Unlock()
+
+	// @todo write description
+
+	for {
+		mt, message, err := conn.ReadMessage()
+		if err != nil {
+			// @todo
+		}
+
+		if mt != websocket.BinaryMessage {
+			continue
+		}
+
+		cmd := &pb.RoomCommand{}
+
+		err = proto.Unmarshal(message, cmd)
+		if err != nil {
+			// @todo
+		}
+	}
+}
+
+// join adds a user to the session using a webrtc offer.
+func (r *Room) join(id int) (*sfu.WebRTCTransport, *webrtc.SessionDescription, error) {
 	me := sfu.MediaEngine{}
 	me.RegisterDefaultCodecs()
 
 	peer, err := r.sfu.NewWebRTCTransport(string(r.id), me)
 	if err != nil {
-		return nil, errors.Wrap(err, "join error")
+		return nil, nil, errors.Wrap(err, "join error")
 	}
 
 	offer, err := peer.CreateOffer()
 	if err != nil {
-		return nil, errors.Wrap(err, "join error")
+		return nil, nil, errors.Wrap(err, "join error")
 	}
 
 	err = peer.SetLocalDescription(offer)
 	if err != nil {
-		return nil, errors.Wrap(err, "join error")
+		return nil, nil, errors.Wrap(err, "join error")
 	}
 
 	// Notify user of trickle candidates
@@ -80,67 +120,44 @@ func (r *Room) Join(id int) (*webrtc.SessionDescription, error) {
 		c <- &pb.RoomEvent{}
 	})
 
-	r.Lock()
-	r.peers[id] = peer
-	r.messageQueue[id] = c
-	r.Unlock()
-
 	peer.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
 		r.closePeer(id)
 	})
 
-	peer.OnDataChannel(func(d *webrtc.DataChannel) {
-		d.OnOpen(func() {
-			r.RLock()
-			c := r.messageQueue[id]
-			r.RUnlock()
-
-			go func() {
-				for msg := range c {
-					data, err := proto.Marshal(msg)
-					if err != nil {
-						log.Printf("proto.Marshal error: %v\n", err)
-						continue
-					}
-
-					err = d.Send(data)
-					if err != nil {
-						// @todo
-					}
-				}
-			}()
-		})
-
-		d.OnMessage(func(msg webrtc.DataChannelMessage) {
-
-		})
-
-		d.OnClose(func() {
-			r.closePeer(id)
-		})
-	})
-
-	return &offer, nil
+	return peer, &offer, nil
 }
 
 func (r *Room) onAnswer(id int, desc webrtc.SessionDescription) {
-	// @todo handle error
-	_ = r.peers[id].SetRemoteDescription(desc)
+	r.mux.RLock()
+	peer, ok := r.peers[id]
+	r.mux.RUnlock()
+
+	if !ok {
+		// @todo
+		return
+	}
+
+	err := peer.transport.SetRemoteDescription(desc)
+	if err != nil {
+		log.Printf("peer.SetRemoteDescription error: %v\n", err)
+	}
 }
 
 func (r *Room) closePeer(id int) {
-	r.Lock()
-	defer r.Unlock()
+	r.mux.RLock()
+	peer := r.peers[id]
+	r.mux.RUnlock()
 
-	err := r.peers[id].Close()
+	err := peer.transport.Close()
 	if err != nil {
 		log.Printf("peer.Close error: %v\n", err)
 	}
 
-	close(r.messageQueue[id])
+	close(peer.messageQueue)
 
+	r.mux.Lock()
 	delete(r.peers, id)
-	delete(r.messageQueue, id)
+	r.mux.Unlock()
 
 	// @todo notify manager
 }

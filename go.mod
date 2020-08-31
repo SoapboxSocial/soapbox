@@ -9,6 +9,7 @@ require (
 	github.com/golang/protobuf v1.4.2
 	github.com/gorilla/handlers v1.5.0
 	github.com/gorilla/mux v1.8.0
+	github.com/gorilla/websocket v1.4.2
 	github.com/lib/pq v1.8.0
 	github.com/pion/ion-sfu v1.0.5-0.20200831150409-caf4aedc819f
 	github.com/pion/rtcp v1.2.3

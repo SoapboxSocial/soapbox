@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/elastic/go-elasticsearch/v7"
@@ -18,6 +17,8 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/pion/webrtc/v3"
+
+	sfu "github.com/pion/ion-sfu/pkg"
 
 	devicesapi "github.com/soapboxsocial/soapbox/pkg/api/devices"
 	"github.com/soapboxsocial/soapbox/pkg/api/login"
@@ -34,8 +35,6 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
 	"github.com/soapboxsocial/soapbox/pkg/users"
-	sfu "github.com/pion/ion-sfu/pkg"
-
 )
 
 type RoomPayload struct {
@@ -108,7 +107,7 @@ func main() {
 
 	r.HandleFunc("/v1/rooms", roomHandlers.List).Methods("GET")
 
-	roomRoutes := r.PathPrefix("/v1/rooms").Methods("POST").Subrouter()
+	roomRoutes := r.PathPrefix("/v1/rooms").Methods("GET").Subrouter()
 
 	roomRoutes.HandleFunc("/create", func(w http.ResponseWriter, r *http.Request) {
 		b, err := ioutil.ReadAll(r.Body)

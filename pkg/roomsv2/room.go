@@ -61,8 +61,6 @@ func (r *Room) Handle(id int, conn *websocket.Conn) {
 		log.Printf("conn.WriteMessage error: %v\n", err)
 	}
 
-	// @todo write description
-
 	for {
 		mt, message, err := conn.ReadMessage()
 		if err != nil {
@@ -81,6 +79,7 @@ func (r *Room) Handle(id int, conn *websocket.Conn) {
 
 		switch cmd.Type {
 		case pb.RoomCommand_ANSWER:
+			log.Print("answered")
 			r.onAnswer(id, webrtc.SessionDescription{
 				Type: webrtc.SDPTypeAnswer,
 				SDP: string(cmd.Data),

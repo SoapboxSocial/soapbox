@@ -2,6 +2,7 @@ package rooms
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/websocket"
@@ -66,6 +67,7 @@ func (r *RoomsEndpoint) List(w http.ResponseWriter, req *http.Request) {
 func (r *RoomsEndpoint) Join(w http.ResponseWriter, req *http.Request) {
 	conn, err := r.upgrader.Upgrade(w, req, nil)
 	if err != nil {
+		log.Print(err)
 		// @todo
 		return
 	}

@@ -4,9 +4,12 @@ import (
 	"log"
 	"sync"
 
+	"github.com/golang/protobuf/proto"
 	sfu "github.com/pion/ion-sfu/pkg"
 	"github.com/pion/webrtc/v3"
 	"github.com/pkg/errors"
+
+	"github.com/ephemeral-networks/soapbox/pkg/pb"
 )
 
 // Room represents the a Soapbox room, tracking its state and its peers.
@@ -16,6 +19,7 @@ type Room struct {
 	id    int
 	sfu   *sfu.SFU
 	peers map[int]*sfu.WebRTCTransport
+	messageQueue map[int] chan *pb.RoomEvent
 }
 
 // NewRoom returns a room
@@ -59,6 +63,8 @@ func (r *Room) Join(id int, offer webrtc.SessionDescription) (*webrtc.SessionDes
 		// @todo
 	})
 
+	c := make(chan *pb.RoomEvent, 100)
+
 	peer.OnNegotiationNeeded(func() {
 		log.Println("on negotiation needed called")
 		offer, err := peer.CreateOffer()
@@ -74,10 +80,12 @@ func (r *Room) Join(id int, offer webrtc.SessionDescription) (*webrtc.SessionDes
 		}
 
 		// @todo
+		c <- &pb.RoomEvent{}
 	})
 
 	r.Lock()
 	r.peers[id] = peer
+	r.messageQueue[id] = c
 	r.Unlock()
 
 	peer.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
@@ -88,6 +96,28 @@ func (r *Room) Join(id int, offer webrtc.SessionDescription) (*webrtc.SessionDes
 }
 
 func (r *Room) handle(id int, d *webrtc.DataChannel) {
+	d.OnOpen(func() {
+		r.RLock()
+		c := r.messageQueue[id]
+		r.RUnlock()
+
+		for {
+			// @todo do we need a select here?
+			msg := <-c
+
+			data, err := proto.Marshal(msg)
+			if err != nil {
+				log.Printf("proto.Marshal error: %v\n", err)
+				continue
+			}
+
+			err = d.Send(data)
+			if err != nil {
+				// @todo
+			}
+		}
+	})
+
 	d.OnMessage(func(msg webrtc.DataChannelMessage) {
 
 	})

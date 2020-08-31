@@ -92,38 +92,38 @@ func (r *Room) Join(id int, offer webrtc.SessionDescription) (*webrtc.SessionDes
 		r.closePeer(id)
 	})
 
+	peer.OnDataChannel(func(d *webrtc.DataChannel) {
+		d.OnOpen(func() {
+			r.RLock()
+			c := r.messageQueue[id]
+			r.RUnlock()
+
+			go func() {
+				for msg := range c {
+					data, err := proto.Marshal(msg)
+					if err != nil {
+						log.Printf("proto.Marshal error: %v\n", err)
+						continue
+					}
+
+					err = d.Send(data)
+					if err != nil {
+						// @todo
+					}
+				}
+			}()
+		})
+
+		d.OnMessage(func(msg webrtc.DataChannelMessage) {
+
+		})
+
+		d.OnClose(func() {
+			r.closePeer(id)
+		})
+	})
+
 	return &answer, nil
-}
-
-func (r *Room) handle(id int, d *webrtc.DataChannel) {
-	d.OnOpen(func() {
-		r.RLock()
-		c := r.messageQueue[id]
-		r.RUnlock()
-
-		go func() {
-			for msg := range c {
-				data, err := proto.Marshal(msg)
-				if err != nil {
-					log.Printf("proto.Marshal error: %v\n", err)
-					continue
-				}
-
-				err = d.Send(data)
-				if err != nil {
-					// @todo
-				}
-			}
-		}()
-	})
-
-	d.OnMessage(func(msg webrtc.DataChannelMessage) {
-
-	})
-
-	d.OnClose(func() {
-		r.closePeer(id)
-	})
 }
 
 func (r *Room) onAnswer(id int, desc webrtc.SessionDescription) {

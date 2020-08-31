@@ -3,9 +3,9 @@ package devices
 import (
 	"net/http"
 
-	auth "github.com/ephemeral-networks/soapbox/pkg/api/middleware"
-	"github.com/ephemeral-networks/soapbox/pkg/devices"
-	httputil "github.com/ephemeral-networks/soapbox/pkg/http"
+	auth "github.com/soapboxsocial/soapbox/pkg/api/middleware"
+	"github.com/soapboxsocial/soapbox/pkg/devices"
+	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 )
 
 type DevicesEndpoint struct {

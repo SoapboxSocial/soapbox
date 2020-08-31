@@ -9,7 +9,7 @@ import (
 	"github.com/pion/webrtc/v3"
 	"github.com/pkg/errors"
 
-	"github.com/ephemeral-networks/soapbox/pkg/pb"
+	"github.com/soapboxsocial/soapbox/pkg/pb"
 )
 
 // Room represents the a Soapbox room, tracking its state and its peers.

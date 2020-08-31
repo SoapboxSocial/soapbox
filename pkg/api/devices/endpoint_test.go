@@ -12,9 +12,9 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 
-	"github.com/ephemeral-networks/soapbox/pkg/api/devices"
-	auth "github.com/ephemeral-networks/soapbox/pkg/api/middleware"
-	backend "github.com/ephemeral-networks/soapbox/pkg/devices"
+	"github.com/soapboxsocial/soapbox/pkg/api/devices"
+	auth "github.com/soapboxsocial/soapbox/pkg/api/middleware"
+	backend "github.com/soapboxsocial/soapbox/pkg/devices"
 )
 
 func TestMain(m *testing.M) {

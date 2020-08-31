@@ -6,9 +6,9 @@ import (
 
 	sfu "github.com/pion/ion-sfu/pkg"
 
-	httputil "github.com/ephemeral-networks/soapbox/pkg/http"
-	"github.com/ephemeral-networks/soapbox/pkg/rooms"
-	"github.com/ephemeral-networks/soapbox/pkg/roomsv2"
+	httputil "github.com/soapboxsocial/soapbox/pkg/http"
+	"github.com/soapboxsocial/soapbox/pkg/rooms"
+	"github.com/soapboxsocial/soapbox/pkg/roomsv2"
 )
 
 type RoomPayload struct {

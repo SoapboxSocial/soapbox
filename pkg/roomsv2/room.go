@@ -32,7 +32,6 @@ func NewRoom(id int, s *sfu.SFU) *Room {
 }
 
 // Join adds a user to the session using a webrtc offer.
-// @TODO: probably pass message, and instead of conn put it into an array?
 func (r *Room) Join(id int, offer webrtc.SessionDescription) (*webrtc.SessionDescription, error) {
 	peer, err := r.sfu.NewWebRTCTransport(string(r.id), offer)
 	if err != nil {

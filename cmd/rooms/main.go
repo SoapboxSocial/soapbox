@@ -1,4 +1,4 @@
-package rooms
+package main
 
 import (
 	"log"

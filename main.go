@@ -11,14 +11,12 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
-	sfu "github.com/pion/ion-sfu/pkg"
 	"github.com/pion/webrtc/v3"
 	"github.com/sendgrid/sendgrid-go"
 
 	devicesapi "github.com/soapboxsocial/soapbox/pkg/api/devices"
 	"github.com/soapboxsocial/soapbox/pkg/api/login"
 	"github.com/soapboxsocial/soapbox/pkg/api/middleware"
-	roomsapi "github.com/soapboxsocial/soapbox/pkg/api/rooms"
 	usersapi "github.com/soapboxsocial/soapbox/pkg/api/users"
 	"github.com/soapboxsocial/soapbox/pkg/devices"
 	"github.com/soapboxsocial/soapbox/pkg/followers"
@@ -80,44 +78,13 @@ func main() {
 	r.MethodNotAllowedHandler = http.HandlerFunc(httputil.NotAllowedHandler)
 	r.NotFoundHandler = http.HandlerFunc(httputil.NotFoundHandler)
 
-	conf := sfu.Config{
-		WebRTC: sfu.WebRTCConfig{
-			ICEPortRange: []uint16{1000, 6000},
-			ICEServers: []sfu.ICEServerConfig{
-				{
-					URLs: []string{
-						"stun:stun.l.google.com:19302",
-						"stun:stun1.l.google.com:19302",
-						"stun:stun2.l.google.com:19302",
-						"stun:stun3.l.google.com:19302",
-						"stun:stun4.l.google.com:19302",
-					},
-				},
-				{
-					URLs:       []string{"turn:turn.awsome.org:3478"},
-					Username:   "awsome",
-					Credential: "awsome",
-				},
-			},
-		},
-		Receiver: sfu.ReceiverConfig{
-			Video: sfu.WebRTCVideoReceiverConfig{
-				REMBCycle:     2,
-				PLICycle:      1,
-				TCCCycle:      1,
-				MaxBandwidth:  1000,
-				MaxBufferTime: 5000,
-			},
-		},
-	}
+	//roomSFU := sfu.NewSFU(conf)
 
-	roomSFU := sfu.NewSFU(conf)
+	//roomHandlers := roomsapi.NewRoomsEndpoint(roomSFU, ub)
 
-	roomHandlers := roomsapi.NewRoomsEndpoint(roomSFU, ub)
+	//r.HandleFunc("/v1/rooms", roomHandlers.List).Methods("GET")
 
-	r.HandleFunc("/v1/rooms", roomHandlers.List).Methods("GET")
-
-	roomRoutes := r.PathPrefix("/v1/rooms").Methods("GET").Subrouter()
+	//roomRoutes := r.PathPrefix("/v1/rooms").Methods("GET").Subrouter()
 
 	//roomRoutes.HandleFunc("/create", func(w http.ResponseWriter, r *http.Request) {
 	//	b, err := ioutil.ReadAll(r.Body)
@@ -190,7 +157,7 @@ func main() {
 	//
 	//})
 
-	roomRoutes.HandleFunc("/{id:[0-9]+}/join", roomHandlers.Join)
+	//roomRoutes.HandleFunc("/{id:[0-9]+}/join", roomHandlers.Join)
 	//roomRoutes.HandleFunc("/{id:[0-9]+}/join", func(w http.ResponseWriter, r *http.Request) {
 	//	b, err := ioutil.ReadAll(r.Body)
 	//	defer r.Body.Close()
@@ -285,7 +252,7 @@ func main() {
 	//	}
 	//})
 
-	roomRoutes.Use(amw.Middleware)
+	//roomRoutes.Use(amw.Middleware)
 
 	loginRoutes := r.PathPrefix("/v1/login").Methods("POST").Subrouter()
 

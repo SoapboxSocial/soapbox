@@ -44,6 +44,8 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 	case *pb.SignalRequest_Create:
 		// @todo setup
 		break
+	default:
+		return status.Error(codes.FailedPrecondition, "not joined or created room")
 	}
 
 	return room.Handle(stream, peer)

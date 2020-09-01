@@ -100,8 +100,8 @@ func main() {
 					},
 				},
 				{
-					URLs: []string{"turn:turn.awsome.org:3478"},
-					Username: "awsome",
+					URLs:       []string{"turn:turn.awsome.org:3478"},
+					Username:   "awsome",
 					Credential: "awsome",
 				},
 			},

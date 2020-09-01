@@ -15,7 +15,7 @@ import (
 )
 
 type peer struct {
-	transport *sfu.WebRTCTransport
+	transport    *sfu.WebRTCTransport
 	messageQueue chan *pb.RoomEvent
 }
 
@@ -54,7 +54,7 @@ func (r *Room) Handle(id int, conn *websocket.Conn) {
 
 	r.mux.Lock()
 	r.peers[id] = &peer{
-		transport: transport,
+		transport:    transport,
 		messageQueue: queue,
 	}
 	r.mux.Unlock()
@@ -220,7 +220,7 @@ func (r *Room) onAnswer(id int, cmd *pb.RoomCommand) {
 
 	desc := webrtc.SessionDescription{
 		Type: webrtc.SDPTypeAnswer,
-		SDP: string(cmd.Data),
+		SDP:  string(cmd.Data),
 	}
 
 	err := peer.transport.SetRemoteDescription(desc)

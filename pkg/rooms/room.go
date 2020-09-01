@@ -33,8 +33,8 @@ type peer struct {
 	member       *Member
 }
 
-// Room represents the a Soapbox room, tracking its state and its peers.
-type Room struct {
+// RoomLegacy represents the a Soapbox room, tracking its state and its peers.
+type RoomLegacy struct {
 	mux sync.RWMutex
 
 	id    int
@@ -43,8 +43,8 @@ type Room struct {
 }
 
 // NewRoom returns a room
-func NewRoom(id int, s *sfu.SFU) *Room {
-	return &Room{
+func NewRoom(id int, s *sfu.SFU) *RoomLegacy {
+	return &RoomLegacy{
 		id:    id,
 		sfu:   s,
 		peers: make(map[int]*peer),
@@ -52,14 +52,14 @@ func NewRoom(id int, s *sfu.SFU) *Room {
 }
 
 // PeerCount returns the number of connected peers.
-func (r *Room) PeerCount() int {
+func (r *RoomLegacy) PeerCount() int {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
 	return len(r.peers)
 }
 
 // join adds a user to the session using a webrtc offer.
-func (r *Room) Join(id int) (*sfu.WebRTCTransport, *webrtc.SessionDescription, error) {
+func (r *RoomLegacy) Join(id int) (*sfu.WebRTCTransport, *webrtc.SessionDescription, error) {
 	me := sfu.MediaEngine{}
 	me.RegisterDefaultCodecs()
 
@@ -132,7 +132,7 @@ func (r *Room) Join(id int) (*sfu.WebRTCTransport, *webrtc.SessionDescription, e
 	return peer, &offer, nil
 }
 
-func (r *Room) notify(event *pb.RoomEvent) {
+func (r *RoomLegacy) notify(event *pb.RoomEvent) {
 	//data, err := proto.Marshal(event)
 	//if err != nil {
 	//	//
@@ -152,7 +152,7 @@ func (r *Room) notify(event *pb.RoomEvent) {
 	}
 }
 
-func (r *Room) closePeer(id int) {
+func (r *RoomLegacy) closePeer(id int) {
 	r.mux.RLock()
 	peer, ok := r.peers[id]
 	r.mux.RUnlock()

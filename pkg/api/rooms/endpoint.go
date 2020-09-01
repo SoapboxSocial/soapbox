@@ -24,7 +24,7 @@ type RoomPayload struct {
 }
 
 type RoomsEndpoint struct {
-	room     *rooms.Room
+	room     *rooms.RoomLegacy
 	upgrader *websocket.Upgrader
 	ub       *users.UserBackend
 }
@@ -40,7 +40,7 @@ func NewRoomsEndpoint(sfu *sfu.SFU, ub *users.UserBackend) RoomsEndpoint {
 func (r *RoomsEndpoint) List(w http.ResponseWriter, req *http.Request) {
 	//data := make([]RoomPayload, 0)
 	//
-	//manager.MapRooms(func(room *rooms.Room) {
+	//manager.MapRooms(func(room *rooms.RoomLegacy) {
 	//	if room == nil {
 	//		return
 	//	}

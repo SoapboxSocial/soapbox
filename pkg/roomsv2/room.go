@@ -1,6 +1,7 @@
 package roomsv2
 
 import (
+	"encoding/json"
 	"log"
 	"sync"
 
@@ -90,6 +91,15 @@ func (r *Room) Handle(id int, conn *websocket.Conn) {
 				Type: webrtc.SDPTypeAnswer,
 				SDP: string(cmd.Data),
 			})
+		case pb.RoomCommand_CANDIDATE:
+			candidate := &webrtc.ICECandidateInit{}
+			err := json.Unmarshal(cmd.Data, candidate)
+			if err != nil {
+				// @todo
+				continue
+			}
+
+			r.onCandidate(id, candidate)
 		default:
 			continue
 		}
@@ -127,10 +137,24 @@ func (r *Room) join(id int, conn *websocket.Conn) (*sfu.WebRTCTransport, *webrtc
 			return
 		}
 
-		// @todo
-	})
+		data, err := json.Marshal(c.ToJSON())
+		if err != nil {
+			log.Printf("json marshal candidate error: %v\n", err)
+			return
+		}
 
-	//c := make(chan *pb.RoomEvent, 100)
+		event := &pb.RoomEvent{Type: pb.RoomEvent_CANDIDATE, From: 0, Data: data}
+		protobuf, err := proto.Marshal(event)
+		if err != nil {
+			log.Printf("marshal candidate error: %v\n", err)
+			return
+		}
+
+		err = conn.WriteMessage(websocket.BinaryMessage, protobuf)
+		if err != nil {
+			log.Printf("conn.WriteMessage error: %v\n", err)
+		}
+	})
 
 	peer.OnNegotiationNeeded(func() {
 		log.Println("on negotiation needed called")
@@ -149,7 +173,8 @@ func (r *Room) join(id int, conn *websocket.Conn) (*sfu.WebRTCTransport, *webrtc
 		event := &pb.RoomEvent{Type: pb.RoomEvent_OFFER, From: 0, Data: []byte(offer.SDP)}
 		data, err := proto.Marshal(event)
 		if err != nil {
-
+			log.Printf("marshal offer error: %v\n", err)
+			return
 		}
 
 		err = conn.WriteMessage(websocket.BinaryMessage, data)
@@ -163,6 +188,22 @@ func (r *Room) join(id int, conn *websocket.Conn) (*sfu.WebRTCTransport, *webrtc
 	})
 
 	return peer, &offer, nil
+}
+
+func (r *Room) onCandidate(id int, candidate *webrtc.ICECandidateInit) {
+	r.mux.Lock()
+	peer, ok := r.peers[id]
+	r.mux.Unlock()
+
+	if !ok {
+		// @todo
+		return
+	}
+
+	err := peer.transport.AddICECandidate(*candidate)
+	if err != nil {
+		log.Printf("peer.AddICECandidate error: %v\n", err)
+	}
 }
 
 func (r *Room) onAnswer(id int, desc webrtc.SessionDescription) {

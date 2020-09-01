@@ -5,14 +5,10 @@ import (
 	"log"
 	"sync"
 
-	"github.com/golang/protobuf/proto"
-	"github.com/gorilla/websocket"
 	sfu "github.com/pion/ion-sfu/pkg"
 	"github.com/pion/webrtc/v3"
-	"github.com/pkg/errors"
 
 	"github.com/soapboxsocial/soapbox/pkg/pb"
-	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
 type PeerRole string
@@ -62,104 +58,29 @@ func (r *Room) PeerCount() int {
 	return len(r.peers)
 }
 
-// Handle a new connection
-func (r *Room) Handle(user *users.User, conn *websocket.Conn) {
-	id := user.ID
-
-	transport, offer, err := r.join(id)
-	if err != nil {
-		log.Printf("failed to join: %v\n", err)
-		_ = conn.Close()
-	}
-
-	queue := make(chan *pb.RoomEvent, 100)
-
-	m := &Member{ID: user.ID, DisplayName: user.DisplayName, Image: user.Image, Role: SPEAKER, IsMuted: false}
-
-	r.mux.Lock()
-	r.peers[id] = &peer{
-		transport:    transport,
-		messageQueue: queue,
-		member:       m,
-	}
-	r.mux.Unlock()
-
-	queue <- &pb.RoomEvent{Type: pb.RoomEvent_OFFER, From: 0, Data: []byte(offer.SDP)}
-
-	go func() {
-		for msg := range queue {
-			data, err := proto.Marshal(msg)
-			if err != nil {
-
-			}
-
-			err = conn.WriteMessage(websocket.BinaryMessage, data)
-			if err != nil {
-				log.Printf("conn.WriteMessage error: %v\n", err)
-			}
-		}
-	}()
-
-	data, err := json.Marshal(m)
-	if err != nil {
-		log.Printf("failed to encode: %s\n", err.Error())
-	}
-
-	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_JOINED, From: int64(id), Data: data})
-
-	for {
-		mt, message, err := conn.ReadMessage()
-		if err != nil {
-			log.Printf("conn.ReadMessage err: %v\n", err)
-			// @todo close peer
-			return
-		}
-
-		if mt != websocket.BinaryMessage {
-			continue
-		}
-
-		cmd := &pb.RoomCommand{}
-		err = proto.Unmarshal(message, cmd)
-		if err != nil {
-			log.Printf("RoomCommand unmarshal error: %v\n", err)
-			continue
-		}
-
-		switch cmd.Type {
-		case pb.RoomCommand_ANSWER:
-			r.onAnswer(id, cmd)
-		case pb.RoomCommand_CANDIDATE:
-			r.onCandidate(id, cmd)
-		default:
-			continue
-		}
-	}
-}
-
 // join adds a user to the session using a webrtc offer.
-func (r *Room) join(id int) (*sfu.WebRTCTransport, *webrtc.SessionDescription, error) {
+func (r *Room) Join(id int) (*sfu.WebRTCTransport, *webrtc.SessionDescription, error) {
 	me := sfu.MediaEngine{}
 	me.RegisterDefaultCodecs()
 
 	peer, err := r.sfu.NewWebRTCTransport(string(r.id), me)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "join error")
+		return nil, nil, err
 	}
 
 	_, err = peer.AddTransceiverFromKind(webrtc.RTPCodecTypeAudio)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "join error")
+		return nil, nil, err
 	}
 
 	offer, err := peer.CreateOffer()
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "join error")
+		return nil, nil, err
 	}
 
 	err = peer.SetLocalDescription(offer)
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "join error")
+		return nil, nil, err
 	}
 
 	// Notify user of trickle candidates
@@ -208,58 +129,7 @@ func (r *Room) join(id int) (*sfu.WebRTCTransport, *webrtc.SessionDescription, e
 		peer.messageQueue <- &pb.RoomEvent{Type: pb.RoomEvent_OFFER, From: 0, Data: []byte(offer.SDP)}
 	})
 
-	//peer.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
-	//	log.Printf("state %s", state)
-	//	r.closePeer(id)
-	//})
-	//
-	//peer.OnI
-
 	return peer, &offer, nil
-}
-
-func (r *Room) onCandidate(id int, cmd *pb.RoomCommand) {
-	candidate := &webrtc.ICECandidateInit{}
-	err := json.Unmarshal(cmd.Data, candidate)
-	if err != nil {
-		log.Printf("ice candidate unmarshall error: %v\n", err)
-		return
-	}
-
-	r.mux.Lock()
-	peer, ok := r.peers[id]
-	r.mux.Unlock()
-
-	if !ok {
-		// @todo
-		return
-	}
-
-	err = peer.transport.AddICECandidate(*candidate)
-	if err != nil {
-		log.Printf("peer.AddICECandidate error: %v\n", err)
-	}
-}
-
-func (r *Room) onAnswer(id int, cmd *pb.RoomCommand) {
-	r.mux.Lock()
-	peer, ok := r.peers[id]
-	r.mux.Unlock()
-
-	if !ok {
-		// @todo
-		return
-	}
-
-	desc := webrtc.SessionDescription{
-		Type: webrtc.SDPTypeAnswer,
-		SDP:  string(cmd.Data),
-	}
-
-	err := peer.transport.SetRemoteDescription(desc)
-	if err != nil {
-		log.Printf("peer.SetRemoteDescription error: %v\n", err)
-	}
 }
 
 func (r *Room) notify(event *pb.RoomEvent) {

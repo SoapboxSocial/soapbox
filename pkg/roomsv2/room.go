@@ -50,23 +50,30 @@ func (r *Room) Handle(id int, conn *websocket.Conn) {
 		_ = conn.Close()
 	}
 
+	queue := make(chan *pb.RoomEvent, 100)
+
 	r.mux.Lock()
 	r.peers[id] = &peer{
 		transport: transport,
-		messageQueue: make(chan *pb.RoomEvent, 100),
+		messageQueue: queue,
 	}
 	r.mux.Unlock()
 
-	event := &pb.RoomEvent{Type: pb.RoomEvent_OFFER, From: 0, Data: []byte(offer.SDP)}
-	data, err := proto.Marshal(event)
-	if err != nil {
+	queue <- &pb.RoomEvent{Type: pb.RoomEvent_OFFER, From: 0, Data: []byte(offer.SDP)}
 
-	}
+	go func() {
+		for msg := range queue {
+			data, err := proto.Marshal(msg)
+			if err != nil {
 
-	err = conn.WriteMessage(websocket.BinaryMessage, data)
-	if err != nil {
-		log.Printf("conn.WriteMessage error: %v\n", err)
-	}
+			}
+
+			err = conn.WriteMessage(websocket.BinaryMessage, data)
+			if err != nil {
+				log.Printf("conn.WriteMessage error: %v\n", err)
+			}
+		}
+	}()
 
 	for {
 		mt, message, err := conn.ReadMessage()
@@ -134,17 +141,14 @@ func (r *Room) join(id int, conn *websocket.Conn) (*sfu.WebRTCTransport, *webrtc
 			return
 		}
 
-		event := &pb.RoomEvent{Type: pb.RoomEvent_CANDIDATE, From: 0, Data: data}
-		protobuf, err := proto.Marshal(event)
-		if err != nil {
-			log.Printf("marshal candidate error: %v\n", err)
+		r.mux.RLock()
+		peer, ok := r.peers[id]
+		r.mux.RUnlock()
+		if !ok {
 			return
 		}
 
-		err = conn.WriteMessage(websocket.BinaryMessage, protobuf)
-		if err != nil {
-			log.Printf("conn.WriteMessage error: %v\n", err)
-		}
+		peer.messageQueue <- &pb.RoomEvent{Type: pb.RoomEvent_CANDIDATE, From: 0, Data: data}
 	})
 
 	peer.OnNegotiationNeeded(func() {
@@ -161,17 +165,14 @@ func (r *Room) join(id int, conn *websocket.Conn) (*sfu.WebRTCTransport, *webrtc
 			return
 		}
 
-		event := &pb.RoomEvent{Type: pb.RoomEvent_OFFER, From: 0, Data: []byte(offer.SDP)}
-		data, err := proto.Marshal(event)
-		if err != nil {
-			log.Printf("marshal offer error: %v\n", err)
+		r.mux.RLock()
+		peer, ok := r.peers[id]
+		r.mux.RUnlock()
+		if !ok {
 			return
 		}
 
-		err = conn.WriteMessage(websocket.BinaryMessage, data)
-		if err != nil {
-			log.Printf("conn.WriteMessage error: %v\n", err)
-		}
+		peer.messageQueue <- &pb.RoomEvent{Type: pb.RoomEvent_OFFER, From: 0, Data: []byte(offer.SDP)}
 	})
 
 	//peer.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {

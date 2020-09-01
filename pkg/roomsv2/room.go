@@ -138,6 +138,8 @@ func (r *Room) join(id int, conn *websocket.Conn) (*sfu.WebRTCTransport, *webrtc
 		}
 
 		data, err := json.Marshal(c.ToJSON())
+		log.Println("candidate", c.ToJSON())
+		log.Println("encoded", string(data))
 		if err != nil {
 			log.Printf("json marshal candidate error: %v\n", err)
 			return
@@ -183,9 +185,12 @@ func (r *Room) join(id int, conn *websocket.Conn) (*sfu.WebRTCTransport, *webrtc
 		}
 	})
 
-	peer.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
-		r.closePeer(id)
-	})
+	//peer.OnConnectionStateChange(func(state webrtc.PeerConnectionState) {
+	//	log.Printf("state %s", state)
+	//	r.closePeer(id)
+	//})
+	//
+	//peer.OnI
 
 	return peer, &offer, nil
 }

@@ -1,4 +1,4 @@
-package roomsv2
+package rooms
 
 import (
 	"encoding/json"
@@ -44,7 +44,7 @@ func (r *Room) PeerCount() int {
 }
 
 func (r *Room) Handle(id int, conn *websocket.Conn) {
-	transport, offer, err := r.join(id, conn)
+	transport, offer, err := r.join(id)
 	if err != nil {
 		log.Printf("failed to join: %v\n", err)
 		_ = conn.Close()
@@ -105,7 +105,7 @@ func (r *Room) Handle(id int, conn *websocket.Conn) {
 }
 
 // join adds a user to the session using a webrtc offer.
-func (r *Room) join(id int, conn *websocket.Conn) (*sfu.WebRTCTransport, *webrtc.SessionDescription, error) {
+func (r *Room) join(id int) (*sfu.WebRTCTransport, *webrtc.SessionDescription, error) {
 	me := sfu.MediaEngine{}
 	me.RegisterDefaultCodecs()
 

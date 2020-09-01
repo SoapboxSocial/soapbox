@@ -11,27 +11,29 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
+	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
 type Member struct {
-
 }
 
 type RoomPayload struct {
-	ID      int            `json:"id"`
-	Name    string         `json:"name,omitempty"`
+	ID      int      `json:"id"`
+	Name    string   `json:"name,omitempty"`
 	Members []Member `json:"members"`
 }
 
 type RoomsEndpoint struct {
 	room     *rooms.Room
 	upgrader *websocket.Upgrader
+	ub       *users.UserBackend
 }
 
-func NewRoomsEndpoint(sfu *sfu.SFU) RoomsEndpoint {
+func NewRoomsEndpoint(sfu *sfu.SFU, ub *users.UserBackend) RoomsEndpoint {
 	return RoomsEndpoint{
 		room:     rooms.NewRoom(1, sfu),
 		upgrader: &websocket.Upgrader{},
+		ub:       ub,
 	}
 }
 
@@ -70,7 +72,7 @@ func (r *RoomsEndpoint) List(w http.ResponseWriter, req *http.Request) {
 func (r *RoomsEndpoint) Join(w http.ResponseWriter, req *http.Request) {
 	conn, err := r.upgrader.Upgrade(w, req, nil)
 	if err != nil {
-		log.Print(err)
+		log.Println(err)
 		// @todo
 		return
 	}
@@ -81,5 +83,12 @@ func (r *RoomsEndpoint) Join(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	r.room.Handle(id, conn)
+	user, err := r.ub.FindByID(id)
+	if err != nil {
+		log.Println(err)
+		conn.Close()
+		return
+	}
+
+	r.room.Handle(user, conn)
 }

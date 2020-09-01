@@ -113,7 +113,7 @@ func main() {
 
 	roomSFU := sfu.NewSFU(conf)
 
-	roomHandlers := roomsapi.NewRoomsEndpoint(roomSFU)
+	roomHandlers := roomsapi.NewRoomsEndpoint(roomSFU, ub)
 
 	r.HandleFunc("/v1/rooms", roomHandlers.List).Methods("GET")
 

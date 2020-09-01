@@ -12,11 +12,29 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/soapboxsocial/soapbox/pkg/pb"
+	"github.com/soapboxsocial/soapbox/pkg/users"
 )
+
+type PeerRole string
+
+const (
+	OWNER    PeerRole = "owner"
+	SPEAKER  PeerRole = "speaker"
+	AUDIENCE PeerRole = "audience"
+)
+
+type Member struct {
+	ID          int      `json:"id"`
+	DisplayName string   `json:"display_name"`
+	Image       string   `json:"image"`
+	Role        PeerRole `json:"role"`
+	IsMuted     bool     `json:"is_muted"`
+}
 
 type peer struct {
 	transport    *sfu.WebRTCTransport
 	messageQueue chan *pb.RoomEvent
+	member       *Member
 }
 
 // Room represents the a Soapbox room, tracking its state and its peers.
@@ -37,13 +55,17 @@ func NewRoom(id int, s *sfu.SFU) *Room {
 	}
 }
 
+// PeerCount returns the number of connected peers.
 func (r *Room) PeerCount() int {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
 	return len(r.peers)
 }
 
-func (r *Room) Handle(id int, conn *websocket.Conn) {
+// Handle a new connection
+func (r *Room) Handle(user *users.User, conn *websocket.Conn) {
+	id := user.ID
+
 	transport, offer, err := r.join(id)
 	if err != nil {
 		log.Printf("failed to join: %v\n", err)
@@ -52,10 +74,13 @@ func (r *Room) Handle(id int, conn *websocket.Conn) {
 
 	queue := make(chan *pb.RoomEvent, 100)
 
+	m := &Member{ID: user.ID, DisplayName: user.DisplayName, Image: user.Image, Role: SPEAKER, IsMuted: false}
+
 	r.mux.Lock()
 	r.peers[id] = &peer{
 		transport:    transport,
 		messageQueue: queue,
+		member:       m,
 	}
 	r.mux.Unlock()
 
@@ -75,10 +100,18 @@ func (r *Room) Handle(id int, conn *websocket.Conn) {
 		}
 	}()
 
+	data, err := json.Marshal(m)
+	if err != nil {
+		log.Printf("failed to encode: %s\n", err.Error())
+	}
+
+	go r.notify(&pb.RoomEvent{Type: pb.RoomEvent_JOINED, From: int64(id), Data: data})
+
 	for {
 		mt, message, err := conn.ReadMessage()
 		if err != nil {
 			log.Printf("conn.ReadMessage err: %v\n", err)
+			// @todo close peer
 			return
 		}
 
@@ -226,6 +259,26 @@ func (r *Room) onAnswer(id int, cmd *pb.RoomCommand) {
 	err := peer.transport.SetRemoteDescription(desc)
 	if err != nil {
 		log.Printf("peer.SetRemoteDescription error: %v\n", err)
+	}
+}
+
+func (r *Room) notify(event *pb.RoomEvent) {
+	//data, err := proto.Marshal(event)
+	//if err != nil {
+	//	//
+	//	return
+	//}
+
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+
+	for id, peer := range r.peers {
+		if int64(id) == event.From {
+			continue
+		}
+
+		// @todo think about marshaling beforehand
+		peer.messageQueue <- event
 	}
 }
 

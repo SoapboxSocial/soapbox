@@ -9,14 +9,17 @@ import (
 	sfu "github.com/pion/ion-sfu/pkg"
 
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
-	"github.com/soapboxsocial/soapbox/pkg/rooms"
 	"github.com/soapboxsocial/soapbox/pkg/roomsv2"
 )
+
+type Member struct {
+
+}
 
 type RoomPayload struct {
 	ID      int            `json:"id"`
 	Name    string         `json:"name,omitempty"`
-	Members []rooms.Member `json:"members"`
+	Members []Member `json:"members"`
 }
 
 type RoomsEndpoint struct {
@@ -54,7 +57,7 @@ func (r *RoomsEndpoint) List(w http.ResponseWriter, req *http.Request) {
 	//})
 
 	data := []RoomPayload{
-		{ID: 1, Name: "Pew", Members: make([]rooms.Member, 0)},
+		{ID: 1, Name: "Pew", Members: make([]Member, 0)},
 	}
 
 	err := httputil.JsonEncode(w, data)

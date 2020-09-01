@@ -1,33 +1,24 @@
 package main
 
 import (
-	"database/sql"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
-	"strings"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 	sfu "github.com/pion/ion-sfu/pkg"
 	"github.com/pion/webrtc/v3"
 
-	"github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	roomsapi "github.com/soapboxsocial/soapbox/pkg/api/rooms"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
-	"github.com/soapboxsocial/soapbox/pkg/notifications"
-	"github.com/soapboxsocial/soapbox/pkg/rooms"
-	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
 type RoomPayload struct {
 	ID      int            `json:"id"`
 	Name    string         `json:"name,omitempty"`
-	Members []rooms.Member `json:"members"`
+	//Members []rooms.Member `json:"members"`
 }
 
 type SDPPayload struct {
@@ -39,7 +30,7 @@ type SDPPayload struct {
 
 type JoinPayload struct {
 	Name    string         `json:"name,omitempty"`
-	Members []rooms.Member `json:"members"`
+	//Members []rooms.Member `json:"members"`
 	SDP     SDPPayload     `json:"sdp"`
 	Role    string         `json:"role"` // @todo find better name
 }
@@ -50,22 +41,22 @@ const sendgrid_api = "SG.9bil5IjdQkCsrNWySENuCA.v4pGESvmFd4dfbaOcptB4f8_ZEzieYNF
 // @TODO: THINK ABOUT CHANGING QUEUES TO REDIS PUBSUB
 
 func main() {
-	db, err := sql.Open("postgres", "host=127.0.0.1 port=5432 user=voicely password=voicely dbname=voicely sslmode=disable")
-	if err != nil {
-		panic(err)
-	}
+	//db, err := sql.Open("postgres", "host=127.0.0.1 port=5432 user=voicely password=voicely dbname=voicely sslmode=disable")
+	//if err != nil {
+	//	panic(err)
+	//}
 
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
+	//rdb := redis.NewClient(&redis.Options{
+	//	Addr:     "localhost:6379",
+	//	Password: "", // no password set
+	//	DB:       0,  // use default DB
+	//})
 
-	queue := notifications.NewNotificationQueue(rdb)
+	//queue := notifications.NewNotificationQueue(rdb)
 	//index := indexer.NewIndexerQueue(rdb)
 
 	//s := sessions.NewSessionManager(rdb)
-	ub := users.NewUserBackend(db)
+	//ub := users.NewUserBackend(db)
 	//fb := followers.NewFollowersBackend(db)
 
 	//client, err := elasticsearch.NewDefaultClient()
@@ -77,7 +68,7 @@ func main() {
 	//
 	//devicesBackend := devices.NewDevicesBackend(db)
 
-	manager := rooms.NewRoomManager()
+	//manager := rooms.NewRoomManager()
 
 	//amw := middleware.NewAuthenticationMiddleware(s)
 
@@ -125,76 +116,76 @@ func main() {
 
 	roomRoutes := r.PathPrefix("/v1/rooms").Methods("GET").Subrouter()
 
-	roomRoutes.HandleFunc("/create", func(w http.ResponseWriter, r *http.Request) {
-		b, err := ioutil.ReadAll(r.Body)
-		defer r.Body.Close()
-		if err != nil {
-			httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
-			return
-		}
-
-		userID, ok := middleware.GetUserIDFromContext(r.Context())
-		if !ok {
-			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
-			return
-		}
-
-		user, err := ub.FindByID(userID)
-		if err != nil {
-			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeRoomFailedToJoin, "failed to join room")
-			return
-		}
-
-		payload := &SDPPayload{}
-		err = json.Unmarshal(b, payload)
-		if err != nil {
-			httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
-			log.Printf("failed to decode payload: %s\n", err.Error())
-			return
-		}
-
-		err, t := getType(payload.Type)
-		if err != nil {
-			// @todo more errors this shit is invalid
-			return
-		}
-
-		p := webrtc.SessionDescription{
-			Type: t,
-			SDP:  payload.SDP,
-		}
-
-		name := ""
-		if payload.Name != nil {
-			name = *payload.Name
-		}
-
-		room := manager.CreateRoom(name)
-
-		sdp, err := room.Join(userID, user.DisplayName, user.Image, p)
-		if err != nil {
-			manager.RemoveRoom(room.GetID())
-			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToCreateRoom, "failed to create room")
-			return
-		}
-
-		id := room.GetID()
-		resp := &SDPPayload{ID: &id, Type: strings.ToLower(sdp.Type.String()), SDP: sdp.SDP}
-
-		err = httputil.JsonEncode(w, resp)
-		if err != nil {
-			manager.RemoveRoom(room.GetID())
-			fmt.Println(err)
-			return
-		}
-
-		queue.Push(notifications.Event{
-			Type:    notifications.EventTypeRoomCreation,
-			Creator: userID,
-			Params:  map[string]interface{}{"name": name, "id": id},
-		})
-
-	})
+	//roomRoutes.HandleFunc("/create", func(w http.ResponseWriter, r *http.Request) {
+	//	b, err := ioutil.ReadAll(r.Body)
+	//	defer r.Body.Close()
+	//	if err != nil {
+	//		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
+	//		return
+	//	}
+	//
+	//	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	//	if !ok {
+	//		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+	//		return
+	//	}
+	//
+	//	user, err := ub.FindByID(userID)
+	//	if err != nil {
+	//		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeRoomFailedToJoin, "failed to join room")
+	//		return
+	//	}
+	//
+	//	payload := &SDPPayload{}
+	//	err = json.Unmarshal(b, payload)
+	//	if err != nil {
+	//		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid request body")
+	//		log.Printf("failed to decode payload: %s\n", err.Error())
+	//		return
+	//	}
+	//
+	//	err, t := getType(payload.Type)
+	//	if err != nil {
+	//		// @todo more errors this shit is invalid
+	//		return
+	//	}
+	//
+	//	p := webrtc.SessionDescription{
+	//		Type: t,
+	//		SDP:  payload.SDP,
+	//	}
+	//
+	//	name := ""
+	//	if payload.Name != nil {
+	//		name = *payload.Name
+	//	}
+	//
+	//	room := manager.CreateRoom(name)
+	//
+	//	sdp, err := room.Join(userID, user.DisplayName, user.Image, p)
+	//	if err != nil {
+	//		manager.RemoveRoom(room.GetID())
+	//		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToCreateRoom, "failed to create room")
+	//		return
+	//	}
+	//
+	//	id := room.GetID()
+	//	resp := &SDPPayload{ID: &id, Type: strings.ToLower(sdp.Type.String()), SDP: sdp.SDP}
+	//
+	//	err = httputil.JsonEncode(w, resp)
+	//	if err != nil {
+	//		manager.RemoveRoom(room.GetID())
+	//		fmt.Println(err)
+	//		return
+	//	}
+	//
+	//	queue.Push(notifications.Event{
+	//		Type:    notifications.EventTypeRoomCreation,
+	//		Creator: userID,
+	//		Params:  map[string]interface{}{"name": name, "id": id},
+	//	})
+	//
+	//})
 
 	roomRoutes.HandleFunc("/{id:[0-9]+}/join", roomHandlers.Join)
 	//roomRoutes.HandleFunc("/{id:[0-9]+}/join", func(w http.ResponseWriter, r *http.Request) {

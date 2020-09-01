@@ -71,7 +71,7 @@ func (r *Room) Handle(id int, conn *websocket.Conn) {
 	for {
 		mt, message, err := conn.ReadMessage()
 		if err != nil {
-			// @todo
+			log.Printf("conn.ReadMessage err: %v\n", err)
 			return
 		}
 
@@ -82,24 +82,15 @@ func (r *Room) Handle(id int, conn *websocket.Conn) {
 		cmd := &pb.RoomCommand{}
 		err = proto.Unmarshal(message, cmd)
 		if err != nil {
-			// @todo
+			log.Printf("RoomCommand unmarshal error: %v\n", err)
+			continue
 		}
 
 		switch cmd.Type {
 		case pb.RoomCommand_ANSWER:
-			r.onAnswer(id, webrtc.SessionDescription{
-				Type: webrtc.SDPTypeAnswer,
-				SDP: string(cmd.Data),
-			})
+			r.onAnswer(id, cmd)
 		case pb.RoomCommand_CANDIDATE:
-			candidate := &webrtc.ICECandidateInit{}
-			err := json.Unmarshal(cmd.Data, candidate)
-			if err != nil {
-				// @todo
-				continue
-			}
-
-			r.onCandidate(id, candidate)
+			r.onCandidate(id, cmd)
 		default:
 			continue
 		}
@@ -138,8 +129,6 @@ func (r *Room) join(id int, conn *websocket.Conn) (*sfu.WebRTCTransport, *webrtc
 		}
 
 		data, err := json.Marshal(c.ToJSON())
-		log.Println("candidate", c.ToJSON())
-		log.Println("encoded", string(data))
 		if err != nil {
 			log.Printf("json marshal candidate error: %v\n", err)
 			return
@@ -195,7 +184,14 @@ func (r *Room) join(id int, conn *websocket.Conn) (*sfu.WebRTCTransport, *webrtc
 	return peer, &offer, nil
 }
 
-func (r *Room) onCandidate(id int, candidate *webrtc.ICECandidateInit) {
+func (r *Room) onCandidate(id int, cmd *pb.RoomCommand) {
+	candidate := &webrtc.ICECandidateInit{}
+	err := json.Unmarshal(cmd.Data, candidate)
+	if err != nil {
+		log.Printf("ice candidate unmarshall error: %v\n", err)
+		return
+	}
+
 	r.mux.Lock()
 	peer, ok := r.peers[id]
 	r.mux.Unlock()
@@ -205,13 +201,13 @@ func (r *Room) onCandidate(id int, candidate *webrtc.ICECandidateInit) {
 		return
 	}
 
-	err := peer.transport.AddICECandidate(*candidate)
+	err = peer.transport.AddICECandidate(*candidate)
 	if err != nil {
 		log.Printf("peer.AddICECandidate error: %v\n", err)
 	}
 }
 
-func (r *Room) onAnswer(id int, desc webrtc.SessionDescription) {
+func (r *Room) onAnswer(id int, cmd *pb.RoomCommand) {
 	r.mux.Lock()
 	peer, ok := r.peers[id]
 	r.mux.Unlock()
@@ -219,6 +215,11 @@ func (r *Room) onAnswer(id int, desc webrtc.SessionDescription) {
 	if !ok {
 		// @todo
 		return
+	}
+
+	desc := webrtc.SessionDescription{
+		Type: webrtc.SDPTypeAnswer,
+		SDP: string(cmd.Data),
 	}
 
 	err := peer.transport.SetRemoteDescription(desc)

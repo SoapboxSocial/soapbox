@@ -36,6 +36,7 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 	var peer *sfu.WebRTCTransport
 
 	// @todo check session and shit
+	id := 1
 
 	switch payload := in.Payload.(type) {
 	case *pb.SignalRequest_Join:
@@ -50,7 +51,7 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 		return status.Error(codes.FailedPrecondition, "not joined or created room")
 	}
 
-	return room.Handle(stream, peer)
+	return room.Handle(id, stream, peer)
 }
 
 func (s *Server) setupConnection(room int, stream pb.RoomService_SignalServer) (*sfu.WebRTCTransport, error) {

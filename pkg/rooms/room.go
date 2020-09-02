@@ -2,6 +2,7 @@ package rooms
 
 import (
 	"encoding/json"
+	"io"
 	"log"
 	"sync"
 
@@ -13,14 +14,40 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 )
 
-type Room struct {
-	mux sync.RWMutex
+type peer struct {
+	stream pb.RoomService_SignalServer
+	rtc   *sfu.WebRTCTransport
 }
 
-func (r *Room) Handle(stream pb.RoomService_SignalServer, peer *sfu.WebRTCTransport) error {
+type Room struct {
+	mux sync.RWMutex
+
+	members map[int]*peer
+}
+
+func (r *Room) Handle(id int, stream pb.RoomService_SignalServer, rtc *sfu.WebRTCTransport) error {
+	r.mux.Lock()
+	r.members[id] = &peer{
+		stream,
+		rtc,
+	}
+	r.mux.Unlock()
+
 	for {
 		in, err := stream.Recv()
 		if err != nil {
+			_ = rtc.Close()
+
+			if err == io.EOF {
+				return nil
+			}
+
+			errStatus, _ := status.FromError(err)
+			if errStatus.Code() == codes.Canceled {
+				return nil
+			}
+
+			log.Printf("signal error %v %v\n", errStatus.Message(), errStatus.Code())
 			return err
 		}
 
@@ -31,7 +58,7 @@ func (r *Room) Handle(stream pb.RoomService_SignalServer, peer *sfu.WebRTCTransp
 				continue
 			}
 
-			err = peer.SetRemoteDescription(webrtc.SessionDescription{
+			err = rtc.SetRemoteDescription(webrtc.SessionDescription{
 				Type: webrtc.SDPTypeAnswer,
 				SDP:  string(payload.Negotiate.Sdp),
 			})
@@ -46,10 +73,53 @@ func (r *Room) Handle(stream pb.RoomService_SignalServer, peer *sfu.WebRTCTransp
 				log.Printf("error parsing ice candidate: %v", err)
 			}
 
-			err = peer.AddICECandidate(candidate)
+			err = rtc.AddICECandidate(candidate)
 			if err != nil {
 				return status.Errorf(codes.Internal, "error adding ice candidate")
 			}
+		case *pb.SignalRequest_Command_:
+			r.onCommand(id, payload.Command)
+		}
+	}
+}
+
+func (r *Room) onCommand(from int, cmd *pb.SignalRequest_Command) {
+	switch cmd.Type {
+	case pb.SignalRequest_Command_ADD_SPEAKER:
+		// @TODO IN DEVELOPMENT
+		break
+	case pb.SignalRequest_Command_REMOVE_SPEAKER:
+		// @TODO IN DEVELOPMENT
+		break
+	case pb.SignalRequest_Command_MUTE_SPEAKER:
+	case pb.SignalRequest_Command_UNMUTE_SPEAKER:
+	case pb.SignalRequest_Command_REACTION:
+		go r.notify(&pb.SignalReply_Event{
+			Type: pb.SignalReply_Event_REACTED,
+			From: int64(from),
+			Data: cmd.Data,
+		})
+	}
+}
+
+func (r *Room) notify(event *pb.SignalReply_Event) {
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+
+	for id, p := range r.members {
+		if int64(id) == event.From {
+			continue
+		}
+
+		err := p.stream.Send(&pb.SignalReply{
+			Payload: &pb.SignalReply_Event_{
+				Event: event,
+			},
+		})
+
+		if err != nil {
+			// @todo
+			log.Printf("failed to write to data channel: %s\n", err.Error())
 		}
 	}
 }

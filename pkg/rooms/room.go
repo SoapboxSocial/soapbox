@@ -25,7 +25,22 @@ func (r *Room) Handle(stream pb.RoomService_SignalServer, peer *sfu.WebRTCTransp
 		}
 
 		switch payload := in.Payload.(type) {
+		case *pb.SignalRequest_Negotiate:
+			if payload.Negotiate.Type != "answer" {
+				// @todo
+				continue
+			}
+
+			err = peer.SetRemoteDescription(webrtc.SessionDescription{
+				Type: webrtc.SDPTypeAnswer,
+				SDP:  string(payload.Negotiate.Sdp),
+			})
+
+			if err != nil {
+				return status.Errorf(codes.Internal, "%s", err)
+			}
 		case *pb.SignalRequest_Trickle:
+			log.Print("yay")
 			var candidate webrtc.ICECandidateInit
 			err := json.Unmarshal([]byte(payload.Trickle.Init), &candidate)
 			if err != nil {

@@ -14,13 +14,15 @@ import (
 )
 
 type Server struct {
-	sfu *sfu.SFU
-	sm  *sessions.SessionManager
+	sfu  *sfu.SFU
+	sm   *sessions.SessionManager
+	room *Room
 }
 
 func NewServer(sfu *sfu.SFU) *Server {
 	return &Server{
 		sfu: sfu,
+		room: &Room{},
 	}
 }
 

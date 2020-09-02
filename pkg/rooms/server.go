@@ -21,7 +21,7 @@ type Server struct {
 
 func NewServer(sfu *sfu.SFU) *Server {
 	return &Server{
-		sfu: sfu,
+		sfu:  sfu,
 		room: &Room{},
 	}
 }

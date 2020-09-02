@@ -3,6 +3,7 @@ package rooms
 import (
 	"encoding/json"
 	"log"
+	"math/rand"
 
 	sfu "github.com/pion/ion-sfu/pkg"
 	"github.com/pion/webrtc/v3"
@@ -38,7 +39,9 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 	// @todo check session and shit
 
 	// @todo get random id to tests
-	id := 1
+	id := rand.Int()
+
+	log.Print(id)
 
 	switch payload := in.Payload.(type) {
 	case *pb.SignalRequest_Join:

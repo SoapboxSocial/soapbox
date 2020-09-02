@@ -15,7 +15,6 @@ func main() {
 
 	config := sfu.Config{
 		WebRTC: sfu.WebRTCConfig{
-			ICEPortRange: []uint16{1000, 6000},
 			ICEServers: []sfu.ICEServerConfig{
 				{
 					URLs: []string{
@@ -26,20 +25,6 @@ func main() {
 						"stun:stun4.l.google.com:19302",
 					},
 				},
-				{
-					URLs:       []string{"turn:turn.awsome.org:3478"},
-					Username:   "awsome",
-					Credential: "awsome",
-				},
-			},
-		},
-		Receiver: sfu.ReceiverConfig{
-			Video: sfu.WebRTCVideoReceiverConfig{
-				REMBCycle:     2,
-				PLICycle:      1,
-				TCCCycle:      1,
-				MaxBandwidth:  1000,
-				MaxBufferTime: 5000,
 			},
 		},
 	}

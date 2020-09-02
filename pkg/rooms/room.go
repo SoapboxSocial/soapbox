@@ -40,7 +40,6 @@ func (r *Room) Handle(stream pb.RoomService_SignalServer, peer *sfu.WebRTCTransp
 				return status.Errorf(codes.Internal, "%s", err)
 			}
 		case *pb.SignalRequest_Trickle:
-			log.Print("yay")
 			var candidate webrtc.ICECandidateInit
 			err := json.Unmarshal([]byte(payload.Trickle.Init), &candidate)
 			if err != nil {

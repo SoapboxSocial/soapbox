@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"net/http"
 
@@ -11,7 +10,6 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
-	"github.com/pion/webrtc/v3"
 	"github.com/sendgrid/sendgrid-go"
 
 	devicesapi "github.com/soapboxsocial/soapbox/pkg/api/devices"
@@ -117,17 +115,4 @@ func main() {
 	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS"})
 
 	log.Fatal(http.ListenAndServe(":8080", handlers.CORS(originsOk, headersOk, methodsOk)(r)))
-}
-
-func getType(t string) (error, webrtc.SDPType) {
-	switch t {
-	case "offer":
-		return nil, webrtc.SDPTypeOffer
-	case "prAnswer":
-		return nil, webrtc.SDPTypePranswer
-	case "answer":
-		return nil, webrtc.SDPTypeAnswer
-	}
-
-	return fmt.Errorf("unknown type: %s", t), webrtc.SDPType(-1)
 }

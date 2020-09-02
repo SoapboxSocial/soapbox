@@ -16,7 +16,7 @@ import (
 
 type peer struct {
 	stream pb.RoomService_SignalServer
-	rtc   *sfu.WebRTCTransport
+	rtc    *sfu.WebRTCTransport
 }
 
 type Room struct {
@@ -28,8 +28,8 @@ type Room struct {
 func (r *Room) Handle(id int, stream pb.RoomService_SignalServer, rtc *sfu.WebRTCTransport) error {
 	r.mux.Lock()
 	r.members[id] = &peer{
-		stream,
-		rtc,
+		stream: stream,
+		rtc:    rtc,
 	}
 	r.mux.Unlock()
 
@@ -37,6 +37,10 @@ func (r *Room) Handle(id int, stream pb.RoomService_SignalServer, rtc *sfu.WebRT
 		in, err := stream.Recv()
 		if err != nil {
 			_ = rtc.Close()
+
+			r.mux.Lock()
+			delete(r.members, id)
+			r.mux.Unlock()
 
 			if err == io.EOF {
 				return nil
@@ -51,39 +55,56 @@ func (r *Room) Handle(id int, stream pb.RoomService_SignalServer, rtc *sfu.WebRT
 			return err
 		}
 
-		switch payload := in.Payload.(type) {
-		case *pb.SignalRequest_Negotiate:
-			if payload.Negotiate.Type != "answer" {
-				// @todo
-				continue
-			}
-
-			err = rtc.SetRemoteDescription(webrtc.SessionDescription{
-				Type: webrtc.SDPTypeAnswer,
-				SDP:  string(payload.Negotiate.Sdp),
-			})
-
-			if err != nil {
-				return status.Errorf(codes.Internal, "%s", err)
-			}
-		case *pb.SignalRequest_Trickle:
-			var candidate webrtc.ICECandidateInit
-			err := json.Unmarshal([]byte(payload.Trickle.Init), &candidate)
-			if err != nil {
-				log.Printf("error parsing ice candidate: %v", err)
-			}
-
-			err = rtc.AddICECandidate(candidate)
-			if err != nil {
-				return status.Errorf(codes.Internal, "error adding ice candidate")
-			}
-		case *pb.SignalRequest_Command_:
-			r.onCommand(id, payload.Command)
+		err = r.onPayload(id, in)
+		if err != nil {
+			return err
 		}
 	}
 }
 
-func (r *Room) onCommand(from int, cmd *pb.SignalRequest_Command) {
+func (r *Room) onPayload(from int, in *pb.SignalRequest) error {
+	switch payload := in.Payload.(type) {
+	case *pb.SignalRequest_Negotiate:
+		if payload.Negotiate.Type != "answer" {
+			// @todo
+			return nil
+		}
+
+		r.mux.RLock()
+		peer := r.members[from]
+		r.mux.RUnlock()
+
+		err := peer.rtc.SetRemoteDescription(webrtc.SessionDescription{
+			Type: webrtc.SDPTypeAnswer,
+			SDP:  string(payload.Negotiate.Sdp),
+		})
+
+		if err != nil {
+			return status.Errorf(codes.Internal, "%s", err)
+		}
+	case *pb.SignalRequest_Trickle:
+		var candidate webrtc.ICECandidateInit
+		err := json.Unmarshal([]byte(payload.Trickle.Init), &candidate)
+		if err != nil {
+			log.Printf("error parsing ice candidate: %v", err)
+		}
+
+		r.mux.RLock()
+		peer := r.members[from]
+		r.mux.RUnlock()
+
+		err = peer.rtc.AddICECandidate(candidate)
+		if err != nil {
+			return status.Errorf(codes.Internal, "error adding ice candidate")
+		}
+	case *pb.SignalRequest_Command_:
+		return r.onCommand(from, payload.Command)
+	}
+
+	return nil
+}
+
+func (r *Room) onCommand(from int, cmd *pb.SignalRequest_Command) error {
 	switch cmd.Type {
 	case pb.SignalRequest_Command_ADD_SPEAKER:
 		// @TODO IN DEVELOPMENT
@@ -92,7 +113,9 @@ func (r *Room) onCommand(from int, cmd *pb.SignalRequest_Command) {
 		// @TODO IN DEVELOPMENT
 		break
 	case pb.SignalRequest_Command_MUTE_SPEAKER:
+		break
 	case pb.SignalRequest_Command_UNMUTE_SPEAKER:
+		break
 	case pb.SignalRequest_Command_REACTION:
 		go r.notify(&pb.SignalReply_Event{
 			Type: pb.SignalReply_Event_REACTED,
@@ -100,6 +123,8 @@ func (r *Room) onCommand(from int, cmd *pb.SignalRequest_Command) {
 			Data: cmd.Data,
 		})
 	}
+
+	return nil
 }
 
 func (r *Room) notify(event *pb.SignalReply_Event) {

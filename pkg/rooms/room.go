@@ -25,6 +25,13 @@ type Room struct {
 	members map[int]*peer
 }
 
+func NewRoom() *Room {
+	return &Room{
+		mux: sync.RWMutex{},
+		members: make(map[int]*peer),
+	}
+}
+
 func (r *Room) Handle(id int, stream pb.RoomService_SignalServer, rtc *sfu.WebRTCTransport) error {
 	r.mux.Lock()
 	r.members[id] = &peer{

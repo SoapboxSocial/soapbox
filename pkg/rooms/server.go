@@ -22,7 +22,7 @@ type Server struct {
 func NewServer(sfu *sfu.SFU) *Server {
 	return &Server{
 		sfu:  sfu,
-		room: &Room{},
+		room: NewRoom(),
 	}
 }
 
@@ -32,10 +32,12 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 		return err
 	}
 
-	var room *Room
+	//var room *Room
 	var peer *sfu.WebRTCTransport
 
 	// @todo check session and shit
+
+	// @todo get random id to tests
 	id := 1
 
 	switch payload := in.Payload.(type) {
@@ -51,7 +53,7 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 		return status.Error(codes.FailedPrecondition, "not joined or created room")
 	}
 
-	return room.Handle(id, stream, peer)
+	return s.room.Handle(id, stream, peer)
 }
 
 func (s *Server) setupConnection(room int, stream pb.RoomService_SignalServer) (*sfu.WebRTCTransport, error) {

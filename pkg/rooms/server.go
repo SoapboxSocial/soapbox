@@ -168,10 +168,13 @@ func (s *Server) setupConnection(room int, stream pb.RoomService_SignalServer) (
 		}
 	})
 
+	// @TODO when you wake up move this up, to SignalRequest_Join function
+	// there we can send this thanks to our merged PR once dependcy is updated
+	// then also make state a protobuf to send back.
 	err = stream.Send(&pb.SignalReply{
 		Payload: &pb.SignalReply_Join{
 			Join: &pb.JoinReply{
-				//Pid: pid,
+				Room: s.rooms[room].ToProtoForPeer(peer),
 				Answer: &pb.SessionDescription{
 					Type: offer.Type.String(),
 					Sdp:  []byte(offer.SDP),

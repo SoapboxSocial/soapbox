@@ -46,6 +46,9 @@ func (r *Room) Handle(id int, stream pb.RoomService_SignalServer, rtc *sfu.WebRT
 	for {
 		in, err := stream.Recv()
 		if err != nil {
+			// @TODO: Potentially change owner
+			// @TODO: Close room if last disconnect
+
 			_ = rtc.Close()
 
 			r.mux.Lock()

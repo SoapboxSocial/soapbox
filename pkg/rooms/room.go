@@ -2,7 +2,6 @@ package rooms
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"sync"
@@ -78,6 +77,10 @@ func (r *Room) Handle(id int, stream pb.RoomService_SignalServer, rtc *sfu.WebRT
 		if err != nil {
 			// @TODO: Potentially change owner
 			// @TODO: Close room if last disconnect
+			go r.notify(&pb.SignalReply_Event{
+				Type: pb.SignalReply_Event_LEFT,
+				From: int64(id),
+			})
 
 			_ = rtc.Close()
 
@@ -173,8 +176,6 @@ func (r *Room) onCommand(from int, cmd *pb.SignalRequest_Command) error {
 func (r *Room) notify(event *pb.SignalReply_Event) {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
-
-	fmt.Println("sent")
 
 	for id, p := range r.members {
 		if int64(id) == event.From {

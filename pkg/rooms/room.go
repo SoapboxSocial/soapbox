@@ -31,7 +31,14 @@ type member struct {
 	IsMuted     bool     `json:"is_muted"`
 }
 
+type payload struct {
+	ID      int      `json:"id"`
+	Name    string   `json:"name,omitempty"`
+	Members []member `json:"members"`
+}
+
 type peer struct {
+	me     *member
 	stream pb.RoomService_SignalServer
 	rtc    *sfu.WebRTCTransport
 }
@@ -39,14 +46,16 @@ type peer struct {
 type Room struct {
 	mux sync.RWMutex
 
+	id   int
 	name string
 
 	members map[int]*peer
 }
 
-func NewRoom(name string) *Room {
+func NewRoom(id int, name string) *Room {
 	return &Room{
 		mux:     sync.RWMutex{},
+		id:      id,
 		name:    name,
 		members: make(map[int]*peer),
 	}
@@ -207,4 +216,21 @@ func (r *Room) notify(event *pb.SignalReply_Event) {
 			log.Printf("failed to write to data channel: %s\n", err.Error())
 		}
 	}
+}
+
+func (r *Room) MarshalJSON() ([]byte, error) {
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+
+	payload := payload{
+		ID:      r.id,
+		Name:    r.name,
+		Members: make([]member, 0),
+	}
+
+	for _, p := range r.members {
+		payload.Members = append(payload.Members, *p.me)
+	}
+
+	return json.Marshal(payload)
 }

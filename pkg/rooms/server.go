@@ -61,15 +61,21 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 
 		room = r
 
+		data, err := room.MarshalJSON()
+		if err != nil {
+			return status.Errorf(codes.Internal, "join error failed")
+		}
+
+		// @TODO SEND ROOM INFO
+
 		peer, err = s.setupConnection(int(payload.Join.Room), stream)
 		if err != nil {
 			return status.Errorf(codes.Internal, "join error %s", err)
 		}
 	case *pb.SignalRequest_Create:
-		room = NewRoom(payload.Create.Name)
-
 		s.mux.Lock()
 		id := s.nextID
+		room = NewRoom(id, payload.Create.Name)
 		s.rooms[id] = room
 		s.nextID++
 		s.mux.Unlock()

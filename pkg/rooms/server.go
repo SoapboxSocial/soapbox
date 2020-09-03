@@ -67,6 +67,7 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 		}
 	case *pb.SignalRequest_Create:
 		room = NewRoom(payload.Create.Name)
+
 		s.mux.Lock()
 		id := s.nextID
 		s.rooms[id] = room

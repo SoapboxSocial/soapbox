@@ -61,10 +61,7 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 
 		room = r
 
-		data, err := room.MarshalJSON()
-		if err != nil {
-			return status.Errorf(codes.Internal, "join error failed")
-		}
+		_ = r.ToProtoForPeer()
 
 		// @TODO SEND ROOM INFO
 
@@ -174,7 +171,7 @@ func (s *Server) setupConnection(room int, stream pb.RoomService_SignalServer) (
 	err = stream.Send(&pb.SignalReply{
 		Payload: &pb.SignalReply_Join{
 			Join: &pb.JoinReply{
-				Room: s.rooms[room].ToProtoForPeer(peer),
+				Room: s.rooms[room].ToProtoForPeer(),
 				Answer: &pb.SessionDescription{
 					Type: offer.Type.String(),
 					Sdp:  []byte(offer.SDP),

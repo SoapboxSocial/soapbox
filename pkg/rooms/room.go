@@ -235,7 +235,7 @@ func (r *Room) MarshalJSON() ([]byte, error) {
 	return json.Marshal(payload)
 }
 
-func (r *Room) ToProtoForPeer(peer int) *pb.RoomState {
+func (r *Room) ToProtoForPeer() *pb.RoomState {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
 
@@ -243,17 +243,17 @@ func (r *Room) ToProtoForPeer(peer int) *pb.RoomState {
 
 	for _, member := range r.members {
 		members = append(members, &pb.RoomState_RoomMember{
-			Id: int64(member.me.ID),
+			Id:          int64(member.me.ID),
 			DisplayName: member.me.DisplayName,
-			Image: member.me.Image,
-			Role: string(member.me.Role),
-			Muted: member.me.IsMuted,
+			Image:       member.me.Image,
+			Role:        string(member.me.Role),
+			Muted:       member.me.IsMuted,
 		})
 	}
 
 	return &pb.RoomState{
-		Name: r.name,
-		Role: string(r.members[peer].me.Role),
+		Name:    r.name,
+		Role:    string(SPEAKER), // @TODO THIS SHOULD DEPEND ON WHO OWNS THE ROOM ETC
 		Members: members,
 	}
 }

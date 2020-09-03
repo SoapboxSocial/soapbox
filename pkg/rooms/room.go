@@ -22,12 +22,15 @@ type peer struct {
 type Room struct {
 	mux sync.RWMutex
 
+	name string
+
 	members map[int]*peer
 }
 
-func NewRoom() *Room {
+func NewRoom(name string) *Room {
 	return &Room{
 		mux: sync.RWMutex{},
+		name: name,
 		members: make(map[int]*peer),
 	}
 }

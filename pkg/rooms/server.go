@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"math/rand"
+	"sync"
 
 	sfu "github.com/pion/ion-sfu/pkg"
 	"github.com/pion/webrtc/v3"
@@ -15,15 +16,19 @@ import (
 )
 
 type Server struct {
+	mux sync.RWMutex
+
 	sfu  *sfu.SFU
 	sm   *sessions.SessionManager
-	room *Room
+
+	rooms map[int]*Room
 }
 
 func NewServer(sfu *sfu.SFU) *Server {
 	return &Server{
+		mux: sync.RWMutex{},
 		sfu:  sfu,
-		room: NewRoom(),
+		rooms: make(map[int]*Room),
 	}
 }
 
@@ -33,7 +38,7 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 		return err
 	}
 
-	//var room *Room
+	var room *Room
 	var peer *sfu.WebRTCTransport
 
 	// @todo check session and shit
@@ -49,6 +54,16 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 		if err != nil {
 			return status.Errorf(codes.Internal, "join error %s", err)
 		}
+
+		s.mux.RLock()
+		r, ok := s.rooms[int(payload.Join.Room)]
+		s.mux.RUnlock()
+
+		if !ok {
+			return status.Errorf(codes.Internal, "join error room closed")
+		}
+
+		room = r
 	case *pb.SignalRequest_Create:
 		// @todo setup
 		break
@@ -56,7 +71,7 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 		return status.Error(codes.FailedPrecondition, "not joined or created room")
 	}
 
-	return s.room.Handle(id, stream, peer)
+	return room.Handle(id, stream, peer)
 }
 
 func (s *Server) setupConnection(room int, stream pb.RoomService_SignalServer) (*sfu.WebRTCTransport, error) {

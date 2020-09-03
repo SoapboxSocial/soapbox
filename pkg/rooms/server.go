@@ -18,16 +18,16 @@ import (
 type Server struct {
 	mux sync.RWMutex
 
-	sfu  *sfu.SFU
-	sm   *sessions.SessionManager
+	sfu *sfu.SFU
+	sm  *sessions.SessionManager
 
 	rooms map[int]*Room
 }
 
 func NewServer(sfu *sfu.SFU) *Server {
 	return &Server{
-		mux: sync.RWMutex{},
-		sfu:  sfu,
+		mux:   sync.RWMutex{},
+		sfu:   sfu,
 		rooms: make(map[int]*Room),
 	}
 }

@@ -29,8 +29,8 @@ type Room struct {
 
 func NewRoom(name string) *Room {
 	return &Room{
-		mux: sync.RWMutex{},
-		name: name,
+		mux:     sync.RWMutex{},
+		name:    name,
 		members: make(map[int]*peer),
 	}
 }

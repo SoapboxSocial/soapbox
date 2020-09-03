@@ -50,11 +50,6 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 
 	switch payload := in.Payload.(type) {
 	case *pb.SignalRequest_Join:
-		peer, err = s.setupConnection(int(payload.Join.Room), stream)
-		if err != nil {
-			return status.Errorf(codes.Internal, "join error %s", err)
-		}
-
 		s.mux.RLock()
 		r, ok := s.rooms[int(payload.Join.Room)]
 		s.mux.RUnlock()
@@ -64,6 +59,11 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 		}
 
 		room = r
+
+		peer, err = s.setupConnection(int(payload.Join.Room), stream)
+		if err != nil {
+			return status.Errorf(codes.Internal, "join error %s", err)
+		}
 	case *pb.SignalRequest_Create:
 		// @todo setup
 		break

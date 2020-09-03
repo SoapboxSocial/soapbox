@@ -22,17 +22,17 @@ type Server struct {
 	sm  *sessions.SessionManager
 
 	rooms map[int]*Room
+
+	nextID int
 }
 
 func NewServer(sfu *sfu.SFU) *Server {
-	s := &Server{
+	return &Server{
 		mux:   sync.RWMutex{},
 		sfu:   sfu,
 		rooms: make(map[int]*Room),
+		nextID: 1,
 	}
-
-	s.rooms[1] = NewRoom("foo")
-	return s
 }
 
 func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
@@ -66,8 +66,17 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 			return status.Errorf(codes.Internal, "join error %s", err)
 		}
 	case *pb.SignalRequest_Create:
-		// @todo setup
-		break
+		room = NewRoom(payload.Create.Name)
+		s.mux.Lock()
+		id := s.nextID
+		s.rooms[id] = room
+		s.nextID++
+		s.mux.Unlock()
+
+		peer, err = s.setupConnection(id, stream)
+		if err != nil {
+			return status.Errorf(codes.Internal, "join error %s", err)
+		}
 	default:
 		return status.Error(codes.FailedPrecondition, "not joined or created room")
 	}

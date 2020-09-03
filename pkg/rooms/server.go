@@ -25,11 +25,14 @@ type Server struct {
 }
 
 func NewServer(sfu *sfu.SFU) *Server {
-	return &Server{
+	s := &Server{
 		mux:   sync.RWMutex{},
 		sfu:   sfu,
 		rooms: make(map[int]*Room),
 	}
+
+	s.rooms[1] = NewRoom("foo")
+	return s
 }
 
 func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
@@ -45,8 +48,6 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 
 	// @todo get random id to tests
 	id := rand.Int()
-
-	log.Print(id)
 
 	switch payload := in.Payload.(type) {
 	case *pb.SignalRequest_Join:

@@ -2,6 +2,7 @@ package rooms
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"sync"
@@ -13,6 +14,23 @@ import (
 
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 )
+
+type PeerRole string
+
+const (
+	OWNER    PeerRole = "owner"
+	SPEAKER  PeerRole = "speaker"
+	AUDIENCE PeerRole = "audience"
+)
+
+// member is used to communicate what peers are part of the chat
+type member struct {
+	ID          int      `json:"id"`
+	DisplayName string   `json:"display_name"`
+	Image       string   `json:"image"`
+	Role        PeerRole `json:"role"`
+	IsMuted     bool     `json:"is_muted"`
+}
 
 type peer struct {
 	stream pb.RoomService_SignalServer
@@ -42,6 +60,18 @@ func (r *Room) Handle(id int, stream pb.RoomService_SignalServer, rtc *sfu.WebRT
 		rtc:    rtc,
 	}
 	r.mux.Unlock()
+
+	me := member{ID: id, DisplayName: "foo", Image: "", Role: SPEAKER, IsMuted: false}
+	data, err := json.Marshal(me)
+	if err != nil {
+		log.Printf("failed to encode: %s\n", err.Error())
+	}
+
+	r.notify(&pb.SignalReply_Event{
+		Type: pb.SignalReply_Event_JOINED,
+		From: int64(id),
+		Data: data,
+	})
 
 	for {
 		in, err := stream.Recv()
@@ -143,6 +173,8 @@ func (r *Room) onCommand(from int, cmd *pb.SignalRequest_Command) error {
 func (r *Room) notify(event *pb.SignalReply_Event) {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
+
+	fmt.Println("sent")
 
 	for id, p := range r.members {
 		if int64(id) == event.From {

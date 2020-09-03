@@ -28,9 +28,9 @@ type Server struct {
 
 func NewServer(sfu *sfu.SFU) *Server {
 	return &Server{
-		mux:   sync.RWMutex{},
-		sfu:   sfu,
-		rooms: make(map[int]*Room),
+		mux:    sync.RWMutex{},
+		sfu:    sfu,
+		rooms:  make(map[int]*Room),
 		nextID: 1,
 	}
 }

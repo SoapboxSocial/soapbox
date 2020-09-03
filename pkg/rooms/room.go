@@ -159,9 +159,22 @@ func (r *Room) onCommand(from int, cmd *pb.SignalRequest_Command) error {
 		// @TODO IN DEVELOPMENT
 		break
 	case pb.SignalRequest_Command_MUTE_SPEAKER:
-		break
+		r.mux.Lock()
+		// @TODO SET MUTED
+		r.mux.Unlock()
+
+		go r.notify(&pb.SignalReply_Event{
+			Type: pb.SignalReply_Event_MUTED_SPEAKER,
+			From: int64(from),
+		})
 	case pb.SignalRequest_Command_UNMUTE_SPEAKER:
-		break
+		r.mux.Lock()
+		// @TODO SET UNMUTED
+		r.mux.Unlock()
+		go r.notify(&pb.SignalReply_Event{
+		Type: pb.SignalReply_Event_UNMUTED_SPEAKER,
+		From: int64(from),
+	})
 	case pb.SignalRequest_Command_REACTION:
 		go r.notify(&pb.SignalReply_Event{
 			Type: pb.SignalReply_Event_REACTED,

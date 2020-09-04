@@ -62,14 +62,16 @@ func NewRoom(id int, name string) *Room {
 }
 
 func (r *Room) Handle(id int, stream pb.RoomService_SignalServer, rtc *sfu.WebRTCTransport) error {
+	me := &member{ID: id, DisplayName: "foo", Image: "", Role: SPEAKER, IsMuted: false}
+
 	r.mux.Lock()
 	r.members[id] = &peer{
+		me:     me,
 		stream: stream,
 		rtc:    rtc,
 	}
 	r.mux.Unlock()
 
-	me := member{ID: id, DisplayName: "foo", Image: "", Role: SPEAKER, IsMuted: false}
 	data, err := json.Marshal(me)
 	if err != nil {
 		log.Printf("failed to encode: %s\n", err.Error())

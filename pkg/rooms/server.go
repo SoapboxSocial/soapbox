@@ -27,12 +27,15 @@ type Server struct {
 }
 
 func NewServer(sfu *sfu.SFU) *Server {
-	return &Server{
+	s := &Server{
 		mux:    sync.RWMutex{},
 		sfu:    sfu,
 		rooms:  make(map[int]*Room),
-		nextID: 1,
+		nextID: 2,
 	}
+
+	s.rooms[1] = NewRoom(1, "foo")
+	return s
 }
 
 func (s *Server) Signal(stream pb.RoomService_SignalServer) error {

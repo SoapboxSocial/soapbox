@@ -145,8 +145,12 @@ func (r *Room) onPayload(from int, in *pb.SignalRequest) error {
 		}
 
 		r.mux.RLock()
-		peer := r.members[from]
+		peer, ok := r.members[from]
 		r.mux.RUnlock()
+
+		if !ok {
+			return status.Errorf(codes.Internal, "peer not found")
+		}
 
 		err := peer.rtc.SetRemoteDescription(webrtc.SessionDescription{
 			Type: webrtc.SDPTypeAnswer,
@@ -164,8 +168,11 @@ func (r *Room) onPayload(from int, in *pb.SignalRequest) error {
 		}
 
 		r.mux.RLock()
-		peer := r.members[from]
+		peer, ok := r.members[from]
 		r.mux.RUnlock()
+		if !ok {
+			return status.Errorf(codes.Internal, "peer not found")
+		}
 
 		err = peer.rtc.AddICECandidate(candidate)
 		if err != nil {

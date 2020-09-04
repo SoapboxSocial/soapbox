@@ -254,6 +254,7 @@ func (r *Room) ToProtoForPeer() *pb.RoomState {
 	}
 
 	return &pb.RoomState{
+		Id:      int64(r.id),
 		Name:    r.name,
 		Role:    string(SPEAKER), // @TODO THIS SHOULD DEPEND ON WHO OWNS THE ROOM ETC
 		Members: members,

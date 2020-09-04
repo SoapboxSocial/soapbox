@@ -30,7 +30,7 @@ type Server struct {
 }
 
 func NewServer(sfu *sfu.SFU, sm *sessions.SessionManager, ub *users.UserBackend) *Server {
-	s := &Server{
+	return &Server{
 		mux:    sync.RWMutex{},
 		sfu:    sfu,
 		sm:     sm,
@@ -38,9 +38,6 @@ func NewServer(sfu *sfu.SFU, sm *sessions.SessionManager, ub *users.UserBackend)
 		rooms:  make(map[int]*Room),
 		nextID: 2,
 	}
-
-	s.rooms[1] = NewRoom(1, "foo")
-	return s
 }
 
 func (s *Server) ListRooms(ctx context.Context, empty *empty.Empty) (*pb.RoomList, error) {

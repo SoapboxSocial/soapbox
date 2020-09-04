@@ -33,13 +33,14 @@ func main() {
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		log.Panicf("failed to listen: %v", err)
+		return
 	}
 
 	s := grpc.NewServer()
 	pb.RegisterRoomServiceServer(s, rooms.NewServer(sfu.NewSFU(config)))
-	if err := s.Serve(lis); err != nil {
+
+	err = s.Serve(lis)
+	if err != nil {
 		log.Panicf("failed to serve: %v", err)
 	}
-
-	select {}
 }

@@ -19,6 +19,7 @@ Vagrant.configure(2) do |config|
   config.vm.network :private_network, ip: '192.168.33.16'
   config.vm.network "forwarded_port", guest: 8080, host: 8080
   config.vm.network "forwarded_port", guest: 9200, host: 9200
+  config.vm.network "forwarded_port", guest: 50051, host: 50051
 
   config.vm.provision :shell, path: 'bin/provision.sh', privileged: true
   config.vm.provision :shell, path: 'bin/boot.sh', privileged: true, run: :always

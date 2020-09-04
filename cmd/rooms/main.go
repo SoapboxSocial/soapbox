@@ -4,15 +4,16 @@ import (
 	"log"
 	"net"
 
+	"github.com/go-redis/redis/v8"
 	sfu "github.com/pion/ion-sfu/pkg"
 	"google.golang.org/grpc"
 
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
+	"github.com/soapboxsocial/soapbox/pkg/sessions"
 )
 
 func main() {
-
 	config := sfu.Config{
 		WebRTC: sfu.WebRTCConfig{
 			ICEServers: []sfu.ICEServerConfig{
@@ -29,6 +30,12 @@ func main() {
 		},
 	}
 
+	rdb := redis.NewClient(&redis.Options{
+		Addr:     "localhost:6379",
+		Password: "", // no password set
+		DB:       0,  // use default DB
+	})
+
 	addr := ":50051"
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
@@ -37,7 +44,11 @@ func main() {
 	}
 
 	s := grpc.NewServer()
-	pb.RegisterRoomServiceServer(s, rooms.NewServer(sfu.NewSFU(config)))
+	pb.RegisterRoomServiceServer(s, rooms.NewServer(
+			sfu.NewSFU(config),
+			sessions.NewSessionManager(rdb),
+		),
+	)
 
 	err = s.Serve(lis)
 	if err != nil {

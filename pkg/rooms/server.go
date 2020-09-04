@@ -3,7 +3,6 @@ package rooms
 import (
 	"encoding/json"
 	"log"
-	"math/rand"
 	"sync"
 
 	sfu "github.com/pion/ion-sfu/pkg"
@@ -26,10 +25,11 @@ type Server struct {
 	nextID int
 }
 
-func NewServer(sfu *sfu.SFU) *Server {
+func NewServer(sfu *sfu.SFU, sm *sessions.SessionManager) *Server {
 	s := &Server{
 		mux:    sync.RWMutex{},
 		sfu:    sfu,
+		sm: sm,
 		rooms:  make(map[int]*Room),
 		nextID: 2,
 	}
@@ -46,14 +46,15 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 
 	var room *Room
 	var peer *sfu.WebRTCTransport
-
-	// @todo check session and shit
-
-	// @todo get random id to tests
-	id := rand.Int()
+	var user int
 
 	switch payload := in.Payload.(type) {
 	case *pb.SignalRequest_Join:
+		user, err = s.sm.GetUserIDForSession(payload.Join.Session)
+		if err != nil {
+			return status.Errorf(codes.Unauthenticated, "unauthenticated")
+		}
+
 		s.mux.RLock()
 		r, ok := s.rooms[int(payload.Join.Room)]
 		s.mux.RUnlock()
@@ -88,6 +89,11 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 			return status.Errorf(codes.Internal, "join error %s", err)
 		}
 	case *pb.SignalRequest_Create:
+		user, err = s.sm.GetUserIDForSession(payload.Create.Session)
+		if err != nil {
+			return status.Errorf(codes.Unauthenticated, "unauthenticated")
+		}
+
 		s.mux.Lock()
 		id := s.nextID
 		room = NewRoom(id, payload.Create.Name)
@@ -127,7 +133,7 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 		return status.Error(codes.FailedPrecondition, "not joined or created room")
 	}
 
-	return room.Handle(id, stream, peer)
+	return room.Handle(user, stream, peer)
 }
 
 func (s *Server) setupConnection(room int, stream pb.RoomService_SignalServer) (*sfu.WebRTCTransport, error) {

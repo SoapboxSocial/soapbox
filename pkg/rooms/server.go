@@ -91,7 +91,6 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 		s.mux.Lock()
 		id := s.nextID
 		room = NewRoom(id, payload.Create.Name)
-		s.rooms[id] = room
 		s.nextID++
 		s.mux.Unlock()
 
@@ -117,6 +116,13 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 			log.Printf("error sending join response %s", err)
 			return status.Errorf(codes.Internal, "join error %s", err)
 		}
+
+		// We only add the room when its safely created
+		s.mux.Lock()
+		s.rooms[id] = room
+		s.mux.Unlock()
+
+		log.Printf("created room: %d", id)
 	default:
 		return status.Error(codes.FailedPrecondition, "not joined or created room")
 	}

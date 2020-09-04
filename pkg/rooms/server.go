@@ -60,13 +60,28 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 		}
 
 		room = r
-
-		_ = r.ToProtoForPeer()
-
-		// @TODO SEND ROOM INFO
+		proto := r.ToProtoForPeer()
 
 		peer, err = s.setupConnection(int(payload.Join.Room), stream)
 		if err != nil {
+			return status.Errorf(codes.Internal, "join error %s", err)
+		}
+
+		offer := peer.LocalDescription()
+		err = stream.Send(&pb.SignalReply{
+			Payload: &pb.SignalReply_Join{
+				Join: &pb.JoinReply{
+					Room: proto,
+					Answer: &pb.SessionDescription{
+						Type: offer.Type.String(),
+						Sdp:  []byte(offer.SDP),
+					},
+				},
+			},
+		})
+
+		if err != nil {
+			log.Printf("error sending join response %s", err)
 			return status.Errorf(codes.Internal, "join error %s", err)
 		}
 	case *pb.SignalRequest_Create:
@@ -79,6 +94,24 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 
 		peer, err = s.setupConnection(id, stream)
 		if err != nil {
+			return status.Errorf(codes.Internal, "join error %s", err)
+		}
+
+		offer := peer.LocalDescription()
+		err = stream.Send(&pb.SignalReply{
+			Payload: &pb.SignalReply_Create{
+				Create: &pb.CreateReply{
+					Id: int64(id),
+					Answer: &pb.SessionDescription{
+						Type: offer.Type.String(),
+						Sdp:  []byte(offer.SDP),
+					},
+				},
+			},
+		})
+
+		if err != nil {
+			log.Printf("error sending join response %s", err)
 			return status.Errorf(codes.Internal, "join error %s", err)
 		}
 	default:
@@ -164,26 +197,6 @@ func (s *Server) setupConnection(room int, stream pb.RoomService_SignalServer) (
 			log.Printf("negotiation error %s", err)
 		}
 	})
-
-	// @TODO when you wake up move this up, to SignalRequest_Join function
-	// there we can send this thanks to our merged PR once dependcy is updated
-	// then also make state a protobuf to send back.
-	err = stream.Send(&pb.SignalReply{
-		Payload: &pb.SignalReply_Join{
-			Join: &pb.JoinReply{
-				Room: s.rooms[room].ToProtoForPeer(),
-				Answer: &pb.SessionDescription{
-					Type: offer.Type.String(),
-					Sdp:  []byte(offer.SDP),
-				},
-			},
-		},
-	})
-
-	if err != nil {
-		log.Printf("error sending join response %s", err)
-		return nil, err
-	}
 
 	return peer, nil
 }

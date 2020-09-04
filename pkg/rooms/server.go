@@ -1,10 +1,12 @@
 package rooms
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"sync"
 
+	"github.com/golang/protobuf/ptypes/empty"
 	sfu "github.com/pion/ion-sfu/pkg"
 	"github.com/pion/webrtc/v3"
 	"google.golang.org/grpc/codes"
@@ -39,6 +41,20 @@ func NewServer(sfu *sfu.SFU, sm *sessions.SessionManager, ub *users.UserBackend)
 
 	s.rooms[1] = NewRoom(1, "foo")
 	return s
+}
+
+func (s *Server) ListRooms(ctx context.Context, empty *empty.Empty) (*pb.RoomList, error) {
+	s.mux.RLock()
+	defer s.mux.RUnlock()
+
+	rooms := make([]*pb.RoomState, 0)
+	for _, r := range s.rooms {
+		proto := r.ToProtoForPeer()
+		proto.Role = ""
+		rooms = append(rooms, proto)
+	}
+
+	return &pb.RoomList{Rooms: rooms}, nil
 }
 
 func (s *Server) Signal(stream pb.RoomService_SignalServer) error {

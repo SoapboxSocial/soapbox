@@ -248,10 +248,6 @@ func (s *Server) setupConnection(room int, stream pb.RoomService_SignalServer) (
 	return peer, nil
 }
 
-func (s *Server) roomPeerDisconnected(id int) {
-
-}
-
 func (s *Server) getMemberForSession(session string) (*member, error) {
 	id, err := s.sm.GetUserIDForSession(session)
 	if err != nil {

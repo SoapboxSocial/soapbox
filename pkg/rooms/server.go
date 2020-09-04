@@ -116,6 +116,22 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 		s.nextID++
 		s.mux.Unlock()
 
+		room.OnDisconnected(func(id int) {
+			s.mux.RLock()
+			count := s.rooms[id].PeerCount()
+			s.mux.RUnlock()
+
+			if count > 0 {
+				return
+			}
+
+			s.mux.Lock()
+			delete(s.rooms, id)
+			s.mux.Unlock()
+
+			log.Printf("room %d was closed", id)
+		})
+
 		peer, err = s.setupConnection(id, stream)
 		if err != nil {
 			return status.Errorf(codes.Internal, "join error %s", err)
@@ -230,6 +246,10 @@ func (s *Server) setupConnection(room int, stream pb.RoomService_SignalServer) (
 	})
 
 	return peer, nil
+}
+
+func (s *Server) roomPeerDisconnected(id int) {
+
 }
 
 func (s *Server) getMemberForSession(session string) (*member, error) {

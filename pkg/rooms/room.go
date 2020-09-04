@@ -50,6 +50,8 @@ type Room struct {
 	name string
 
 	members map[int]*peer
+
+	onDisconnectedHandlerFunc func(id int)
 }
 
 func NewRoom(id int, name string) *Room {
@@ -59,6 +61,17 @@ func NewRoom(id int, name string) *Room {
 		name:    name,
 		members: make(map[int]*peer),
 	}
+}
+
+func (r *Room) PeerCount() int {
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+
+	return len(r.members)
+}
+
+func (r *Room) OnDisconnected(f func(id int)) {
+	r.onDisconnectedHandlerFunc = f
 }
 
 func (r *Room) Handle(me *member, stream pb.RoomService_SignalServer, rtc *sfu.WebRTCTransport) error {
@@ -88,8 +101,8 @@ func (r *Room) Handle(me *member, stream pb.RoomService_SignalServer, rtc *sfu.W
 	for {
 		in, err := stream.Recv()
 		if err != nil {
-			// @TODO: Potentially change owner
-			// @TODO: Close room if last disconnect
+			// @TODO: change owner
+
 			go r.notify(&pb.SignalReply_Event{
 				Type: pb.SignalReply_Event_LEFT,
 				From: int64(id),
@@ -100,6 +113,8 @@ func (r *Room) Handle(me *member, stream pb.RoomService_SignalServer, rtc *sfu.W
 			r.mux.Lock()
 			delete(r.members, id)
 			r.mux.Unlock()
+
+			r.onDisconnectedHandlerFunc(r.id)
 
 			if err == io.EOF {
 				return nil

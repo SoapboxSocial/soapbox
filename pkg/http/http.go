@@ -10,10 +10,7 @@ import (
 type ErrorCode int
 
 const (
-	ErrorCodeRoomNotFound ErrorCode = iota
-	ErrorCodeRoomFailedToJoin
-	ErrorCodeInvalidRequestBody
-	ErrorCodeFailedToCreateRoom
+	ErrorCodeInvalidRequestBody ErrorCode = iota
 	ErrorCodeMissingParameter
 	ErrorCodeFailedToRegister
 	ErrorCodeInvalidEmail
@@ -28,7 +25,6 @@ const (
 	ErrorCodeFailedToStoreDevice
 	ErrorCodeNotFound
 	ErrorCodeNotAllowed
-	ErrorCodeRoomFull
 )
 
 // NotFoundHandler handles 404 responses

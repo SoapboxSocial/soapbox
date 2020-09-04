@@ -36,11 +36,11 @@ func NewServer(sfu *sfu.SFU, sm *sessions.SessionManager, ub *users.UserBackend)
 		sm:     sm,
 		ub:     ub,
 		rooms:  make(map[int]*Room),
-		nextID: 2,
+		nextID: 1,
 	}
 }
 
-func (s *Server) ListRooms(ctx context.Context, empty *empty.Empty) (*pb.RoomList, error) {
+func (s *Server) ListRooms(context.Context, *empty.Empty) (*pb.RoomList, error) {
 	s.mux.RLock()
 	defer s.mux.RUnlock()
 

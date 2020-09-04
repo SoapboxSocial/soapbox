@@ -61,8 +61,8 @@ func NewRoom(id int, name string) *Room {
 	}
 }
 
-func (r *Room) Handle(id int, stream pb.RoomService_SignalServer, rtc *sfu.WebRTCTransport) error {
-	me := &member{ID: id, DisplayName: "foo", Image: "", Role: SPEAKER, IsMuted: false}
+func (r *Room) Handle(me *member, stream pb.RoomService_SignalServer, rtc *sfu.WebRTCTransport) error {
+	id := me.ID
 
 	r.mux.Lock()
 	r.members[id] = &peer{

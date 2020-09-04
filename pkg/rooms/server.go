@@ -12,6 +12,7 @@ import (
 
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
+	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
 type Server struct {
@@ -19,17 +20,19 @@ type Server struct {
 
 	sfu *sfu.SFU
 	sm  *sessions.SessionManager
+	ub  *users.UserBackend
 
 	rooms map[int]*Room
 
 	nextID int
 }
 
-func NewServer(sfu *sfu.SFU, sm *sessions.SessionManager) *Server {
+func NewServer(sfu *sfu.SFU, sm *sessions.SessionManager, ub *users.UserBackend) *Server {
 	s := &Server{
 		mux:    sync.RWMutex{},
 		sfu:    sfu,
-		sm: sm,
+		sm:     sm,
+		ub:     ub,
 		rooms:  make(map[int]*Room),
 		nextID: 2,
 	}
@@ -46,11 +49,11 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 
 	var room *Room
 	var peer *sfu.WebRTCTransport
-	var user int
+	var user *member
 
 	switch payload := in.Payload.(type) {
 	case *pb.SignalRequest_Join:
-		user, err = s.sm.GetUserIDForSession(payload.Join.Session)
+		user, err = s.getMemberForSession(payload.Join.Session)
 		if err != nil {
 			return status.Errorf(codes.Unauthenticated, "unauthenticated")
 		}
@@ -89,7 +92,7 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 			return status.Errorf(codes.Internal, "join error %s", err)
 		}
 	case *pb.SignalRequest_Create:
-		user, err = s.sm.GetUserIDForSession(payload.Create.Session)
+		user, err = s.getMemberForSession(payload.Create.Session)
 		if err != nil {
 			return status.Errorf(codes.Unauthenticated, "unauthenticated")
 		}
@@ -214,4 +217,19 @@ func (s *Server) setupConnection(room int, stream pb.RoomService_SignalServer) (
 	})
 
 	return peer, nil
+}
+
+func (s *Server) getMemberForSession(session string) (*member, error) {
+	id, err := s.sm.GetUserIDForSession(session)
+	if err != nil {
+		return nil, err
+	}
+
+	u, err := s.ub.FindByID(id)
+	if err != nil {
+		return nil, err
+	}
+
+	// @TODO ROLE SHOULD BE BASED ON STUFF
+	return &member{ID: id, DisplayName: u.DisplayName, Image: u.Image, IsMuted: false, Role: SPEAKER}, nil
 }

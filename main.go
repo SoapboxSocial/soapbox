@@ -27,13 +27,6 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
-type SDPPayload struct {
-	Name *string `json:"name,omitempty"`
-	ID   *int    `json:"id,omitempty"`
-	SDP  string  `json:"sdp"`
-	Type string  `json:"type"`
-}
-
 // @todo do this in config
 const sendgrid_api = "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"
 

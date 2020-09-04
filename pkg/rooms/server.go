@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
 	"github.com/soapboxsocial/soapbox/pkg/users"
@@ -20,21 +21,23 @@ import (
 type Server struct {
 	mux sync.RWMutex
 
-	sfu *sfu.SFU
-	sm  *sessions.SessionManager
-	ub  *users.UserBackend
+	sfu   *sfu.SFU
+	sm    *sessions.SessionManager
+	ub    *users.UserBackend
+	queue *notifications.Queue
 
 	rooms map[int]*Room
 
 	nextID int
 }
 
-func NewServer(sfu *sfu.SFU, sm *sessions.SessionManager, ub *users.UserBackend) *Server {
+func NewServer(sfu *sfu.SFU, sm *sessions.SessionManager, ub *users.UserBackend, queue *notifications.Queue) *Server {
 	return &Server{
 		mux:    sync.RWMutex{},
 		sfu:    sfu,
 		sm:     sm,
 		ub:     ub,
+		queue:  queue,
 		rooms:  make(map[int]*Room),
 		nextID: 1,
 	}
@@ -159,6 +162,12 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 		s.mux.Lock()
 		s.rooms[id] = room
 		s.mux.Unlock()
+
+		s.queue.Push(notifications.Event{
+			Type:    notifications.EventTypeRoomCreation,
+			Creator: user.ID,
+			Params:  map[string]interface{}{"name": payload.Create.Name, "id": id},
+		})
 
 		log.Printf("created room: %d", id)
 	default:

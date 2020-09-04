@@ -10,6 +10,7 @@ import (
 	sfu "github.com/pion/ion-sfu/pkg"
 	"google.golang.org/grpc"
 
+	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
@@ -58,6 +59,7 @@ func main() {
 			sfu.NewSFU(config),
 			sessions.NewSessionManager(rdb),
 			users.NewUserBackend(db),
+			notifications.NewNotificationQueue(rdb),
 		),
 	)
 

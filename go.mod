@@ -12,7 +12,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/lib/pq v1.8.0
 	github.com/marten-seemann/chacha20 v0.2.0 // indirect
-	github.com/pion/ion-sfu v1.0.7-0.20200903215428-d48d131ca8f4
+	github.com/pion/ion-sfu v1.0.7
 	github.com/pion/webrtc/v3 v3.0.0-beta.4.0.20200902134452-789ff0975342
 	github.com/pkg/errors v0.9.1
 	github.com/sendgrid/rest v2.6.1+incompatible // indirect

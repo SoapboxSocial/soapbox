@@ -15,10 +15,10 @@ func NewMailService(client *sendgrid.Client) *Service {
 
 func (s *Service) SendPinEmail(recipient, pin string) error {
 	message := mail.NewV3MailInit(
-		mail.NewEmail("Soapbox", "no-reply@spksy.app"),
-		"Soapbox Login Pin",
+		mail.NewEmail("Soapbox", "no-reply@soapbox.social"),
+		"Your Soapbox Login Pin",
 		mail.NewEmail("", recipient),
-		mail.NewContent("text/plain", "Your login pin is: "+pin),
+		mail.NewContent("text/plain", "Hey, \n Here is your login pin: " + pin + "\n Have fun!"),
 	)
 
 	_, err := s.client.Send(message)

@@ -233,7 +233,9 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = u.ib.Remove(oldPath)
+	if image != "" {
+		_ = u.ib.Remove(oldPath)
+	}
 
 	u.index.Push(indexer.Event{
 		Type:   indexer.EventTypeUserUpdate,

@@ -119,9 +119,9 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 		s.nextID++
 		s.mux.Unlock()
 
-		room.OnDisconnected(func(id int) {
+		room.OnDisconnected(func(room, id int) {
 			s.mux.RLock()
-			count := s.rooms[id].PeerCount()
+			count := s.rooms[room].PeerCount()
 			s.mux.RUnlock()
 
 			if count > 0 {
@@ -129,10 +129,10 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 			}
 
 			s.mux.Lock()
-			delete(s.rooms, id)
+			delete(s.rooms, room)
 			s.mux.Unlock()
 
-			log.Printf("room %d was closed", id)
+			log.Printf("room %d was closed", room)
 		})
 
 		peer, err = s.setupConnection(id, stream)

@@ -16,6 +16,7 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/images"
 	"github.com/soapboxsocial/soapbox/pkg/indexer"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
+	"github.com/soapboxsocial/soapbox/pkg/rooms"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
@@ -25,6 +26,7 @@ type UsersEndpoint struct {
 	fb *followers.FollowersBackend
 	sm *sessions.SessionManager
 	ib *images.Backend
+	currentRoom *rooms.CurrentRoomBackend
 
 	search *users.Search
 
@@ -40,8 +42,18 @@ func NewUsersEndpoint(
 	ib *images.Backend,
 	search *users.Search,
 	index *indexer.Queue,
+	cr *rooms.CurrentRoomBackend,
 ) *UsersEndpoint {
-	return &UsersEndpoint{ub: ub, fb: fb, sm: sm, ib: ib, search: search, notify: queue, index: index}
+	return &UsersEndpoint{
+		ub: ub,
+		fb: fb,
+		sm: sm,
+		ib: ib,
+		search: search,
+		notify: queue,
+		index: index,
+		currentRoom: cr,
+	}
 }
 
 func (u *UsersEndpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {
@@ -65,6 +77,13 @@ func (u *UsersEndpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	} else {
 		user, err = u.ub.ProfileByID(id, caller)
 	}
+
+	cr, err := u.currentRoom.GetCurrentRoomForUser(id)
+	if err != nil {
+		log.Println("current room retrieval error", err)
+	}
+
+	user.CurrentRoom = &cr
 
 	if err != nil {
 		if err == sql.ErrNoRows {

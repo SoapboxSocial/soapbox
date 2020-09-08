@@ -190,7 +190,7 @@ func (l *LoginEndpoint) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	name := r.Form.Get("display_name")
+	name := strings.TrimSpace(r.Form.Get("display_name"))
 	if name == "" {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeMissingParameter, "missing parameter: display_name")
 		return

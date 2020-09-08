@@ -22,10 +22,10 @@ import (
 )
 
 type UsersEndpoint struct {
-	ub *users.UserBackend
-	fb *followers.FollowersBackend
-	sm *sessions.SessionManager
-	ib *images.Backend
+	ub          *users.UserBackend
+	fb          *followers.FollowersBackend
+	sm          *sessions.SessionManager
+	ib          *images.Backend
 	currentRoom *rooms.CurrentRoomBackend
 
 	search *users.Search
@@ -45,13 +45,13 @@ func NewUsersEndpoint(
 	cr *rooms.CurrentRoomBackend,
 ) *UsersEndpoint {
 	return &UsersEndpoint{
-		ub: ub,
-		fb: fb,
-		sm: sm,
-		ib: ib,
-		search: search,
-		notify: queue,
-		index: index,
+		ub:          ub,
+		fb:          fb,
+		sm:          sm,
+		ib:          ib,
+		search:      search,
+		notify:      queue,
+		index:       index,
 		currentRoom: cr,
 	}
 }
@@ -78,13 +78,6 @@ func (u *UsersEndpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {
 		user, err = u.ub.ProfileByID(id, caller)
 	}
 
-	cr, err := u.currentRoom.GetCurrentRoomForUser(id)
-	if err != nil {
-		log.Println("current room retrieval error", err)
-	}
-
-	user.CurrentRoom = &cr
-
 	if err != nil {
 		if err == sql.ErrNoRows {
 			httputil.JsonError(w, http.StatusNotFound, httputil.ErrorCodeUserNotFound, "user not found")
@@ -93,6 +86,15 @@ func (u *UsersEndpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {
 
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToGetUser, "")
 		return
+	}
+
+	cr, err := u.currentRoom.GetCurrentRoomForUser(id)
+	if err != nil {
+		log.Println("current room retrieval error", err)
+	}
+
+	if cr != 0 {
+		user.CurrentRoom = &cr
 	}
 
 	err = httputil.JsonEncode(w, user)

@@ -28,8 +28,8 @@ func (b *CurrentRoomBackend) GetCurrentRoomForUser(id int) (int, error) {
 }
 
 func (b *CurrentRoomBackend) SetCurrentRoomForUser(user, room int) error {
-	b.db.HSet(b.db.Context(), hashName, string(user), strconv.Itoa(room))
-	return nil
+	_, err := b.db.HSet(b.db.Context(), hashName, string(user), strconv.Itoa(room)).Result()
+	return err
 }
 
 func (b *CurrentRoomBackend) RemoveCurrentRoomForUser(user int) {

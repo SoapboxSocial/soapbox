@@ -25,7 +25,7 @@ type Profile struct {
 	FollowedBy  *bool  `json:"followed_by,omitempty"`
 	IsFollowing *bool  `json:"is_following,omitempty"`
 	Image       string `json:"image"`
-	CurrentRoom *int `json:"current_room,omitempty"`
+	CurrentRoom *int   `json:"current_room,omitempty"`
 }
 
 type UserBackend struct {

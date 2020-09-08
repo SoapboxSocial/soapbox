@@ -26,20 +26,23 @@ type Server struct {
 	ub    *users.UserBackend
 	queue *notifications.Queue
 
+	currentRoom *CurrentRoomBackend
+
 	rooms map[int]*Room
 
 	nextID int
 }
 
-func NewServer(sfu *sfu.SFU, sm *sessions.SessionManager, ub *users.UserBackend, queue *notifications.Queue) *Server {
+func NewServer(sfu *sfu.SFU, sm *sessions.SessionManager, ub *users.UserBackend, queue *notifications.Queue, cr *CurrentRoomBackend) *Server {
 	return &Server{
-		mux:    sync.RWMutex{},
-		sfu:    sfu,
-		sm:     sm,
-		ub:     ub,
-		queue:  queue,
-		rooms:  make(map[int]*Room),
-		nextID: 1,
+		mux:         sync.RWMutex{},
+		sfu:         sfu,
+		sm:          sm,
+		ub:          ub,
+		queue:       queue,
+		currentRoom: cr,
+		rooms:       make(map[int]*Room),
+		nextID:      1,
 	}
 }
 
@@ -124,6 +127,10 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 			count := s.rooms[room].PeerCount()
 			s.mux.RUnlock()
 
+			go func() {
+				s.currentRoom.RemoveCurrentRoomForUser(id)
+			}()
+
 			if count > 0 {
 				return
 			}
@@ -162,6 +169,13 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 		s.mux.Lock()
 		s.rooms[id] = room
 		s.mux.Unlock()
+
+		go func() {
+			err := s.currentRoom.SetCurrentRoomForUser(user.ID, id)
+			if err != nil {
+				log.Printf("failed to set current room err: %v", err)
+			}
+		}()
 
 		s.queue.Push(notifications.Event{
 			Type:    notifications.EventTypeRoomCreation,

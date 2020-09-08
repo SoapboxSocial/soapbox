@@ -23,6 +23,7 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/indexer"
 	"github.com/soapboxsocial/soapbox/pkg/mail"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
+	"github.com/soapboxsocial/soapbox/pkg/rooms"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
@@ -78,7 +79,7 @@ func main() {
 
 	userRoutes := r.PathPrefix("/v1/users").Subrouter()
 
-	usersEndpoints := usersapi.NewUsersEndpoint(ub, fb, s, queue, ib, search, index)
+	usersEndpoints := usersapi.NewUsersEndpoint(ub, fb, s, queue, ib, search, index, rooms.NewCurrentRoomBackend(rdb))
 	userRoutes.HandleFunc("/{id:[0-9]+}", usersEndpoints.GetUserByID).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/followers", usersEndpoints.GetFollowersForUser).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/following", usersEndpoints.GetFollowedByForUser).Methods("GET")

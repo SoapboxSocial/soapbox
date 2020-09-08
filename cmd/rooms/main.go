@@ -60,6 +60,7 @@ func main() {
 			sessions.NewSessionManager(rdb),
 			users.NewUserBackend(db),
 			notifications.NewNotificationQueue(rdb),
+			rooms.NewCurrentRoomBackend(rdb),
 		),
 	)
 

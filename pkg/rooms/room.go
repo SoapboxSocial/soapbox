@@ -51,7 +51,7 @@ type Room struct {
 
 	members map[int]*peer
 
-	onDisconnectedHandlerFunc func(id int)
+	onDisconnectedHandlerFunc func(room, peer int)
 }
 
 func NewRoom(id int, name string) *Room {
@@ -70,7 +70,7 @@ func (r *Room) PeerCount() int {
 	return len(r.members)
 }
 
-func (r *Room) OnDisconnected(f func(id int)) {
+func (r *Room) OnDisconnected(f func(room, peer int)) {
 	r.onDisconnectedHandlerFunc = f
 }
 
@@ -114,7 +114,7 @@ func (r *Room) Handle(me *member, stream pb.RoomService_SignalServer, rtc *sfu.W
 			delete(r.members, id)
 			r.mux.Unlock()
 
-			r.onDisconnectedHandlerFunc(r.id)
+			r.onDisconnectedHandlerFunc(r.id, id)
 
 			if err == io.EOF {
 				return nil

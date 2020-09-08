@@ -170,13 +170,6 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 		s.rooms[id] = room
 		s.mux.Unlock()
 
-		go func() {
-			err := s.currentRoom.SetCurrentRoomForUser(user.ID, id)
-			if err != nil {
-				log.Printf("failed to set current room err: %v", err)
-			}
-		}()
-
 		s.queue.Push(notifications.Event{
 			Type:    notifications.EventTypeRoomCreation,
 			Creator: user.ID,
@@ -187,6 +180,13 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 	default:
 		return status.Error(codes.FailedPrecondition, "not joined or created room")
 	}
+
+	go func() {
+		err := s.currentRoom.SetCurrentRoomForUser(user.ID, room.id)
+		if err != nil {
+			log.Printf("failed to set current room err: %v", err)
+		}
+	}()
 
 	return room.Handle(user, stream, peer)
 }

@@ -29,6 +29,7 @@ type member struct {
 	Image       string   `json:"image"`
 	Role        PeerRole `json:"role"`
 	IsMuted     bool     `json:"is_muted"`
+	SSRC        uint32   `json:"ssrc"`
 }
 
 type payload struct {
@@ -87,15 +88,25 @@ func (r *Room) Handle(me *member, stream pb.RoomService_SignalServer, rtc *sfu.W
 	}
 	r.mux.Unlock()
 
-	data, err := json.Marshal(me)
-	if err != nil {
-		log.Printf("failed to encode: %s\n", err.Error())
-	}
+	rtc.OnTrack(func(track *webrtc.Track, receiver *webrtc.RTPReceiver) {
+		r.mux.Lock()
+		r.members[id].me.SSRC = track.SSRC()
+		r.mux.Unlock()
 
-	r.notify(&pb.SignalReply_Event{
-		Type: pb.SignalReply_Event_JOINED,
-		From: int64(id),
-		Data: data,
+		r.mux.RLock()
+		me := r.members[id]
+		r.mux.RUnlock()
+
+		data, err := json.Marshal(me.me)
+		if err != nil {
+			log.Printf("failed to encode: %s\n", err.Error())
+		}
+
+		r.notify(&pb.SignalReply_Event{
+			Type: pb.SignalReply_Event_JOINED,
+			From: int64(id),
+			Data: data,
+		})
 	})
 
 	for {
@@ -268,12 +279,17 @@ func (r *Room) ToProtoForPeer() *pb.RoomState {
 	members := make([]*pb.RoomState_RoomMember, 0)
 
 	for _, member := range r.members {
+		if member.me.SSRC == 0 {
+			continue
+		}
+
 		members = append(members, &pb.RoomState_RoomMember{
 			Id:          int64(member.me.ID),
 			DisplayName: member.me.DisplayName,
 			Image:       member.me.Image,
 			Role:        string(member.me.Role),
 			Muted:       member.me.IsMuted,
+			Ssrc: 		 member.me.SSRC,
 		})
 	}
 

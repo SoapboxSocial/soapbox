@@ -135,6 +135,26 @@ func onRoomCreation(event *notifications.Event) ([]string, *notifications.Notifi
 	return targets, notification, nil
 }
 
+func onRoomJoined(event *notifications.Event) ([]string, *notifications.Notification, error) {
+	targets, err := devicesBackend.FetchAllFollowerDevices(event.Creator)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	name := event.Params["name"].(string)
+	room, ok := event.Params["id"].(float64)
+	if !ok {
+		return nil, nil, errors.New("failed to recover room ID")
+	}
+
+	displayName, err := getDisplayName(event.Creator)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return targets, nil, nil
+}
+
 func onNewFollower(event *notifications.Event) ([]string, *notifications.Notification, error) {
 	targetID, ok := event.Params["id"].(float64)
 	if !ok {

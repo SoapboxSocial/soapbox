@@ -289,7 +289,7 @@ func (r *Room) ToProtoForPeer() *pb.RoomState {
 			Image:       member.me.Image,
 			Role:        string(member.me.Role),
 			Muted:       member.me.IsMuted,
-			Ssrc: 		 member.me.SSRC,
+			Ssrc:        member.me.SSRC,
 		})
 	}
 

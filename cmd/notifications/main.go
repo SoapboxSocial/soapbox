@@ -102,6 +102,8 @@ func getHandler(eventType notifications.EventType) handlerFunc {
 		return onRoomCreation
 	case notifications.EventTypeNewFollower:
 		return onNewFollower
+	case notifications.EventTypeRoomJoined:
+		return onRoomJoined
 	default:
 		return nil
 	}

@@ -141,7 +141,8 @@ func onRoomJoined(event *notifications.Event) ([]string, *notifications.Notifica
 		return nil, nil, err
 	}
 
-	name := event.Params["name"].(string)
+	// @TODO USE NAME TOO
+	//name := event.Params["name"].(string)
 	room, ok := event.Params["id"].(float64)
 	if !ok {
 		return nil, nil, errors.New("failed to recover room ID")
@@ -152,7 +153,7 @@ func onRoomJoined(event *notifications.Event) ([]string, *notifications.Notifica
 		return nil, nil, err
 	}
 
-	return targets, nil, nil
+	return targets, notifications.NewRoomJoinedNotification(int(room), displayName), nil
 }
 
 func onNewFollower(event *notifications.Event) ([]string, *notifications.Notification, error) {

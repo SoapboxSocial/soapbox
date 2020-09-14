@@ -54,6 +54,11 @@ func (s *Server) ListRooms(context.Context, *empty.Empty) (*pb.RoomList, error) 
 	for _, r := range s.rooms {
 		proto := r.ToProtoForPeer()
 		proto.Role = ""
+
+		if len(proto.Members) == 0 {
+			continue
+		}
+
 		rooms = append(rooms, proto)
 	}
 

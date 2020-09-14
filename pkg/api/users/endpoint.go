@@ -147,6 +147,25 @@ func (u *UsersEndpoint) GetFollowedByForUser(w http.ResponseWriter, r *http.Requ
 	}
 }
 
+func (u *UsersEndpoint) GetMyFriends(w http.ResponseWriter, r *http.Request) {
+	id, ok := auth.GetUserIDFromContext(r.Context())
+	if !ok {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	result, err := u.fb.GetFriends(id)
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToGetFollowers, "")
+		return
+	}
+
+	err = httputil.JsonEncode(w, result)
+	if err != nil {
+		log.Printf("failed to write user response: %s\n", err.Error())
+	}
+}
+
 func (u *UsersEndpoint) FollowUser(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {

@@ -89,6 +89,10 @@ func handleEvent(event *notifications.Event) {
 	}
 
 	for _, target := range targets {
+		if !shouldSendNotification(target, notification.Category) {
+			continue
+		}
+
 		err := service.Send(target, *notification)
 		if err != nil {
 			log.Printf("failed to send to target \"%s\" with error: %s\n", target, err.Error())
@@ -143,8 +147,7 @@ func onRoomJoined(event *notifications.Event) ([]string, *notifications.Notifica
 		return nil, nil, err
 	}
 
-	// @TODO USE NAME TOO
-	//name := event.Params["name"].(string)
+	name := event.Params["name"].(string)
 	room, ok := event.Params["id"].(float64)
 	if !ok {
 		return nil, nil, errors.New("failed to recover room ID")
@@ -155,7 +158,15 @@ func onRoomJoined(event *notifications.Event) ([]string, *notifications.Notifica
 		return nil, nil, err
 	}
 
-	return targets, notifications.NewRoomJoinedNotification(int(room), displayName), nil
+	notification := func() *notifications.Notification {
+		if name == "" {
+			return notifications.NewRoomJoinedNotification(int(room), displayName)
+		}
+
+		return notifications.NewRoomJoinedNotificationWithName(int(room), displayName, name)
+	}()
+
+	return targets, notification, nil
 }
 
 func onNewFollower(event *notifications.Event) ([]string, *notifications.Notification, error) {
@@ -175,6 +186,14 @@ func onNewFollower(event *notifications.Event) ([]string, *notifications.Notific
 	}
 
 	return targets, notifications.NewFollowerNotification(event.Creator, displayName), nil
+}
+
+func shouldSendNotification(target string, notificationType notifications.NotificationCategory) bool {
+	if notificationType == notifications.NEW_FOLLOWER {
+		return true
+	}
+
+	return false
 }
 
 func getDisplayName(id int) (string, error) {

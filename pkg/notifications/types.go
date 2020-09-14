@@ -62,3 +62,14 @@ func NewRoomJoinedNotification(id int, participant string) *Notification {
 		Arguments: map[string]interface{}{"id": id},
 	}
 }
+
+func NewRoomJoinedNotificationWithName(id int, participant, name string) *Notification {
+	return &Notification{
+		Category: NEW_ROOM,
+		Alert: Alert{
+			Key:       "room_joined_with_name_notification",
+			Arguments: []string{participant, name},
+		},
+		Arguments: map[string]interface{}{"id": id},
+	}
+}

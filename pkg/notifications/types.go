@@ -65,7 +65,7 @@ func NewRoomJoinedNotification(id int, participant string) *Notification {
 
 func NewRoomJoinedNotificationWithName(id int, participant, name string) *Notification {
 	return &Notification{
-		Category: NEW_ROOM,
+		Category: ROOM_JOINED,
 		Alert: Alert{
 			Key:       "room_joined_with_name_notification",
 			Arguments: []string{participant, name},

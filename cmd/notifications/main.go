@@ -19,6 +19,7 @@ import (
 var devicesBackend *devices.DevicesBackend
 var userBackend *users.UserBackend
 var service *notifications.Service
+var limiter *notifications.Limiter
 
 type handlerFunc func(*notifications.Event) ([]string, *notifications.Notification, error)
 
@@ -38,6 +39,7 @@ func main() {
 
 	devicesBackend = devices.NewDevicesBackend(db)
 	userBackend = users.NewUserBackend(db)
+	limiter = notifications.NewLimiter(rdb)
 
 	authKey, err := token.AuthKeyFromFile("/conf/authkey.p8")
 	if err != nil {
@@ -89,7 +91,7 @@ func handleEvent(event *notifications.Event) {
 	}
 
 	for _, target := range targets {
-		if !shouldSendNotification(target, notification.Category) {
+		if !limiter.ShouldSendNotification(target, notification.Arguments, notification.Category) {
 			continue
 		}
 
@@ -97,6 +99,8 @@ func handleEvent(event *notifications.Event) {
 		if err != nil {
 			log.Printf("failed to send to target \"%s\" with error: %s\n", target, err.Error())
 		}
+
+		limiter.SentNotification(target, notification.Arguments, notification.Category)
 	}
 }
 
@@ -186,14 +190,6 @@ func onNewFollower(event *notifications.Event) ([]string, *notifications.Notific
 	}
 
 	return targets, notifications.NewFollowerNotification(event.Creator, displayName), nil
-}
-
-func shouldSendNotification(target string, notificationType notifications.NotificationCategory) bool {
-	if notificationType == notifications.NEW_FOLLOWER {
-		return true
-	}
-
-	return false
 }
 
 func getDisplayName(id int) (string, error) {

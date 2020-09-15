@@ -5,6 +5,7 @@ type NotificationCategory string
 const (
 	NEW_ROOM     NotificationCategory = "NEW_ROOM"
 	NEW_FOLLOWER NotificationCategory = "NEW_FOLLOWER"
+	ROOM_JOINED  NotificationCategory = "ROOM_JOINED"
 )
 
 type Alert struct {
@@ -46,6 +47,28 @@ func NewFollowerNotification(id int, follower string) *Notification {
 		Alert: Alert{
 			Key:       "new_follower_notification",
 			Arguments: []string{follower},
+		},
+		Arguments: map[string]interface{}{"id": id},
+	}
+}
+
+func NewRoomJoinedNotification(id int, participant string) *Notification {
+	return &Notification{
+		Category: ROOM_JOINED,
+		Alert: Alert{
+			Key:       "room_joined_notification",
+			Arguments: []string{participant},
+		},
+		Arguments: map[string]interface{}{"id": id},
+	}
+}
+
+func NewRoomJoinedNotificationWithName(id int, participant, name string) *Notification {
+	return &Notification{
+		Category: ROOM_JOINED,
+		Alert: Alert{
+			Key:       "room_joined_with_name_notification",
+			Arguments: []string{participant, name},
 		},
 		Arguments: map[string]interface{}{"id": id},
 	}

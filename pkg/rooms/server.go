@@ -115,6 +115,12 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 			log.Printf("error sending join response %s", err)
 			return status.Errorf(codes.Internal, "join error %s", err)
 		}
+
+		s.queue.Push(notifications.Event{
+			Type:    notifications.EventTypeRoomJoined,
+			Creator: user.ID,
+			Params:  map[string]interface{}{"name": r.name, "id": int(payload.Join.Room)},
+		})
 	case *pb.SignalRequest_Create:
 		user, err = s.getMemberForSession(payload.Create.Session)
 		if err != nil {

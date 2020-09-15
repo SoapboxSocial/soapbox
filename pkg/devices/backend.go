@@ -4,6 +4,11 @@ import (
 	"database/sql"
 )
 
+type Device struct {
+	ID     int
+	Device string
+}
+
 type DevicesBackend struct {
 	db *sql.DB
 }
@@ -28,55 +33,41 @@ func (db *DevicesBackend) AddDeviceForUser(id int, token string) error {
 	return nil
 }
 
-func (db *DevicesBackend) GetDevicesForUser(id int) ([]string, error) {
-	stmt, err := db.db.Prepare("SELECT token FROM devices WHERE user_id = $1;")
+func (db *DevicesBackend) GetDevicesForUser(id int) ([]Device, error) {
+	stmt, err := db.db.Prepare("SELECT user_id, token FROM devices WHERE user_id = $1;")
 	if err != nil {
 		return nil, err
 	}
 
-	rows, err := stmt.Query(id)
-	if err != nil {
-		return nil, err
-	}
-
-	result := make([]string, 0)
-
-	for rows.Next() {
-		var token string
-
-		err := rows.Scan(&token)
-		if err != nil {
-			return nil, err
-		}
-
-		result = append(result, token)
-	}
-
-	return result, nil
+	return db.executeFetchDevicesQuery(stmt, id)
 }
 
-func (db *DevicesBackend) FetchAllFollowerDevices(id int) ([]string, error) {
-	stmt, err := db.db.Prepare("SELECT devices.token FROM devices INNER JOIN followers ON (devices.user_id = followers.follower) WHERE followers.user_id = $1;")
+func (db *DevicesBackend) FetchAllFollowerDevices(id int) ([]Device, error) {
+	stmt, err := db.db.Prepare("SELECT user_id as id, devices.token FROM devices INNER JOIN followers ON (devices.user_id = followers.follower) WHERE followers.user_id = $1;")
 	if err != nil {
 		return nil, err
 	}
 
-	rows, err := stmt.Query(id)
+	return db.executeFetchDevicesQuery(stmt, id)
+}
+
+func (db *DevicesBackend) executeFetchDevicesQuery(stmt *sql.Stmt, args ...interface{}) ([]Device, error) {
+	rows, err := stmt.Query(args...)
 	if err != nil {
 		return nil, err
 	}
 
-	result := make([]string, 0)
+	result := make([]Device, 0)
 
 	for rows.Next() {
-		var token string
+		device := Device{}
 
-		err := rows.Scan(&token)
+		err := rows.Scan(&device.ID, device.Device)
 		if err != nil {
 			return nil, err
 		}
 
-		result = append(result, token)
+		result = append(result, device)
 	}
 
 	return result, nil

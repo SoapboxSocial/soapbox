@@ -13,15 +13,16 @@ import (
 
 	"github.com/soapboxsocial/soapbox/pkg/devices"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
+	"github.com/soapboxsocial/soapbox/pkg/notifications/limiter"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
 var devicesBackend *devices.DevicesBackend
 var userBackend *users.UserBackend
 var service *notifications.Service
-var limiter *notifications.Limiter
+var notificationLimiter *limiter.Limiter
 
-type handlerFunc func(*notifications.Event) ([]string, *notifications.Notification, error)
+type handlerFunc func(*notifications.Event) ([]devices.Device, *notifications.Notification, error)
 
 func main() {
 	rdb := redis.NewClient(&redis.Options{
@@ -39,7 +40,7 @@ func main() {
 
 	devicesBackend = devices.NewDevicesBackend(db)
 	userBackend = users.NewUserBackend(db)
-	limiter = notifications.NewLimiter(rdb)
+	notificationLimiter = limiter.NewLimiter(rdb)
 
 	authKey, err := token.AuthKeyFromFile("/conf/authkey.p8")
 	if err != nil {
@@ -91,16 +92,16 @@ func handleEvent(event *notifications.Event) {
 	}
 
 	for _, target := range targets {
-		if !limiter.ShouldSendNotification(target, notification.Arguments, notification.Category) {
+		if !notificationLimiter.ShouldSendNotification(target, notification.Arguments, notification.Category) {
 			continue
 		}
 
-		err := service.Send(target, *notification)
+		err := service.Send(target.Device, *notification)
 		if err != nil {
 			log.Printf("failed to send to target \"%s\" with error: %s\n", target, err.Error())
 		}
 
-		limiter.SentNotification(target, notification.Arguments, notification.Category)
+		notificationLimiter.SentNotification(target, notification.Arguments, notification.Category)
 	}
 }
 
@@ -117,7 +118,7 @@ func getHandler(eventType notifications.EventType) handlerFunc {
 	}
 }
 
-func onRoomCreation(event *notifications.Event) ([]string, *notifications.Notification, error) {
+func onRoomCreation(event *notifications.Event) ([]devices.Device, *notifications.Notification, error) {
 	targets, err := devicesBackend.FetchAllFollowerDevices(event.Creator)
 	if err != nil {
 		return nil, nil, err
@@ -145,7 +146,7 @@ func onRoomCreation(event *notifications.Event) ([]string, *notifications.Notifi
 	return targets, notification, nil
 }
 
-func onRoomJoined(event *notifications.Event) ([]string, *notifications.Notification, error) {
+func onRoomJoined(event *notifications.Event) ([]devices.Device, *notifications.Notification, error) {
 	targets, err := devicesBackend.FetchAllFollowerDevices(event.Creator)
 	if err != nil {
 		return nil, nil, err
@@ -173,7 +174,7 @@ func onRoomJoined(event *notifications.Event) ([]string, *notifications.Notifica
 	return targets, notification, nil
 }
 
-func onNewFollower(event *notifications.Event) ([]string, *notifications.Notification, error) {
+func onNewFollower(event *notifications.Event) ([]devices.Device, *notifications.Notification, error) {
 	targetID, ok := event.Params["id"].(float64)
 	if !ok {
 		return nil, nil, errors.New("failed to recover target ID")

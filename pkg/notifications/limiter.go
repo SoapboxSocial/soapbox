@@ -21,12 +21,12 @@ func NewLimiter(rdb *redis.Client) *Limiter {
 }
 
 func (l *Limiter) ShouldSendNotification(target string, args map[string]interface{}, category NotificationCategory) bool {
-	if category == NEW_FOLLOWER {
+	if category == NEW_FOLLOWER || category == NEW_ROOM {
 		return true
 	}
 
 	res, err := l.rdb.Get(l.rdb.Context(), limiterKeyForRoom(target, args["id"].(int))).Result()
-	if err != nil && res != valueString {
+	if err != nil || res != valueString {
 		return true
 	}
 

@@ -31,7 +31,7 @@ func (l *Limiter) ShouldSendNotification(target devices.Device, args map[string]
 	}
 
 	id := args["id"].(int)
-	room, err := l.currentRoom.GetCurrentRoomForUser(target.ID)
+	room, _ := l.currentRoom.GetCurrentRoomForUser(target.ID)
 	if room == id {
 		return false
 	}

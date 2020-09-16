@@ -1,5 +1,7 @@
 package notifications
 
+import "fmt"
+
 type NotificationCategory string
 
 const (
@@ -9,6 +11,7 @@ const (
 )
 
 type Alert struct {
+	Body      string   `json:"body,omitempty"`
 	Key       string   `json:"loc-key"`
 	Arguments []string `json:"loc-args"`
 }
@@ -56,6 +59,7 @@ func NewRoomJoinedNotification(id int, participant string) *Notification {
 	return &Notification{
 		Category: ROOM_JOINED,
 		Alert: Alert{
+			Body:      fmt.Sprintf("%s joined a room, why not join them?", participant),
 			Key:       "room_joined_notification",
 			Arguments: []string{participant},
 		},
@@ -67,6 +71,7 @@ func NewRoomJoinedNotificationWithName(id int, participant, name string) *Notifi
 	return &Notification{
 		Category: ROOM_JOINED,
 		Alert: Alert{
+			Body:      fmt.Sprintf("%s joined the room \"%s\", why not join them?", participant, name),
 			Key:       "room_joined_with_name_notification",
 			Arguments: []string{participant, name},
 		},

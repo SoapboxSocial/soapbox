@@ -54,5 +54,4 @@ func (l *Limiter) SentNotification(target devices.Device, args map[string]interf
 
 func limiterKeyForRoom(target, id int) string {
 	return fmt.Sprintf("%d_room_%d", target, id)
-
 }

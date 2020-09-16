@@ -98,7 +98,7 @@ func handleEvent(event *notifications.Event) {
 
 		err := service.Send(target.Device, *notification)
 		if err != nil {
-			log.Printf("failed to send to target \"%s\" with error: %s\n", target, err.Error())
+			log.Printf("failed to send to target \"%s\" with error: %s\n", target.Device, err.Error())
 		}
 
 		notificationLimiter.SentNotification(target, notification.Arguments, notification.Category)

@@ -17,12 +17,12 @@ import (
 	"sync"
 	"time"
 
-	httputil "github.com/ephemeral-networks/voicely/pkg/http"
-	"github.com/ephemeral-networks/voicely/pkg/images"
-	"github.com/ephemeral-networks/voicely/pkg/indexer"
-	"github.com/ephemeral-networks/voicely/pkg/mail"
-	"github.com/ephemeral-networks/voicely/pkg/sessions"
-	"github.com/ephemeral-networks/voicely/pkg/users"
+	httputil "github.com/soapboxsocial/soapbox/pkg/http"
+	"github.com/soapboxsocial/soapbox/pkg/images"
+	"github.com/soapboxsocial/soapbox/pkg/indexer"
+	"github.com/soapboxsocial/soapbox/pkg/mail"
+	"github.com/soapboxsocial/soapbox/pkg/sessions"
+	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
 // Contains the login handlers
@@ -31,6 +31,8 @@ const expiration = 8760 * time.Hour
 
 const LoginStateRegister = "register"
 const LoginStateSuccess = "success"
+
+const TestEmail = "test@apple.com"
 
 // @todo better names
 type loginState struct {
@@ -89,17 +91,23 @@ func (l *LoginEndpoint) Start(w http.ResponseWriter, r *http.Request) {
 	}
 
 	token := generateToken()
+
 	pin := generatePin()
+	if email == TestEmail {
+		pin = "123456"
+	}
 
 	if err := l.setToken(token, tokenState{email: email, pin: pin}); err != nil {
 		log.Println("failed to store token: ", err.Error())
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToStoreDevice, "failed to generate login token") // TODO check err message
 	}
 
-	err = l.mail.SendPinEmail(email, pin)
-	if err != nil {
-		log.Println("failed to send code: ", err.Error())
-		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToLogin, "failed to send code")
+	if email != TestEmail {
+		err = l.mail.SendPinEmail(email, pin)
+		if err != nil {
+			log.Println("failed to send code: ", err.Error())
+			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToLogin, "failed to send code")
+		}
 	}
 
 	err = json.NewEncoder(w).Encode(map[string]string{"token": token})
@@ -191,7 +199,7 @@ func (l *LoginEndpoint) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	name := r.Form.Get("display_name")
+	name := strings.TrimSpace(r.Form.Get("display_name"))
 	if name == "" {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeMissingParameter, "missing parameter: display_name")
 		return

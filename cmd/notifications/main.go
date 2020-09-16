@@ -11,14 +11,15 @@ import (
 	"github.com/sideshow/apns2"
 	"github.com/sideshow/apns2/token"
 
-	"github.com/ephemeral-networks/voicely/pkg/devices"
-	"github.com/ephemeral-networks/voicely/pkg/notifications"
-	"github.com/ephemeral-networks/voicely/pkg/users"
+	"github.com/soapboxsocial/soapbox/pkg/devices"
+	"github.com/soapboxsocial/soapbox/pkg/notifications"
+	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
 var devicesBackend *devices.DevicesBackend
 var userBackend *users.UserBackend
 var service *notifications.Service
+var limiter *notifications.Limiter
 
 type handlerFunc func(*notifications.Event) ([]string, *notifications.Notification, error)
 
@@ -38,6 +39,7 @@ func main() {
 
 	devicesBackend = devices.NewDevicesBackend(db)
 	userBackend = users.NewUserBackend(db)
+	limiter = notifications.NewLimiter(rdb)
 
 	authKey, err := token.AuthKeyFromFile("/conf/authkey.p8")
 	if err != nil {
@@ -48,11 +50,11 @@ func main() {
 
 	client := apns2.NewTokenClient(&token.Token{
 		AuthKey: authKey,
-		KeyID:   "82439YH93F", // @todo these should be in config files
+		KeyID:   "9U8K3MKG2K", // @todo these should be in config files
 		TeamID:  "Z9LC5GZ33U",
 	}).Production()
 
-	service = notifications.NewService("com.voicely.voicely", client)
+	service = notifications.NewService("app.social.soapbox", client)
 
 	for {
 		if queue.Len() == 0 {
@@ -89,10 +91,16 @@ func handleEvent(event *notifications.Event) {
 	}
 
 	for _, target := range targets {
+		if !limiter.ShouldSendNotification(target, notification.Arguments, notification.Category) {
+			continue
+		}
+
 		err := service.Send(target, *notification)
 		if err != nil {
 			log.Printf("failed to send to target \"%s\" with error: %s\n", target, err.Error())
 		}
+
+		limiter.SentNotification(target, notification.Arguments, notification.Category)
 	}
 }
 
@@ -102,6 +110,8 @@ func getHandler(eventType notifications.EventType) handlerFunc {
 		return onRoomCreation
 	case notifications.EventTypeNewFollower:
 		return onNewFollower
+	case notifications.EventTypeRoomJoined:
+		return onRoomJoined
 	default:
 		return nil
 	}
@@ -130,6 +140,34 @@ func onRoomCreation(event *notifications.Event) ([]string, *notifications.Notifi
 		}
 
 		return notifications.NewRoomNotificationWithName(int(room), displayName, name)
+	}()
+
+	return targets, notification, nil
+}
+
+func onRoomJoined(event *notifications.Event) ([]string, *notifications.Notification, error) {
+	targets, err := devicesBackend.FetchAllFollowerDevices(event.Creator)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	name := event.Params["name"].(string)
+	room, ok := event.Params["id"].(float64)
+	if !ok {
+		return nil, nil, errors.New("failed to recover room ID")
+	}
+
+	displayName, err := getDisplayName(event.Creator)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	notification := func() *notifications.Notification {
+		if name == "" {
+			return notifications.NewRoomJoinedNotification(int(room), displayName)
+		}
+
+		return notifications.NewRoomJoinedNotificationWithName(int(room), displayName, name)
 	}()
 
 	return targets, notification, nil

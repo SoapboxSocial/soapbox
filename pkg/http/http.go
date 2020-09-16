@@ -10,10 +10,7 @@ import (
 type ErrorCode int
 
 const (
-	ErrorCodeRoomNotFound ErrorCode = iota
-	ErrorCodeRoomFailedToJoin
-	ErrorCodeInvalidRequestBody
-	ErrorCodeFailedToCreateRoom
+	ErrorCodeInvalidRequestBody ErrorCode = iota
 	ErrorCodeMissingParameter
 	ErrorCodeFailedToRegister
 	ErrorCodeInvalidEmail
@@ -27,7 +24,7 @@ const (
 	ErrorCodeUnauthorized
 	ErrorCodeFailedToStoreDevice
 	ErrorCodeNotFound
-	ErrorCodeAllowed
+	ErrorCodeNotAllowed
 )
 
 // NotFoundHandler handles 404 responses
@@ -37,7 +34,7 @@ func NotFoundHandler(w http.ResponseWriter, r *http.Request) {
 
 // NotAllowed handles 405 responses
 func NotAllowedHandler(w http.ResponseWriter, r *http.Request) {
-	JsonError(w, http.StatusMethodNotAllowed, ErrorCodeAllowed, "not allowed")
+	JsonError(w, http.StatusMethodNotAllowed, ErrorCodeNotAllowed, "not allowed")
 }
 
 // JsonError writes an Error to the ResponseWriter with the provided information.

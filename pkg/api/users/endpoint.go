@@ -7,24 +7,27 @@ import (
 	"mime/multipart"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gorilla/mux"
 
-	auth "github.com/ephemeral-networks/voicely/pkg/api/middleware"
-	"github.com/ephemeral-networks/voicely/pkg/followers"
-	httputil "github.com/ephemeral-networks/voicely/pkg/http"
-	"github.com/ephemeral-networks/voicely/pkg/images"
-	"github.com/ephemeral-networks/voicely/pkg/indexer"
-	"github.com/ephemeral-networks/voicely/pkg/notifications"
-	"github.com/ephemeral-networks/voicely/pkg/sessions"
-	"github.com/ephemeral-networks/voicely/pkg/users"
+	auth "github.com/soapboxsocial/soapbox/pkg/api/middleware"
+	"github.com/soapboxsocial/soapbox/pkg/followers"
+	httputil "github.com/soapboxsocial/soapbox/pkg/http"
+	"github.com/soapboxsocial/soapbox/pkg/images"
+	"github.com/soapboxsocial/soapbox/pkg/indexer"
+	"github.com/soapboxsocial/soapbox/pkg/notifications"
+	"github.com/soapboxsocial/soapbox/pkg/rooms"
+	"github.com/soapboxsocial/soapbox/pkg/sessions"
+	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
 type UsersEndpoint struct {
-	ub *users.UserBackend
-	fb *followers.FollowersBackend
-	sm *sessions.SessionManager
-	ib *images.Backend
+	ub          *users.UserBackend
+	fb          *followers.FollowersBackend
+	sm          *sessions.SessionManager
+	ib          *images.Backend
+	currentRoom *rooms.CurrentRoomBackend
 
 	search *users.Search
 
@@ -40,8 +43,18 @@ func NewUsersEndpoint(
 	ib *images.Backend,
 	search *users.Search,
 	index *indexer.Queue,
+	cr *rooms.CurrentRoomBackend,
 ) *UsersEndpoint {
-	return &UsersEndpoint{ub: ub, fb: fb, sm: sm, ib: ib, search: search, notify: queue, index: index}
+	return &UsersEndpoint{
+		ub:          ub,
+		fb:          fb,
+		sm:          sm,
+		ib:          ib,
+		search:      search,
+		notify:      queue,
+		index:       index,
+		currentRoom: cr,
+	}
 }
 
 func (u *UsersEndpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {
@@ -74,6 +87,15 @@ func (u *UsersEndpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {
 
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToGetUser, "")
 		return
+	}
+
+	cr, err := u.currentRoom.GetCurrentRoomForUser(id)
+	if err != nil {
+		log.Println("current room retrieval error", err)
+	}
+
+	if cr != 0 {
+		user.CurrentRoom = &cr
 	}
 
 	err = httputil.JsonEncode(w, user)
@@ -200,7 +222,7 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	name := r.Form.Get("display_name")
+	name := strings.TrimSpace(r.Form.Get("display_name"))
 	if name == "" {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
 		return
@@ -233,7 +255,9 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = u.ib.Remove(oldPath)
+	if image != "" {
+		_ = u.ib.Remove(oldPath)
+	}
 
 	u.index.Push(indexer.Event{
 		Type:   indexer.EventTypeUserUpdate,

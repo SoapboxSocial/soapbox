@@ -68,6 +68,13 @@ func NewRoom(id int, name string, queue *notifications.Queue) *Room {
 	}
 }
 
+func (r *Room) Name() string {
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+
+	return r.name
+}
+
 func (r *Room) PeerCount() int {
 	r.mux.RLock()
 	defer r.mux.RUnlock()

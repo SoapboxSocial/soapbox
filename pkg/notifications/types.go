@@ -7,6 +7,7 @@ type NotificationCategory string
 const (
 	NEW_ROOM     NotificationCategory = "NEW_ROOM"
 	NEW_FOLLOWER NotificationCategory = "NEW_FOLLOWER"
+	ROOM_INVITE  NotificationCategory = "ROOM_INVITE"
 	ROOM_JOINED  NotificationCategory = "ROOM_JOINED"
 )
 
@@ -74,6 +75,30 @@ func NewRoomJoinedNotificationWithName(id int, participant, name string) *Notifi
 			Body:      fmt.Sprintf("%s joined the room \"%s\", why not join them?", participant, name),
 			Key:       "room_joined_with_name_notification",
 			Arguments: []string{participant, name},
+		},
+		Arguments: map[string]interface{}{"id": id},
+	}
+}
+
+func NewRoomInviteNotification(id int, from string) *Notification {
+	return &Notification{
+		Category: ROOM_INVITE,
+		Alert: Alert{
+			Body:      fmt.Sprintf("%s invited you to join a room", from),
+			Key:       "room_invite_notification",
+			Arguments: []string{from},
+		},
+		Arguments: map[string]interface{}{"id": id},
+	}
+}
+
+func NewRoomInviteNotificationWithName(id int, from, room string) *Notification {
+	return &Notification{
+		Category: ROOM_JOINED,
+		Alert: Alert{
+			Body:      fmt.Sprintf("%s invited you to join the room \"%s\"", from, room),
+			Key:       "room_invite_with_name_notification",
+			Arguments: []string{from, room},
 		},
 		Arguments: map[string]interface{}{"id": id},
 	}

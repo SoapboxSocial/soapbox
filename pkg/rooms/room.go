@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 )
 
@@ -53,14 +54,17 @@ type Room struct {
 	members map[int]*peer
 
 	onDisconnectedHandlerFunc func(room, peer int)
+
+	queue *notifications.Queue
 }
 
-func NewRoom(id int, name string) *Room {
+func NewRoom(id int, name string, queue *notifications.Queue) *Room {
 	return &Room{
 		mux:     sync.RWMutex{},
 		id:      id,
 		name:    name,
 		members: make(map[int]*peer),
+		queue: queue,
 	}
 }
 
@@ -191,6 +195,8 @@ func (r *Room) onPayload(from int, in *pb.SignalRequest) error {
 		}
 	case *pb.SignalRequest_Command_:
 		return r.onCommand(from, payload.Command)
+	case *pb.SignalRequest_Invite:
+		return r.onInvite(from, payload.Invite)
 	}
 
 	return nil
@@ -229,6 +235,16 @@ func (r *Room) onCommand(from int, cmd *pb.SignalRequest_Command) error {
 			Data: cmd.Data,
 		})
 	}
+
+	return nil
+}
+
+func (r *Room) onInvite(from int, invite *pb.Invite) error {
+	r.queue.Push(notifications.Event{
+		Type: notifications.EventTypeRoomInvitation,
+		Creator: from,
+		Params: map[string]interface{}{"room": r.id, "name": r.name, "id": invite.Id},
+	})
 
 	return nil
 }

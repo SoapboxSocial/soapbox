@@ -123,7 +123,7 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 
 		s.mux.Lock()
 		id := s.nextID
-		room = NewRoom(id, payload.Create.Name)
+		room = NewRoom(id, payload.Create.Name, s.queue)
 		s.nextID++
 		s.mux.Unlock()
 

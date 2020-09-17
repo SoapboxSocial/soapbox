@@ -51,9 +51,6 @@ func (l *Limiter) SentNotification(target string, args map[string]interface{}, c
 		l.rdb.Set(l.rdb.Context(), limiterKeyForRoomInvite(target, args["id"].(int)), valueString, roomInviteNotificationCooldown)
 		return
 	}
-
-
-
 }
 
 func (l *Limiter) isLimited(key string) bool {

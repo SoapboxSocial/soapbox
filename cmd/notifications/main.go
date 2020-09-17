@@ -112,6 +112,8 @@ func getHandler(eventType notifications.EventType) handlerFunc {
 		return onNewFollower
 	case notifications.EventTypeRoomJoined:
 		return onRoomJoined
+	case notifications.EventTypeRoomInvitation:
+		return onRoomInvite
 	default:
 		return nil
 	}
@@ -190,6 +192,39 @@ func onNewFollower(event *notifications.Event) ([]string, *notifications.Notific
 	}
 
 	return targets, notifications.NewFollowerNotification(event.Creator, displayName), nil
+}
+
+func onRoomInvite(event *notifications.Event) ([]string, *notifications.Notification, error) {
+	targetID, ok := event.Params["id"].(float64)
+	if !ok {
+		return nil, nil, errors.New("failed to recover target ID")
+	}
+
+	name := event.Params["name"].(string)
+	room, ok := event.Params["id"].(float64)
+	if !ok {
+		return nil, nil, errors.New("failed to recover room ID")
+	}
+
+	targets, err := devicesBackend.GetDevicesForUser(int(targetID))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	displayName, err := getDisplayName(event.Creator)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	notification := func() *notifications.Notification {
+		if name == "" {
+			return notifications.NewRoomInviteNotification(int(room), displayName)
+		}
+
+		return notifications.NewRoomInviteNotificationWithName(int(room), displayName, name)
+	}()
+
+	return targets, notification, nil
 }
 
 func getDisplayName(id int) (string, error) {

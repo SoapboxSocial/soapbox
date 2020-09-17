@@ -81,9 +81,25 @@ func NewRoomJoinedNotificationWithName(id int, participant, name string) *Notifi
 }
 
 func NewRoomInviteNotification(id int, from string) *Notification {
-
+	return &Notification{
+		Category: ROOM_INVITE,
+		Alert: Alert{
+			Body:      fmt.Sprintf("%s invited you to join a room. why not join them?", from),
+			Key:       "room_invite_notification",
+			Arguments: []string{from},
+		},
+		Arguments: map[string]interface{}{"id": id},
+	}
 }
 
 func NewRoomInviteNotificationWithName(id int, from string, room string) *Notification {
-
+	return &Notification{
+		Category: ROOM_JOINED,
+		Alert: Alert{
+			Body:      fmt.Sprintf("%s invited you to join the room \"%s\"", from, room),
+			Key:       "room_invite_with_name_notification",
+			Arguments: []string{from, room},
+		},
+		Arguments: map[string]interface{}{"id": id},
+	}
 }

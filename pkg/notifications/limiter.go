@@ -54,12 +54,8 @@ func (l *Limiter) SentNotification(target string, args map[string]interface{}, c
 }
 
 func (l *Limiter) isLimited(key string) bool {
-	res, err := l.rdb.Get(l.rdb.Context(), key).Result()
-	if err != nil || res != valueString {
-		return false
-	}
-
-	return true
+	res, _ := l.rdb.Get(l.rdb.Context(), key).Result()
+	return res == valueString
 }
 
 func limiterKeyForRoom(target string, id int) string {

@@ -7,7 +7,7 @@ type NotificationCategory string
 const (
 	NEW_ROOM     NotificationCategory = "NEW_ROOM"
 	NEW_FOLLOWER NotificationCategory = "NEW_FOLLOWER"
-	ROOM_INVITE NotificationCategory = "ROOM_INVITE"
+	ROOM_INVITE  NotificationCategory = "ROOM_INVITE"
 	ROOM_JOINED  NotificationCategory = "ROOM_JOINED"
 )
 

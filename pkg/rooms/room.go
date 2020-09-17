@@ -64,7 +64,7 @@ func NewRoom(id int, name string, queue *notifications.Queue) *Room {
 		id:      id,
 		name:    name,
 		members: make(map[int]*peer),
-		queue: queue,
+		queue:   queue,
 	}
 }
 
@@ -248,9 +248,9 @@ func (r *Room) onCommand(from int, cmd *pb.SignalRequest_Command) error {
 
 func (r *Room) onInvite(from int, invite *pb.Invite) error {
 	r.queue.Push(notifications.Event{
-		Type: notifications.EventTypeRoomInvitation,
+		Type:    notifications.EventTypeRoomInvitation,
 		Creator: from,
-		Params: map[string]interface{}{"room": r.id, "name": r.name, "id": invite.Id},
+		Params:  map[string]interface{}{"room": r.id, "name": r.name, "id": invite.Id},
 	})
 
 	return nil

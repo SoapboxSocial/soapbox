@@ -84,7 +84,7 @@ func NewRoomInviteNotification(id int, from string) *Notification {
 	return &Notification{
 		Category: ROOM_INVITE,
 		Alert: Alert{
-			Body:      fmt.Sprintf("%s invited you to join a room. why not join them?", from),
+			Body:      fmt.Sprintf("%s invited you to join a room", from),
 			Key:       "room_invite_notification",
 			Arguments: []string{from},
 		},

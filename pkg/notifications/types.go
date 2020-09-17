@@ -92,7 +92,7 @@ func NewRoomInviteNotification(id int, from string) *Notification {
 	}
 }
 
-func NewRoomInviteNotificationWithName(id int, from string, room string) *Notification {
+func NewRoomInviteNotificationWithName(id int, from, room string) *Notification {
 	return &Notification{
 		Category: ROOM_JOINED,
 		Alert: Alert{

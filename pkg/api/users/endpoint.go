@@ -90,8 +90,8 @@ func (u *UsersEndpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	cr, err := u.currentRoom.GetCurrentRoomForUser(id)
-	if err != nil {
-		log.Println("current room retrieval error", err)
+	if err != nil && err.Error() != "redis: nil" {
+		log.Println("current room retrieval error", err.Error())
 	}
 
 	if cr != 0 {

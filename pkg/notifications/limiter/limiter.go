@@ -38,11 +38,6 @@ func (l *Limiter) ShouldSendNotification(target devices.Device, args map[string]
 		return false
 	}
 
-	res, err := l.rdb.Get(l.rdb.Context(), limiterKeyForRoom(target.ID, id)).Result()
-	if err != nil || res != valueString {
-		return true
-	}
-
 	if category == notifications.ROOM_JOINED {
 		return !l.isLimited(limiterKeyForRoom(target.ID, args["id"].(int)))
 	}

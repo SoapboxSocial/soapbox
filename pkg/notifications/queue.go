@@ -14,6 +14,7 @@ const (
 	EventTypeRoomCreation EventType = iota
 	EventTypeNewFollower
 	EventTypeRoomJoined
+	EventTypeRoomInvitation
 )
 
 type Event struct {

@@ -50,25 +50,7 @@ func (fb *FollowersBackend) GetAllUsersFollowing(id int) ([]*users.User, error) 
 		return nil, err
 	}
 
-	rows, err := stmt.Query(id)
-	if err != nil {
-		return nil, err
-	}
-
-	result := make([]*users.User, 0)
-
-	for rows.Next() {
-		user := &users.User{}
-
-		err := rows.Scan(&user.ID, &user.DisplayName, &user.Username, &user.Image)
-		if err != nil {
-			return nil, err // @todo
-		}
-
-		result = append(result, user)
-	}
-
-	return result, nil
+	return fb.executeUserQuery(stmt, id)
 }
 
 func (fb *FollowersBackend) GetAllUsersFollowedBy(id int) ([]*users.User, error) {
@@ -77,7 +59,20 @@ func (fb *FollowersBackend) GetAllUsersFollowedBy(id int) ([]*users.User, error)
 		return nil, err
 	}
 
-	rows, err := stmt.Query(id)
+	return fb.executeUserQuery(stmt, id)
+}
+
+func (fb *FollowersBackend) GetFriends(id int) ([]*users.User, error) {
+	stmt, err := fb.db.Prepare("SELECT users.id, users.display_name, users.username, users.image FROM users WHERE id in (SELECT user_id AS user from followers WHERE follower = $1 INTERSECT SELECT follower as user FROM followers WHERE user_id = $2);")
+	if err != nil {
+		return nil, err
+	}
+
+	return fb.executeUserQuery(stmt, id, id)
+}
+
+func (fb *FollowersBackend) executeUserQuery(stmt *sql.Stmt, args ...interface{}) ([]*users.User, error) {
+	rows, err := stmt.Query(args...)
 	if err != nil {
 		return nil, err
 	}

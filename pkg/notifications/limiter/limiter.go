@@ -77,4 +77,3 @@ func limiterKeyForRoom(target, id int) string {
 func limiterKeyForRoomInvite(target, id int) string {
 	return fmt.Sprintf("%d_room_invite_%d", target, id)
 }
-

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"strings"
 	"sync"
 
 	"github.com/golang/protobuf/ptypes/empty"
@@ -129,7 +130,7 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 
 		s.mux.Lock()
 		id := s.nextID
-		room = NewRoom(id, payload.Create.Name, s.queue)
+		room = NewRoom(id, strings.TrimSpace(payload.Create.Name), s.queue)
 		s.nextID++
 		s.mux.Unlock()
 

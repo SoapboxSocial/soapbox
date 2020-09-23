@@ -18,12 +18,13 @@ var valueString = "placeholder"
 
 type Limiter struct {
 	rdb         *redis.Client
-	currentRoom rooms.CurrentRoomBackend
+	currentRoom *rooms.CurrentRoomBackend
 }
 
-func NewLimiter(rdb *redis.Client) *Limiter {
+func NewLimiter(rdb *redis.Client, currentRoom *rooms.CurrentRoomBackend) *Limiter {
 	return &Limiter{
 		rdb: rdb,
+		currentRoom: currentRoom,
 	}
 }
 

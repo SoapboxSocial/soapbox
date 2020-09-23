@@ -14,6 +14,7 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/devices"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/notifications/limiter"
+	"github.com/soapboxsocial/soapbox/pkg/rooms"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
@@ -40,7 +41,8 @@ func main() {
 
 	devicesBackend = devices.NewDevicesBackend(db)
 	userBackend = users.NewUserBackend(db)
-	notificationLimiter = limiter.NewLimiter(rdb)
+	currentRoom := rooms.NewCurrentRoomBackend(rdb)
+	notificationLimiter = limiter.NewLimiter(rdb, currentRoom)
 
 	authKey, err := token.AuthKeyFromFile("/conf/authkey.p8")
 	if err != nil {

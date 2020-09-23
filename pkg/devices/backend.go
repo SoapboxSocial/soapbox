@@ -43,7 +43,7 @@ func (db *DevicesBackend) GetDevicesForUser(id int) ([]Device, error) {
 }
 
 func (db *DevicesBackend) FetchAllFollowerDevices(id int) ([]Device, error) {
-	stmt, err := db.db.Prepare("SELECT user_id as id, devices.token FROM devices INNER JOIN followers ON (devices.user_id = followers.follower) WHERE followers.user_id = $1;")
+	stmt, err := db.db.Prepare("SELECT devices.user_id as id, devices.token FROM devices INNER JOIN followers ON (devices.user_id = followers.follower) WHERE followers.user_id = $1;")
 	if err != nil {
 		return nil, err
 	}

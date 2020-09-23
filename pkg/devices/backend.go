@@ -62,7 +62,7 @@ func (db *DevicesBackend) executeFetchDevicesQuery(stmt *sql.Stmt, args ...inter
 	for rows.Next() {
 		device := Device{}
 
-		err := rows.Scan(&device.ID, device.Device)
+		err := rows.Scan(&device.ID, &device.Device)
 		if err != nil {
 			return nil, err
 		}

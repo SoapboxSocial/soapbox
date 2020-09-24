@@ -58,7 +58,7 @@ type Room struct {
 	queue *notifications.Queue
 
 	isPrivate bool
-	invited map[int]bool
+	invited   map[int]bool
 }
 
 func NewRoom(id int, name string, queue *notifications.Queue, isPrivate bool) *Room {
@@ -69,6 +69,7 @@ func NewRoom(id int, name string, queue *notifications.Queue, isPrivate bool) *R
 		members:   make(map[int]*peer),
 		queue:     queue,
 		isPrivate: isPrivate,
+		invited:   make(map[int]bool),
 	}
 }
 
@@ -289,6 +290,10 @@ func (r *Room) onCommand(from int, cmd *pb.SignalRequest_Command) error {
 }
 
 func (r *Room) onInvite(from int, invite *pb.Invite) error {
+	r.mux.Lock()
+	r.invited[int(invite.Id)] = true
+	r.mux.Unlock()
+
 	r.queue.Push(notifications.Event{
 		Type:    notifications.EventTypeRoomInvitation,
 		Creator: from,

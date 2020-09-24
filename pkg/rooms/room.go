@@ -99,6 +99,14 @@ func (r *Room) Handle(me *member, stream pb.RoomService_SignalServer, rtc *sfu.W
 	}
 	r.mux.Unlock()
 
+	done := make(chan bool)
+	rtc.OnConnectionStateChange(func(s webrtc.PeerConnectionState) {
+		if s == webrtc.PeerConnectionStateClosed || s == webrtc.PeerConnectionStateFailed {
+			r.onDisconnected(id)
+			done <- true
+		}
+	})
+
 	rtc.OnTrack(func(track *webrtc.Track, receiver *webrtc.RTPReceiver) {
 		r.mux.Lock()
 		r.members[id].me.SSRC = track.SSRC()
@@ -121,41 +129,57 @@ func (r *Room) Handle(me *member, stream pb.RoomService_SignalServer, rtc *sfu.W
 	})
 
 	for {
-		in, err := stream.Recv()
-		if err != nil {
-			// @TODO: change owner
+		switch {
+		case <-done:
+			return nil
+		default:
+			in, err := stream.Recv()
+			if err != nil {
+				// @TODO: change owner
+				r.onDisconnected(id)
 
-			go r.notify(&pb.SignalReply_Event{
-				Type: pb.SignalReply_Event_LEFT,
-				From: int64(id),
-			})
+				if err == io.EOF {
+					return nil
+				}
 
-			_ = rtc.Close()
+				errStatus, _ := status.FromError(err)
+				if errStatus.Code() == codes.Canceled {
+					return nil
+				}
 
-			r.mux.Lock()
-			delete(r.members, id)
-			r.mux.Unlock()
-
-			r.onDisconnectedHandlerFunc(r.id, id)
-
-			if err == io.EOF {
-				return nil
+				log.Printf("signal error %v %v\n", errStatus.Message(), errStatus.Code())
+				return err
 			}
 
-			errStatus, _ := status.FromError(err)
-			if errStatus.Code() == codes.Canceled {
-				return nil
+			err = r.onPayload(id, in)
+			if err != nil {
+				return err
 			}
-
-			log.Printf("signal error %v %v\n", errStatus.Message(), errStatus.Code())
-			return err
-		}
-
-		err = r.onPayload(id, in)
-		if err != nil {
-			return err
 		}
 	}
+}
+
+func (r *Room) onDisconnected(peer int) {
+	go r.notify(&pb.SignalReply_Event{
+		Type: pb.SignalReply_Event_LEFT,
+		From: int64(peer),
+	})
+
+	r.mux.Lock()
+	p := r.members[peer]
+	if p == nil {
+		return
+	}
+
+	err := p.rtc.Close()
+	if err != nil {
+		log.Printf("rtc.Close error %v\n", err)
+	}
+
+	delete(r.members, peer)
+	r.mux.Unlock()
+
+	r.onDisconnectedHandlerFunc(r.id, peer)
 }
 
 func (r *Room) onPayload(from int, in *pb.SignalRequest) error {

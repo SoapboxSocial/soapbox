@@ -23,7 +23,7 @@ type Limiter struct {
 
 func NewLimiter(rdb *redis.Client, currentRoom *rooms.CurrentRoomBackend) *Limiter {
 	return &Limiter{
-		rdb: rdb,
+		rdb:         rdb,
 		currentRoom: currentRoom,
 	}
 }

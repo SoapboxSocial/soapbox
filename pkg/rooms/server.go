@@ -128,9 +128,16 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 			return status.Errorf(codes.Unauthenticated, "unauthenticated")
 		}
 
+		payload.Create.GetVisibility()
+
 		s.mux.Lock()
 		id := s.nextID
-		room = NewRoom(id, strings.TrimSpace(payload.Create.Name), s.queue)
+		room = NewRoom(
+			id,
+			strings.TrimSpace(payload.Create.Name),
+			s.queue,
+			payload.Create.GetVisibility() == pb.CreateRequest_PRIVATE,
+		)
 		s.nextID++
 		s.mux.Unlock()
 

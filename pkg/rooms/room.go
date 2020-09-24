@@ -56,15 +56,18 @@ type Room struct {
 	onDisconnectedHandlerFunc func(room, peer int)
 
 	queue *notifications.Queue
+
+	isPrivate bool
 }
 
-func NewRoom(id int, name string, queue *notifications.Queue) *Room {
+func NewRoom(id int, name string, queue *notifications.Queue, isPrivate bool) *Room {
 	return &Room{
 		mux:     sync.RWMutex{},
 		id:      id,
 		name:    name,
 		members: make(map[int]*peer),
 		queue:   queue,
+		isPrivate: isPrivate,
 	}
 }
 

@@ -12,7 +12,6 @@ import (
 	"github.com/pion/webrtc/v3"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"grpc.go4.org/metadata"
 
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
@@ -48,19 +47,35 @@ func NewServer(sfu *sfu.SFU, sm *sessions.SessionManager, ub *users.UserBackend,
 	}
 }
 
-func (s *Server) ListRooms(ctx context.Context, e *empty.Empty) (*pb.RoomList, error) {
-	var id int
-	var err error
+func (s *Server) ListRoomsV2(ctx context.Context, auth *pb.Auth) (*pb.RoomList, error) {
+	s.mux.RLock()
+	defer s.mux.RUnlock()
 
-	// @TODO REMOVE THE OK HACK AT A DECENT TIME. WE MUST AT ONE POINT ASSUME ALL CALLS ARE AUTHORIZED.
-	md, ok := metadata.FromContext(ctx)
-	if ok {
-		id, err = s.sm.GetUserIDForSession(md["authorization"][0])
-		if err != nil {
-			return nil, err
-		}
+	id, err := s.sm.GetUserIDForSession(auth.Session)
+	if err != nil {
+		return nil, err
 	}
 
+	rooms := make([]*pb.RoomState, 0)
+	for _, r := range s.rooms {
+		proto := r.ToProtoForPeer()
+		proto.Role = ""
+
+		if len(proto.Members) == 0 {
+			continue
+		}
+
+		if !r.CanJoin(id) {
+			continue
+		}
+
+		rooms = append(rooms, proto)
+	}
+
+	return &pb.RoomList{Rooms: rooms}, nil
+}
+
+func (s *Server) ListRooms(context.Context, *empty.Empty) (*pb.RoomList, error) {
 	s.mux.RLock()
 	defer s.mux.RUnlock()
 
@@ -73,12 +88,7 @@ func (s *Server) ListRooms(ctx context.Context, e *empty.Empty) (*pb.RoomList, e
 			continue
 		}
 
-		// @TODO REMOVE THE OK HACK AT A DECENT TIME.
-		if !ok && r.IsPrivate() {
-			continue
-		}
-
-		if !r.CanJoin(id) {
+		if r.IsPrivate() {
 			continue
 		}
 

@@ -129,7 +129,7 @@ func (r *Room) Handle(me *member, stream pb.RoomService_SignalServer, rtc *sfu.W
 	})
 
 	for {
-		switch {
+		select {
 		case <-done:
 			return nil
 		default:
@@ -160,22 +160,25 @@ func (r *Room) Handle(me *member, stream pb.RoomService_SignalServer, rtc *sfu.W
 }
 
 func (r *Room) onDisconnected(peer int) {
+	r.mux.RLock()
+	p, ok := r.members[peer]
+	r.mux.RUnlock()
+
+	if !ok {
+		return
+	}
+
 	go r.notify(&pb.SignalReply_Event{
 		Type: pb.SignalReply_Event_LEFT,
 		From: int64(peer),
 	})
-
-	r.mux.Lock()
-	p := r.members[peer]
-	if p == nil {
-		return
-	}
 
 	err := p.rtc.Close()
 	if err != nil {
 		log.Printf("rtc.Close error %v\n", err)
 	}
 
+	r.mux.Lock()
 	delete(r.members, peer)
 	r.mux.Unlock()
 

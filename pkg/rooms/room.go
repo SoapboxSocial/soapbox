@@ -58,6 +58,7 @@ type Room struct {
 	queue *notifications.Queue
 
 	isPrivate bool
+	invited map[int]bool
 }
 
 func NewRoom(id int, name string, queue *notifications.Queue, isPrivate bool) *Room {
@@ -69,6 +70,17 @@ func NewRoom(id int, name string, queue *notifications.Queue, isPrivate bool) *R
 		queue:     queue,
 		isPrivate: isPrivate,
 	}
+}
+
+func (r *Room) CanJoin(id int) bool {
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+
+	if r.isPrivate {
+		return r.invited[id]
+	}
+
+	return true
 }
 
 func (r *Room) Name() string {

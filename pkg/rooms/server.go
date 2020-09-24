@@ -91,6 +91,10 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 			return status.Errorf(codes.Internal, "join error room closed")
 		}
 
+		if !r.CanJoin(user.ID) {
+			return status.Errorf(codes.Internal, "user not invited")
+		}
+
 		room = r
 		proto := r.ToProtoForPeer()
 

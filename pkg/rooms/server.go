@@ -60,6 +60,8 @@ func (s *Server) ListRooms(context.Context, *empty.Empty) (*pb.RoomList, error) 
 			continue
 		}
 
+		// @TODO LIST IF USER CAN JOIN
+
 		rooms = append(rooms, proto)
 	}
 

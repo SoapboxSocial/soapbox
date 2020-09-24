@@ -62,11 +62,11 @@ type Room struct {
 
 func NewRoom(id int, name string, queue *notifications.Queue, isPrivate bool) *Room {
 	return &Room{
-		mux:     sync.RWMutex{},
-		id:      id,
-		name:    name,
-		members: make(map[int]*peer),
-		queue:   queue,
+		mux:       sync.RWMutex{},
+		id:        id,
+		name:      name,
+		members:   make(map[int]*peer),
+		queue:     queue,
 		isPrivate: isPrivate,
 	}
 }

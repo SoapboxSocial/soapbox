@@ -58,14 +58,14 @@ func (s *Server) ListRoomsV2(ctx context.Context, auth *pb.Auth) (*pb.RoomList, 
 
 	rooms := make([]*pb.RoomState, 0)
 	for _, r := range s.rooms {
+		if !r.CanJoin(id) {
+			continue
+		}
+
 		proto := r.ToProtoForPeer()
 		proto.Role = ""
 
 		if len(proto.Members) == 0 {
-			continue
-		}
-
-		if !r.CanJoin(id) {
 			continue
 		}
 
@@ -81,14 +81,14 @@ func (s *Server) ListRooms(context.Context, *empty.Empty) (*pb.RoomList, error) 
 
 	rooms := make([]*pb.RoomState, 0)
 	for _, r := range s.rooms {
+		if r.IsPrivate() {
+			continue
+		}
+
 		proto := r.ToProtoForPeer()
 		proto.Role = ""
 
 		if len(proto.Members) == 0 {
-			continue
-		}
-
-		if r.IsPrivate() {
 			continue
 		}
 
@@ -153,11 +153,13 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 			return status.Errorf(codes.Internal, "join error %s", err)
 		}
 
-		s.queue.Push(notifications.Event{
-			Type:    notifications.EventTypeRoomJoined,
-			Creator: user.ID,
-			Params:  map[string]interface{}{"name": r.name, "id": int(payload.Join.Room)},
-		})
+		if !r.IsPrivate() {
+			s.queue.Push(notifications.Event{
+				Type:    notifications.EventTypeRoomJoined,
+				Creator: user.ID,
+				Params:  map[string]interface{}{"name": r.name, "id": int(payload.Join.Room)},
+			})
+		}
 	case *pb.SignalRequest_Create:
 		user, err = s.getMemberForSession(payload.Create.Session)
 		if err != nil {

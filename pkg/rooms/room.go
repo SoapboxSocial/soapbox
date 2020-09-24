@@ -73,9 +73,15 @@ func NewRoom(id int, name string, queue *notifications.Queue, isPrivate bool) *R
 	}
 }
 
+func (r *Room) IsPrivate() bool {
+	return r.isPrivate
+}
+
 func (r *Room) CanJoin(id int) bool {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
+
+	log.Println(r.invited[id])
 
 	if r.isPrivate {
 		return r.invited[id]

@@ -12,6 +12,7 @@ import (
 	"github.com/pion/webrtc/v3"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"grpc.go4.org/metadata"
 
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
@@ -47,7 +48,19 @@ func NewServer(sfu *sfu.SFU, sm *sessions.SessionManager, ub *users.UserBackend,
 	}
 }
 
-func (s *Server) ListRooms(context.Context, *empty.Empty) (*pb.RoomList, error) {
+func (s *Server) ListRooms(ctx context.Context, e *empty.Empty) (*pb.RoomList, error) {
+	var id int
+	var err error
+
+	// @TODO REMOVE THE OK HACK AT A DECENT TIME. WE MUST AT ONE POINT ASSUME ALL CALLS ARE AUTHORIZED.
+	md, ok := metadata.FromContext(ctx)
+	if ok {
+		id, err = s.sm.GetUserIDForSession(md["authorization"][0])
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	s.mux.RLock()
 	defer s.mux.RUnlock()
 
@@ -60,7 +73,14 @@ func (s *Server) ListRooms(context.Context, *empty.Empty) (*pb.RoomList, error) 
 			continue
 		}
 
-		// @TODO LIST IF USER CAN JOIN
+		// @TODO REMOVE THE OK HACK AT A DECENT TIME.
+		if !ok && r.IsPrivate() {
+			continue
+		}
+
+		if !r.CanJoin(id) {
+			continue
+		}
 
 		rooms = append(rooms, proto)
 	}
@@ -134,8 +154,6 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 			return status.Errorf(codes.Unauthenticated, "unauthenticated")
 		}
 
-		payload.Create.GetVisibility()
-
 		s.mux.Lock()
 		id := s.nextID
 		room = NewRoom(
@@ -201,11 +219,13 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 		s.rooms[id] = room
 		s.mux.Unlock()
 
-		s.queue.Push(notifications.Event{
-			Type:    notifications.EventTypeRoomCreation,
-			Creator: user.ID,
-			Params:  map[string]interface{}{"name": payload.Create.Name, "id": id},
-		})
+		if payload.Create.Visibility == pb.CreateRequest_PUBLIC {
+			s.queue.Push(notifications.Event{
+				Type:    notifications.EventTypeRoomCreation,
+				Creator: user.ID,
+				Params:  map[string]interface{}{"name": payload.Create.Name, "id": id},
+			})
+		}
 
 		log.Printf("created room: %d", id)
 	default:

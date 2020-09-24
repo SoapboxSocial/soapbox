@@ -13,12 +13,9 @@ require (
 	github.com/lib/pq v1.8.0
 	github.com/marten-seemann/chacha20 v0.2.0 // indirect
 	github.com/marten-seemann/qtls-go1-15 v0.1.1 // indirect
-	github.com/pion/datachannel v1.4.21 // indirect
-	github.com/pion/ice/v2 v2.0.6 // indirect
 	github.com/pion/ion-sfu v1.0.17
 	github.com/pion/webrtc/v3 v3.0.0-beta.5
 	github.com/pkg/errors v0.9.1
-	github.com/rs/zerolog v1.20.0 // indirect
 	github.com/sendgrid/rest v2.6.1+incompatible // indirect
 	github.com/sendgrid/sendgrid-go v3.6.3+incompatible
 	github.com/sideshow/apns2 v0.20.0
@@ -31,4 +28,5 @@ require (
 	google.golang.org/genproto v0.0.0-20200924141100-a14c0a98937d // indirect
 	google.golang.org/grpc v1.32.0
 	google.golang.org/protobuf v1.25.0
+	grpc.go4.org v0.0.0-20170609214715-11d0a25b4919
 )

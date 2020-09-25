@@ -56,16 +56,38 @@ type Room struct {
 	onDisconnectedHandlerFunc func(room, peer int)
 
 	queue *notifications.Queue
+
+	isPrivate bool
+	invited   map[int]bool
 }
 
-func NewRoom(id int, name string, queue *notifications.Queue) *Room {
+func NewRoom(id int, name string, queue *notifications.Queue, isPrivate bool) *Room {
 	return &Room{
-		mux:     sync.RWMutex{},
-		id:      id,
-		name:    name,
-		members: make(map[int]*peer),
-		queue:   queue,
+		mux:       sync.RWMutex{},
+		id:        id,
+		name:      name,
+		members:   make(map[int]*peer),
+		queue:     queue,
+		isPrivate: isPrivate,
+		invited:   make(map[int]bool),
 	}
+}
+
+func (r *Room) IsPrivate() bool {
+	return r.isPrivate
+}
+
+func (r *Room) CanJoin(id int) bool {
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+
+	log.Println(r.invited[id])
+
+	if r.isPrivate {
+		return r.invited[id]
+	}
+
+	return true
 }
 
 func (r *Room) Name() string {
@@ -274,6 +296,10 @@ func (r *Room) onCommand(from int, cmd *pb.SignalRequest_Command) error {
 }
 
 func (r *Room) onInvite(from int, invite *pb.Invite) error {
+	r.mux.Lock()
+	r.invited[int(invite.Id)] = true
+	r.mux.Unlock()
+
 	r.queue.Push(notifications.Event{
 		Type:    notifications.EventTypeRoomInvitation,
 		Creator: from,

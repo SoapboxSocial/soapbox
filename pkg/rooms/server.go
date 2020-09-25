@@ -47,12 +47,44 @@ func NewServer(sfu *sfu.SFU, sm *sessions.SessionManager, ub *users.UserBackend,
 	}
 }
 
+func (s *Server) ListRoomsV2(ctx context.Context, auth *pb.Auth) (*pb.RoomList, error) {
+	s.mux.RLock()
+	defer s.mux.RUnlock()
+
+	id, err := s.sm.GetUserIDForSession(auth.Session)
+	if err != nil {
+		return nil, err
+	}
+
+	rooms := make([]*pb.RoomState, 0)
+	for _, r := range s.rooms {
+		if !r.CanJoin(id) {
+			continue
+		}
+
+		proto := r.ToProtoForPeer()
+		proto.Role = ""
+
+		if len(proto.Members) == 0 {
+			continue
+		}
+
+		rooms = append(rooms, proto)
+	}
+
+	return &pb.RoomList{Rooms: rooms}, nil
+}
+
 func (s *Server) ListRooms(context.Context, *empty.Empty) (*pb.RoomList, error) {
 	s.mux.RLock()
 	defer s.mux.RUnlock()
 
 	rooms := make([]*pb.RoomState, 0)
 	for _, r := range s.rooms {
+		if r.IsPrivate() {
+			continue
+		}
+
 		proto := r.ToProtoForPeer()
 		proto.Role = ""
 
@@ -91,6 +123,10 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 			return status.Errorf(codes.Internal, "join error room closed")
 		}
 
+		if !r.CanJoin(user.ID) {
+			return status.Errorf(codes.Internal, "user not invited")
+		}
+
 		room = r
 		proto := r.ToProtoForPeer()
 
@@ -117,11 +153,13 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 			return status.Errorf(codes.Internal, "join error %s", err)
 		}
 
-		s.queue.Push(notifications.Event{
-			Type:    notifications.EventTypeRoomJoined,
-			Creator: user.ID,
-			Params:  map[string]interface{}{"name": r.name, "id": int(payload.Join.Room)},
-		})
+		if !r.IsPrivate() {
+			s.queue.Push(notifications.Event{
+				Type:    notifications.EventTypeRoomJoined,
+				Creator: user.ID,
+				Params:  map[string]interface{}{"name": r.name, "id": int(payload.Join.Room)},
+			})
+		}
 	case *pb.SignalRequest_Create:
 		user, err = s.getMemberForSession(payload.Create.Session)
 		if err != nil {
@@ -130,7 +168,12 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 
 		s.mux.Lock()
 		id := s.nextID
-		room = NewRoom(id, strings.TrimSpace(payload.Create.Name), s.queue)
+		room = NewRoom(
+			id,
+			strings.TrimSpace(payload.Create.Name),
+			s.queue,
+			payload.Create.GetVisibility() == pb.CreateRequest_PRIVATE,
+		)
 		s.nextID++
 		s.mux.Unlock()
 
@@ -188,11 +231,13 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 		s.rooms[id] = room
 		s.mux.Unlock()
 
-		s.queue.Push(notifications.Event{
-			Type:    notifications.EventTypeRoomCreation,
-			Creator: user.ID,
-			Params:  map[string]interface{}{"name": payload.Create.Name, "id": id},
-		})
+		if payload.Create.Visibility == pb.CreateRequest_PUBLIC {
+			s.queue.Push(notifications.Event{
+				Type:    notifications.EventTypeRoomCreation,
+				Creator: user.ID,
+				Params:  map[string]interface{}{"name": payload.Create.Name, "id": id},
+			})
+		}
 
 		log.Printf("created room: %d", id)
 	default:

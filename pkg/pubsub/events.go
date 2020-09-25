@@ -17,14 +17,14 @@ type Event struct {
 
 func NewUserUpdateEvent(id int) Event {
 	return Event{
-		Type: EventTypeUserUpdate,
+		Type:   EventTypeUserUpdate,
 		Params: map[string]interface{}{"id": id},
 	}
 }
 
 func NewFollowerEvent(follower, id int) Event {
 	return Event{
-		Type: EventTypeNewFollower,
+		Type:   EventTypeNewFollower,
 		Params: map[string]interface{}{"follower": follower, "id": id},
 	}
 }

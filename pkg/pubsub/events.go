@@ -28,3 +28,24 @@ func NewFollowerEvent(follower, id int) Event {
 		Params: map[string]interface{}{"follower": follower, "id": id},
 	}
 }
+
+func NewRoomCreationEvent(name string, id, creator int) Event {
+	return Event{
+		Type:   EventTypeNewRoom,
+		Params: map[string]interface{}{"name": name, "id": id, "creator": creator},
+	}
+}
+
+func NewRoomJoinEvent(name string, id, creator int) Event {
+	return Event{
+		Type:   EventTypeRoomJoin,
+		Params: map[string]interface{}{"name": name, "id": id, "creator": creator},
+	}
+}
+
+func NewRoomInviteEvent(name string, room, creator, target int) Event {
+	return Event{
+		Type:   EventTypeRoomInvite,
+		Params: map[string]interface{}{"name": name, "room": room, "from": creator, "id": target},
+	}
+}

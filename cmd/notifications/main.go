@@ -179,7 +179,7 @@ func onRoomJoined(event *pubsub.Event) ([]devices.Device, *notifications.Notific
 }
 
 func onNewFollower(event *pubsub.Event) ([]devices.Device, *notifications.Notification, error) {
-	creator, err := getCreatorId(event)
+	creator, err := getId(event, "follower")
 	if err != nil {
 		return nil, nil, err
 	}
@@ -203,7 +203,7 @@ func onNewFollower(event *pubsub.Event) ([]devices.Device, *notifications.Notifi
 }
 
 func onRoomInvite(event *pubsub.Event) ([]devices.Device, *notifications.Notification, error) {
-	creator, err := getCreatorId(event)
+	creator, err := getId(event, "from")
 	if err != nil {
 		return nil, nil, err
 	}
@@ -214,7 +214,7 @@ func onRoomInvite(event *pubsub.Event) ([]devices.Device, *notifications.Notific
 	}
 
 	name := event.Params["name"].(string)
-	room, ok := event.Params["id"].(float64)
+	room, ok := event.Params["room"].(float64)
 	if !ok {
 		return nil, nil, errors.New("failed to recover room ID")
 	}
@@ -240,13 +240,17 @@ func onRoomInvite(event *pubsub.Event) ([]devices.Device, *notifications.Notific
 	return targets, notification, nil
 }
 
-func getCreatorId(event *pubsub.Event) (int, error) {
-	creator, ok := event.Params["id"].(float64)
+func getId(event *pubsub.Event, field string) (int, error) {
+	creator, ok := event.Params[field].(float64)
 	if !ok {
 		return 0, errors.New("failed to recover creator")
 	}
 
 	return int(creator), nil
+}
+
+func getCreatorId(event *pubsub.Event) (int, error) {
+	return getId(event, "creator")
 }
 
 func getDisplayName(id int) (string, error) {

@@ -17,8 +17,8 @@ import (
 
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/images"
-	"github.com/soapboxsocial/soapbox/pkg/indexer"
 	"github.com/soapboxsocial/soapbox/pkg/mail"
+	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
@@ -58,10 +58,10 @@ type LoginEndpoint struct {
 
 	mail *mail.Service
 
-	index *indexer.Queue
+	queue *pubsub.Queue
 }
 
-func NewLoginEndpoint(ub *users.UserBackend, manager *sessions.SessionManager, mail *mail.Service, ib *images.Backend, index *indexer.Queue) LoginEndpoint {
+func NewLoginEndpoint(ub *users.UserBackend, manager *sessions.SessionManager, mail *mail.Service, ib *images.Backend, queue *pubsub.Queue) LoginEndpoint {
 	return LoginEndpoint{
 		tokens:        make(map[string]tokenState),
 		registrations: make(map[string]string),
@@ -69,7 +69,7 @@ func NewLoginEndpoint(ub *users.UserBackend, manager *sessions.SessionManager, m
 		sessions:      manager,
 		mail:          mail,
 		ib:            ib,
-		index:         index,
+		queue:         queue,
 	}
 }
 
@@ -244,10 +244,10 @@ func (l *LoginEndpoint) Register(w http.ResponseWriter, r *http.Request) {
 		log.Println("error writing response: " + err.Error())
 	}
 
-	l.index.Push(indexer.Event{
-		Type:   indexer.EventTypeUserUpdate,
-		Params: map[string]interface{}{"id": lastID},
-	})
+	err = l.queue.Publish(pubsub.UserTopic, pubsub.NewUserUpdateEvent(lastID))
+	if err != nil {
+		log.Printf("queue.Publish err: %v\n", err)
+	}
 }
 
 func (l *LoginEndpoint) processProfilePicture(file multipart.File) (string, error) {

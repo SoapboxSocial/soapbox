@@ -81,8 +81,6 @@ func (r *Room) CanJoin(id int) bool {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
 
-	log.Println(r.invited[id])
-
 	if r.isPrivate {
 		return r.invited[id]
 	}

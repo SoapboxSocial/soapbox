@@ -9,9 +9,10 @@ import (
 
 type Topic string
 
-type Event struct {
-
-}
+const (
+	RoomTopic Topic = "room"
+	UserTopic Topic = "user"
+)
 
 type Queue struct {
 	buffer chan *Event
@@ -23,7 +24,7 @@ type Queue struct {
 func NewQueue(rdb *redis.Client) *Queue {
 	return &Queue{
 		buffer: make(chan *Event, 100),
-		rdb: rdb,
+		rdb:    rdb,
 	}
 }
 
@@ -42,7 +43,7 @@ func (q *Queue) Publish(topic Topic, event Event) error {
 func (q *Queue) Subscribe(topics ...Topic) <-chan *Event {
 	t := make([]string, 0)
 	for topic := range topics {
-		t= append(t, string(topic))
+		t = append(t, string(topic))
 	}
 
 	pubsub := q.rdb.Subscribe(q.rdb.Context(), t...)

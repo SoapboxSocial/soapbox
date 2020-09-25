@@ -8,7 +8,6 @@ import (
 	"log"
 	"strconv"
 	"strings"
-	"time"
 
 	_ "github.com/lib/pq"
 
@@ -16,11 +15,12 @@ import (
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/go-redis/redis/v8"
 
-	"github.com/soapboxsocial/soapbox/pkg/indexer"
+	"github.com/soapboxsocial/soapbox/pkg/pubsub"
+
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
-type handlerFunc func(*indexer.Event) error
+type handlerFunc func(*pubsub.Event) error
 
 var client *elasticsearch.Client
 var userBackend *users.UserBackend
@@ -32,8 +32,6 @@ func main() {
 		DB:       0,  // use default DB
 	})
 
-	queue := indexer.NewIndexerQueue(rdb)
-
 	db, err := sql.Open("postgres", "host=127.0.0.1 port=5432 user=voicely password=voicely dbname=voicely sslmode=disable")
 	if err != nil {
 		panic(err)
@@ -44,26 +42,17 @@ func main() {
 		panic(err)
 	}
 
+	queue := pubsub.NewQueue(rdb)
+	events := queue.Subscribe(pubsub.UserTopic)
+
 	userBackend = users.NewUserBackend(db)
 
-	for {
-		if queue.Len() == 0 {
-			// @todo think about this timeout
-			time.Sleep(1 * time.Second)
-			continue
-		}
-
-		event, err := queue.Pop()
-		if err != nil {
-			log.Printf("failed to pop from queue: %s\n", err)
-			continue
-		}
-
+	for event := range events {
 		go handleEvent(event)
 	}
 }
 
-func handleEvent(event *indexer.Event) {
+func handleEvent(event *pubsub.Event) {
 	handler := getHandler(event.Type)
 	if handler == nil {
 		log.Printf("no event handler for type \"%d\"\n", event.Type)
@@ -76,16 +65,16 @@ func handleEvent(event *indexer.Event) {
 	}
 }
 
-func getHandler(eventType indexer.EventType) handlerFunc {
+func getHandler(eventType pubsub.EventType) handlerFunc {
 	switch eventType {
-	case indexer.EventTypeUserUpdate:
+	case pubsub.EventTypeUserUpdate:
 		return handleUserUpdate
 	default:
 		return nil
 	}
 }
 
-func handleUserUpdate(event *indexer.Event) error {
+func handleUserUpdate(event *pubsub.Event) error {
 	id, ok := event.Params["id"].(float64)
 	if !ok {
 		return errors.New("failed to recover user ID")

@@ -1,6 +1,11 @@
 package pubsub
 
-import "github.com/go-redis/redis/v8"
+import (
+	"encoding/json"
+	"log"
+
+	"github.com/go-redis/redis/v8"
+)
 
 type Topic string
 
@@ -9,7 +14,7 @@ type Event struct {
 }
 
 type Queue struct {
-	buffer chan Event
+	buffer chan *Event
 
 	rdb *redis.Client
 }
@@ -17,18 +22,24 @@ type Queue struct {
 // NewQueue creates a new redis pubsub Queue.
 func NewQueue(rdb *redis.Client) *Queue {
 	return &Queue{
-		buffer: make(chan Event, 100),
+		buffer: make(chan *Event, 100),
 		rdb: rdb,
 	}
 }
 
 // Publish an Event on a specific topic.
-func (q *Queue) Publish(topic Topic, event Event)  {
-	q.rdb.Publish(q.rdb.Context(), string(topic), event)
+func (q *Queue) Publish(topic Topic, event Event) error {
+	data, err := json.Marshal(event)
+	if err != nil {
+		return err
+	}
+
+	q.rdb.Publish(q.rdb.Context(), string(topic), data)
+	return nil
 }
 
 // Subscribe to a list of topics.
-func (q *Queue) Subscribe(topics ...Topic) <-chan Event {
+func (q *Queue) Subscribe(topics ...Topic) <-chan *Event {
 	t := make([]string, 0)
 	for topic := range topics {
 		t= append(t, string(topic))
@@ -42,7 +53,14 @@ func (q *Queue) Subscribe(topics ...Topic) <-chan Event {
 
 func (q *Queue) read(pubsub *redis.PubSub) {
 	c := pubsub.Channel()
-	for _ = range c {
-		// @todo
+	for msg := range c {
+		event := &Event{}
+		err := json.Unmarshal([]byte(msg.Payload), event)
+		if err != nil {
+			log.Printf("failed to decode event err: %v event: %s", err, msg.Payload)
+			continue
+		}
+
+		q.buffer <- event
 	}
 }

@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/soapboxsocial/soapbox/pkg/notifications"
+	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
 	"github.com/soapboxsocial/soapbox/pkg/users"
@@ -25,7 +25,7 @@ type Server struct {
 	sfu   *sfu.SFU
 	sm    *sessions.SessionManager
 	ub    *users.UserBackend
-	queue *notifications.Queue
+	queue *pubsub.Queue
 
 	currentRoom *CurrentRoomBackend
 
@@ -34,7 +34,7 @@ type Server struct {
 	nextID int
 }
 
-func NewServer(sfu *sfu.SFU, sm *sessions.SessionManager, ub *users.UserBackend, queue *notifications.Queue, cr *CurrentRoomBackend) *Server {
+func NewServer(sfu *sfu.SFU, sm *sessions.SessionManager, ub *users.UserBackend, queue *pubsub.Queue, cr *CurrentRoomBackend) *Server {
 	return &Server{
 		mux:         sync.RWMutex{},
 		sfu:         sfu,
@@ -154,11 +154,10 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 		}
 
 		if !r.IsPrivate() {
-			s.queue.Push(notifications.Event{
-				Type:    notifications.EventTypeRoomJoined,
-				Creator: user.ID,
-				Params:  map[string]interface{}{"name": r.name, "id": int(payload.Join.Room)},
-			})
+			err := s.queue.Publish(pubsub.RoomTopic, pubsub.NewRoomJoinEvent(r.Name(), int(payload.Join.Room), user.ID))
+			if err != nil {
+				log.Printf("queue.Publish err: %v\n", err)
+			}
 		}
 	case *pb.SignalRequest_Create:
 		user, err = s.getMemberForSession(payload.Create.Session)
@@ -232,11 +231,10 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 		s.mux.Unlock()
 
 		if payload.Create.Visibility == pb.CreateRequest_PUBLIC {
-			s.queue.Push(notifications.Event{
-				Type:    notifications.EventTypeRoomCreation,
-				Creator: user.ID,
-				Params:  map[string]interface{}{"name": payload.Create.Name, "id": id},
-			})
+			err := s.queue.Publish(pubsub.RoomTopic, pubsub.NewRoomCreationEvent(payload.Create.Name, id, user.ID))
+			if err != nil {
+				log.Printf("queue.Publish err: %v\n", err)
+			}
 		}
 
 		log.Printf("created room: %d", id)

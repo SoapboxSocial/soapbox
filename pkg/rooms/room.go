@@ -11,7 +11,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/soapboxsocial/soapbox/pkg/notifications"
+	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 )
 
@@ -55,13 +55,13 @@ type Room struct {
 
 	onDisconnectedHandlerFunc func(room, peer int)
 
-	queue *notifications.Queue
+	queue *pubsub.Queue
 
 	isPrivate bool
 	invited   map[int]bool
 }
 
-func NewRoom(id int, name string, queue *notifications.Queue, isPrivate bool) *Room {
+func NewRoom(id int, name string, queue *pubsub.Queue, isPrivate bool) *Room {
 	return &Room{
 		mux:       sync.RWMutex{},
 		id:        id,
@@ -298,11 +298,10 @@ func (r *Room) onInvite(from int, invite *pb.Invite) error {
 	r.invited[int(invite.Id)] = true
 	r.mux.Unlock()
 
-	r.queue.Push(notifications.Event{
-		Type:    notifications.EventTypeRoomInvitation,
-		Creator: from,
-		Params:  map[string]interface{}{"room": r.id, "name": r.name, "id": invite.Id},
-	})
+	err := r.queue.Publish(pubsub.RoomTopic, pubsub.NewRoomInviteEvent(r.name, r.id, from, int(invite.Id)))
+	if err != nil {
+		log.Printf("queue.Publish err: %v\n", err)
+	}
 
 	return nil
 }

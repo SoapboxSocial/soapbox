@@ -92,7 +92,11 @@ func handleEvent(event *pubsub.Event) {
 		if err != nil {
 			log.Printf("failed to send to target \"%s\" with error: %s\n", target.Device, err.Error())
 		}
+	}
 
+	// We do this here.
+	// Otherwise a peer with multiple devices will only receive notifications once.
+	for _, target := range targets {
 		notificationLimiter.SentNotification(target, notification.Arguments, notification.Category)
 	}
 }

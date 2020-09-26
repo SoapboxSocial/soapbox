@@ -42,7 +42,7 @@ func (q *Queue) Publish(topic Topic, event Event) error {
 // Subscribe to a list of topics.
 func (q *Queue) Subscribe(topics ...Topic) <-chan *Event {
 	t := make([]string, 0)
-	for topic := range topics {
+	for _, topic := range topics {
 		t = append(t, string(topic))
 	}
 

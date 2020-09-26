@@ -15,7 +15,6 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/followers"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/images"
-	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
@@ -31,7 +30,6 @@ type UsersEndpoint struct {
 
 	search *users.Search
 
-	notify *notifications.Queue
 	queue  *pubsub.Queue
 }
 

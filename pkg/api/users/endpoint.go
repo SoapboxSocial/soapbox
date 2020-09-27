@@ -15,8 +15,7 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/followers"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/images"
-	"github.com/soapboxsocial/soapbox/pkg/indexer"
-	"github.com/soapboxsocial/soapbox/pkg/notifications"
+	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
 	"github.com/soapboxsocial/soapbox/pkg/users"
@@ -31,18 +30,16 @@ type UsersEndpoint struct {
 
 	search *users.Search
 
-	notify *notifications.Queue
-	index  *indexer.Queue
+	queue  *pubsub.Queue
 }
 
 func NewUsersEndpoint(
 	ub *users.UserBackend,
 	fb *followers.FollowersBackend,
 	sm *sessions.SessionManager,
-	queue *notifications.Queue,
 	ib *images.Backend,
 	search *users.Search,
-	index *indexer.Queue,
+	queue *pubsub.Queue,
 	cr *rooms.CurrentRoomBackend,
 ) *UsersEndpoint {
 	return &UsersEndpoint{
@@ -51,8 +48,7 @@ func NewUsersEndpoint(
 		sm:          sm,
 		ib:          ib,
 		search:      search,
-		notify:      queue,
-		index:       index,
+		queue:       queue,
 		currentRoom: cr,
 	}
 }
@@ -193,11 +189,10 @@ func (u *UsersEndpoint) FollowUser(w http.ResponseWriter, r *http.Request) {
 
 	httputil.JsonSuccess(w)
 
-	u.notify.Push(notifications.Event{
-		Type:    notifications.EventTypeNewFollower,
-		Creator: userID,
-		Params:  map[string]interface{}{"id": id},
-	})
+	err = u.queue.Publish(pubsub.UserTopic, pubsub.NewFollowerEvent(userID, id))
+	if err != nil {
+		log.Printf("queue.Publish err: %v\n", err)
+	}
 }
 
 func (u *UsersEndpoint) UnfollowUser(w http.ResponseWriter, r *http.Request) {
@@ -278,10 +273,10 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 		_ = u.ib.Remove(oldPath)
 	}
 
-	u.index.Push(indexer.Event{
-		Type:   indexer.EventTypeUserUpdate,
-		Params: map[string]interface{}{"id": userID},
-	})
+	err = u.queue.Publish(pubsub.UserTopic, pubsub.NewUserUpdateEvent(userID))
+	if err != nil {
+		log.Printf("queue.Publish err: %v\n", err)
+	}
 
 	httputil.JsonSuccess(w)
 }

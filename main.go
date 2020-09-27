@@ -20,9 +20,8 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/followers"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/images"
-	"github.com/soapboxsocial/soapbox/pkg/indexer"
 	"github.com/soapboxsocial/soapbox/pkg/mail"
-	"github.com/soapboxsocial/soapbox/pkg/notifications"
+	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
 	"github.com/soapboxsocial/soapbox/pkg/users"
@@ -45,8 +44,7 @@ func main() {
 		DB:       0,  // use default DB
 	})
 
-	queue := notifications.NewNotificationQueue(rdb)
-	index := indexer.NewIndexerQueue(rdb)
+	queue := pubsub.NewQueue(rdb)
 
 	s := sessions.NewSessionManager(rdb)
 	ub := users.NewUserBackend(db)
@@ -72,14 +70,14 @@ func main() {
 
 	ib := images.NewImagesBackend("/cdn/images")
 	ms := mail.NewMailService(sendgrid.NewSendClient(sendgrid_api))
-	loginHandlers := login.NewLoginEndpoint(ub, s, ms, ib, index)
+	loginHandlers := login.NewLoginEndpoint(ub, s, ms, ib, queue)
 	loginRoutes.HandleFunc("/start", loginHandlers.Start)
 	loginRoutes.HandleFunc("/pin", loginHandlers.SubmitPin)
 	loginRoutes.HandleFunc("/register", loginHandlers.Register)
 
 	userRoutes := r.PathPrefix("/v1/users").Subrouter()
 
-	usersEndpoints := usersapi.NewUsersEndpoint(ub, fb, s, queue, ib, search, index, rooms.NewCurrentRoomBackend(rdb))
+	usersEndpoints := usersapi.NewUsersEndpoint(ub, fb, s, ib, search, queue, rooms.NewCurrentRoomBackend(rdb))
 	userRoutes.HandleFunc("/{id:[0-9]+}", usersEndpoints.GetUserByID).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/followers", usersEndpoints.GetFollowersForUser).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/following", usersEndpoints.GetFollowedByForUser).Methods("GET")

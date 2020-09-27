@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"log"
-	"time"
 
 	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
@@ -14,6 +13,7 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/devices"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/notifications/limiter"
+	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
@@ -23,7 +23,7 @@ var userBackend *users.UserBackend
 var service *notifications.Service
 var notificationLimiter *limiter.Limiter
 
-type handlerFunc func(*notifications.Event) ([]devices.Device, *notifications.Notification, error)
+type handlerFunc func(*pubsub.Event) ([]devices.Device, *notifications.Notification, error)
 
 func main() {
 	rdb := redis.NewClient(&redis.Options{
@@ -32,7 +32,7 @@ func main() {
 		DB:       0,  // use default DB
 	})
 
-	queue := notifications.NewNotificationQueue(rdb)
+	queue := pubsub.NewQueue(rdb)
 
 	db, err := sql.Open("postgres", "host=127.0.0.1 port=5432 user=voicely password=voicely dbname=voicely sslmode=disable")
 	if err != nil {
@@ -59,24 +59,14 @@ func main() {
 
 	service = notifications.NewService("app.social.soapbox", client)
 
-	for {
-		if queue.Len() == 0 {
-			// @todo think about this timeout
-			time.Sleep(1 * time.Second)
-			continue
-		}
+	events := queue.Subscribe(pubsub.RoomTopic, pubsub.UserTopic)
 
-		event, err := queue.Pop()
-		if err != nil {
-			log.Printf("failed to pop from queue: %s\n", err)
-			continue
-		}
-
+	for event := range events {
 		go handleEvent(event)
 	}
 }
 
-func handleEvent(event *notifications.Event) {
+func handleEvent(event *pubsub.Event) {
 	handler := getHandler(event.Type)
 	if handler == nil {
 		log.Printf("no event handler for type \"%d\"\n", event.Type)
@@ -102,28 +92,37 @@ func handleEvent(event *notifications.Event) {
 		if err != nil {
 			log.Printf("failed to send to target \"%s\" with error: %s\n", target.Device, err.Error())
 		}
+	}
 
+	// We do this here.
+	// Otherwise a peer with multiple devices will only receive notifications once.
+	for _, target := range targets {
 		notificationLimiter.SentNotification(target, notification.Arguments, notification.Category)
 	}
 }
 
-func getHandler(eventType notifications.EventType) handlerFunc {
+func getHandler(eventType pubsub.EventType) handlerFunc {
 	switch eventType {
-	case notifications.EventTypeRoomCreation:
+	case pubsub.EventTypeNewRoom:
 		return onRoomCreation
-	case notifications.EventTypeNewFollower:
+	case pubsub.EventTypeNewFollower:
 		return onNewFollower
-	case notifications.EventTypeRoomJoined:
+	case pubsub.EventTypeRoomJoin:
 		return onRoomJoined
-	case notifications.EventTypeRoomInvitation:
+	case pubsub.EventTypeRoomInvite:
 		return onRoomInvite
 	default:
 		return nil
 	}
 }
 
-func onRoomCreation(event *notifications.Event) ([]devices.Device, *notifications.Notification, error) {
-	targets, err := devicesBackend.FetchAllFollowerDevices(event.Creator)
+func onRoomCreation(event *pubsub.Event) ([]devices.Device, *notifications.Notification, error) {
+	creator, err := getCreatorId(event)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	targets, err := devicesBackend.FetchAllFollowerDevices(creator)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -134,7 +133,7 @@ func onRoomCreation(event *notifications.Event) ([]devices.Device, *notification
 		return nil, nil, errors.New("failed to recover room ID")
 	}
 
-	displayName, err := getDisplayName(event.Creator)
+	displayName, err := getDisplayName(creator)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -150,8 +149,13 @@ func onRoomCreation(event *notifications.Event) ([]devices.Device, *notification
 	return targets, notification, nil
 }
 
-func onRoomJoined(event *notifications.Event) ([]devices.Device, *notifications.Notification, error) {
-	targets, err := devicesBackend.FetchAllFollowerDevices(event.Creator)
+func onRoomJoined(event *pubsub.Event) ([]devices.Device, *notifications.Notification, error) {
+	creator, err := getCreatorId(event)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	targets, err := devicesBackend.FetchAllFollowerDevices(creator)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -162,7 +166,7 @@ func onRoomJoined(event *notifications.Event) ([]devices.Device, *notifications.
 		return nil, nil, errors.New("failed to recover room ID")
 	}
 
-	displayName, err := getDisplayName(event.Creator)
+	displayName, err := getDisplayName(creator)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -178,7 +182,12 @@ func onRoomJoined(event *notifications.Event) ([]devices.Device, *notifications.
 	return targets, notification, nil
 }
 
-func onNewFollower(event *notifications.Event) ([]devices.Device, *notifications.Notification, error) {
+func onNewFollower(event *pubsub.Event) ([]devices.Device, *notifications.Notification, error) {
+	creator, err := getId(event, "follower")
+	if err != nil {
+		return nil, nil, err
+	}
+
 	targetID, ok := event.Params["id"].(float64)
 	if !ok {
 		return nil, nil, errors.New("failed to recover target ID")
@@ -189,22 +198,27 @@ func onNewFollower(event *notifications.Event) ([]devices.Device, *notifications
 		return nil, nil, err
 	}
 
-	displayName, err := getDisplayName(event.Creator)
+	displayName, err := getDisplayName(creator)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return targets, notifications.NewFollowerNotification(event.Creator, displayName), nil
+	return targets, notifications.NewFollowerNotification(creator, displayName), nil
 }
 
-func onRoomInvite(event *notifications.Event) ([]devices.Device, *notifications.Notification, error) {
+func onRoomInvite(event *pubsub.Event) ([]devices.Device, *notifications.Notification, error) {
+	creator, err := getId(event, "from")
+	if err != nil {
+		return nil, nil, err
+	}
+
 	targetID, ok := event.Params["id"].(float64)
 	if !ok {
 		return nil, nil, errors.New("failed to recover target ID")
 	}
 
 	name := event.Params["name"].(string)
-	room, ok := event.Params["id"].(float64)
+	room, ok := event.Params["room"].(float64)
 	if !ok {
 		return nil, nil, errors.New("failed to recover room ID")
 	}
@@ -214,7 +228,7 @@ func onRoomInvite(event *notifications.Event) ([]devices.Device, *notifications.
 		return nil, nil, err
 	}
 
-	displayName, err := getDisplayName(event.Creator)
+	displayName, err := getDisplayName(creator)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -228,6 +242,19 @@ func onRoomInvite(event *notifications.Event) ([]devices.Device, *notifications.
 	}()
 
 	return targets, notification, nil
+}
+
+func getId(event *pubsub.Event, field string) (int, error) {
+	creator, ok := event.Params[field].(float64)
+	if !ok {
+		return 0, errors.New("failed to recover creator")
+	}
+
+	return int(creator), nil
+}
+
+func getCreatorId(event *pubsub.Event) (int, error) {
+	return getId(event, "creator")
 }
 
 func getDisplayName(id int) (string, error) {

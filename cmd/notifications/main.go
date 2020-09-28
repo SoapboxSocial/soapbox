@@ -18,6 +18,10 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
+var (
+	errRoomPrivate = errors.New("room is private")
+)
+
 var devicesBackend *devices.DevicesBackend
 var userBackend *users.UserBackend
 var service *notifications.Service

@@ -5,6 +5,7 @@ go 1.14
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/alangpierce/go-forceexport v0.0.0-20160317203124-8f1d6941cd75 // indirect
+	github.com/dukex/mixpanel v0.0.0-20180925151559-f8d5594f958e
 	github.com/elastic/go-elasticsearch/v7 v7.9.0
 	github.com/go-redis/redis/v8 v8.2.2
 	github.com/golang/protobuf v1.4.2
@@ -28,5 +29,5 @@ require (
 	google.golang.org/genproto v0.0.0-20200924141100-a14c0a98937d // indirect
 	google.golang.org/grpc v1.32.0
 	google.golang.org/protobuf v1.25.0
-	grpc.go4.org v0.0.0-20170609214715-11d0a25b4919
+	grpc.go4.org v0.0.0-20170609214715-11d0a25b4919 // indirect
 )

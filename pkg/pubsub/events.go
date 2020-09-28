@@ -29,6 +29,7 @@ func NewFollowerEvent(follower, id int) Event {
 	}
 }
 
+// @TODO probably track if its private or not?
 func NewRoomCreationEvent(name string, id, creator int) Event {
 	return Event{
 		Type:   EventTypeNewRoom,

@@ -30,7 +30,7 @@ type UsersEndpoint struct {
 
 	search *users.Search
 
-	queue  *pubsub.Queue
+	queue *pubsub.Queue
 }
 
 func NewUsersEndpoint(

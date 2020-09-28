@@ -59,7 +59,7 @@ func handleEvent(event *pubsub.Event) *Event {
 			evt: &mixpanel.Event{
 				IP: "0",
 				Properties: map[string]interface{}{
-					"id":         event.Params["id"],
+					"room_id":    event.Params["id"],
 					"visibility": event.Params["visibility"],
 				},
 			},
@@ -71,7 +71,7 @@ func handleEvent(event *pubsub.Event) *Event {
 			evt: &mixpanel.Event{
 				IP: "0",
 				Properties: map[string]interface{}{
-					"id":         event.Params["id"],
+					"room_id":    event.Params["id"],
 					"visibility": event.Params["visibility"],
 				},
 			},

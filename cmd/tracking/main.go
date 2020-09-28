@@ -57,9 +57,9 @@ func handleEvent(event *pubsub.Event) *Event {
 			id:   strconv.Itoa(id),
 			name: "room_new",
 			evt: &mixpanel.Event{
-				IP:         "0",
+				IP: "0",
 				Properties: map[string]interface{}{
-					"id": event.Params["id"],
+					"id":         event.Params["id"],
 					"visibility": event.Params["visibility"],
 				},
 			},
@@ -69,9 +69,9 @@ func handleEvent(event *pubsub.Event) *Event {
 			id:   strconv.Itoa(id),
 			name: "room_join",
 			evt: &mixpanel.Event{
-				IP:         "0",
+				IP: "0",
 				Properties: map[string]interface{}{
-					"id": event.Params["id"],
+					"id":         event.Params["id"],
 					"visibility": event.Params["visibility"],
 				},
 			},

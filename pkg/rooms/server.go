@@ -158,12 +158,14 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 			visibility = pubsub.Private
 		}
 
-		err := s.queue.Publish(pubsub.RoomTopic, pubsub.NewRoomJoinEvent(
-			r.Name(),
-			int(payload.Join.Room),
-			user.ID,
-			visibility,
-		),
+		err := s.queue.Publish(
+			pubsub.RoomTopic,
+			pubsub.NewRoomJoinEvent(
+				r.Name(),
+				int(payload.Join.Room),
+				user.ID,
+				visibility,
+			),
 		)
 
 		if err != nil {
@@ -245,12 +247,14 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 			visibility = pubsub.Private
 		}
 
-		err := s.queue.Publish(pubsub.RoomTopic, pubsub.NewRoomCreationEvent(
-			payload.Create.Name,
-			id,
-			user.ID,
-			visibility,
-		),
+		err := s.queue.Publish(
+			pubsub.RoomTopic,
+			pubsub.NewRoomCreationEvent(
+				payload.Create.Name,
+				id,
+				user.ID,
+				visibility,
+			),
 		)
 
 		if err != nil {

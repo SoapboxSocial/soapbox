@@ -172,6 +172,7 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 			strings.TrimSpace(payload.Create.Name),
 			s.queue,
 			payload.Create.GetVisibility() == pb.CreateRequest_PRIVATE,
+			user.ID,
 		)
 		s.nextID++
 		s.mux.Unlock()

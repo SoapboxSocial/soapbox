@@ -58,7 +58,10 @@ func handleEvent(event *pubsub.Event) *Event {
 			name: "room_new",
 			evt: &mixpanel.Event{
 				IP:         "0",
-				Properties: map[string]interface{}{"id": event.Params["id"]},
+				Properties: map[string]interface{}{
+					"id": event.Params["id"],
+					"visibility": event.Params["visibility"],
+				},
 			},
 		}
 	case pubsub.EventTypeRoomJoin:
@@ -67,7 +70,10 @@ func handleEvent(event *pubsub.Event) *Event {
 			name: "room_join",
 			evt: &mixpanel.Event{
 				IP:         "0",
-				Properties: map[string]interface{}{"id": event.Params["id"]},
+				Properties: map[string]interface{}{
+					"id": event.Params["id"],
+					"visibility": event.Params["visibility"],
+				},
 			},
 		}
 	}

@@ -117,6 +117,10 @@ func getHandler(eventType pubsub.EventType) handlerFunc {
 }
 
 func onRoomCreation(event *pubsub.Event) ([]devices.Device, *notifications.Notification, error) {
+	if pubsub.RoomVisibility(event.Params["visibility"].(string)) == pubsub.Private {
+		return nil, nil, nil
+	}
+
 	creator, err := getCreatorId(event)
 	if err != nil {
 		return nil, nil, err
@@ -150,6 +154,10 @@ func onRoomCreation(event *pubsub.Event) ([]devices.Device, *notifications.Notif
 }
 
 func onRoomJoined(event *pubsub.Event) ([]devices.Device, *notifications.Notification, error) {
+	if pubsub.RoomVisibility(event.Params["visibility"].(string)) == pubsub.Private {
+		return nil, nil, nil
+	}
+
 	creator, err := getCreatorId(event)
 	if err != nil {
 		return nil, nil, err

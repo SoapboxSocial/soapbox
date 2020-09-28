@@ -10,6 +10,13 @@ const (
 	EventTypeUserUpdate
 )
 
+type RoomVisibility string
+
+const (
+	Public  RoomVisibility = "public"
+	Private RoomVisibility = "private"
+)
+
 type Event struct {
 	Type   EventType              `json:"type"`
 	Params map[string]interface{} `json:"params"`
@@ -29,18 +36,17 @@ func NewFollowerEvent(follower, id int) Event {
 	}
 }
 
-// @TODO probably track if its private or not?
-func NewRoomCreationEvent(name string, id, creator int) Event {
+func NewRoomCreationEvent(name string, id, creator int, visibility RoomVisibility) Event {
 	return Event{
 		Type:   EventTypeNewRoom,
-		Params: map[string]interface{}{"name": name, "id": id, "creator": creator},
+		Params: map[string]interface{}{"name": name, "id": id, "creator": creator, "visibility": visibility},
 	}
 }
 
-func NewRoomJoinEvent(name string, id, creator int) Event {
+func NewRoomJoinEvent(name string, id, creator int, visibility RoomVisibility) Event {
 	return Event{
 		Type:   EventTypeRoomJoin,
-		Params: map[string]interface{}{"name": name, "id": id, "creator": creator},
+		Params: map[string]interface{}{"name": name, "id": id, "creator": creator, "visibility": visibility},
 	}
 }
 

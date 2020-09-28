@@ -153,11 +153,21 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 			return status.Errorf(codes.Internal, "join error %s", err)
 		}
 
-		if !r.IsPrivate() {
-			err := s.queue.Publish(pubsub.RoomTopic, pubsub.NewRoomJoinEvent(r.Name(), int(payload.Join.Room), user.ID))
-			if err != nil {
-				log.Printf("queue.Publish err: %v\n", err)
-			}
+		visibility := pubsub.Public
+		if r.IsPrivate() {
+			visibility = pubsub.Private
+		}
+
+		err := s.queue.Publish(pubsub.RoomTopic, pubsub.NewRoomJoinEvent(
+			r.Name(),
+			int(payload.Join.Room),
+			user.ID,
+			visibility,
+		),
+		)
+
+		if err != nil {
+			log.Printf("queue.Publish err: %v\n", err)
 		}
 	case *pb.SignalRequest_Create:
 		user, err = s.getMemberForSession(payload.Create.Session)
@@ -230,11 +240,21 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 		s.rooms[id] = room
 		s.mux.Unlock()
 
-		if payload.Create.Visibility == pb.CreateRequest_PUBLIC {
-			err := s.queue.Publish(pubsub.RoomTopic, pubsub.NewRoomCreationEvent(payload.Create.Name, id, user.ID))
-			if err != nil {
-				log.Printf("queue.Publish err: %v\n", err)
-			}
+		visibility := pubsub.Public
+		if payload.Create.Visibility == pb.CreateRequest_PRIVATE {
+			visibility = pubsub.Private
+		}
+
+		err := s.queue.Publish(pubsub.RoomTopic, pubsub.NewRoomCreationEvent(
+			payload.Create.Name,
+			id,
+			user.ID,
+			visibility,
+		),
+		)
+
+		if err != nil {
+			log.Printf("queue.Publish err: %v\n", err)
 		}
 
 		log.Printf("created room: %d", id)

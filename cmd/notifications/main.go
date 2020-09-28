@@ -75,6 +75,10 @@ func handleEvent(event *pubsub.Event) {
 
 	targets, notification, err := handler(event)
 	if err != nil {
+		if err == errRoomPrivate {
+			return
+		}
+
 		log.Printf("handler \"%d\" failed with error: %s\n", event.Type, err.Error())
 	}
 
@@ -117,6 +121,10 @@ func getHandler(eventType pubsub.EventType) handlerFunc {
 }
 
 func onRoomCreation(event *pubsub.Event) ([]devices.Device, *notifications.Notification, error) {
+	if pubsub.RoomVisibility(event.Params["visibility"].(string)) == pubsub.Private {
+		return nil, nil, errRoomPrivate
+	}
+
 	creator, err := getCreatorId(event)
 	if err != nil {
 		return nil, nil, err
@@ -150,6 +158,10 @@ func onRoomCreation(event *pubsub.Event) ([]devices.Device, *notifications.Notif
 }
 
 func onRoomJoined(event *pubsub.Event) ([]devices.Device, *notifications.Notification, error) {
+	if pubsub.RoomVisibility(event.Params["visibility"].(string)) == pubsub.Private {
+		return nil, nil, errRoomPrivate
+	}
+
 	creator, err := getCreatorId(event)
 	if err != nil {
 		return nil, nil, err

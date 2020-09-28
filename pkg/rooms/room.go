@@ -61,8 +61,8 @@ type Room struct {
 	invited   map[int]bool
 }
 
-func NewRoom(id int, name string, queue *pubsub.Queue, isPrivate bool) *Room {
-	return &Room{
+func NewRoom(id int, name string, queue *pubsub.Queue, isPrivate bool, owner int) *Room {
+	r := &Room{
 		mux:       sync.RWMutex{},
 		id:        id,
 		name:      name,
@@ -71,6 +71,10 @@ func NewRoom(id int, name string, queue *pubsub.Queue, isPrivate bool) *Room {
 		isPrivate: isPrivate,
 		invited:   make(map[int]bool),
 	}
+
+	r.invited[owner] = true
+
+	return r
 }
 
 func (r *Room) IsPrivate() bool {

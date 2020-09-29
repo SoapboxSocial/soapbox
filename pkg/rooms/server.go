@@ -202,6 +202,18 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 
 			go func() {
 				s.currentRoom.RemoveCurrentRoomForUser(id)
+
+				err := s.queue.Publish(
+					pubsub.RoomTopic,
+					pubsub.NewRoomLeftEvent(
+						id,
+						user.ID,
+					),
+				)
+
+				if err != nil {
+					log.Printf("queue.Publish err: %v\n", err)
+				}
 			}()
 
 			if count > 0 {

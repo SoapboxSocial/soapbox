@@ -76,6 +76,17 @@ func handleEvent(event *pubsub.Event) *Event {
 				},
 			},
 		}
+	case pubsub.EventTypeRoomLeft:
+		return &Event{
+			id:   strconv.Itoa(id),
+			name: "room_left",
+			evt: &mixpanel.Event{
+				IP: "0",
+				Properties: map[string]interface{}{
+					"room_id": event.Params["id"],
+				},
+			},
+		}
 	}
 
 	return nil

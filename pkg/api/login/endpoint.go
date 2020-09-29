@@ -90,7 +90,7 @@ func (l *LoginEndpoint) Start(w http.ResponseWriter, r *http.Request) {
 
 	pin := generatePin()
 	if email == TestEmail {
-		pin = "123456"
+		pin = "098316"
 	}
 
 	l.tokens[token] = tokenState{email: email, pin: pin}

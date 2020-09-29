@@ -8,6 +8,7 @@ const (
 	EventTypeRoomInvite
 	EventTypeNewFollower
 	EventTypeUserUpdate
+	EventTypeRoomLeft
 )
 
 type RoomVisibility string
@@ -54,5 +55,12 @@ func NewRoomInviteEvent(name string, room, creator, target int) Event {
 	return Event{
 		Type:   EventTypeRoomInvite,
 		Params: map[string]interface{}{"name": name, "room": room, "from": creator, "id": target},
+	}
+}
+
+func NewRoomLeftEvent(room, user int) Event {
+	return Event{
+		Type:   EventTypeRoomLeft,
+		Params: map[string]interface{}{"id": room, "creator": user},
 	}
 }

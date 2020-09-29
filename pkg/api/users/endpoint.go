@@ -242,6 +242,12 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	bio := strings.TrimSpace(r.Form.Get("bio"))
+	if len([]rune(bio)) > 300 {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
 	oldPath, err := u.ub.GetProfileImage(userID)
 	if err != nil {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
@@ -263,7 +269,7 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	err = u.ub.UpdateUser(userID, name, image)
+	err = u.ub.UpdateUser(userID, name, bio, image)
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
 		return

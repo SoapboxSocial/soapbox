@@ -208,7 +208,8 @@ func (l *LoginEndpoint) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lastID, err := l.users.CreateUser(email, name, image, username)
+	// @TODO ALLOW BIO DURING ON-BOARDING
+	lastID, err := l.users.CreateUser(email, name, "", image, username)
 	if err != nil {
 		_ = l.ib.Remove(image)
 

@@ -10,6 +10,7 @@ type User struct {
 	DisplayName string  `json:"display_name"`
 	Username    string  `json:"username"`
 	Image       string  `json:"image"`
+	Bio         string  `json:"bio"`
 	Email       *string `json:"email,omitempty"`
 }
 
@@ -20,6 +21,7 @@ type Profile struct {
 	ID          int    `json:"id"`
 	DisplayName string `json:"display_name"`
 	Username    string `json:"username"`
+	Bio         string `json:"bio"`
 	Followers   int    `json:"followers"`
 	Following   int    `json:"following"`
 	FollowedBy  *bool  `json:"followed_by,omitempty"`
@@ -40,7 +42,7 @@ func NewUserBackend(db *sql.DB) *UserBackend {
 
 func (ub *UserBackend) GetMyProfile(id int) (*Profile, error) {
 	query := `SELECT 
-       id, display_name, username, image,
+       id, display_name, username, image, bio,
        (SELECT COUNT(*) FROM followers WHERE user_id = id) AS followers,
        (SELECT COUNT(*) FROM followers WHERE follower = id) AS following FROM users WHERE id = $1;`
 
@@ -55,6 +57,7 @@ func (ub *UserBackend) GetMyProfile(id int) (*Profile, error) {
 		&profile.DisplayName,
 		&profile.Username,
 		&profile.Image,
+		&profile.Bio,
 		&profile.Followers,
 		&profile.Following,
 	)
@@ -67,7 +70,7 @@ func (ub *UserBackend) GetMyProfile(id int) (*Profile, error) {
 
 func (ub *UserBackend) ProfileByID(id, from int) (*Profile, error) {
 	query := `SELECT 
-       id, display_name, username, image,
+       id, display_name, username, image, bio,
        (SELECT COUNT(*) FROM followers WHERE user_id = id) AS followers,
        (SELECT COUNT(*) FROM followers WHERE follower = id) AS following,
        (SELECT COUNT(*) FROM followers WHERE follower = id AND user_id = $1) AS followed_by,
@@ -86,6 +89,7 @@ func (ub *UserBackend) ProfileByID(id, from int) (*Profile, error) {
 		&profile.DisplayName,
 		&profile.Username,
 		&profile.Image,
+		&profile.Bio,
 		&profile.Followers,
 		&profile.Following,
 		&followedBy,
@@ -105,13 +109,13 @@ func (ub *UserBackend) ProfileByID(id, from int) (*Profile, error) {
 }
 
 func (ub *UserBackend) FindByID(id int) (*User, error) {
-	stmt, err := ub.db.Prepare("SELECT id, display_name, username, image, email FROM users WHERE id = $1;")
+	stmt, err := ub.db.Prepare("SELECT id, display_name, username, image, bio, email FROM users WHERE id = $1;")
 	if err != nil {
 		return nil, err
 	}
 
 	user := &User{}
-	err = stmt.QueryRow(id).Scan(&user.ID, &user.DisplayName, &user.Username, &user.Image, &user.Email)
+	err = stmt.QueryRow(id).Scan(&user.ID, &user.DisplayName, &user.Username, &user.Image, &user.Bio, &user.Email)
 	if err != nil {
 		return nil, err
 	}
@@ -120,13 +124,13 @@ func (ub *UserBackend) FindByID(id int) (*User, error) {
 }
 
 func (ub *UserBackend) FindByEmail(email string) (*User, error) {
-	stmt, err := ub.db.Prepare("SELECT id, display_name, username, image, email FROM users WHERE email = $1;")
+	stmt, err := ub.db.Prepare("SELECT id, display_name, username, image, bio, email FROM users WHERE email = $1;")
 	if err != nil {
 		return nil, err
 	}
 
 	user := &User{}
-	err = stmt.QueryRow(email).Scan(&user.ID, &user.DisplayName, &user.Username, &user.Image, &user.Email)
+	err = stmt.QueryRow(email).Scan(&user.ID, &user.DisplayName, &user.Username, &user.Image, &user.Bio, &user.Email)
 	if err != nil {
 		return nil, err
 	}
@@ -134,14 +138,14 @@ func (ub *UserBackend) FindByEmail(email string) (*User, error) {
 	return user, nil
 }
 
-func (ub *UserBackend) CreateUser(email, displayName, image, username string) (int, error) {
-	stmt, err := ub.db.Prepare("INSERT INTO users (display_name, username, email, image) VALUES ($1, $2, $3, $4) RETURNING id;")
+func (ub *UserBackend) CreateUser(email, displayName, bio, image, username string) (int, error) {
+	stmt, err := ub.db.Prepare("INSERT INTO users (display_name, username, email, bio, image) VALUES ($1, $2, $3, $4, $5) RETURNING id;")
 	if err != nil {
 		return 0, err
 	}
 
 	var id int
-	err = stmt.QueryRow(displayName, strings.ToLower(username), email, image).Scan(&id)
+	err = stmt.QueryRow(displayName, strings.ToLower(username), email, bio, image).Scan(&id)
 	if err != nil {
 		return 0, err
 	}
@@ -149,14 +153,14 @@ func (ub *UserBackend) CreateUser(email, displayName, image, username string) (i
 	return id, nil
 }
 
-func (ub *UserBackend) UpdateUser(id int, displayName, image string) error {
-	query := "UPDATE users SET display_name = $1"
-	params := []interface{}{displayName}
+func (ub *UserBackend) UpdateUser(id int, displayName, bio, image string) error {
+	query := "UPDATE users SET display_name = $1, bio = $2"
+	params := []interface{}{displayName, bio}
 
-	count := "$2"
+	count := "$3"
 	if image != "" {
-		query += ", image = $2"
-		count = "$3"
+		query += ", image = $3"
+		count = "$4"
 		params = append(params, image)
 	}
 

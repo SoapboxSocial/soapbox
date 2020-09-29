@@ -3,7 +3,8 @@ CREATE TABLE IF NOT EXISTS users (
   display_name VARCHAR(256) NOT NULL,
   username VARCHAR(100) NOT NULL,
   email VARCHAR(254) NOT NULL,
-  image VARCHAR(100) NOT NULL DEFAULT ''
+  image VARCHAR(100) NOT NULL DEFAULT '',
+  bio TEXT NOT NULL DEFAULT ''
 );
 
 CREATE UNIQUE INDEX idx_email ON users (email);

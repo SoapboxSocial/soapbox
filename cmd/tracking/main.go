@@ -93,6 +93,9 @@ func handleEvent(event *pubsub.Event) *Event {
 			name: "new_user",
 			evt: &mixpanel.Event{
 				IP: "0",
+				Properties: map[string]interface{}{
+					"user_id": event.Params["id"],
+				},
 			},
 		}
 	}

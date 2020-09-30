@@ -1,5 +1,9 @@
 package pubsub
 
+import (
+	"fmt"
+)
+
 type EventType int
 
 const (
@@ -17,6 +21,11 @@ type RoomVisibility string
 const (
 	Public  RoomVisibility = "public"
 	Private RoomVisibility = "private"
+)
+
+const (
+	roomIDKey = "roomID"
+	userIDKey = "userID"
 )
 
 type Event struct {
@@ -71,4 +80,22 @@ func NewRoomLeftEvent(room, user int) Event {
 		Type:   EventTypeRoomLeft,
 		Params: map[string]interface{}{"id": room, "creator": user},
 	}
+}
+
+func (e Event) GetUserID() (int, error) {
+	id, ok := e.Params[userIDKey].(float64)
+	if !ok {
+		return 0, fmt.Errorf("invalid field \"%s\"", userIDKey)
+	}
+
+	return int(id), nil
+}
+
+func (e Event) GetRoomID() (int, error) {
+	id, ok := e.Params[roomIDKey].(float64)
+	if !ok {
+		return 0, fmt.Errorf("invalid field \"%s\"", roomIDKey)
+	}
+
+	return int(id), nil
 }

@@ -9,6 +9,7 @@ const (
 	EventTypeNewFollower
 	EventTypeUserUpdate
 	EventTypeRoomLeft
+	EventTypeNewUser
 )
 
 type RoomVisibility string
@@ -26,6 +27,13 @@ type Event struct {
 func NewUserUpdateEvent(id int) Event {
 	return Event{
 		Type:   EventTypeUserUpdate,
+		Params: map[string]interface{}{"id": id},
+	}
+}
+
+func NewUserEvent(id int) Event {
+	return Event{
+		Type:   EventTypeNewUser,
 		Params: map[string]interface{}{"id": id},
 	}
 }

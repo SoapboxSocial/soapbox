@@ -31,10 +31,10 @@ func NewUserUpdateEvent(id int) Event {
 	}
 }
 
-func NewUserEvent(id int) Event {
+func NewUserEvent(id int, username string) Event {
 	return Event{
 		Type:   EventTypeNewUser,
-		Params: map[string]interface{}{"id": id},
+		Params: map[string]interface{}{"id": id, "username": username},
 	}
 }
 

@@ -245,7 +245,7 @@ func (l *LoginEndpoint) Register(w http.ResponseWriter, r *http.Request) {
 		log.Println("error writing response: " + err.Error())
 	}
 
-	err = l.queue.Publish(pubsub.UserTopic, pubsub.NewUserUpdateEvent(lastID))
+	err = l.queue.Publish(pubsub.UserTopic, pubsub.NewUserEvent(lastID, username))
 	if err != nil {
 		log.Printf("queue.Publish err: %v\n", err)
 	}

@@ -46,13 +46,13 @@ type Event struct {
 }
 
 func handleEvent(event *pubsub.Event) *Event {
-	id, err := getId(event, "creator")
-	if err != nil {
-		return nil
-	}
-
 	switch event.Type {
 	case pubsub.EventTypeNewRoom:
+		id, err := getId(event, "creator")
+		if err != nil {
+			return nil
+		}
+
 		return &Event{
 			id:   strconv.Itoa(id),
 			name: "room_new",
@@ -65,6 +65,11 @@ func handleEvent(event *pubsub.Event) *Event {
 			},
 		}
 	case pubsub.EventTypeRoomJoin:
+		id, err := getId(event, "creator")
+		if err != nil {
+			return nil
+		}
+
 		return &Event{
 			id:   strconv.Itoa(id),
 			name: "room_join",
@@ -77,6 +82,11 @@ func handleEvent(event *pubsub.Event) *Event {
 			},
 		}
 	case pubsub.EventTypeRoomLeft:
+		id, err := getId(event, "creator")
+		if err != nil {
+			return nil
+		}
+
 		return &Event{
 			id:   strconv.Itoa(id),
 			name: "room_left",
@@ -88,6 +98,11 @@ func handleEvent(event *pubsub.Event) *Event {
 			},
 		}
 	case pubsub.EventTypeNewUser:
+		id, err := getId(event, "id")
+		if err != nil {
+			return nil
+		}
+
 		return &Event{
 			id:   strconv.Itoa(id),
 			name: "new_user",
@@ -95,6 +110,7 @@ func handleEvent(event *pubsub.Event) *Event {
 				IP: "0",
 				Properties: map[string]interface{}{
 					"user_id": event.Params["id"],
+					"username": event.Params["username"],
 				},
 			},
 		}

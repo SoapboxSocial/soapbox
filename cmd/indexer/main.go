@@ -67,7 +67,7 @@ func handleEvent(event *pubsub.Event) {
 
 func getHandler(eventType pubsub.EventType) handlerFunc {
 	switch eventType {
-	case pubsub.EventTypeUserUpdate:
+	case pubsub.EventTypeUserUpdate, pubsub.EventTypeNewUser:
 		return handleUserUpdate
 	default:
 		return nil

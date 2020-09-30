@@ -279,7 +279,7 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 		_ = u.ib.Remove(oldPath)
 	}
 
-	err = u.queue.Publish(pubsub.UserTopic, pubsub.NewUserUpdateEvent(userID))
+	err = u.queue.Publish(pubsub.UserTopic, pubsub.NewUserEvent(userID))
 	if err != nil {
 		log.Printf("queue.Publish err: %v\n", err)
 	}

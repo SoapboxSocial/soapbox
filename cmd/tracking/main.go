@@ -22,7 +22,7 @@ func main() {
 
 	queue := pubsub.NewQueue(rdb)
 
-	events := queue.Subscribe(pubsub.RoomTopic)
+	events := queue.Subscribe(pubsub.RoomTopic, pubsub.UserTopic)
 
 	for event := range events {
 		event := handleEvent(event)
@@ -85,6 +85,14 @@ func handleEvent(event *pubsub.Event) *Event {
 				Properties: map[string]interface{}{
 					"room_id": event.Params["id"],
 				},
+			},
+		}
+	case pubsub.EventTypeNewUser:
+		return &Event{
+			id:   strconv.Itoa(id),
+			name: "new_user",
+			evt: &mixpanel.Event{
+				IP: "0",
 			},
 		}
 	}

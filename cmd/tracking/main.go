@@ -33,23 +33,21 @@ func main() {
 		}
 
 		go func() {
+			err := tracker.Track(event.id, event.name, &mixpanel.Event{IP: "0", Properties: event.properties})
+			if err != nil {
+				log.Printf("tracker.Track err: %v\n", err)
+			}
+
 			if event.name == new_user {
 				err := tracker.Update(event.id, &mixpanel.Update{
 					IP: "0",
-					Operation: "$set", // @TODO CHECK THIS
+					Operation: "$set",
 					Properties: event.properties,
 				})
 
 				if err != nil {
 					log.Printf("tracker.Update err: %v\n", err)
 				}
-
-				return
-			}
-
-			err := tracker.Track(event.id, event.name, &mixpanel.Event{IP: "0", Properties: event.properties})
-			if err != nil {
-				log.Printf("tracker.Track err: %v\n", err)
 			}
 		}()
 	}

@@ -11,6 +11,8 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 )
 
+const new_user = "new_user"
+
 func main() {
 	tracker := mixpanel.New("d124ce8f1516eb7baa7980f4de68ded5", "https://api-eu.mixpanel.com")
 
@@ -24,14 +26,28 @@ func main() {
 
 	events := queue.Subscribe(pubsub.RoomTopic, pubsub.UserTopic)
 
-	for event := range events {
-		event := handleEvent(event)
+	for evt := range events {
+		event := handleEvent(evt)
 		if event == nil {
 			continue
 		}
 
 		go func() {
-			err := tracker.Track(event.id, event.name, event.evt)
+			if event.name == new_user {
+				err := tracker.Update(event.id, &mixpanel.Update{
+					IP: "0",
+					Operation: "$set", // @TODO CHECK THIS
+					Properties: event.properties,
+				})
+
+				if err != nil {
+					log.Printf("tracker.Update err: %v\n", err)
+				}
+
+				return
+			}
+
+			err := tracker.Track(event.id, event.name, &mixpanel.Event{IP: "0", Properties: event.properties})
 			if err != nil {
 				log.Printf("tracker.Track err: %v\n", err)
 			}
@@ -42,7 +58,7 @@ func main() {
 type Event struct {
 	id   string
 	name string
-	evt  *mixpanel.Event
+	properties map[string]interface{}
 }
 
 func handleEvent(event *pubsub.Event) *Event {
@@ -56,12 +72,9 @@ func handleEvent(event *pubsub.Event) *Event {
 		return &Event{
 			id:   strconv.Itoa(id),
 			name: "room_new",
-			evt: &mixpanel.Event{
-				IP: "0",
-				Properties: map[string]interface{}{
-					"room_id":    event.Params["id"],
-					"visibility": event.Params["visibility"],
-				},
+			properties: map[string]interface{}{
+				"room_id":    event.Params["id"],
+				"visibility": event.Params["visibility"],
 			},
 		}
 	case pubsub.EventTypeRoomJoin:
@@ -73,12 +86,9 @@ func handleEvent(event *pubsub.Event) *Event {
 		return &Event{
 			id:   strconv.Itoa(id),
 			name: "room_join",
-			evt: &mixpanel.Event{
-				IP: "0",
-				Properties: map[string]interface{}{
-					"room_id":    event.Params["id"],
-					"visibility": event.Params["visibility"],
-				},
+			properties: map[string]interface{}{
+				"room_id":    event.Params["id"],
+				"visibility": event.Params["visibility"],
 			},
 		}
 	case pubsub.EventTypeRoomLeft:
@@ -90,11 +100,8 @@ func handleEvent(event *pubsub.Event) *Event {
 		return &Event{
 			id:   strconv.Itoa(id),
 			name: "room_left",
-			evt: &mixpanel.Event{
-				IP: "0",
-				Properties: map[string]interface{}{
-					"room_id": event.Params["id"],
-				},
+			properties: map[string]interface{}{
+				"room_id": event.Params["id"],
 			},
 		}
 	case pubsub.EventTypeNewUser:
@@ -105,13 +112,10 @@ func handleEvent(event *pubsub.Event) *Event {
 
 		return &Event{
 			id:   strconv.Itoa(id),
-			name: "new_user",
-			evt: &mixpanel.Event{
-				IP: "0",
-				Properties: map[string]interface{}{
-					"user_id": event.Params["id"],
-					"username": event.Params["username"],
-				},
+			name: new_user,
+			properties: map[string]interface{}{
+				"user_id": event.Params["id"],
+				"username": event.Params["username"],
 			},
 		}
 	}

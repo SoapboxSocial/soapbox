@@ -99,9 +99,8 @@ func main() {
 	meRoutes := r.PathPrefix("/v1/me").Subrouter()
 
 	meEndpoint := me.NewMeEndpoint(ub)
-	meRoutes.HandleFunc("/", meEndpoint.GetMe).Methods("GET")
+	meRoutes.HandleFunc("", meEndpoint.GetMe).Methods("GET")
 	meRoutes.Use(amw.Middleware)
-
 
 	headersOk := handlers.AllowedHeaders([]string{
 		"Content-Type",

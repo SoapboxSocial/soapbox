@@ -40,8 +40,8 @@ func main() {
 
 			if event.name == new_user {
 				err := tracker.Update(event.id, &mixpanel.Update{
-					IP: "0",
-					Operation: "$set",
+					IP:         "0",
+					Operation:  "$set",
 					Properties: event.properties,
 				})
 
@@ -54,8 +54,8 @@ func main() {
 }
 
 type Event struct {
-	id   string
-	name string
+	id         string
+	name       string
 	properties map[string]interface{}
 }
 
@@ -112,7 +112,7 @@ func handleEvent(event *pubsub.Event) *Event {
 			id:   strconv.Itoa(id),
 			name: new_user,
 			properties: map[string]interface{}{
-				"user_id": event.Params["id"],
+				"user_id":  event.Params["id"],
 				"username": event.Params["username"],
 			},
 		}

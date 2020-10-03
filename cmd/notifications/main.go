@@ -11,6 +11,7 @@ import (
 	"github.com/sideshow/apns2/token"
 
 	"github.com/soapboxsocial/soapbox/pkg/devices"
+	"github.com/soapboxsocial/soapbox/pkg/followers"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/notifications/limiter"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
@@ -24,10 +25,12 @@ var (
 
 var devicesBackend *devices.DevicesBackend
 var userBackend *users.UserBackend
+var followersBackend *followers.FollowersBackend
 var service *notifications.Service
 var notificationLimiter *limiter.Limiter
+var notificationStorage *notifications.Storage
 
-type handlerFunc func(*pubsub.Event) ([]devices.Device, *notifications.Notification, error)
+type handlerFunc func(*pubsub.Event) ([]int, *notifications.Notification, error)
 
 func main() {
 	rdb := redis.NewClient(&redis.Options{
@@ -45,8 +48,10 @@ func main() {
 
 	devicesBackend = devices.NewDevicesBackend(db)
 	userBackend = users.NewUserBackend(db)
+	followersBackend = followers.NewFollowersBackend(db)
 	currentRoom := rooms.NewCurrentRoomBackend(rdb)
 	notificationLimiter = limiter.NewLimiter(rdb, currentRoom)
+	notificationStorage = notifications.NewStorage(rdb)
 
 	authKey, err := token.AuthKeyFromFile("/conf/authkey.p8")
 	if err != nil {
@@ -92,20 +97,7 @@ func handleEvent(event *pubsub.Event) {
 	}
 
 	for _, target := range targets {
-		if !notificationLimiter.ShouldSendNotification(target, notification.Arguments, notification.Category) {
-			continue
-		}
-
-		err := service.Send(target.Device, *notification)
-		if err != nil {
-			log.Printf("failed to send to target \"%s\" with error: %s\n", target.Device, err.Error())
-		}
-	}
-
-	// We do this here.
-	// Otherwise a peer with multiple devices will only receive notifications once.
-	for _, target := range targets {
-		notificationLimiter.SentNotification(target, notification.Arguments, notification.Category)
+		pushNotification(target, notification)
 	}
 }
 
@@ -124,7 +116,30 @@ func getHandler(eventType pubsub.EventType) handlerFunc {
 	}
 }
 
-func onRoomCreation(event *pubsub.Event) ([]devices.Device, *notifications.Notification, error) {
+func pushNotification(target int, notification *notifications.Notification) {
+	d, err := devicesBackend.GetDevicesForUser(target)
+	if err != nil {
+		log.Printf("devicesBackend.GetDevicesForUser err: %v\n", err)
+	}
+
+	if notificationLimiter.ShouldSendNotification(target, notification.Arguments, notification.Category) {
+		for _, device := range d {
+			err = service.Send(device, *notification)
+			if err != nil {
+				log.Printf("failed to send to target \"%s\" with error: %s\n", device, err.Error())
+			}
+		}
+
+		notificationLimiter.SentNotification(target, notification.Arguments, notification.Category)
+	}
+
+	err = notificationStorage.Store(target, notification)
+	if err != nil {
+		log.Printf("notificationStorage.Store err: %v\n", err)
+	}
+}
+
+func onRoomCreation(event *pubsub.Event) ([]int, *notifications.Notification, error) {
 	if pubsub.RoomVisibility(event.Params["visibility"].(string)) == pubsub.Private {
 		return nil, nil, errRoomPrivate
 	}
@@ -134,7 +149,7 @@ func onRoomCreation(event *pubsub.Event) ([]devices.Device, *notifications.Notif
 		return nil, nil, err
 	}
 
-	targets, err := devicesBackend.FetchAllFollowerDevices(creator)
+	targets, err := followersBackend.GetAllFollowerIDsFor(creator)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -161,7 +176,7 @@ func onRoomCreation(event *pubsub.Event) ([]devices.Device, *notifications.Notif
 	return targets, notification, nil
 }
 
-func onRoomJoined(event *pubsub.Event) ([]devices.Device, *notifications.Notification, error) {
+func onRoomJoined(event *pubsub.Event) ([]int, *notifications.Notification, error) {
 	if pubsub.RoomVisibility(event.Params["visibility"].(string)) == pubsub.Private {
 		return nil, nil, errRoomPrivate
 	}
@@ -171,7 +186,7 @@ func onRoomJoined(event *pubsub.Event) ([]devices.Device, *notifications.Notific
 		return nil, nil, err
 	}
 
-	targets, err := devicesBackend.FetchAllFollowerDevices(creator)
+	targets, err := followersBackend.GetAllFollowerIDsFor(creator)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -198,7 +213,7 @@ func onRoomJoined(event *pubsub.Event) ([]devices.Device, *notifications.Notific
 	return targets, notification, nil
 }
 
-func onNewFollower(event *pubsub.Event) ([]devices.Device, *notifications.Notification, error) {
+func onNewFollower(event *pubsub.Event) ([]int, *notifications.Notification, error) {
 	creator, err := getId(event, "follower")
 	if err != nil {
 		return nil, nil, err
@@ -209,20 +224,15 @@ func onNewFollower(event *pubsub.Event) ([]devices.Device, *notifications.Notifi
 		return nil, nil, errors.New("failed to recover target ID")
 	}
 
-	targets, err := devicesBackend.GetDevicesForUser(int(targetID))
-	if err != nil {
-		return nil, nil, err
-	}
-
 	displayName, err := getDisplayName(creator)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return targets, notifications.NewFollowerNotification(creator, displayName), nil
+	return []int{int(targetID)}, notifications.NewFollowerNotification(creator, displayName), nil
 }
 
-func onRoomInvite(event *pubsub.Event) ([]devices.Device, *notifications.Notification, error) {
+func onRoomInvite(event *pubsub.Event) ([]int, *notifications.Notification, error) {
 	creator, err := getId(event, "from")
 	if err != nil {
 		return nil, nil, err
@@ -239,11 +249,6 @@ func onRoomInvite(event *pubsub.Event) ([]devices.Device, *notifications.Notific
 		return nil, nil, errors.New("failed to recover room ID")
 	}
 
-	targets, err := devicesBackend.GetDevicesForUser(int(targetID))
-	if err != nil {
-		return nil, nil, err
-	}
-
 	displayName, err := getDisplayName(creator)
 	if err != nil {
 		return nil, nil, err
@@ -257,7 +262,7 @@ func onRoomInvite(event *pubsub.Event) ([]devices.Device, *notifications.Notific
 		return notifications.NewRoomInviteNotificationWithName(int(room), displayName, name)
 	}()
 
-	return targets, notification, nil
+	return []int{int(targetID)}, notification, nil
 }
 
 func getId(event *pubsub.Event, field string) (int, error) {

@@ -6,7 +6,6 @@ import (
 
 	"github.com/go-redis/redis/v8"
 
-	"github.com/soapboxsocial/soapbox/pkg/devices"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
 )
@@ -28,40 +27,40 @@ func NewLimiter(rdb *redis.Client, currentRoom *rooms.CurrentRoomBackend) *Limit
 	}
 }
 
-func (l *Limiter) ShouldSendNotification(target devices.Device, args map[string]interface{}, category notifications.NotificationCategory) bool {
+func (l *Limiter) ShouldSendNotification(target int, args map[string]interface{}, category notifications.NotificationCategory) bool {
 	if category == notifications.NEW_FOLLOWER || category == notifications.NEW_ROOM {
 		return true
 	}
 
 	id := args["id"].(int)
-	room, _ := l.currentRoom.GetCurrentRoomForUser(target.ID)
+	room, _ := l.currentRoom.GetCurrentRoomForUser(target)
 	if room == id {
 		return false
 	}
 
 	if category == notifications.ROOM_JOINED {
-		return !l.isLimited(limiterKeyForRoom(target.ID, args["id"].(int)))
+		return !l.isLimited(limiterKeyForRoom(target, args["id"].(int)))
 	}
 
 	if category == notifications.ROOM_INVITE {
-		return !l.isLimited(limiterKeyForRoomInvite(target.ID, args["id"].(int)))
+		return !l.isLimited(limiterKeyForRoomInvite(target, args["id"].(int)))
 	}
 
 	return false
 }
 
-func (l *Limiter) SentNotification(target devices.Device, args map[string]interface{}, category notifications.NotificationCategory) {
+func (l *Limiter) SentNotification(target int, args map[string]interface{}, category notifications.NotificationCategory) {
 	if category == notifications.NEW_FOLLOWER {
 		return
 	}
 
 	if category == notifications.ROOM_JOINED || category == notifications.NEW_ROOM {
-		l.rdb.Set(l.rdb.Context(), limiterKeyForRoom(target.ID, args["id"].(int)), valueString, keyNotificationCooldown)
+		l.rdb.Set(l.rdb.Context(), limiterKeyForRoom(target, args["id"].(int)), valueString, keyNotificationCooldown)
 		return
 	}
 
 	if category == notifications.ROOM_INVITE {
-		l.rdb.Set(l.rdb.Context(), limiterKeyForRoomInvite(target.ID, args["id"].(int)), valueString, roomInviteNotificationCooldown)
+		l.rdb.Set(l.rdb.Context(), limiterKeyForRoomInvite(target, args["id"].(int)), valueString, roomInviteNotificationCooldown)
 		return
 	}
 }

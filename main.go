@@ -22,6 +22,7 @@ import (
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/images"
 	"github.com/soapboxsocial/soapbox/pkg/mail"
+	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
@@ -50,6 +51,7 @@ func main() {
 	s := sessions.NewSessionManager(rdb)
 	ub := users.NewUserBackend(db)
 	fb := followers.NewFollowersBackend(db)
+	ns := notifications.NewStorage(rdb)
 
 	client, err := elasticsearch.NewDefaultClient()
 	if err != nil {
@@ -98,8 +100,9 @@ func main() {
 
 	meRoutes := r.PathPrefix("/v1/me").Subrouter()
 
-	meEndpoint := me.NewMeEndpoint(ub)
+	meEndpoint := me.NewMeEndpoint(ub, ns)
 	meRoutes.HandleFunc("", meEndpoint.GetMe).Methods("GET")
+	meRoutes.HandleFunc("/notifications", meEndpoint.GetNotifications).Methods("GET")
 	meRoutes.Use(amw.Middleware)
 
 	headersOk := handlers.AllowedHeaders([]string{

@@ -117,21 +117,23 @@ func getHandler(eventType pubsub.EventType) handlerFunc {
 }
 
 func pushNotification(target int, notification *notifications.Notification) {
+	if !notificationLimiter.ShouldSendNotification(target, notification.Arguments, notification.Category) {
+		return
+	}
+
 	d, err := devicesBackend.GetDevicesForUser(target)
 	if err != nil {
 		log.Printf("devicesBackend.GetDevicesForUser err: %v\n", err)
 	}
 
-	if notificationLimiter.ShouldSendNotification(target, notification.Arguments, notification.Category) {
-		for _, device := range d {
-			err = service.Send(device, *notification)
-			if err != nil {
-				log.Printf("failed to send to target \"%s\" with error: %s\n", device, err.Error())
-			}
+	for _, device := range d {
+		err = service.Send(device, *notification)
+		if err != nil {
+			log.Printf("failed to send to target \"%s\" with error: %s\n", device, err.Error())
 		}
-
-		notificationLimiter.SentNotification(target, notification.Arguments, notification.Category)
 	}
+
+	notificationLimiter.SentNotification(target, notification.Arguments, notification.Category)
 
 	err = notificationStorage.Store(target, notification)
 	if err != nil {

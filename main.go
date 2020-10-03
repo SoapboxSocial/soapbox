@@ -14,6 +14,7 @@ import (
 
 	devicesapi "github.com/soapboxsocial/soapbox/pkg/api/devices"
 	"github.com/soapboxsocial/soapbox/pkg/api/login"
+	"github.com/soapboxsocial/soapbox/pkg/api/me"
 	"github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	usersapi "github.com/soapboxsocial/soapbox/pkg/api/users"
 	"github.com/soapboxsocial/soapbox/pkg/devices"
@@ -94,6 +95,12 @@ func main() {
 	devicesEndpoint := devicesapi.NewDevicesEndpoint(devicesBackend)
 	devicesRoutes.HandleFunc("/add", devicesEndpoint.AddDevice).Methods("POST")
 	devicesRoutes.Use(amw.Middleware)
+
+	meRoutes := r.PathPrefix("/v1/me").Subrouter()
+
+	meEndpoint := me.NewMeEndpoint(ub)
+	meRoutes.HandleFunc("", meEndpoint.GetMe).Methods("GET")
+	meRoutes.Use(amw.Middleware)
 
 	headersOk := handlers.AllowedHeaders([]string{
 		"Content-Type",

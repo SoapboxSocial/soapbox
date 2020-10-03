@@ -63,7 +63,7 @@ func (fb *FollowersBackend) GetAllUsersFollowedBy(id int) ([]*users.User, error)
 }
 
 func (fb *FollowersBackend) GetAllFollowerIDsFor(id int) ([]int, error) {
-	stmt, err := fb.db.Prepare("SELECT user_id FROM followers WHERE followers.follower = $1;")
+	stmt, err := fb.db.Prepare("SELECT follower FROM followers WHERE user_id = $1;")
 	if err != nil {
 		return nil, err
 	}

@@ -292,6 +292,26 @@ func (r *Room) onCommand(from int, cmd *pb.SignalRequest_Command) error {
 			From: int64(from),
 			Data: cmd.Data,
 		})
+	case pb.SignalRequest_Command_LINK_SHARE:
+		r.mux.RLock()
+		peer, ok:= r.members[from]
+		r.mux.RUnlock()
+
+		if !ok {
+			return nil
+		}
+
+		if peer.me.Role == AUDIENCE {
+			return nil
+		}
+
+		// @TODO Rate limiting?
+
+		go r.notify(&pb.SignalReply_Event{
+			Type: pb.SignalReply_Event_LINK_SHARED,
+			From: int64(from),
+			Data: cmd.Data,
+		})
 	}
 
 	return nil

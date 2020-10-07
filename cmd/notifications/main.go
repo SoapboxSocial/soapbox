@@ -135,6 +135,10 @@ func pushNotification(target int, notification *notifications.Notification) {
 
 	notificationLimiter.SentNotification(target, notification.Arguments, notification.Category)
 
+	if notification.Category == notifications.NEW_ROOM || notification.Category == notifications.ROOM_JOINED {
+		return
+	}
+
 	err = notificationStorage.Store(target, notification)
 	if err != nil {
 		log.Printf("notificationStorage.Store err: %v\n", err)

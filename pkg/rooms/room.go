@@ -270,7 +270,10 @@ func (r *Room) onCommand(from int, cmd *pb.SignalRequest_Command) error {
 		break
 	case pb.SignalRequest_Command_MUTE_SPEAKER:
 		r.mux.Lock()
-		r.members[from].me.IsMuted = true
+		_, ok := r.members[from]
+		if ok {
+			r.members[from].me.IsMuted = true
+		}
 		r.mux.Unlock()
 
 		go r.notify(&pb.SignalReply_Event{
@@ -279,7 +282,10 @@ func (r *Room) onCommand(from int, cmd *pb.SignalRequest_Command) error {
 		})
 	case pb.SignalRequest_Command_UNMUTE_SPEAKER:
 		r.mux.Lock()
-		r.members[from].me.IsMuted = false
+		_, ok := r.members[from]
+		if ok {
+			r.members[from].me.IsMuted = false
+		}
 		r.mux.Unlock()
 
 		go r.notify(&pb.SignalReply_Event{
@@ -294,7 +300,7 @@ func (r *Room) onCommand(from int, cmd *pb.SignalRequest_Command) error {
 		})
 	case pb.SignalRequest_Command_LINK_SHARE:
 		r.mux.RLock()
-		peer, ok:= r.members[from]
+		peer, ok := r.members[from]
 		r.mux.RUnlock()
 
 		if !ok {

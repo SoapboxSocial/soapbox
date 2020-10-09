@@ -14,20 +14,27 @@ type User struct {
 	Email       *string `json:"email,omitempty"`
 }
 
+type LinkedAccount struct {
+	ID       uint64 `json:"id"`
+	Provider string `json:"provider"`
+	Username string `json:"username"`
+}
+
 // Profile represents the User for public profile usage.
 // This means certain fields like `email` are omitted,
 // and others are added like `follower_counts` and relationships.
 type Profile struct {
-	ID          int    `json:"id"`
-	DisplayName string `json:"display_name"`
-	Username    string `json:"username"`
-	Bio         string `json:"bio"`
-	Followers   int    `json:"followers"`
-	Following   int    `json:"following"`
-	FollowedBy  *bool  `json:"followed_by,omitempty"`
-	IsFollowing *bool  `json:"is_following,omitempty"`
-	Image       string `json:"image"`
-	CurrentRoom *int   `json:"current_room,omitempty"`
+	ID             int             `json:"id"`
+	DisplayName    string          `json:"display_name"`
+	Username       string          `json:"username"`
+	Bio            string          `json:"bio"`
+	Followers      int             `json:"followers"`
+	Following      int             `json:"following"`
+	FollowedBy     *bool           `json:"followed_by,omitempty"`
+	IsFollowing    *bool           `json:"is_following,omitempty"`
+	Image          string          `json:"image"`
+	CurrentRoom    *int            `json:"current_room,omitempty"`
+	LinkedAccounts []LinkedAccount `json:"linked_accounts"`
 }
 
 type UserBackend struct {
@@ -63,6 +70,11 @@ func (ub *UserBackend) GetMyProfile(id int) (*Profile, error) {
 	)
 	if err != nil {
 		return nil, err
+	}
+
+	accounts, err := ub.LinkedAccounts(id)
+	if err == nil {
+		profile.LinkedAccounts = accounts
 	}
 
 	return profile, nil
@@ -104,6 +116,11 @@ func (ub *UserBackend) ProfileByID(id, from int) (*Profile, error) {
 	followed := followedBy == 1
 	profile.IsFollowing = &following
 	profile.FollowedBy = &followed
+
+	accounts, err := ub.LinkedAccounts(id)
+	if err == nil {
+		profile.LinkedAccounts = accounts
+	}
 
 	return profile, nil
 }
@@ -191,4 +208,31 @@ func (ub *UserBackend) GetProfileImage(id int) (string, error) {
 	}
 
 	return name, err
+}
+
+func (ub *UserBackend) LinkedAccounts(id int) ([]LinkedAccount, error) {
+	stmt, err := ub.db.Prepare("SELECT profile_id, username, provider FROM linked_acounts WHERE user_id = $1;")
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := stmt.Query(id)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]LinkedAccount, 0)
+
+	for rows.Next() {
+		linked := LinkedAccount{}
+
+		err := rows.Scan(&linked.ID, &linked.Username, &linked.Provider)
+		if err != nil {
+			return nil, err // @todo
+		}
+
+		result = append(result, linked)
+	}
+
+	return result, nil
 }

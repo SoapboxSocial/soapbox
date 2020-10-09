@@ -22,7 +22,6 @@ require (
 	github.com/rs/zerolog v1.20.0 // indirect
 	github.com/sendgrid/rest v2.6.1+incompatible // indirect
 	github.com/sendgrid/sendgrid-go v3.6.4+incompatible
-	github.com/shurcooL/users v0.0.0-20180125191416-49c67e49c537
 	github.com/sideshow/apns2 v0.20.0
 	go.opentelemetry.io/otel v0.13.0 // indirect
 	golang.org/x/crypto v0.0.0-20201002170205-7f63de1d35b0 // indirect

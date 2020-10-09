@@ -114,6 +114,7 @@ func main() {
 	meRoutes.HandleFunc("", meEndpoint.GetMe).Methods("GET")
 	meRoutes.HandleFunc("/notifications", meEndpoint.GetNotifications).Methods("GET")
 	meRoutes.HandleFunc("/profiles/twitter", meEndpoint.AddTwitter).Methods("POST")
+	meRoutes.HandleFunc("/profiles/twitter", meEndpoint.RemoveTwitter).Methods("DELETE")
 	meRoutes.Use(amw.Middleware)
 
 	headersOk := handlers.AllowedHeaders([]string{

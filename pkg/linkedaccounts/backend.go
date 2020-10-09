@@ -13,7 +13,7 @@ func NewLinkedAccountsBackend(db *sql.DB) *Backend {
 }
 
 func (pb *Backend) LinkTwitterProfile(user, profile int, token, secret, username string) error {
-	stmt, err := pb.db.Prepare("INSERT INTO profiles (user_id, provider, profile_id, token, secret, username) VALUES ($1, $2, $3, $4, $5, $6);")
+	stmt, err := pb.db.Prepare("INSERT INTO linked_accounts (user_id, provider, profile_id, token, secret, username) VALUES ($1, $2, $3, $4, $5, $6);")
 	if err != nil {
 		return err
 	}

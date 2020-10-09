@@ -211,7 +211,7 @@ func (ub *UserBackend) GetProfileImage(id int) (string, error) {
 }
 
 func (ub *UserBackend) LinkedAccounts(id int) ([]LinkedAccount, error) {
-	stmt, err := ub.db.Prepare("SELECT profile_id, username, provider FROM linked_acounts WHERE user_id = $1;")
+	stmt, err := ub.db.Prepare("SELECT profile_id, username, provider FROM linked_accounts WHERE user_id = $1;")
 	if err != nil {
 		return nil, err
 	}

@@ -26,7 +26,7 @@ CREATE TABLE IF NOT exists devices (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT exists linked_acounts (
+CREATE TABLE IF NOT exists linked_accounts (
     user_id INT NOT NULL,
     provider VARCHAR(7) NOT NULL,
     profile_id BIGINT NOT NULl,

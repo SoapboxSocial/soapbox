@@ -37,5 +37,5 @@ CREATE TABLE IF NOT exists linked_accounts (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE UNIQUE INDEX idx_profiles ON linked_acounts (provider, profile_id);
-CREATE UNIQUE INDEX idx_provider ON linked_acounts (provider, user_id);
+CREATE UNIQUE INDEX idx_profiles ON linked_accounts (provider, profile_id);
+CREATE UNIQUE INDEX idx_provider ON linked_accounts (provider, user_id);

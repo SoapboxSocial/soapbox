@@ -25,3 +25,17 @@ func (pb *Backend) LinkTwitterProfile(user, profile int, token, secret, username
 
 	return nil
 }
+
+func (pb *Backend) UnlinkTwitterProfile(user int) error {
+	stmt, err := pb.db.Prepare("DELETE FROM linked_accounts WHERE user_id = $1 AND provider = $2;")
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(user, "twitter")
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

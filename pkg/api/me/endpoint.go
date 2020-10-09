@@ -111,3 +111,19 @@ func (m *MeEndpoint) AddTwitter(w http.ResponseWriter, r *http.Request) {
 
 	httputil.JsonSuccess(w)
 }
+
+func (m *MeEndpoint) RemoveTwitter(w http.ResponseWriter, r *http.Request) {
+	id, ok := auth.GetUserIDFromContext(r.Context())
+	if !ok {
+		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "unauthorized")
+		return
+	}
+
+	err := m.la.UnlinkTwitterProfile(id)
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, err.Error())
+		return
+	}
+
+	httputil.JsonSuccess(w)
+}

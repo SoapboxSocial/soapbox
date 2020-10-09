@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/dghubble/oauth1"
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/handlers"
@@ -21,6 +22,7 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/followers"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/images"
+	"github.com/soapboxsocial/soapbox/pkg/linkedaccounts"
 	"github.com/soapboxsocial/soapbox/pkg/mail"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
@@ -100,9 +102,19 @@ func main() {
 
 	meRoutes := r.PathPrefix("/v1/me").Subrouter()
 
-	meEndpoint := me.NewMeEndpoint(ub, ns)
+	// twitter oauth config
+	oauth := oauth1.NewConfig(
+		"nAzgMi6loUf3cl0hIkkXhZSth",
+		"sFQEQ2cjJZSJgepUMmNyeTxiGggFXA1EKfSYAXpbARTu3CXBQY",
+	)
+
+	pb := linkedaccounts.NewLinkedAccountsBackend(db)
+
+	meEndpoint := me.NewMeEndpoint(ub, ns, oauth, pb)
 	meRoutes.HandleFunc("", meEndpoint.GetMe).Methods("GET")
 	meRoutes.HandleFunc("/notifications", meEndpoint.GetNotifications).Methods("GET")
+	meRoutes.HandleFunc("/profiles/twitter", meEndpoint.AddTwitter).Methods("POST")
+	meRoutes.HandleFunc("/profiles/twitter", meEndpoint.RemoveTwitter).Methods("DELETE")
 	meRoutes.Use(amw.Middleware)
 
 	headersOk := handlers.AllowedHeaders([]string{
@@ -115,7 +127,7 @@ func main() {
 		"Origin",
 	})
 	originsOk := handlers.AllowedOrigins([]string{"*"})
-	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS"})
+	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS", "DELETE"})
 
 	log.Fatal(http.ListenAndServe(":8080", handlers.CORS(originsOk, headersOk, methodsOk)(r)))
 }

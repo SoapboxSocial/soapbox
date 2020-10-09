@@ -25,3 +25,17 @@ CREATE TABLE IF NOT exists devices (
     user_id INT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT exists linked_accounts (
+    user_id INT NOT NULL,
+    provider VARCHAR(7) NOT NULL,
+    profile_id BIGINT NOT NULl,
+    token TEXT NOT NULL DEFAULT '',
+    secret TEXT NOT NULL DEFAULT '',
+    username VARCHAR(256) NOT NULL DEFAULT '',
+    CHECK (provider IN ('twitter')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX idx_profiles ON linked_accounts (provider, profile_id);
+CREATE UNIQUE INDEX idx_provider ON linked_accounts (provider, user_id);

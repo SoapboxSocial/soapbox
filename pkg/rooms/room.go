@@ -119,6 +119,7 @@ func (r *Room) Handle(me *member, stream pb.RoomService_SignalServer, rtc *sfu.W
 	r.mux.Lock()
 	_, ok := r.members[id]
 	if ok {
+		r.mux.Unlock()
 		return errors.New("user tried to double enter")
 	}
 

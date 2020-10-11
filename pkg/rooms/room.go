@@ -2,6 +2,7 @@ package rooms
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"log"
 	"sync"
@@ -116,6 +117,11 @@ func (r *Room) Handle(me *member, stream pb.RoomService_SignalServer, rtc *sfu.W
 	log.Printf("peer %d joined %d", id, r.id)
 
 	r.mux.Lock()
+	_, ok := r.members[id]
+	if ok {
+		return errors.New("user tried to double enter")
+	}
+
 	r.members[id] = &peer{
 		me:     me,
 		stream: stream,

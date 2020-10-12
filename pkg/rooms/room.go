@@ -219,38 +219,34 @@ func (r *Room) onDisconnected(peer int) {
 	delete(r.members, peer)
 	r.mux.Unlock()
 
-	//r.electNewOwner()
+	r.electRandomAdmin(peer)
 
 	r.onDisconnectedHandlerFunc(r.id, peer)
 }
 
-//func (r *Room) electNewOwner() {
-//	r.mux.Lock()
-//	defer r.mux.Unlock()
-//
-//	current := r.owner
-//	speaker := first(r.members, func(peer *peer) bool {
-//		return peer.me.Role == SPEAKER
-//	})
-//
-//	if speaker != 0 {
-//		r.members[speaker].me.Role = OWNER
-//	} else {
-//		for k, v := range r.members {
-//			v.me.Role = OWNER
-//			speaker = k
-//			break
-//		}
-//	}
-//
-//	r.owner = speaker
-//
-//	go r.notify(&pb.SignalReply_Event{
-//		Type: pb.SignalReply_Event_CHANGED_OWNER,
-//		From: int64(current),
-//		Data: intToBytes(speaker),
-//	})
-//}
+func (r *Room) electRandomAdmin(previous int) {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+
+	hasAdmin := has(r.members, func(p *peer) bool {
+		return p.me.Role == ADMIN
+	})
+
+	if hasAdmin {
+		return
+	}
+
+	for k, v := range r.members {
+		v.me.Role = ADMIN
+
+		go r.notify(&pb.SignalReply_Event{
+			Type: pb.SignalReply_Event_REMOVED_ADMIN,
+			From: int64(previous),
+			Data: intToBytes(k),
+		})
+		break
+	}
+}
 
 func (r *Room) onPayload(from int, in *pb.SignalRequest) error {
 	switch payload := in.Payload.(type) {
@@ -363,6 +359,10 @@ func (r *Room) onCommand(from int, cmd *pb.SignalRequest_Command) error {
 			From: int64(from),
 			Data: cmd.Data,
 		})
+	case pb.SignalRequest_Command_ADD_ADMIN:
+		r.onAddAdmin(from, cmd)
+	case pb.SignalRequest_Command_REMOVE_ADMIN:
+		r.onRemoveAdmin(from, cmd)
 	}
 
 	return nil
@@ -382,16 +382,9 @@ func (r *Room) onInvite(from int, invite *pb.Invite) error {
 }
 
 func (r *Room) onKick(from int, kick *pb.Kick) error {
-	r.mux.RLock()
-	peer, ok := r.members[from]
-	if !ok {
+	if !r.isAdmin(from) {
 		return nil
 	}
-
-	if peer.me.Role != ADMIN {
-		return nil
-	}
-	r.mux.RUnlock()
 
 	r.mux.Lock()
 	defer r.mux.Unlock()
@@ -402,6 +395,55 @@ func (r *Room) onKick(from int, kick *pb.Kick) error {
 	}
 
 	return nil
+}
+
+func (r *Room) onAddAdmin(from int, add *pb.SignalRequest_Command) {
+	if !r.isAdmin(from) {
+		return
+	}
+
+	r.mux.Lock()
+	r.members[bytesToInt(add.Data)].me.Role = ADMIN
+	r.mux.Unlock()
+
+	go r.notify(&pb.SignalReply_Event{
+		Type: pb.SignalReply_Event_ADDED_ADMIN,
+		From: int64(from),
+		Data: add.Data,
+	})
+
+	return
+}
+
+func (r *Room) onRemoveAdmin(from int, remove *pb.SignalRequest_Command) {
+	if !r.isAdmin(from) {
+		return
+	}
+
+	r.mux.Lock()
+	defer r.mux.Unlock()
+
+	r.members[bytesToInt(remove.Data)].me.Role = SPEAKER
+
+	go r.notify(&pb.SignalReply_Event{
+		Type: pb.SignalReply_Event_REMOVED_ADMIN,
+		From: int64(from),
+		Data: remove.Data,
+	})
+
+	return
+}
+
+func (r *Room) isAdmin(peer int) bool {
+	r.mux.RLock()
+	defer r.mux.Unlock()
+
+	p, ok := r.members[peer]
+	if !ok {
+		return false
+	}
+
+	return p.me.Role == ADMIN
 }
 
 func (r *Room) notify(event *pb.SignalReply_Event) {
@@ -472,18 +514,22 @@ func (r *Room) ToProtoForPeer() *pb.RoomState {
 	}
 }
 
-func first(peers map[int]*peer, fn func(*peer) bool) int {
-	for i, peer := range peers {
+func has(peers map[int]*peer, fn func(*peer) bool) bool {
+	for _, peer := range peers {
 		if fn(peer) {
-			return i
+			return true
 		}
 	}
 
-	return 0
+	return false
 }
 
 func intToBytes(val int) []byte {
 	bytes := make([]byte, 8)
 	binary.LittleEndian.PutUint64(bytes, uint64(val))
 	return bytes
+}
+
+func bytesToInt(val []byte) int {
+	return int(binary.LittleEndian.Uint64(val))
 }

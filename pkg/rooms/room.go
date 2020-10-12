@@ -238,7 +238,7 @@ func (r *Room) electRandomAdmin(previous int) {
 		return
 	}
 
-	for k, _ := range r.members {
+	for k := range r.members {
 		r.members[k].me.Role = ADMIN
 
 		go r.notify(&pb.SignalReply_Event{

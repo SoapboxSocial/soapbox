@@ -1,6 +1,7 @@
 package rooms
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"errors"
 	"io"
@@ -52,6 +53,7 @@ type Room struct {
 	id   int
 	name string
 
+	owner   int
 	members map[int]*peer
 
 	onDisconnectedHandlerFunc func(room, peer int)
@@ -60,6 +62,7 @@ type Room struct {
 
 	isPrivate bool
 	invited   map[int]bool
+	kicked    map[int]bool
 }
 
 func NewRoom(id int, name string, queue *pubsub.Queue, isPrivate bool, owner int) *Room {
@@ -67,10 +70,12 @@ func NewRoom(id int, name string, queue *pubsub.Queue, isPrivate bool, owner int
 		mux:       sync.RWMutex{},
 		id:        id,
 		name:      name,
+		owner:     owner,
 		members:   make(map[int]*peer),
 		queue:     queue,
 		isPrivate: isPrivate,
 		invited:   make(map[int]bool),
+		kicked:    make(map[int]bool),
 	}
 
 	r.invited[owner] = true
@@ -90,7 +95,7 @@ func (r *Room) CanJoin(id int) bool {
 		return r.invited[id]
 	}
 
-	return true
+	return !r.kicked[id]
 }
 
 func (r *Room) Name() string {
@@ -121,6 +126,10 @@ func (r *Room) Handle(me *member, stream pb.RoomService_SignalServer, rtc *sfu.W
 	if ok {
 		r.mux.Unlock()
 		return errors.New("user tried to double enter")
+	}
+
+	if r.owner == me.ID {
+		me.Role = OWNER
 	}
 
 	r.members[id] = &peer{
@@ -166,7 +175,6 @@ func (r *Room) Handle(me *member, stream pb.RoomService_SignalServer, rtc *sfu.W
 		default:
 			in, err := stream.Recv()
 			if err != nil {
-				// @TODO: change owner
 				r.onDisconnected(id)
 
 				if err == io.EOF {
@@ -213,7 +221,37 @@ func (r *Room) onDisconnected(peer int) {
 	delete(r.members, peer)
 	r.mux.Unlock()
 
+	r.electNewOwner()
+
 	r.onDisconnectedHandlerFunc(r.id, peer)
+}
+
+func (r *Room) electNewOwner() {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+
+	current := r.owner
+	speaker := first(r.members, func(peer *peer) bool {
+		return peer.me.Role == SPEAKER
+	})
+
+	if speaker != 0 {
+		r.members[speaker].me.Role = OWNER
+	} else {
+		for k, v := range r.members {
+			v.me.Role = OWNER
+			speaker = k
+			break
+		}
+	}
+
+	r.owner = speaker
+
+	go r.notify(&pb.SignalReply_Event{
+		Type: pb.SignalReply_Event_CHANGED_OWNER,
+		From: int64(current),
+		Data: intToBytes(speaker),
+	})
 }
 
 func (r *Room) onPayload(from int, in *pb.SignalRequest) error {
@@ -262,6 +300,8 @@ func (r *Room) onPayload(from int, in *pb.SignalRequest) error {
 		return r.onCommand(from, payload.Command)
 	case *pb.SignalRequest_Invite:
 		return r.onInvite(from, payload.Invite)
+	case *pb.SignalRequest_Kick:
+		return r.onKick(from, payload.Kick)
 	}
 
 	return nil
@@ -343,6 +383,21 @@ func (r *Room) onInvite(from int, invite *pb.Invite) error {
 	return nil
 }
 
+func (r *Room) onKick(from int, kick *pb.Kick) error {
+	r.mux.RLock()
+	if r.owner != from {
+		return nil
+	}
+	r.mux.RUnlock()
+
+	r.mux.Lock()
+	r.kicked[int(kick.Id)] = true
+	r.members[int(kick.Id)].rtc.Close()
+	r.mux.Unlock()
+
+	return nil
+}
+
 func (r *Room) notify(event *pb.SignalReply_Event) {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
@@ -409,4 +464,20 @@ func (r *Room) ToProtoForPeer() *pb.RoomState {
 		Role:    string(SPEAKER), // @TODO THIS SHOULD DEPEND ON WHO OWNS THE ROOM ETC
 		Members: members,
 	}
+}
+
+func first(peers map[int]*peer, fn func(*peer) bool) int {
+	for i, peer := range peers {
+		if fn(peer) {
+			return i
+		}
+	}
+
+	return 0
+}
+
+func intToBytes(val int) []byte {
+	bytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(bytes, uint64(val))
+	return bytes
 }

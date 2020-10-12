@@ -125,11 +125,13 @@ func (r *Room) Handle(me *member, stream pb.RoomService_SignalServer, rtc *sfu.W
 		r.mux.Unlock()
 		return errors.New("user tried to double enter")
 	}
+	r.mux.Unlock()
 
 	if r.PeerCount() == 0 {
 		me.Role = ADMIN
 	}
 
+	r.mux.Lock()
 	r.members[id] = &peer{
 		me:     me,
 		stream: stream,
@@ -236,11 +238,11 @@ func (r *Room) electRandomAdmin(previous int) {
 		return
 	}
 
-	for k, v := range r.members {
-		v.me.Role = ADMIN
+	for k, _ := range r.members {
+		r.members[k].me.Role = ADMIN
 
 		go r.notify(&pb.SignalReply_Event{
-			Type: pb.SignalReply_Event_REMOVED_ADMIN,
+			Type: pb.SignalReply_Event_ADDED_ADMIN,
 			From: int64(previous),
 			Data: intToBytes(k),
 		})

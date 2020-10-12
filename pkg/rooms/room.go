@@ -432,7 +432,7 @@ func (r *Room) onRemoveAdmin(from int, remove *pb.SignalRequest_Command) {
 
 func (r *Room) isAdmin(peer int) bool {
 	r.mux.RLock()
-	defer r.mux.Unlock()
+	defer r.mux.RUnlock()
 
 	p, ok := r.members[peer]
 	if !ok {

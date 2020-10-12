@@ -391,9 +391,12 @@ func (r *Room) onKick(from int, kick *pb.Kick) error {
 	r.mux.RUnlock()
 
 	r.mux.Lock()
+	defer r.mux.Unlock()
 	r.kicked[int(kick.Id)] = true
-	r.members[int(kick.Id)].rtc.Close()
-	r.mux.Unlock()
+	err := r.members[int(kick.Id)].rtc.Close()
+	if err != nil {
+		log.Printf("rtc.Close error %v\n", err)
+	}
 
 	return nil
 }

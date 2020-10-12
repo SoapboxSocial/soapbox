@@ -411,8 +411,6 @@ func (r *Room) onAddAdmin(from int, add *pb.SignalRequest_Command) {
 		From: int64(from),
 		Data: add.Data,
 	})
-
-	return
 }
 
 func (r *Room) onRemoveAdmin(from int, remove *pb.SignalRequest_Command) {
@@ -430,8 +428,6 @@ func (r *Room) onRemoveAdmin(from int, remove *pb.SignalRequest_Command) {
 		From: int64(from),
 		Data: remove.Data,
 	})
-
-	return
 }
 
 func (r *Room) isAdmin(peer int) bool {

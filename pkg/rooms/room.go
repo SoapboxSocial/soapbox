@@ -20,7 +20,7 @@ import (
 type PeerRole string
 
 const (
-	OWNER    PeerRole = "owner"
+	ADMIN    PeerRole = "admin"
 	SPEAKER  PeerRole = "speaker"
 	AUDIENCE PeerRole = "audience"
 )
@@ -53,7 +53,6 @@ type Room struct {
 	id   int
 	name string
 
-	owner   int
 	members map[int]*peer
 
 	onDisconnectedHandlerFunc func(room, peer int)
@@ -70,7 +69,6 @@ func NewRoom(id int, name string, queue *pubsub.Queue, isPrivate bool, owner int
 		mux:       sync.RWMutex{},
 		id:        id,
 		name:      name,
-		owner:     owner,
 		members:   make(map[int]*peer),
 		queue:     queue,
 		isPrivate: isPrivate,
@@ -128,8 +126,8 @@ func (r *Room) Handle(me *member, stream pb.RoomService_SignalServer, rtc *sfu.W
 		return errors.New("user tried to double enter")
 	}
 
-	if r.owner == me.ID {
-		me.Role = OWNER
+	if r.PeerCount() == 0 {
+		me.Role = ADMIN
 	}
 
 	r.members[id] = &peer{
@@ -221,38 +219,38 @@ func (r *Room) onDisconnected(peer int) {
 	delete(r.members, peer)
 	r.mux.Unlock()
 
-	r.electNewOwner()
+	//r.electNewOwner()
 
 	r.onDisconnectedHandlerFunc(r.id, peer)
 }
 
-func (r *Room) electNewOwner() {
-	r.mux.Lock()
-	defer r.mux.Unlock()
-
-	current := r.owner
-	speaker := first(r.members, func(peer *peer) bool {
-		return peer.me.Role == SPEAKER
-	})
-
-	if speaker != 0 {
-		r.members[speaker].me.Role = OWNER
-	} else {
-		for k, v := range r.members {
-			v.me.Role = OWNER
-			speaker = k
-			break
-		}
-	}
-
-	r.owner = speaker
-
-	go r.notify(&pb.SignalReply_Event{
-		Type: pb.SignalReply_Event_CHANGED_OWNER,
-		From: int64(current),
-		Data: intToBytes(speaker),
-	})
-}
+//func (r *Room) electNewOwner() {
+//	r.mux.Lock()
+//	defer r.mux.Unlock()
+//
+//	current := r.owner
+//	speaker := first(r.members, func(peer *peer) bool {
+//		return peer.me.Role == SPEAKER
+//	})
+//
+//	if speaker != 0 {
+//		r.members[speaker].me.Role = OWNER
+//	} else {
+//		for k, v := range r.members {
+//			v.me.Role = OWNER
+//			speaker = k
+//			break
+//		}
+//	}
+//
+//	r.owner = speaker
+//
+//	go r.notify(&pb.SignalReply_Event{
+//		Type: pb.SignalReply_Event_CHANGED_OWNER,
+//		From: int64(current),
+//		Data: intToBytes(speaker),
+//	})
+//}
 
 func (r *Room) onPayload(from int, in *pb.SignalRequest) error {
 	switch payload := in.Payload.(type) {
@@ -385,7 +383,12 @@ func (r *Room) onInvite(from int, invite *pb.Invite) error {
 
 func (r *Room) onKick(from int, kick *pb.Kick) error {
 	r.mux.RLock()
-	if r.owner != from {
+	peer, ok := r.members[from]
+	if !ok {
+		return nil
+	}
+
+	if peer.me.Role != ADMIN {
 		return nil
 	}
 	r.mux.RUnlock()

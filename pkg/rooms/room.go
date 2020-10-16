@@ -365,6 +365,8 @@ func (r *Room) onCommand(from int, cmd *pb.SignalRequest_Command) error {
 		r.onAddAdmin(from, cmd)
 	case pb.SignalRequest_Command_REMOVE_ADMIN:
 		r.onRemoveAdmin(from, cmd)
+	case pb.SignalRequest_Command_RENAME_ROOM:
+		r.onRoomRename(from, cmd)
 	}
 
 	return nil
@@ -429,6 +431,22 @@ func (r *Room) onRemoveAdmin(from int, remove *pb.SignalRequest_Command) {
 		Type: pb.SignalReply_Event_REMOVED_ADMIN,
 		From: int64(from),
 		Data: remove.Data,
+	})
+}
+
+func (r *Room) onRoomRename(from int, rename *pb.SignalRequest_Command)  {
+	if !r.isAdmin(from) {
+		return
+	}
+
+	r.mux.Lock()
+	r.name = string(rename.Data)
+	r.mux.Unlock()
+
+	go r.notify(&pb.SignalReply_Event{
+		Type: pb.SignalReply_Event_RENAMED_ROOM,
+		From: int64(from),
+		Data: rename.Data,
 	})
 }
 

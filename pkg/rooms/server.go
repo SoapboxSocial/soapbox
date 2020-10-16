@@ -183,7 +183,7 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 			id,
 			strings.TrimSpace(payload.Create.Name),
 			s.queue,
-			payload.Create.GetVisibility() == pb.CreateRequest_PRIVATE,
+			payload.Create.GetVisibility() == pb.Visibility_PRIVATE,
 			user.ID,
 		)
 		s.nextID++
@@ -249,7 +249,7 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 		s.mux.Unlock()
 
 		visibility := pubsub.Public
-		if payload.Create.Visibility == pb.CreateRequest_PRIVATE {
+		if payload.Create.Visibility == pb.Visibility_PRIVATE {
 			visibility = pubsub.Private
 		}
 

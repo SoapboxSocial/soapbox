@@ -489,6 +489,11 @@ func (r *Room) ToProtoForPeer() *pb.RoomState {
 
 	members := make([]*pb.RoomState_RoomMember, 0)
 
+	visibility := pb.Visibility_PUBLIC
+	if r.isPrivate {
+		visibility = pb.Visibility_PRIVATE
+	}
+
 	for _, member := range r.members {
 		if member.me.SSRC == 0 {
 			continue
@@ -509,6 +514,7 @@ func (r *Room) ToProtoForPeer() *pb.RoomState {
 		Name:    r.name,
 		Role:    string(SPEAKER), // @TODO THIS SHOULD DEPEND ON WHO OWNS THE ROOM ETC
 		Members: members,
+		Visibility: visibility,
 	}
 }
 

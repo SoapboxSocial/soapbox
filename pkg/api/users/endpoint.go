@@ -294,7 +294,10 @@ func (u *UsersEndpoint) Search(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := u.search.FindUsers(query)
+	limit := httputil.GetInt(r.URL.Query(), "limit", 10)
+	offset := httputil.GetInt(r.URL.Query(), "offset", 0)
+
+	resp, err := u.search.FindUsers(query, limit, offset)
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
 		return

@@ -434,7 +434,7 @@ func (r *Room) onRemoveAdmin(from int, remove *pb.SignalRequest_Command) {
 	})
 }
 
-func (r *Room) onRoomRename(from int, rename *pb.SignalRequest_Command)  {
+func (r *Room) onRoomRename(from int, rename *pb.SignalRequest_Command) {
 	if !r.isAdmin(from) {
 		return
 	}
@@ -528,10 +528,10 @@ func (r *Room) ToProtoForPeer() *pb.RoomState {
 	}
 
 	return &pb.RoomState{
-		Id:      int64(r.id),
-		Name:    r.name,
-		Role:    string(SPEAKER), // @TODO THIS SHOULD DEPEND ON WHO OWNS THE ROOM ETC
-		Members: members,
+		Id:         int64(r.id),
+		Name:       r.name,
+		Role:       string(SPEAKER), // @TODO THIS SHOULD DEPEND ON WHO OWNS THE ROOM ETC
+		Members:    members,
 		Visibility: visibility,
 	}
 }

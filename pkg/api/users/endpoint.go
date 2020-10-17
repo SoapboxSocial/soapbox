@@ -294,7 +294,27 @@ func (u *UsersEndpoint) Search(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp, err := u.search.FindUsers(query)
+	limitString := r.URL.Query().Get("limit")
+	if limitString == "" {
+		limitString = "10"
+	}
+
+	offsetString := r.URL.Query().Get("offset")
+	if offsetString == "" {
+		offsetString = "0"
+	}
+
+	limit, err := strconv.Atoi(limitString)
+	if err != nil {
+		limit = 10
+	}
+
+	offset, err := strconv.Atoi(offsetString)
+	if err != nil {
+		offset = 0
+	}
+
+	resp, err := u.search.FindUsers(query, limit, offset)
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
 		return

@@ -34,11 +34,13 @@ func NewSearchBackend(client *elasticsearch.Client) *Search {
 	return &Search{client: client}
 }
 
-func (s *Search) FindUsers(input string) ([]User, error) {
+func (s *Search) FindUsers(input string, limit, offset int) ([]User, error) {
 	res, err := s.client.Search(
 		s.client.Search.WithContext(context.Background()),
 		s.client.Search.WithIndex("users"),
 		s.client.Search.WithQuery(input),
+		s.client.Search.WithSize(limit),
+		s.client.Search.WithFrom(offset),
 		s.client.Search.WithTrackTotalHits(true),
 		s.client.Search.WithPretty(),
 	)

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"net/url"
+	"strconv"
 )
 
 type ErrorCode int
@@ -69,4 +71,18 @@ func JsonSuccess(w http.ResponseWriter) {
 func JsonEncode(w http.ResponseWriter, v interface{}) error {
 	w.Header().Set("Content-Type", "application/json")
 	return json.NewEncoder(w).Encode(v)
+}
+
+func GetInt(v url.Values, key string, defaultValue int) int {
+	str := v.Get(key)
+	if str == "" {
+		return defaultValue
+	}
+
+	val, err := strconv.Atoi(str)
+	if err != nil {
+		return defaultValue
+	}
+
+	return val
 }

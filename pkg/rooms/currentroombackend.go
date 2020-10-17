@@ -19,7 +19,7 @@ func NewCurrentRoomBackend(db *redis.Client) *CurrentRoomBackend {
 }
 
 func (b *CurrentRoomBackend) GetCurrentRoomForUser(id int) (int, error) {
-	val, err := b.db.HGet(b.db.Context(), hashName, string(id)).Result()
+	val, err := b.db.HGet(b.db.Context(), hashName, strconv.Itoa(id)).Result()
 	if err != nil {
 		return 0, err
 	}
@@ -28,10 +28,10 @@ func (b *CurrentRoomBackend) GetCurrentRoomForUser(id int) (int, error) {
 }
 
 func (b *CurrentRoomBackend) SetCurrentRoomForUser(user, room int) error {
-	_, err := b.db.HSet(b.db.Context(), hashName, string(user), strconv.Itoa(room)).Result()
+	_, err := b.db.HSet(b.db.Context(), hashName, strconv.Itoa(user), strconv.Itoa(room)).Result()
 	return err
 }
 
 func (b *CurrentRoomBackend) RemoveCurrentRoomForUser(user int) {
-	b.db.HDel(b.db.Context(), hashName, string(user))
+	b.db.HDel(b.db.Context(), hashName, strconv.Itoa(user))
 }

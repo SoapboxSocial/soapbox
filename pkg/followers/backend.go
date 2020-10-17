@@ -44,22 +44,22 @@ func (fb *FollowersBackend) UnfollowUser(follower, user int) error {
 	return nil
 }
 
-func (fb *FollowersBackend) GetAllUsersFollowing(id int) ([]*users.User, error) {
-	stmt, err := fb.db.Prepare("SELECT users.id, users.display_name, users.username, users.image FROM users INNER JOIN followers ON (users.id = followers.follower) WHERE followers.user_id = $1;")
+func (fb *FollowersBackend) GetAllUsersFollowing(id, limit, offset int) ([]*users.User, error) {
+	stmt, err := fb.db.Prepare("SELECT users.id, users.display_name, users.username, users.image FROM users INNER JOIN followers ON (users.id = followers.follower) WHERE followers.user_id = $1 LIMIT $2 OFFSET $3;")
 	if err != nil {
 		return nil, err
 	}
 
-	return fb.executeUserQuery(stmt, id)
+	return fb.executeUserQuery(stmt, id, limit, offset)
 }
 
-func (fb *FollowersBackend) GetAllUsersFollowedBy(id int) ([]*users.User, error) {
-	stmt, err := fb.db.Prepare("SELECT users.id, users.display_name, users.username, users.image FROM users INNER JOIN followers ON (users.id = followers.user_id) WHERE followers.follower = $1;")
+func (fb *FollowersBackend) GetAllUsersFollowedBy(id int, limit, offset int) ([]*users.User, error) {
+	stmt, err := fb.db.Prepare("SELECT users.id, users.display_name, users.username, users.image FROM users INNER JOIN followers ON (users.id = followers.user_id) WHERE followers.follower = $1 LIMIT $2 OFFSET $3;")
 	if err != nil {
 		return nil, err
 	}
 
-	return fb.executeUserQuery(stmt, id)
+	return fb.executeUserQuery(stmt, id, limit, offset)
 }
 
 func (fb *FollowersBackend) GetAllFollowerIDsFor(id int) ([]int, error) {

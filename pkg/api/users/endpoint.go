@@ -110,7 +110,10 @@ func (u *UsersEndpoint) GetFollowersForUser(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	result, err := u.fb.GetAllUsersFollowing(id)
+	limit := httputil.GetInt(r.URL.Query(), "limit", 10)
+	offset := httputil.GetInt(r.URL.Query(), "offset", 0)
+
+	result, err := u.fb.GetAllUsersFollowing(id, limit, offset)
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToGetFollowers, "")
 		return
@@ -131,7 +134,10 @@ func (u *UsersEndpoint) GetFollowedByForUser(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	result, err := u.fb.GetAllUsersFollowedBy(id)
+	limit := httputil.GetInt(r.URL.Query(), "limit", 10)
+	offset := httputil.GetInt(r.URL.Query(), "offset", 0)
+
+	result, err := u.fb.GetAllUsersFollowedBy(id, limit, offset)
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToGetFollowers, "")
 		return

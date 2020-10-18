@@ -315,6 +315,15 @@ func (u *UsersEndpoint) Search(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (u *UsersEndpoint) GetActiveUsersFor(w http.ResponseWriter, r *http.Request) {
+	userID, ok := auth.GetUserIDFromContext(r.Context())
+	if !ok {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+}
+
 func (u *UsersEndpoint) processProfilePicture(file multipart.File) (string, error) {
 	imgBytes, err := ioutil.ReadAll(file)
 	if err != nil {

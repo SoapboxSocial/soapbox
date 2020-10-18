@@ -273,6 +273,11 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 	}
 
 	go func() {
+		// @TODO THIS IS TEMP
+		if room.IsPrivate() {
+			return
+		}
+
 		err := s.currentRoom.SetCurrentRoomForUser(user.ID, room.id)
 		if err != nil {
 			log.Printf("failed to set current room err: %v", err)

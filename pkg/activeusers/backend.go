@@ -32,8 +32,8 @@ func (b *Backend) FetchActiveUsersFollowedBy(id int) ([]*User, error) {
 		return nil, nil
 	}
 
-	raw := "SELECT users.id, users.display_name, users.username, users.image FROM users INNER JOIN followers ON (users.id = followers.user_id) WHERE followers.follower AND followers.user_id IN (%s)"
-	query := fmt.Sprintf(raw, strings.Join(keys, ", "))
+	raw := "SELECT users.id, users.display_name, users.username, users.image FROM users INNER JOIN followers ON (users.id = followers.user_id) WHERE followers.follower = %d AND followers.user_id IN (%s);"
+	query := fmt.Sprintf(raw, id, strings.Join(keys, ", "))
 
 	rows, err := b.db.Query(query)
 	if err != nil {

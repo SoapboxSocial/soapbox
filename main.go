@@ -91,6 +91,7 @@ func main() {
 	userRoutes.HandleFunc("/unfollow", usersEndpoints.UnfollowUser).Methods("POST")
 	userRoutes.HandleFunc("/edit", usersEndpoints.EditUser).Methods("POST")
 	userRoutes.HandleFunc("/search", usersEndpoints.Search).Methods("GET")
+	userRoutes.HandleFunc("/active", usersEndpoints.GetActiveUsersFor).Methods("GET")
 
 	userRoutes.Use(amw.Middleware)
 

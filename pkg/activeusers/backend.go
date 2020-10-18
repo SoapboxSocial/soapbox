@@ -22,6 +22,13 @@ type Backend struct {
 	db    *sql.DB
 }
 
+func NewBackend(redis *redis.Client, db *sql.DB) *Backend {
+	return &Backend{
+		redis: redis,
+		db: db,
+	}
+}
+
 func (b *Backend) FetchActiveUsersFollowedBy(id int) ([]*User, error) {
 	keys, err := b.redis.HKeys(b.redis.Context(), "current_room").Result()
 	if err != nil {

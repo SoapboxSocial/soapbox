@@ -13,6 +13,7 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/sendgrid/sendgrid-go"
 
+	"github.com/soapboxsocial/soapbox/pkg/activeusers"
 	devicesapi "github.com/soapboxsocial/soapbox/pkg/api/devices"
 	"github.com/soapboxsocial/soapbox/pkg/api/login"
 	"github.com/soapboxsocial/soapbox/pkg/api/me"
@@ -54,6 +55,7 @@ func main() {
 	ub := users.NewUserBackend(db)
 	fb := followers.NewFollowersBackend(db)
 	ns := notifications.NewStorage(rdb)
+	activeUsersBackend := activeusers.NewBackend(rdb, db)
 
 	client, err := elasticsearch.NewDefaultClient()
 	if err != nil {
@@ -82,7 +84,16 @@ func main() {
 
 	userRoutes := r.PathPrefix("/v1/users").Subrouter()
 
-	usersEndpoints := usersapi.NewUsersEndpoint(ub, fb, s, ib, search, queue, rooms.NewCurrentRoomBackend(rdb))
+	usersEndpoints := usersapi.NewUsersEndpoint(
+		ub,
+		fb,
+		s,
+		ib,
+		search,
+		queue,
+		rooms.NewCurrentRoomBackend(rdb),
+		activeUsersBackend,
+	)
 	userRoutes.HandleFunc("/{id:[0-9]+}", usersEndpoints.GetUserByID).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/followers", usersEndpoints.GetFollowersForUser).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/following", usersEndpoints.GetFollowedByForUser).Methods("GET")

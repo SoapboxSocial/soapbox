@@ -43,6 +43,7 @@ func NewUsersEndpoint(
 	search *users.Search,
 	queue *pubsub.Queue,
 	cr *rooms.CurrentRoomBackend,
+	au *activeusers.Backend,
 ) *UsersEndpoint {
 	return &UsersEndpoint{
 		ub:          ub,
@@ -52,6 +53,7 @@ func NewUsersEndpoint(
 		search:      search,
 		queue:       queue,
 		currentRoom: cr,
+		activeUsers: au,
 	}
 }
 

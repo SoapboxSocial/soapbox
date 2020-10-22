@@ -14,13 +14,16 @@ func NewMailService(client *sendgrid.Client) *Service {
 }
 
 func (s *Service) SendPinEmail(recipient, pin string) error {
-	message := mail.NewV3MailInit(
-		mail.NewEmail("Soapbox", "no-reply@soapbox.social"),
-		"Your Soapbox Login Pin",
-		mail.NewEmail("", recipient),
-		mail.NewContent("text/plain", "Hey, \n Here is your login pin: "+pin+"\n Have fun!"),
-	)
+	m := mail.NewV3Mail()
+	m.SetFrom(mail.NewEmail("Soapbox", "no-reply@soapbox.social"))
+	m.SetTemplateID("d-94ee80b7ff33499894de719c02f095cf")
 
-	_, err := s.client.Send(message)
+	p := mail.NewPersonalization()
+	p.AddTos(mail.NewEmail("", recipient))
+	p.SetDynamicTemplateData("pin", pin)
+
+	m.AddPersonalizations(p)
+
+	_, err := s.client.Send(m)
 	return err
 }

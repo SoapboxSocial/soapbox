@@ -40,14 +40,12 @@ CREATE TABLE IF NOT exists linked_accounts (
 CREATE UNIQUE INDEX idx_profiles ON linked_accounts (provider, profile_id);
 CREATE UNIQUE INDEX idx_provider ON linked_accounts (provider, user_id);
 
-CREATE TABLE IF NOT exists group_type (
+CREATE TABLE IF NOT exists group_types (
     id SERIAL PRIMARY KEY,
     name VARCHAR(30)
 );
 
-INSERT INTO group_type (name) VALUES('public');
-INSERT INTO group_type (name) VALUES('private');
-INSERT INTO group_type (name) VALUES('invite-only');
+INSERT INTO group_type (name) VALUES ('public'), ('private'), ('invite');
 
 -- @TODO UPDATE `groups` to contain type.
 CREATE TABLE IF NOT exists groups (
@@ -56,7 +54,7 @@ CREATE TABLE IF NOT exists groups (
     bio TEXT NOT NULL DEFAULT '',
     image VARCHAR(100) NOT NULL DEFAULT '',
     group_type INT NOT NULL,
-    FOREIGN KEY (group_type) REFERENCES group_type(id) ON DELETE CASCADE
+    FOREIGN KEY (group_type) REFERENCES group_types(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT exists group_members (

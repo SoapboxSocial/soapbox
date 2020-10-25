@@ -40,11 +40,12 @@ CREATE TABLE IF NOT exists linked_accounts (
 CREATE UNIQUE INDEX idx_profiles ON linked_accounts (provider, profile_id);
 CREATE UNIQUE INDEX idx_provider ON linked_accounts (provider, user_id);
 
+-- @TODO UPDATE `groups` to contain type.
 CREATE TABLE IF NOT exists groups (
     id SERIAL PRIMARY KEY,
     name VARCHAR(256) NOT NULL,
     bio TEXT NOT NULL DEFAULT '',
-    image VARCHAR(100) NOT NULL DEFAULT ''
+    image VARCHAR(100) NOT NULL DEFAULT '',
 );
 
 CREATE TABLE IF NOT exists group_members (

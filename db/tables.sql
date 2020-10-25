@@ -1,10 +1,10 @@
 CREATE TABLE IF NOT EXISTS users (
-  id SERIAL PRIMARY KEY,
-  display_name VARCHAR(256) NOT NULL,
-  username VARCHAR(100) NOT NULL,
-  email VARCHAR(254) NOT NULL,
-  image VARCHAR(100) NOT NULL DEFAULT '',
-  bio TEXT NOT NULL DEFAULT ''
+    id SERIAL PRIMARY KEY,
+    display_name VARCHAR(256) NOT NULL,
+    username VARCHAR(100) NOT NULL,
+    email VARCHAR(254) NOT NULL,
+    image VARCHAR(100) NOT NULL DEFAULT '',
+    bio TEXT NOT NULL DEFAULT ''
 );
 
 CREATE UNIQUE INDEX idx_email ON users (email);
@@ -39,3 +39,21 @@ CREATE TABLE IF NOT exists linked_accounts (
 
 CREATE UNIQUE INDEX idx_profiles ON linked_accounts (provider, profile_id);
 CREATE UNIQUE INDEX idx_provider ON linked_accounts (provider, user_id);
+
+CREATE TABLE IF NOT exists groups (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(256) NOT NULL,
+    bio TEXT NOT NULL DEFAULT '',
+    image VARCHAR(100) NOT NULL DEFAULT ''
+);
+
+CREATE TABLE IF NOT exists group_members (
+    group_id INT NOT NULL,
+    user_id INT NOT NULL,
+    role VARCHAR(5) NOT NULL,
+    CHECK (role IN ('admin', 'user')),
+    FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+);
+
+CREATE UNIQUE INDEX idx_group_membership ON group_members (group_id, user_id);

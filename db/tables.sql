@@ -45,9 +45,8 @@ CREATE TABLE IF NOT exists group_types (
     name VARCHAR(30)
 );
 
-INSERT INTO group_type (name) VALUES ('public'), ('private'), ('invite');
+INSERT INTO group_type (name) VALUES ('public'), ('private'), ('restricted');
 
--- @TODO UPDATE `groups` to contain type.
 CREATE TABLE IF NOT exists groups (
     id SERIAL PRIMARY KEY,
     name VARCHAR(256) NOT NULL,

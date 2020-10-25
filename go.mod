@@ -14,16 +14,17 @@ require (
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/lib/pq v1.8.0
-	github.com/pion/ion-sfu v1.0.27
+	github.com/pion/ion-log v0.0.0-20201024224650-e6b94dfeaf1d // indirect
+	github.com/pion/ion-sfu v1.0.29
 	github.com/pion/sdp/v2 v2.4.0 // indirect
-	github.com/pion/webrtc/v3 v3.0.0-beta.9
+	github.com/pion/webrtc/v3 v3.0.0-beta.10
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.20.0 // indirect
 	github.com/sendgrid/rest v2.6.2+incompatible // indirect
 	github.com/sendgrid/sendgrid-go v3.7.0+incompatible
 	github.com/sideshow/apns2 v0.20.0
-	golang.org/x/net v0.0.0-20201021035429-f5854403a974 // indirect
-	golang.org/x/sys v0.0.0-20201022201747-fb209a7c41cd // indirect
+	golang.org/x/net v0.0.0-20201024042810-be3efd7ff127 // indirect
+	golang.org/x/sys v0.0.0-20201024232916-9f70ab9862d5 // indirect
 	google.golang.org/genproto v0.0.0-20201022181438-0ff5f38871d5 // indirect
 	google.golang.org/grpc v1.33.1
 	google.golang.org/protobuf v1.25.0

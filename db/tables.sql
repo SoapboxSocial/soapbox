@@ -53,7 +53,7 @@ CREATE TABLE IF NOT exists group_members (
     role VARCHAR(5) NOT NULL,
     CHECK (role IN ('admin', 'user')),
     FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE UNIQUE INDEX idx_group_membership ON group_members (group_id, user_id);

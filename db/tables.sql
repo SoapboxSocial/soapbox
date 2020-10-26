@@ -45,7 +45,7 @@ CREATE TABLE IF NOT exists group_types (
     name VARCHAR(30)
 );
 
-INSERT INTO group_type (name) VALUES ('public'), ('private'), ('restricted');
+INSERT INTO group_types (name) VALUES ('public'), ('private'), ('restricted');
 
 CREATE TABLE IF NOT exists groups (
     id SERIAL PRIMARY KEY,

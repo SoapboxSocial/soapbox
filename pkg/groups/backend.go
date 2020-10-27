@@ -9,6 +9,12 @@ type Backend struct {
 	db *sql.DB
 }
 
+func NewBackend(db *sql.DB) *Backend {
+	return &Backend{
+		db: db,
+	}
+}
+
 func (b *Backend) CreateGroup(creator int, name, bio, image, groupType string) (int, error) {
 	ctx := context.Background()
 	tx, err := b.db.BeginTx(ctx, nil)

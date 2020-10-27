@@ -15,12 +15,14 @@ import (
 
 	"github.com/soapboxsocial/soapbox/pkg/activeusers"
 	devicesapi "github.com/soapboxsocial/soapbox/pkg/api/devices"
+	groupendpoint "github.com/soapboxsocial/soapbox/pkg/api/groups"
 	"github.com/soapboxsocial/soapbox/pkg/api/login"
 	"github.com/soapboxsocial/soapbox/pkg/api/me"
 	"github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	usersapi "github.com/soapboxsocial/soapbox/pkg/api/users"
 	"github.com/soapboxsocial/soapbox/pkg/devices"
 	"github.com/soapboxsocial/soapbox/pkg/followers"
+	"github.com/soapboxsocial/soapbox/pkg/groups"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/images"
 	"github.com/soapboxsocial/soapbox/pkg/linkedaccounts"
@@ -128,6 +130,13 @@ func main() {
 	meRoutes.HandleFunc("/profiles/twitter", meEndpoint.AddTwitter).Methods("POST")
 	meRoutes.HandleFunc("/profiles/twitter", meEndpoint.RemoveTwitter).Methods("DELETE")
 	meRoutes.Use(amw.Middleware)
+
+	groupsBackend := groups.NewBackend(db)
+	groupsEndpoint := groupendpoint.NewEndpoint(groupsBackend)
+
+	groupsRoutes := r.PathPrefix("/v1/groups").Subrouter()
+	groupsRoutes.HandleFunc("/create", groupsEndpoint.CreateGroup).Methods("POST")
+	groupsRoutes.Use(amw.Middleware)
 
 	headersOk := handlers.AllowedHeaders([]string{
 		"Content-Type",

@@ -50,7 +50,7 @@ INSERT INTO group_types (name) VALUES ('public'), ('private'), ('restricted');
 CREATE TABLE IF NOT exists groups (
     id SERIAL PRIMARY KEY,
     name VARCHAR(256) NOT NULL,
-    bio TEXT NOT NULL DEFAULT '',
+    description TEXT NOT NULL DEFAULT '',
     image VARCHAR(100) NOT NULL DEFAULT '',
     group_type INT NOT NULL,
     FOREIGN KEY (group_type) REFERENCES group_types(id) ON DELETE CASCADE

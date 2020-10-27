@@ -5,6 +5,14 @@ import (
 	"database/sql"
 )
 
+type Group struct {
+	ID          int    `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Image       string `json:"image,omitempty"`
+	GroupType   string `json:"group_type"`
+}
+
 type Backend struct {
 	db *sql.DB
 }
@@ -15,7 +23,7 @@ func NewBackend(db *sql.DB) *Backend {
 	}
 }
 
-func (b *Backend) CreateGroup(creator int, name, bio, image, groupType string) (int, error) {
+func (b *Backend) CreateGroup(creator int, name, description, image, groupType string) (int, error) {
 	ctx := context.Background()
 	tx, err := b.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -24,8 +32,8 @@ func (b *Backend) CreateGroup(creator int, name, bio, image, groupType string) (
 
 	_, err = tx.ExecContext(
 		ctx,
-		"INSERT INTO groups (name, bio, image, group_type) VALUES ($1, $2, $3, (SELECT id FROM group_types WHERE name = $4));",
-		name, bio, image, groupType,
+		"INSERT INTO groups (name, description, image, group_type) VALUES ($1, $2, $3, (SELECT id FROM group_types WHERE name = $4));",
+		name, description, image, groupType,
 	)
 
 	if err != nil {
@@ -59,4 +67,31 @@ func (b *Backend) CreateGroup(creator int, name, bio, image, groupType string) (
 	}
 
 	return id, nil
+}
+
+func (b *Backend) GetGroupsForUser(user, limit, offset int) ([]*Group, error) {
+	stmt, err := b.db.Prepare("SELECT groups.id, groups.name, groups.description, groups.image, group_types.name AS group_type FROM groups INNER JOIN group_members ON (groups.id = group_members.group_id) INNER JOIN group_types ON (groups.group_type = group_types.id) WHERE group_members.user_id = $1 LIMIT $2 OFFSET $3;")
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := stmt.Query(user, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*Group, 0)
+
+	for rows.Next() {
+		group := &Group{}
+
+		err := rows.Scan(&group.ID, &group.Name, &group.Description, &group.Image, &group.GroupType)
+		if err != nil {
+			return nil, err // @todo
+		}
+
+		result = append(result, group)
+	}
+
+	return result, nil
 }

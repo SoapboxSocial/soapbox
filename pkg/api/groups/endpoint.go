@@ -3,7 +3,10 @@ package groups
 import (
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
+
+	"github.com/gorilla/mux"
 
 	auth "github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	"github.com/soapboxsocial/soapbox/pkg/groups"
@@ -39,9 +42,9 @@ func (e *Endpoint) CreateGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	bio := strings.TrimSpace(strings.ReplaceAll(r.Form.Get("bio"), "\n", " "))
-	if len([]rune(bio)) > 300 {
-		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "bio too long")
+	description := strings.TrimSpace(strings.ReplaceAll(r.Form.Get("description"), "\n", " "))
+	if len([]rune(description)) > 300 {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "description too long")
 		return
 	}
 
@@ -60,7 +63,7 @@ func (e *Endpoint) CreateGroup(w http.ResponseWriter, r *http.Request) {
 	//	}
 	//}
 
-	id, err := e.backend.CreateGroup(userID, name, bio, "", "public")
+	id, err := e.backend.CreateGroup(userID, name, description, "", "public")
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "failed to create")
 		return
@@ -69,5 +72,29 @@ func (e *Endpoint) CreateGroup(w http.ResponseWriter, r *http.Request) {
 	err = httputil.JsonEncode(w, map[string]interface{}{"success": true, "id": id})
 	if err != nil {
 		log.Println("error writing response: " + err.Error())
+	}
+}
+
+func (e *Endpoint) GetGroupsForUser(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	id, err := strconv.Atoi(params["id"])
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	limit := httputil.GetInt(r.URL.Query(), "limit", 10)
+	offset := httputil.GetInt(r.URL.Query(), "offset", 0)
+
+	result, err := e.backend.GetGroupsForUser(id, limit, offset)
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToGetFollowers, "")
+		return
+	}
+
+	err = httputil.JsonEncode(w, result)
+	if err != nil {
+		log.Printf("failed to write user response: %s\n", err.Error())
 	}
 }

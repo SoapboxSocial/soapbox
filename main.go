@@ -96,6 +96,10 @@ func main() {
 		rooms.NewCurrentRoomBackend(rdb),
 		activeUsersBackend,
 	)
+
+	groupsBackend := groups.NewBackend(db)
+	groupsEndpoint := groupendpoint.NewEndpoint(groupsBackend)
+
 	userRoutes.HandleFunc("/{id:[0-9]+}", usersEndpoints.GetUserByID).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/followers", usersEndpoints.GetFollowersForUser).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/following", usersEndpoints.GetFollowedByForUser).Methods("GET")
@@ -105,6 +109,7 @@ func main() {
 	userRoutes.HandleFunc("/edit", usersEndpoints.EditUser).Methods("POST")
 	userRoutes.HandleFunc("/search", usersEndpoints.Search).Methods("GET")
 	userRoutes.HandleFunc("/active", usersEndpoints.GetActiveUsersFor).Methods("GET")
+	userRoutes.HandleFunc("/{id:[0-9]+}/groups", groupsEndpoint.GetGroupsForUser).Methods("GET")
 
 	userRoutes.Use(amw.Middleware)
 
@@ -130,9 +135,6 @@ func main() {
 	meRoutes.HandleFunc("/profiles/twitter", meEndpoint.AddTwitter).Methods("POST")
 	meRoutes.HandleFunc("/profiles/twitter", meEndpoint.RemoveTwitter).Methods("DELETE")
 	meRoutes.Use(amw.Middleware)
-
-	groupsBackend := groups.NewBackend(db)
-	groupsEndpoint := groupendpoint.NewEndpoint(groupsBackend)
 
 	groupsRoutes := r.PathPrefix("/v1/groups").Subrouter()
 	groupsRoutes.HandleFunc("/create", groupsEndpoint.CreateGroup).Methods("POST")

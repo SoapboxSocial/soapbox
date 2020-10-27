@@ -52,5 +52,11 @@ func (b *Backend) CreateGroup(creator int, name, bio, image, groupType string) (
 		return 0, err
 	}
 
+	err = tx.Commit()
+	if err != nil {
+		tx.Rollback()
+		return 0, nil
+	}
+
 	return id, nil
 }

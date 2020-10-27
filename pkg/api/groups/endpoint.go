@@ -45,9 +45,22 @@ func (e *Endpoint) CreateGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// @todo bio
+	//file, _, err := r.FormFile("profile")
+	//if err != nil && err != http.ErrMissingFile {
+	//	httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+	//	return
+	//}
+	//
+	//image := ""
+	//if file != nil {
+	//	image, err = u.processProfilePicture(file)
+	//	if err != nil {
+	//		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+	//		return
+	//	}
+	//}
 
-	id, err := e.backend.CreateGroup(userID, name, bio, "", "")
+	id, err := e.backend.CreateGroup(userID, name, bio, "", "public")
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "failed to create")
 		return

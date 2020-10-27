@@ -57,7 +57,7 @@ sudo ln -s /vagrant/conf/nginx.conf /etc/nginx/nginx.conf
 mkdir -p $GOPATH/src/github.com/soapboxsocial/
 sudo ln -s /var/www/ $GOPATH/src/github.com/soapboxsocial/soapbox
 
-sudo mkdir -p /cdn/images
+sudo mkdir -p /cdn/images/groups/
 sudo chown nginx:nginx -R /cdn/images
 sudo chmod -R 0777 /cdn/images
 

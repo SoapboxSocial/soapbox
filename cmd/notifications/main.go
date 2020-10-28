@@ -23,7 +23,7 @@ var (
 	errRoomPrivate = errors.New("room is private")
 )
 
-var devicesBackend *devices.DevicesBackend
+var devicesBackend *devices.Backend
 var userBackend *users.UserBackend
 var followersBackend *followers.FollowersBackend
 var service *notifications.Service
@@ -46,7 +46,7 @@ func main() {
 		panic(err)
 	}
 
-	devicesBackend = devices.NewDevicesBackend(db)
+	devicesBackend = devices.NewBackend(db)
 	userBackend = users.NewUserBackend(db)
 	followersBackend = followers.NewFollowersBackend(db)
 	currentRoom := rooms.NewCurrentRoomBackend(rdb)

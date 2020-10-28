@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/dghubble/oauth1"
 	"github.com/elastic/go-elasticsearch/v7"
@@ -14,7 +15,6 @@ import (
 	"github.com/sendgrid/sendgrid-go"
 
 	"github.com/soapboxsocial/soapbox/pkg/activeusers"
-	devicesapi "github.com/soapboxsocial/soapbox/pkg/api/devices"
 	"github.com/soapboxsocial/soapbox/pkg/api/login"
 	"github.com/soapboxsocial/soapbox/pkg/api/me"
 	"github.com/soapboxsocial/soapbox/pkg/api/middleware"
@@ -64,7 +64,7 @@ func main() {
 
 	search := users.NewSearchBackend(client)
 
-	devicesBackend := devices.NewDevicesBackend(db)
+	devicesBackend := devices.NewBackend(db)
 
 	amw := middleware.NewAuthenticationMiddleware(s)
 
@@ -106,11 +106,10 @@ func main() {
 
 	userRoutes.Use(amw.Middleware)
 
-	devicesRoutes := r.PathPrefix("/v1/devices").Subrouter()
-
-	devicesEndpoint := devicesapi.NewDevicesEndpoint(devicesBackend)
-	devicesRoutes.HandleFunc("/add", devicesEndpoint.AddDevice).Methods("POST")
+	devicesEndpoint := devices.NewEndpoint(devicesBackend)
+	devicesRoutes := devicesEndpoint.Router()
 	devicesRoutes.Use(amw.Middleware)
+	mount(r, "/v1/devices/", devicesRoutes)
 
 	meRoutes := r.PathPrefix("/v1/me").Subrouter()
 
@@ -142,4 +141,13 @@ func main() {
 	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS", "DELETE"})
 
 	log.Fatal(http.ListenAndServe(":8080", handlers.CORS(originsOk, headersOk, methodsOk)(r)))
+}
+
+func mount(r *mux.Router, path string, handler http.Handler) {
+	r.PathPrefix(path).Handler(
+		http.StripPrefix(
+			strings.TrimSuffix(path, "/"),
+			handler,
+		),
+	)
 }

@@ -37,7 +37,7 @@ func (b *Backend) CreateGroup(creator int, name, description, image, groupType s
 	)
 
 	if err != nil {
-		tx.Rollback()
+		_ = tx.Rollback()
 		return 0, err
 	}
 
@@ -48,7 +48,7 @@ func (b *Backend) CreateGroup(creator int, name, description, image, groupType s
 	)
 
 	if err != nil {
-		tx.Rollback()
+		_ = tx.Rollback()
 		return 0, err
 	}
 
@@ -62,7 +62,7 @@ func (b *Backend) CreateGroup(creator int, name, description, image, groupType s
 
 	err = tx.Commit()
 	if err != nil {
-		tx.Rollback()
+		_ = tx.Rollback()
 		return 0, nil
 	}
 

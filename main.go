@@ -15,7 +15,6 @@ import (
 
 	"github.com/soapboxsocial/soapbox/pkg/activeusers"
 	devicesapi "github.com/soapboxsocial/soapbox/pkg/api/devices"
-	groupendpoint "github.com/soapboxsocial/soapbox/pkg/api/groups"
 	"github.com/soapboxsocial/soapbox/pkg/api/login"
 	"github.com/soapboxsocial/soapbox/pkg/api/me"
 	"github.com/soapboxsocial/soapbox/pkg/api/middleware"
@@ -98,7 +97,7 @@ func main() {
 	)
 
 	groupsBackend := groups.NewBackend(db)
-	groupsEndpoint := groupendpoint.NewEndpoint(groupsBackend, ib)
+	groupsEndpoint := groups.NewEndpoint(groupsBackend, ib)
 
 	userRoutes.HandleFunc("/{id:[0-9]+}", usersEndpoints.GetUserByID).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/followers", usersEndpoints.GetFollowersForUser).Methods("GET")

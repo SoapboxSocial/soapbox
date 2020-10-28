@@ -9,17 +9,16 @@ import (
 	"github.com/gorilla/mux"
 
 	auth "github.com/soapboxsocial/soapbox/pkg/api/middleware"
-	"github.com/soapboxsocial/soapbox/pkg/groups"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/images"
 )
 
 type Endpoint struct {
-	backend *groups.Backend
+	backend *Backend
 	images  *images.Backend
 }
 
-func NewEndpoint(backend *groups.Backend, ib *images.Backend) *Endpoint {
+func NewEndpoint(backend *Backend, ib *images.Backend) *Endpoint {
 	return &Endpoint{
 		backend: backend,
 		images:  ib,

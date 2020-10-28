@@ -25,7 +25,7 @@ type Backend struct {
 func NewBackend(redis *redis.Client, db *sql.DB) *Backend {
 	return &Backend{
 		redis: redis,
-		db: db,
+		db:    db,
 	}
 }
 

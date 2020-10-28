@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/dghubble/oauth1"
 	"github.com/elastic/go-elasticsearch/v7"
@@ -135,9 +136,9 @@ func main() {
 	meRoutes.HandleFunc("/profiles/twitter", meEndpoint.RemoveTwitter).Methods("DELETE")
 	meRoutes.Use(amw.Middleware)
 
-	groupsRoutes := r.PathPrefix("/v1/groups").Subrouter()
-	groupsRoutes.HandleFunc("/create", groupsEndpoint.CreateGroup).Methods("POST")
-	groupsRoutes.Use(amw.Middleware)
+	groupsRouter := groupsEndpoint.Router()
+	groupsRouter.Use(amw.Middleware)
+	mount(r, "/v1/groups/", groupsRouter)
 
 	headersOk := handlers.AllowedHeaders([]string{
 		"Content-Type",
@@ -152,4 +153,13 @@ func main() {
 	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS", "DELETE"})
 
 	log.Fatal(http.ListenAndServe(":8080", handlers.CORS(originsOk, headersOk, methodsOk)(r)))
+}
+
+func mount(r *mux.Router, path string, handler http.Handler) {
+	r.PathPrefix(path).Handler(
+		http.StripPrefix(
+			strings.TrimSuffix(path, "/"),
+			handler,
+		),
+	)
 }

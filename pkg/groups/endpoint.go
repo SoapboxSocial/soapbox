@@ -25,6 +25,15 @@ func NewEndpoint(backend *Backend, ib *images.Backend) *Endpoint {
 	}
 }
 
+// @TODO DO WHAT THIS GUY DID
+func (e *Endpoint) Router() *mux.Router {
+	r := mux.NewRouter()
+
+	r.Path("/create").Methods("POST").HandlerFunc(e.CreateGroup)
+
+	return r
+}
+
 func (e *Endpoint) CreateGroup(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(10 << 20)
 	if err != nil {

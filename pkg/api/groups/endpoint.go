@@ -104,7 +104,7 @@ func (e *Endpoint) handleGroupImage(r *http.Request) (string, error) {
 		return "", err
 	}
 
-	name, err := e.images.Store(image)
+	name, err := e.images.StoreGroupPhoto(image)
 	if err != nil {
 		return "", err
 	}

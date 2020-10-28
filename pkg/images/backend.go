@@ -17,7 +17,19 @@ func NewImagesBackend(path string) *Backend {
 }
 
 func (ib *Backend) Store(bytes []byte) (string, error) {
-	file, err := ioutil.TempFile(ib.path, "*.png")
+	return ib.store(ib.path, bytes)
+}
+
+func (ib *Backend) StoreGroupPhoto(bytes []byte) (string, error) {
+	return ib.store(ib.path + "group", bytes)
+}
+
+func (ib *Backend) Remove(name string) error {
+	return os.Remove(ib.path + "/" + name)
+}
+
+func (ib *Backend) store(path string, bytes []byte) (string, error) {
+	file, err := ioutil.TempFile(path, "*.png")
 	if err != nil {
 		return "", err
 	}
@@ -30,8 +42,4 @@ func (ib *Backend) Store(bytes []byte) (string, error) {
 	}
 
 	return filepath.Base(file.Name()), nil
-}
-
-func (ib *Backend) Remove(name string) error {
-	return os.Remove(ib.path + "/" + name)
 }

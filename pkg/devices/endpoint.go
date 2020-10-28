@@ -10,10 +10,10 @@ import (
 )
 
 type Endpoint struct {
-	db *DevicesBackend
+	db *Backend
 }
 
-func NewEndpoint(db *DevicesBackend) *Endpoint {
+func NewEndpoint(db *Backend) *Endpoint {
 	return &Endpoint{
 		db: db,
 	}

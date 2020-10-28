@@ -64,7 +64,7 @@ func main() {
 
 	search := users.NewSearchBackend(client)
 
-	devicesBackend := devices.NewDevicesBackend(db)
+	devicesBackend := devices.NewBackend(db)
 
 	amw := middleware.NewAuthenticationMiddleware(s)
 

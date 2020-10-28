@@ -41,7 +41,7 @@ func TestDevicesEndpoint_AddDevice(t *testing.T) {
 	}
 	defer db.Close()
 
-	endpoint := devices.NewEndpoint(devices.NewDevicesBackend(db))
+	endpoint := devices.NewEndpoint(devices.NewBackend(db))
 
 	mock.ExpectPrepare("^INSERT (.+)").ExpectExec().
 		WithArgs(token, session).
@@ -71,7 +71,7 @@ func TestDevicesEndpoint_AddDeviceFailsWithoutToken(t *testing.T) {
 	}
 	defer db.Close()
 
-	endpoint := devices.NewEndpoint(devices.NewDevicesBackend(db))
+	endpoint := devices.NewEndpoint(devices.NewBackend(db))
 
 	rr := httptest.NewRecorder()
 	handler := endpoint.Router()
@@ -103,7 +103,7 @@ func TestDevicesEndpoint_AddDeviceWithBackendError(t *testing.T) {
 	}
 	defer db.Close()
 
-	endpoint := devices.NewEndpoint(devices.NewDevicesBackend(db))
+	endpoint := devices.NewEndpoint(devices.NewBackend(db))
 
 	mock.ExpectPrepare("^INSERT (.+)").ExpectExec().
 		WithArgs(token, session).
@@ -131,7 +131,7 @@ func TestDevicesEndpoint_AddDeviceWithoutForm(t *testing.T) {
 	}
 	defer db.Close()
 
-	endpoint := devices.NewEndpoint(devices.NewDevicesBackend(db))
+	endpoint := devices.NewEndpoint(devices.NewBackend(db))
 	rr := httptest.NewRecorder()
 	handler := endpoint.Router()
 

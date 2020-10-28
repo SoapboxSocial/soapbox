@@ -15,7 +15,6 @@ import (
 	"github.com/sendgrid/sendgrid-go"
 
 	"github.com/soapboxsocial/soapbox/pkg/activeusers"
-	devicesapi "github.com/soapboxsocial/soapbox/pkg/api/devices"
 	"github.com/soapboxsocial/soapbox/pkg/api/login"
 	"github.com/soapboxsocial/soapbox/pkg/api/me"
 	"github.com/soapboxsocial/soapbox/pkg/api/middleware"
@@ -66,7 +65,7 @@ func main() {
 
 	search := users.NewSearchBackend(client)
 
-	devicesBackend := devices.NewDevicesBackend(db)
+	devicesBackend := devices.NewBackend(db)
 
 	amw := middleware.NewAuthenticationMiddleware(s)
 
@@ -113,11 +112,10 @@ func main() {
 
 	userRoutes.Use(amw.Middleware)
 
-	devicesRoutes := r.PathPrefix("/v1/devices").Subrouter()
-
-	devicesEndpoint := devicesapi.NewDevicesEndpoint(devicesBackend)
-	devicesRoutes.HandleFunc("/add", devicesEndpoint.AddDevice).Methods("POST")
+	devicesEndpoint := devices.NewEndpoint(devicesBackend)
+	devicesRoutes := devicesEndpoint.Router()
 	devicesRoutes.Use(amw.Middleware)
+	mount(r, "/v1/devices/", devicesRoutes)
 
 	meRoutes := r.PathPrefix("/v1/me").Subrouter()
 

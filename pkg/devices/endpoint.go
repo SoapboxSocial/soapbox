@@ -3,22 +3,31 @@ package devices
 import (
 	"net/http"
 
+	"github.com/gorilla/mux"
+
 	auth "github.com/soapboxsocial/soapbox/pkg/api/middleware"
-	"github.com/soapboxsocial/soapbox/pkg/devices"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 )
 
-type DevicesEndpoint struct {
-	db *devices.DevicesBackend
+type Endpoint struct {
+	db *Backend
 }
 
-func NewDevicesEndpoint(db *devices.DevicesBackend) *DevicesEndpoint {
-	return &DevicesEndpoint{
+func NewEndpoint(db *Backend) *Endpoint {
+	return &Endpoint{
 		db: db,
 	}
 }
 
-func (d *DevicesEndpoint) AddDevice(w http.ResponseWriter, r *http.Request) {
+func (d *Endpoint) Router() *mux.Router {
+	r := mux.NewRouter()
+
+	r.HandleFunc("/add", d.add).Methods("POST")
+
+	return r
+}
+
+func (d *Endpoint) add(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")

@@ -4,17 +4,17 @@ import (
 	"database/sql"
 )
 
-type DevicesBackend struct {
+type Backend struct {
 	db *sql.DB
 }
 
-func NewDevicesBackend(db *sql.DB) *DevicesBackend {
-	return &DevicesBackend{
+func NewBackend(db *sql.DB) *Backend {
+	return &Backend{
 		db: db,
 	}
 }
 
-func (db *DevicesBackend) AddDeviceForUser(id int, token string) error {
+func (db *Backend) AddDeviceForUser(id int, token string) error {
 	stmt, err := db.db.Prepare("INSERT INTO devices (token, user_id) VALUES ($1, $2);")
 	if err != nil {
 		return err
@@ -28,7 +28,7 @@ func (db *DevicesBackend) AddDeviceForUser(id int, token string) error {
 	return nil
 }
 
-func (db *DevicesBackend) GetDevicesForUser(id int) ([]string, error) {
+func (db *Backend) GetDevicesForUser(id int) ([]string, error) {
 	stmt, err := db.db.Prepare("SELECT token FROM devices WHERE user_id = $1;")
 	if err != nil {
 		return nil, err

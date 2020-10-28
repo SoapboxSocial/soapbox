@@ -19,9 +19,10 @@ type Endpoint struct {
 	images  *images.Backend
 }
 
-func NewEndpoint(backend *groups.Backend) *Endpoint {
+func NewEndpoint(backend *groups.Backend, ib *images.Backend) *Endpoint {
 	return &Endpoint{
 		backend: backend,
+		images: ib,
 	}
 }
 

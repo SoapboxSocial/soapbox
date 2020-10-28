@@ -11,10 +11,12 @@ import (
 	auth "github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	"github.com/soapboxsocial/soapbox/pkg/groups"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
+	"github.com/soapboxsocial/soapbox/pkg/images"
 )
 
 type Endpoint struct {
 	backend *groups.Backend
+	images  *images.Backend
 }
 
 func NewEndpoint(backend *groups.Backend) *Endpoint {
@@ -48,22 +50,13 @@ func (e *Endpoint) CreateGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//file, _, err := r.FormFile("profile")
-	//if err != nil && err != http.ErrMissingFile {
-	//	httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
-	//	return
-	//}
-	//
-	//image := ""
-	//if file != nil {
-	//	image, err = u.processProfilePicture(file)
-	//	if err != nil {
-	//		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
-	//		return
-	//	}
-	//}
+	img, err := e.handleGroupImage(r)
+	if err != nil && err != http.ErrMissingFile {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
 
-	id, err := e.backend.CreateGroup(userID, name, description, "", "public")
+	id, err := e.backend.CreateGroup(userID, name, description, img, "public")
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "failed to create")
 		return
@@ -97,4 +90,23 @@ func (e *Endpoint) GetGroupsForUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("failed to write user response: %s\n", err.Error())
 	}
+}
+
+func (e *Endpoint) handleGroupImage(r *http.Request) (string, error) {
+	file, _, err := r.FormFile("image")
+	if err != nil {
+		return "", err
+	}
+
+	image, err := images.MultipartFileToPng(file)
+	if err != nil {
+		return "", err
+	}
+
+	name, err := e.images.Store(image)
+	if err != nil {
+		return "", err
+	}
+
+	return name, nil
 }

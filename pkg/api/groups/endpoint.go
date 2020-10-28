@@ -22,7 +22,7 @@ type Endpoint struct {
 func NewEndpoint(backend *groups.Backend, ib *images.Backend) *Endpoint {
 	return &Endpoint{
 		backend: backend,
-		images: ib,
+		images:  ib,
 	}
 }
 

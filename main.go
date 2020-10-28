@@ -16,7 +16,6 @@ import (
 
 	"github.com/soapboxsocial/soapbox/pkg/activeusers"
 	"github.com/soapboxsocial/soapbox/pkg/api/login"
-	"github.com/soapboxsocial/soapbox/pkg/api/me"
 	"github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	usersapi "github.com/soapboxsocial/soapbox/pkg/api/users"
 	"github.com/soapboxsocial/soapbox/pkg/devices"
@@ -25,6 +24,7 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/images"
 	"github.com/soapboxsocial/soapbox/pkg/linkedaccounts"
 	"github.com/soapboxsocial/soapbox/pkg/mail"
+	"github.com/soapboxsocial/soapbox/pkg/me"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
@@ -109,9 +109,7 @@ func main() {
 	devicesEndpoint := devices.NewEndpoint(devicesBackend)
 	devicesRoutes := devicesEndpoint.Router()
 	devicesRoutes.Use(amw.Middleware)
-	mount(r, "/v1/devices/", devicesRoutes)
-
-	meRoutes := r.PathPrefix("/v1/me").Subrouter()
+	mount(r, "/v1/devices", devicesRoutes)
 
 	// twitter oauth config
 	oauth := oauth1.NewConfig(
@@ -121,12 +119,10 @@ func main() {
 
 	pb := linkedaccounts.NewLinkedAccountsBackend(db)
 
-	meEndpoint := me.NewMeEndpoint(ub, ns, oauth, pb)
-	meRoutes.HandleFunc("", meEndpoint.GetMe).Methods("GET")
-	meRoutes.HandleFunc("/notifications", meEndpoint.GetNotifications).Methods("GET")
-	meRoutes.HandleFunc("/profiles/twitter", meEndpoint.AddTwitter).Methods("POST")
-	meRoutes.HandleFunc("/profiles/twitter", meEndpoint.RemoveTwitter).Methods("DELETE")
+	meEndpoint := me.NewEndpoint(ub, ns, oauth, pb)
+	meRoutes := meEndpoint.Router()
 	meRoutes.Use(amw.Middleware)
+	mount(r, "/v1/me", meRoutes)
 
 	headersOk := handlers.AllowedHeaders([]string{
 		"Content-Type",
@@ -147,7 +143,22 @@ func mount(r *mux.Router, path string, handler http.Handler) {
 	r.PathPrefix(path).Handler(
 		http.StripPrefix(
 			strings.TrimSuffix(path, "/"),
-			handler,
+			AddSlashForRoot(handler),
 		),
 	)
+}
+
+// @TODO MOVE TO HTTP
+
+// AddSlashForRoot adds a slash if the path is the root path.
+// This is necessary for our subrouters where there may be a root.
+func AddSlashForRoot(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// @TODO MAYBE ENSURE SUFFIX DOESN'T ALREADY EXIST?
+		if r.URL.Path == "" {
+			r.URL.Path = "/"
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }

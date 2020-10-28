@@ -6,6 +6,7 @@ import (
 
 	"github.com/dghubble/go-twitter/twitter"
 	"github.com/dghubble/oauth1"
+	"github.com/gorilla/mux"
 
 	auth "github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
@@ -14,15 +15,15 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
-type MeEndpoint struct {
+type Endpoint struct {
 	users       *users.UserBackend
 	ns          *notifications.Storage
 	oauthConfig *oauth1.Config
 	la          *linkedaccounts.Backend
 }
 
-func NewMeEndpoint(users *users.UserBackend, ns *notifications.Storage, config *oauth1.Config, la *linkedaccounts.Backend) *MeEndpoint {
-	return &MeEndpoint{
+func NewEndpoint(users *users.UserBackend, ns *notifications.Storage, config *oauth1.Config, la *linkedaccounts.Backend) *Endpoint {
+	return &Endpoint{
 		users:       users,
 		ns:          ns,
 		oauthConfig: config,
@@ -30,7 +31,18 @@ func NewMeEndpoint(users *users.UserBackend, ns *notifications.Storage, config *
 	}
 }
 
-func (m *MeEndpoint) GetMe(w http.ResponseWriter, r *http.Request) {
+func (m *Endpoint) Router() *mux.Router {
+	r := mux.NewRouter()
+
+	r.HandleFunc("/", m.me).Methods("GET")
+	r.HandleFunc("/notifications", m.notifications).Methods("GET")
+	r.HandleFunc("/profiles/twitter", m.addTwitter).Methods("POST")
+	r.HandleFunc("/profiles/twitter", m.removeTwitter).Methods("DELETE")
+
+	return r
+}
+
+func (m *Endpoint) me(w http.ResponseWriter, r *http.Request) {
 	id, ok := auth.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "invalid id")
@@ -49,7 +61,7 @@ func (m *MeEndpoint) GetMe(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (m *MeEndpoint) GetNotifications(w http.ResponseWriter, r *http.Request) {
+func (m *Endpoint) notifications(w http.ResponseWriter, r *http.Request) {
 	id, ok := auth.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "invalid id")
@@ -68,7 +80,7 @@ func (m *MeEndpoint) GetNotifications(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (m *MeEndpoint) AddTwitter(w http.ResponseWriter, r *http.Request) {
+func (m *Endpoint) addTwitter(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
@@ -112,7 +124,7 @@ func (m *MeEndpoint) AddTwitter(w http.ResponseWriter, r *http.Request) {
 	httputil.JsonSuccess(w)
 }
 
-func (m *MeEndpoint) RemoveTwitter(w http.ResponseWriter, r *http.Request) {
+func (m *Endpoint) removeTwitter(w http.ResponseWriter, r *http.Request) {
 	id, ok := auth.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "unauthorized")

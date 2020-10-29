@@ -75,6 +75,7 @@ func (s *Server) ListRoomsV2(ctx context.Context, auth *pb.Auth) (*pb.RoomList, 
 	return &pb.RoomList{Rooms: rooms}, nil
 }
 
+// Deprecated: Remove
 func (s *Server) ListRooms(context.Context, *empty.Empty) (*pb.RoomList, error) {
 	s.mux.RLock()
 	defer s.mux.RUnlock()
@@ -121,6 +122,10 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 
 		if !ok {
 			return status.Errorf(codes.Internal, "join error room closed")
+		}
+
+		if r.PeerCount() >= 16 {
+			return status.Errorf(codes.Internal, "join error room full")
 		}
 
 		if !r.CanJoin(user.ID) {

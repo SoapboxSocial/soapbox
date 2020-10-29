@@ -129,7 +129,7 @@ func main() {
 	meRoutes.Use(amw.Middleware)
 
 	headersOk := handlers.AllowedHeaders([]string{
-		"Content-Type",
+		"Content-Category",
 		"X-Requested-With",
 		"Accept",
 		"Accept-Language",

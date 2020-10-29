@@ -1645,8 +1645,8 @@ var file_room_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
 var file_room_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_room_proto_goTypes = []interface{}{
 	(Visibility)(0),                 // 0: Visibility
-	(SignalRequest_Command_Type)(0), // 1: SignalRequest.Command.Type
-	(SignalReply_Event_Type)(0),     // 2: SignalReply.Event.Type
+	(SignalRequest_Command_Type)(0), // 1: SignalRequest.Command.Category
+	(SignalReply_Event_Type)(0),     // 2: SignalReply.Event.Category
 	(*SignalRequest)(nil),           // 3: SignalRequest
 	(*SignalReply)(nil),             // 4: SignalReply
 	(*JoinRequest)(nil),             // 5: JoinRequest
@@ -1689,8 +1689,8 @@ var file_room_proto_depIdxs = []int32{
 	0,  // 16: RoomState.visibility:type_name -> Visibility
 	0,  // 17: CreateRequest.visibility:type_name -> Visibility
 	13, // 18: CreateReply.answer:type_name -> SessionDescription
-	1,  // 19: SignalRequest.Command.type:type_name -> SignalRequest.Command.Type
-	2,  // 20: SignalReply.Event.type:type_name -> SignalReply.Event.Type
+	1,  // 19: SignalRequest.Command.type:type_name -> SignalRequest.Command.Category
+	2,  // 20: SignalReply.Event.type:type_name -> SignalReply.Event.Category
 	3,  // 21: RoomService.Signal:input_type -> SignalRequest
 	23, // 22: RoomService.ListRooms:input_type -> google.protobuf.Empty
 	7,  // 23: RoomService.ListRoomsV2:input_type -> Auth

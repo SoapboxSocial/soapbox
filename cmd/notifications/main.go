@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"log"
+	"time"
 
 	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
@@ -30,7 +31,7 @@ var service *notifications.Service
 var notificationLimiter *limiter.Limiter
 var notificationStorage *notifications.Storage
 
-type handlerFunc func(*pubsub.Event) ([]int, *notifications.Notification, error)
+type handlerFunc func(*pubsub.Event) ([]int, *notifications.PushNotification, error)
 
 func main() {
 	rdb := redis.NewClient(&redis.Options{
@@ -116,7 +117,7 @@ func getHandler(eventType pubsub.EventType) handlerFunc {
 	}
 }
 
-func pushNotification(target int, notification *notifications.Notification) {
+func pushNotification(target int, notification *notifications.PushNotification) {
 	if !notificationLimiter.ShouldSendNotification(target, notification.Arguments, notification.Category) {
 		return
 	}
@@ -135,17 +136,22 @@ func pushNotification(target int, notification *notifications.Notification) {
 
 	notificationLimiter.SentNotification(target, notification.Arguments, notification.Category)
 
-	if notification.Category == notifications.NEW_ROOM || notification.Category == notifications.ROOM_JOINED {
+	if notification.Category != notifications.NEW_FOLLOWER {
 		return
 	}
 
-	err = notificationStorage.Store(target, notification)
+	err = notificationStorage.Store(target, &notifications.Notification{
+		Timestamp: time.Now().Second(),
+		From:      notification.Arguments["id"].(int),
+		Category:  notification.Category,
+	})
+
 	if err != nil {
 		log.Printf("notificationStorage.Store err: %v\n", err)
 	}
 }
 
-func onRoomCreation(event *pubsub.Event) ([]int, *notifications.Notification, error) {
+func onRoomCreation(event *pubsub.Event) ([]int, *notifications.PushNotification, error) {
 	if pubsub.RoomVisibility(event.Params["visibility"].(string)) == pubsub.Private {
 		return nil, nil, errRoomPrivate
 	}
@@ -171,7 +177,7 @@ func onRoomCreation(event *pubsub.Event) ([]int, *notifications.Notification, er
 		return nil, nil, err
 	}
 
-	notification := func() *notifications.Notification {
+	notification := func() *notifications.PushNotification {
 		if name == "" {
 			return notifications.NewRoomNotification(int(room), displayName)
 		}
@@ -182,7 +188,7 @@ func onRoomCreation(event *pubsub.Event) ([]int, *notifications.Notification, er
 	return targets, notification, nil
 }
 
-func onRoomJoined(event *pubsub.Event) ([]int, *notifications.Notification, error) {
+func onRoomJoined(event *pubsub.Event) ([]int, *notifications.PushNotification, error) {
 	if pubsub.RoomVisibility(event.Params["visibility"].(string)) == pubsub.Private {
 		return nil, nil, errRoomPrivate
 	}
@@ -208,7 +214,7 @@ func onRoomJoined(event *pubsub.Event) ([]int, *notifications.Notification, erro
 		return nil, nil, err
 	}
 
-	notification := func() *notifications.Notification {
+	notification := func() *notifications.PushNotification {
 		if name == "" {
 			return notifications.NewRoomJoinedNotification(int(room), displayName)
 		}
@@ -219,7 +225,7 @@ func onRoomJoined(event *pubsub.Event) ([]int, *notifications.Notification, erro
 	return targets, notification, nil
 }
 
-func onNewFollower(event *pubsub.Event) ([]int, *notifications.Notification, error) {
+func onNewFollower(event *pubsub.Event) ([]int, *notifications.PushNotification, error) {
 	creator, err := getId(event, "follower")
 	if err != nil {
 		return nil, nil, err
@@ -238,7 +244,7 @@ func onNewFollower(event *pubsub.Event) ([]int, *notifications.Notification, err
 	return []int{int(targetID)}, notifications.NewFollowerNotification(creator, displayName), nil
 }
 
-func onRoomInvite(event *pubsub.Event) ([]int, *notifications.Notification, error) {
+func onRoomInvite(event *pubsub.Event) ([]int, *notifications.PushNotification, error) {
 	creator, err := getId(event, "from")
 	if err != nil {
 		return nil, nil, err
@@ -260,7 +266,7 @@ func onRoomInvite(event *pubsub.Event) ([]int, *notifications.Notification, erro
 		return nil, nil, err
 	}
 
-	notification := func() *notifications.Notification {
+	notification := func() *notifications.PushNotification {
 		if name == "" {
 			return notifications.NewRoomInviteNotification(int(room), displayName)
 		}

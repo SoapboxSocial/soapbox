@@ -17,14 +17,22 @@ type Alert struct {
 	Arguments []string `json:"loc-args"`
 }
 
-type Notification struct {
+// PushNotification is JSON encoded and sent to the APNS service.
+type PushNotification struct {
 	Category  NotificationCategory   `json:"category"`
 	Alert     Alert                  `json:"alert"`
 	Arguments map[string]interface{} `json:"arguments"`
 }
 
-func NewRoomNotification(id int, creator string) *Notification {
-	return &Notification{
+// Notification is stored in redis for the notification endpoint.
+type Notification struct {
+	Timestamp int                  `json:"timestamp"`
+	From      int                  `json:"from"`
+	Category  NotificationCategory `json:"category"`
+}
+
+func NewRoomNotification(id int, creator string) *PushNotification {
+	return &PushNotification{
 		Category: NEW_ROOM,
 		Alert: Alert{
 			Key:       "new_room_notification",
@@ -34,8 +42,8 @@ func NewRoomNotification(id int, creator string) *Notification {
 	}
 }
 
-func NewRoomNotificationWithName(id int, creator, name string) *Notification {
-	return &Notification{
+func NewRoomNotificationWithName(id int, creator, name string) *PushNotification {
+	return &PushNotification{
 		Category: NEW_ROOM,
 		Alert: Alert{
 			Key:       "new_room_with_name_notification",
@@ -45,8 +53,8 @@ func NewRoomNotificationWithName(id int, creator, name string) *Notification {
 	}
 }
 
-func NewFollowerNotification(id int, follower string) *Notification {
-	return &Notification{
+func NewFollowerNotification(id int, follower string) *PushNotification {
+	return &PushNotification{
 		Category: NEW_FOLLOWER,
 		Alert: Alert{
 			Key:       "new_follower_notification",
@@ -56,8 +64,8 @@ func NewFollowerNotification(id int, follower string) *Notification {
 	}
 }
 
-func NewRoomJoinedNotification(id int, participant string) *Notification {
-	return &Notification{
+func NewRoomJoinedNotification(id int, participant string) *PushNotification {
+	return &PushNotification{
 		Category: ROOM_JOINED,
 		Alert: Alert{
 			Body:      fmt.Sprintf("%s joined a room, why not join them?", participant),
@@ -68,8 +76,8 @@ func NewRoomJoinedNotification(id int, participant string) *Notification {
 	}
 }
 
-func NewRoomJoinedNotificationWithName(id int, participant, name string) *Notification {
-	return &Notification{
+func NewRoomJoinedNotificationWithName(id int, participant, name string) *PushNotification {
+	return &PushNotification{
 		Category: ROOM_JOINED,
 		Alert: Alert{
 			Body:      fmt.Sprintf("%s joined the room \"%s\", why not join them?", participant, name),
@@ -80,8 +88,8 @@ func NewRoomJoinedNotificationWithName(id int, participant, name string) *Notifi
 	}
 }
 
-func NewRoomInviteNotification(id int, from string) *Notification {
-	return &Notification{
+func NewRoomInviteNotification(id int, from string) *PushNotification {
+	return &PushNotification{
 		Category: ROOM_INVITE,
 		Alert: Alert{
 			Body:      fmt.Sprintf("%s invited you to join a room", from),
@@ -92,8 +100,8 @@ func NewRoomInviteNotification(id int, from string) *Notification {
 	}
 }
 
-func NewRoomInviteNotificationWithName(id int, from, room string) *Notification {
-	return &Notification{
+func NewRoomInviteNotificationWithName(id int, from, room string) *PushNotification {
+	return &PushNotification{
 		Category: ROOM_JOINED,
 		Alert: Alert{
 			Body:      fmt.Sprintf("%s invited you to join the room \"%s\"", from, room),

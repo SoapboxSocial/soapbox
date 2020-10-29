@@ -28,6 +28,7 @@ func NewLimiter(rdb *redis.Client, currentRoom *rooms.CurrentRoomBackend) *Limit
 }
 
 func (l *Limiter) ShouldSendNotification(target int, args map[string]interface{}, category notifications.NotificationCategory) bool {
+	// @TODO WE SHOULD LIMIT NEW FOLLOWER NOTIFICATION SO SOMEONE CANT REFOLLOW AND SPAM
 	if category == notifications.NEW_FOLLOWER || category == notifications.NEW_ROOM {
 		return true
 	}

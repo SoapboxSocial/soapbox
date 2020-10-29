@@ -19,7 +19,7 @@ func NewService(topic string, client *apns2.Client) *Service {
 	}
 }
 
-func (s *Service) Send(target string, notification Notification) error {
+func (s *Service) Send(target string, notification PushNotification) error {
 	data, err := json.Marshal(map[string]interface{}{"aps": notification})
 	if err != nil {
 		return err

@@ -37,6 +37,13 @@ type Profile struct {
 	LinkedAccounts []LinkedAccount `json:"linked_accounts"`
 }
 
+type NotificationUser struct {
+	ID          int    `json:"id"`
+	Username    string `json:"username"`
+	IsFollowing bool   `json:"is_following"`
+	Image       string `json:"image"`
+}
+
 type UserBackend struct {
 	db *sql.DB
 }
@@ -121,6 +128,35 @@ func (ub *UserBackend) ProfileByID(id, from int) (*Profile, error) {
 	if err == nil {
 		profile.LinkedAccounts = accounts
 	}
+
+	return profile, nil
+}
+
+func (ub *UserBackend) NotificationUserFor(id, forUser int) (*NotificationUser, error) {
+	query := `SELECT 
+       id, username, image,
+       (SELECT COUNT(*) FROM followers WHERE follower = $1 AND user_id = id) AS is_following FROM users WHERE id = $2;`
+
+	stmt, err := ub.db.Prepare(query)
+	if err != nil {
+		return nil, err
+	}
+
+	profile := &NotificationUser{}
+
+	var isFollowing int
+	err = stmt.QueryRow(forUser, id).Scan(
+		&profile.ID,
+		&profile.Username,
+		&profile.Image,
+		&isFollowing,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	profile.IsFollowing = isFollowing == 1
 
 	return profile, nil
 }

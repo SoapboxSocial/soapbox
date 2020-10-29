@@ -27,7 +27,7 @@ type MeEndpoint struct {
 //   - group invites
 //   - terms of service updates?
 type Notification struct {
-	Timestamp int                                `json:"timestamp"`
+	Timestamp int64                              `json:"timestamp"`
 	From      *users.NotificationUser            `json:"from"`
 	Category  notifications.NotificationCategory `json:"category"`
 }

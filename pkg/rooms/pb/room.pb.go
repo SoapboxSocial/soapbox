@@ -1646,7 +1646,7 @@ var file_room_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_room_proto_goTypes = []interface{}{
 	(Visibility)(0),                 // 0: Visibility
 	(SignalRequest_Command_Type)(0), // 1: SignalRequest.Command.Type
-	(SignalReply_Event_Type)(0),     // 2: SignalReply.Event.Category
+	(SignalReply_Event_Type)(0),     // 2: SignalReply.Event.Type
 	(*SignalRequest)(nil),           // 3: SignalRequest
 	(*SignalReply)(nil),             // 4: SignalReply
 	(*JoinRequest)(nil),             // 5: JoinRequest

@@ -77,7 +77,7 @@ func (m *MeEndpoint) GetNotifications(w http.ResponseWriter, r *http.Request) {
 	for _, notification := range list {
 		populatedNotification := Notification{Timestamp: notification.Timestamp, Category: notification.Category}
 
-		from, err := m.users.NotificationUserFor(notification.From, id)
+		from, err := m.users.NotificationUserFor(notification.From)
 		if err != nil {
 			log.Printf("users.NotificationUserFor err: %v\n", err)
 			continue

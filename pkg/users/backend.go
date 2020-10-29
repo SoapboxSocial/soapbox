@@ -132,7 +132,7 @@ func (ub *UserBackend) ProfileByID(id, from int) (*Profile, error) {
 }
 
 func (ub *UserBackend) NotificationUserFor(id int) (*NotificationUser, error) {
-	query := `SELECT id, username, image FROM users WHERE id = $2;`
+	query := `SELECT id, username, image FROM users WHERE id = $1;`
 
 	stmt, err := ub.db.Prepare(query)
 	if err != nil {

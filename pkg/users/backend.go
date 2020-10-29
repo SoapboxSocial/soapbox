@@ -38,9 +38,9 @@ type Profile struct {
 }
 
 type NotificationUser struct {
-	ID          int    `json:"id"`
-	Username    string `json:"username"`
-	Image       string `json:"image"`
+	ID       int    `json:"id"`
+	Username string `json:"username"`
+	Image    string `json:"image"`
 }
 
 type UserBackend struct {

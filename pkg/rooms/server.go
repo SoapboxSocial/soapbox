@@ -64,10 +64,6 @@ func (s *Server) ListRoomsV2(ctx context.Context, auth *pb.Auth) (*pb.RoomList, 
 			continue
 		}
 
-		if r.PeerCount() >= MAX_PEERS {
-			continue
-		}
-
 		proto := r.ToProtoForPeer()
 		proto.Role = ""
 

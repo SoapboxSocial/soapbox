@@ -21,6 +21,17 @@ type MeEndpoint struct {
 	la          *linkedaccounts.Backend
 }
 
+// Notification that the API returns.
+// @TODO IN THE FUTURE WE MAY WANT TO BE ABLE TO SEND NOTIFICATIONS WITHOUT A USER, AND OTHER DATA?
+// For example:
+//   - group invites
+//   - terms of service updates?
+type Notification struct {
+	Timestamp int                                `json:"timestamp"`
+	From      *users.NotificationUser            `json:"from"`
+	Category  notifications.NotificationCategory `json:"category"`
+}
+
 func NewMeEndpoint(users *users.UserBackend, ns *notifications.Storage, config *oauth1.Config, la *linkedaccounts.Backend) *MeEndpoint {
 	return &MeEndpoint{
 		users:       users,
@@ -62,7 +73,21 @@ func (m *MeEndpoint) GetNotifications(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = httputil.JsonEncode(w, list)
+	populated := make([]Notification, 0)
+	for _, notification := range list {
+		populatedNotification := Notification{Timestamp: notification.Timestamp, Category: notification.Category}
+
+		from, err := m.users.NotificationUserFor(notification.From)
+		if err != nil {
+			log.Printf("users.NotificationUserFor err: %v\n", err)
+			continue
+		}
+
+		populatedNotification.From = from
+		populated = append(populated, populatedNotification)
+	}
+
+	err = httputil.JsonEncode(w, populated)
 	if err != nil {
 		log.Printf("failed to write me response: %s\n", err.Error())
 	}

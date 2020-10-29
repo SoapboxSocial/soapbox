@@ -37,6 +37,12 @@ type Profile struct {
 	LinkedAccounts []LinkedAccount `json:"linked_accounts"`
 }
 
+type NotificationUser struct {
+	ID       int    `json:"id"`
+	Username string `json:"username"`
+	Image    string `json:"image"`
+}
+
 type UserBackend struct {
 	db *sql.DB
 }
@@ -120,6 +126,29 @@ func (ub *UserBackend) ProfileByID(id, from int) (*Profile, error) {
 	accounts, err := ub.LinkedAccounts(id)
 	if err == nil {
 		profile.LinkedAccounts = accounts
+	}
+
+	return profile, nil
+}
+
+func (ub *UserBackend) NotificationUserFor(id int) (*NotificationUser, error) {
+	query := `SELECT id, username, image FROM users WHERE id = $1;`
+
+	stmt, err := ub.db.Prepare(query)
+	if err != nil {
+		return nil, err
+	}
+
+	profile := &NotificationUser{}
+
+	err = stmt.QueryRow(id).Scan(
+		&profile.ID,
+		&profile.Username,
+		&profile.Image,
+	)
+
+	if err != nil {
+		return nil, err
 	}
 
 	return profile, nil

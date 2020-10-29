@@ -141,7 +141,7 @@ func pushNotification(target int, notification *notifications.PushNotification) 
 	}
 
 	err = notificationStorage.Store(target, &notifications.Notification{
-		Timestamp: time.Now().Second(),
+		Timestamp: time.Now().Unix(),
 		From:      notification.Arguments["id"].(int),
 		Category:  notification.Category,
 	})

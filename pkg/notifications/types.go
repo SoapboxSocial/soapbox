@@ -26,7 +26,7 @@ type PushNotification struct {
 
 // Notification is stored in redis for the notification endpoint.
 type Notification struct {
-	Timestamp int                  `json:"timestamp"`
+	Timestamp int64                `json:"timestamp"`
 	From      int                  `json:"from"`
 	Category  NotificationCategory `json:"category"`
 }

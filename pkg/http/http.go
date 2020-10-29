@@ -69,7 +69,7 @@ func JsonSuccess(w http.ResponseWriter) {
 
 // JsonEncode marshals an interface and writes it to the response.
 func JsonEncode(w http.ResponseWriter, v interface{}) error {
-	w.Header().Set("Content-Category", "application/json")
+	w.Header().Set("Content-Type", "application/json")
 	return json.NewEncoder(w).Encode(v)
 }
 

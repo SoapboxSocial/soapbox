@@ -33,7 +33,7 @@ func TestDevicesEndpoint_AddDevice(t *testing.T) {
 
 	req := r.WithContext(auth.WithUserID(r.Context(), session))
 
-	req.Header.Set("Content-Category", "application/x-www-form-urlencoded")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	db, mock, err := sqlmock.New()
 	if err != nil {
@@ -63,7 +63,7 @@ func TestDevicesEndpoint_AddDeviceFailsWithoutToken(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	req.Header.Set("Content-Category", "application/x-www-form-urlencoded")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	db, _, err := sqlmock.New()
 	if err != nil {
@@ -95,7 +95,7 @@ func TestDevicesEndpoint_AddDeviceWithBackendError(t *testing.T) {
 
 	req := r.WithContext(auth.WithUserID(r.Context(), session))
 
-	req.Header.Set("Content-Category", "application/x-www-form-urlencoded")
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 	db, mock, err := sqlmock.New()
 	if err != nil {

@@ -493,7 +493,8 @@ type JoinRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Room    int64  `protobuf:"varint,1,opt,name=room,proto3" json:"room,omitempty"`
+	Room int64 `protobuf:"varint,1,opt,name=room,proto3" json:"room,omitempty"`
+	// Deprecated: use auth header instead.
 	Session string `protobuf:"bytes,2,opt,name=session,proto3" json:"session,omitempty"`
 }
 
@@ -776,7 +777,8 @@ type CreateRequest struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Name       string     `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// Deprecated: use auth header instead.
 	Session    string     `protobuf:"bytes,2,opt,name=session,proto3" json:"session,omitempty"`
 	Visibility Visibility `protobuf:"varint,3,opt,name=visibility,proto3,enum=Visibility" json:"visibility,omitempty"`
 }
@@ -2002,7 +2004,7 @@ const _ = grpc.SupportPackageIsVersion6
 type RoomServiceClient interface {
 	Signal(ctx context.Context, opts ...grpc.CallOption) (RoomService_SignalClient, error)
 	ListRooms(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*RoomList, error)
-	// @TODO ONCE WE FIGURE OUT AUTHENTICATION
+	// Deprecated: Use ListRooms instead
 	ListRoomsV2(ctx context.Context, in *Auth, opts ...grpc.CallOption) (*RoomList, error)
 }
 
@@ -2067,7 +2069,7 @@ func (c *roomServiceClient) ListRoomsV2(ctx context.Context, in *Auth, opts ...g
 type RoomServiceServer interface {
 	Signal(RoomService_SignalServer) error
 	ListRooms(context.Context, *empty.Empty) (*RoomList, error)
-	// @TODO ONCE WE FIGURE OUT AUTHENTICATION
+	// Deprecated: Use ListRooms instead
 	ListRoomsV2(context.Context, *Auth) (*RoomList, error)
 }
 

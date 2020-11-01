@@ -3,6 +3,7 @@ package rooms
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"strings"
 	"sync"
@@ -11,6 +12,7 @@ import (
 	sfu "github.com/pion/ion-sfu/pkg"
 	"github.com/pion/webrtc/v3"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
@@ -49,11 +51,26 @@ func NewServer(sfu *sfu.SFU, sm *sessions.SessionManager, ub *users.UserBackend,
 	}
 }
 
+// Deprecated: We will just keep this around for a bit but its deprecated.
 func (s *Server) ListRoomsV2(ctx context.Context, auth *pb.Auth) (*pb.RoomList, error) {
+	return s.roomsForUser(auth.Session)
+}
+
+// Deprecated: Remove
+func (s *Server) ListRooms(ctx context.Context, _ *empty.Empty) (*pb.RoomList, error) {
+	auth, err := authForContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.roomsForUser(auth)
+}
+
+func (s *Server) roomsForUser(session string) (*pb.RoomList, error) {
 	s.mux.RLock()
 	defer s.mux.RUnlock()
 
-	id, err := s.sm.GetUserIDForSession(auth.Session)
+	id, err := s.sm.GetUserIDForSession(session)
 	if err != nil {
 		return nil, err
 	}
@@ -61,30 +78,6 @@ func (s *Server) ListRoomsV2(ctx context.Context, auth *pb.Auth) (*pb.RoomList, 
 	rooms := make([]*pb.RoomState, 0)
 	for _, r := range s.rooms {
 		if !r.CanJoin(id) {
-			continue
-		}
-
-		proto := r.ToProtoForPeer()
-		proto.Role = ""
-
-		if len(proto.Members) == 0 {
-			continue
-		}
-
-		rooms = append(rooms, proto)
-	}
-
-	return &pb.RoomList{Rooms: rooms}, nil
-}
-
-// Deprecated: Remove
-func (s *Server) ListRooms(context.Context, *empty.Empty) (*pb.RoomList, error) {
-	s.mux.RLock()
-	defer s.mux.RUnlock()
-
-	rooms := make([]*pb.RoomState, 0)
-	for _, r := range s.rooms {
-		if r.IsPrivate() {
 			continue
 		}
 
@@ -111,9 +104,16 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 	var peer *sfu.WebRTCTransport
 	var user *member
 
+	auth, _ := authForContext(stream.Context())
+	// Auth will be able to be moved out.
+
 	switch payload := in.Payload.(type) {
 	case *pb.SignalRequest_Join:
-		user, err = s.getMemberForSession(payload.Join.Session)
+		if auth == "" {
+			auth = payload.Join.Session
+		}
+
+		user, err = s.getMemberForSession(auth)
 		if err != nil {
 			return status.Errorf(codes.Unauthenticated, "unauthenticated")
 		}
@@ -179,7 +179,11 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 			log.Printf("queue.Publish err: %v\n", err)
 		}
 	case *pb.SignalRequest_Create:
-		user, err = s.getMemberForSession(payload.Create.Session)
+		if auth == "" {
+			auth = payload.Create.Session
+		}
+
+		user, err = s.getMemberForSession(auth)
 		if err != nil {
 			return status.Errorf(codes.Unauthenticated, "unauthenticated")
 		}
@@ -387,4 +391,18 @@ func (s *Server) getMemberForSession(session string) (*member, error) {
 
 	// @TODO ROLE SHOULD BE BASED ON STUFF
 	return &member{ID: id, DisplayName: u.DisplayName, Image: u.Image, IsMuted: false, Role: SPEAKER}, nil
+}
+
+func authForContext(ctx context.Context) (string, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return "", errors.New("missing metadata")
+	}
+
+	auth := md.Get("authorization")
+	if len(auth) != 1 {
+		return "", errors.New("unauthorized")
+	}
+
+	return auth[0], nil
 }

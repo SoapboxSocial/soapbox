@@ -21,6 +21,8 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
+const MAX_PEERS = 16
+
 type Server struct {
 	mux sync.RWMutex
 
@@ -54,6 +56,7 @@ func (s *Server) ListRoomsV2(ctx context.Context, auth *pb.Auth) (*pb.RoomList, 
 	return s.roomsForUser(auth.Session)
 }
 
+// Deprecated: Remove
 func (s *Server) ListRooms(ctx context.Context, _ *empty.Empty) (*pb.RoomList, error) {
 	auth, err := authForContext(ctx)
 	if err != nil {
@@ -121,6 +124,10 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 
 		if !ok {
 			return status.Errorf(codes.Internal, "join error room closed")
+		}
+
+		if r.PeerCount() >= MAX_PEERS {
+			return status.Errorf(codes.Internal, "join error room full")
 		}
 
 		if !r.CanJoin(user.ID) {

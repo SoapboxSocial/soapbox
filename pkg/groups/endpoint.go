@@ -30,6 +30,7 @@ func (e *Endpoint) Router() *mux.Router {
 	r := mux.NewRouter()
 
 	r.Path("/create").Methods("POST").HandlerFunc(e.CreateGroup)
+	r.Path("/{id:[0-9]+}/invite").Methods("POST").HandlerFunc(e.InviteUsersToGroup)
 
 	return r
 }
@@ -105,6 +106,12 @@ func (e *Endpoint) GetGroupsForUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("failed to write user response: %s\n", err.Error())
 	}
+}
+
+func (e *Endpoint) InviteUsersToGroup(w http.ResponseWriter, r *http.Request) {
+	// @TODO, ENSURE:
+	//   - caller is admin
+	//   - caller is followed by all users he is inviting.
 }
 
 func (e *Endpoint) handleGroupImage(r *http.Request) (string, error) {

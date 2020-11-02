@@ -10,6 +10,8 @@ const (
 	EventTypeUserUpdate
 	EventTypeRoomLeft
 	EventTypeNewUser
+	EventTypeNewGroup
+	EventTypeGroupInvite
 )
 
 type RoomVisibility string

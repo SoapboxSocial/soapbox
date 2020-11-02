@@ -21,7 +21,7 @@ func (ib *Backend) Store(bytes []byte) (string, error) {
 }
 
 func (ib *Backend) StoreGroupPhoto(bytes []byte) (string, error) {
-	return ib.store(ib.path+"group", bytes)
+	return ib.store(ib.path+"/groups", bytes)
 }
 
 func (ib *Backend) Remove(name string) error {

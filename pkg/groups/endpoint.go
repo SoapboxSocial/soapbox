@@ -1,6 +1,7 @@
 package groups
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -68,6 +69,7 @@ func (e *Endpoint) CreateGroup(w http.ResponseWriter, r *http.Request) {
 
 	img, err := e.handleGroupImage(r)
 	if err != nil && err != http.ErrMissingFile {
+		fmt.Println(err)
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}

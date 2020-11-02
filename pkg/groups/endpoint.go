@@ -59,13 +59,19 @@ func (e *Endpoint) CreateGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	groupType := strings.TrimSpace(r.Form.Get("group_type"))
+	if groupType != "public" && groupType != "private" && groupType != "restricted" {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid group")
+		return
+	}
+
 	img, err := e.handleGroupImage(r)
 	if err != nil && err != http.ErrMissingFile {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}
 
-	id, err := e.backend.CreateGroup(userID, name, description, img, "public")
+	id, err := e.backend.CreateGroup(userID, name, description, img, groupType)
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "failed to create")
 		return

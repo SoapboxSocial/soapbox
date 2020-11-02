@@ -56,7 +56,7 @@ CREATE TABLE IF NOT exists groups (
     FOREIGN KEY (group_type) REFERENCES group_types(id) ON DELETE CASCADE
 );
 
-CREATE UNIQUE INDEX idx_group_name ON groups (name);
+CREATE UNIQUE INDEX idx_group_name ON groups (lower(name));
 
 CREATE TABLE IF NOT exists group_members (
     group_id INT NOT NULL,

@@ -75,13 +75,12 @@ func NewRoomLeftEvent(room, user int) Event {
 	}
 }
 
-func NewGroupEvent(id, creator int, name string) Event {
+func NewGroupCreationEvent(id, creator int, name string) Event {
 	return Event{
 		Type:   EventTypeNewGroup,
 		Params: map[string]interface{}{"id": id, "creator": creator, "name": name},
 	}
 }
-
 
 func NewGroupInviteEvent(from, id, group int) Event {
 	return Event{

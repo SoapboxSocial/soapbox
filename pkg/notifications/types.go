@@ -9,7 +9,7 @@ const (
 	NEW_FOLLOWER NotificationCategory = "NEW_FOLLOWER"
 	ROOM_INVITE  NotificationCategory = "ROOM_INVITE"
 	ROOM_JOINED  NotificationCategory = "ROOM_JOINED"
-	GROUP_INVITE  NotificationCategory = "GROUP_INVITE"
+	GROUP_INVITE NotificationCategory = "GROUP_INVITE"
 )
 
 type Alert struct {

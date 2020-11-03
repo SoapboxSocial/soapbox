@@ -82,7 +82,7 @@ func (e *Endpoint) CreateGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	e.queue.Publish(pubsub.GroupTopic, pubsub.NewGroupEvent(id, userID, name))
+	e.queue.Publish(pubsub.GroupTopic, pubsub.NewGroupCreationEvent(id, userID, name))
 
 	err = httputil.JsonEncode(w, map[string]interface{}{"success": true, "id": id})
 	if err != nil {

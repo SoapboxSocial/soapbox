@@ -119,6 +119,8 @@ func (e *Endpoint) InviteUsersToGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// @TODO ENSURE WE HAVE USER IDS
+
 	group, err := strconv.Atoi(params["id"])
 	if err != nil {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid group")

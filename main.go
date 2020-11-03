@@ -127,7 +127,7 @@ func main() {
 
 	pb := linkedaccounts.NewLinkedAccountsBackend(db)
 
-	meEndpoint := me.NewMeEndpoint(ub, ns, oauth, pb)
+	meEndpoint := me.NewMeEndpoint(ub, groupsBackend, ns, oauth, pb)
 	meRoutes.HandleFunc("", meEndpoint.GetMe).Methods("GET")
 	meRoutes.HandleFunc("/notifications", meEndpoint.GetNotifications).Methods("GET")
 	meRoutes.HandleFunc("/profiles/twitter", meEndpoint.AddTwitter).Methods("POST")

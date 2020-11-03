@@ -82,7 +82,7 @@ func (e *Endpoint) CreateGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	e.queue.Publish(pubsub.GroupTopic, pubsub.NewGroupCreationEvent(id, userID, name))
+	_ = e.queue.Publish(pubsub.GroupTopic, pubsub.NewGroupCreationEvent(id, userID, name))
 
 	err = httputil.JsonEncode(w, map[string]interface{}{"success": true, "id": id})
 	if err != nil {
@@ -165,7 +165,7 @@ func (e *Endpoint) InviteUsersToGroup(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			e.queue.Publish(pubsub.GroupTopic, pubsub.NewGroupInviteEvent(userID, id, group))
+			_ = e.queue.Publish(pubsub.GroupTopic, pubsub.NewGroupInviteEvent(userID, id, group))
 		}(id)
 	}
 

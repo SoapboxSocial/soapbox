@@ -71,11 +71,11 @@ CREATE UNIQUE INDEX idx_group_membership ON group_members (group_id, user_id);
 
 CREATE TABLE IF NOT exists group_invites (
     group_id INT NOT NULL,
-    from INT NOT NULL,
+    from_id INT NOT NULL,
     user_id INT NOT NULL,
     FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (from) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (from_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE UNIQUE INDEX idx_group_invites ON group_invites (group_id, user_id);

@@ -130,5 +130,15 @@ func (b *Backend) IsAdminForGroup(user, group int) (bool, error) {
 }
 
 func (b *Backend) InviteUser(from, group, user int) error {
+	stmt, err := b.db.Prepare("INSERT INTO group_invites (user_id, group_id, from_id) VALUES ($1, $2, $3);")
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(user, group, from)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

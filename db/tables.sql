@@ -78,4 +78,4 @@ CREATE TABLE IF NOT exists group_invites (
     FOREIGN KEY (from) REFERENCES users(id) ON DELETE CASCADE,
 );
 
-CREATE UNIQUE INDEX idx_group_invites ON group_invites (group_id, user_id, from);
+CREATE UNIQUE INDEX idx_group_invites ON group_invites (group_id, user_id);

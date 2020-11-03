@@ -113,13 +113,13 @@ func NewRoomInviteNotificationWithName(id int, from, room string) *PushNotificat
 	}
 }
 
-func NewGroupInviteNotification(id int, from, room string) *PushNotification {
+func NewGroupInviteNotification(id int, from, group string) *PushNotification {
 	return &PushNotification{
 		Category: ROOM_JOINED,
 		Alert: Alert{
-			Body:      fmt.Sprintf("%s invited you to join the group \"%s\"", from, room),
+			Body:      fmt.Sprintf("%s invited you to join the group \"%s\"", from, group),
 			Key:       "group_invite_notification",
-			Arguments: []string{from, room},
+			Arguments: []string{from, group},
 		},
 		Arguments: map[string]interface{}{"id": id},
 	}

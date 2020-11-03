@@ -13,6 +13,7 @@ import (
 
 	"github.com/soapboxsocial/soapbox/pkg/devices"
 	"github.com/soapboxsocial/soapbox/pkg/followers"
+	"github.com/soapboxsocial/soapbox/pkg/groups"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/notifications/limiter"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
@@ -27,6 +28,7 @@ var (
 var devicesBackend *devices.Backend
 var userBackend *users.UserBackend
 var followersBackend *followers.FollowersBackend
+var groupsBackend *groups.Backend
 var service *notifications.Service
 var notificationLimiter *limiter.Limiter
 var notificationStorage *notifications.Storage
@@ -53,6 +55,7 @@ func main() {
 	currentRoom := rooms.NewCurrentRoomBackend(rdb)
 	notificationLimiter = limiter.NewLimiter(rdb, currentRoom)
 	notificationStorage = notifications.NewStorage(rdb)
+	groupsBackend = groups.NewBackend(db)
 
 	authKey, err := token.AuthKeyFromFile("/conf/authkey.p8")
 	if err != nil {
@@ -247,20 +250,32 @@ func onNewFollower(event *pubsub.Event) ([]int, *notifications.PushNotification,
 }
 
 func onGroupInvite(event *pubsub.Event) ([]int, *notifications.PushNotification, error) {
-	// @TODO
-	//creator, err := getId(event, "from")
-	//if err != nil {
-	//	return nil, nil, err
-	//}
-	//
-	//targetID, ok := event.Params["id"].(float64)
-	//if !ok {
-	//	return nil, nil, errors.New("failed to recover target ID")
-	//}
-	//
-	//// @TODO GET GROUP NAME
-	////return []int{int(targetID)}, notifications.NewFollowerNotification(creator, displayName), nil
-	return nil, nil, nil
+	creator, err := getId(event, "from")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	targetID, err := getId(event, "id")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	groupId, err := getId(event, "group")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	displayName, err := getDisplayName(creator)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	group, err := getGroupName(creator)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return []int{targetID}, notifications.NewGroupInviteNotification(groupId, displayName, group), nil
 }
 
 func onRoomInvite(event *pubsub.Event) ([]int, *notifications.PushNotification, error) {
@@ -316,4 +331,13 @@ func getDisplayName(id int) (string, error) {
 	}
 
 	return user.DisplayName, nil
+}
+
+func getGroupName(id int) (string, error) {
+	group, err := groupsBackend.FindById(id)
+	if err != nil {
+		return "", err
+	}
+
+	return group.Name, nil
 }

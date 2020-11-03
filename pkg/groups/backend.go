@@ -95,3 +95,8 @@ func (b *Backend) GetGroupsForUser(user, limit, offset int) ([]*Group, error) {
 
 	return result, nil
 }
+
+func (b *Backend) IsAdminForGroup(user, group int) (bool, error) {
+	// @TODO
+	return false, nil
+}

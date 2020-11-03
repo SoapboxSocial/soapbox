@@ -111,9 +111,40 @@ func (e *Endpoint) GetGroupsForUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (e *Endpoint) InviteUsersToGroup(w http.ResponseWriter, r *http.Request) {
-	// @TODO, ENSURE:
-	//   - caller is admin
+	params := mux.Vars(r)
+
+	err := r.ParseForm()
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	group, err := strconv.Atoi(params["id"])
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid group")
+		return
+	}
+
+	userID, ok := auth.GetUserIDFromContext(r.Context())
+	if !ok {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	ok, err = e.backend.IsAdminForGroup(userID, group)
+	if !ok {
+		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeUnauthorized, "unauthorized")
+		return
+	}
+
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "server error")
+		return
+	}
+
+	// @TODO:
 	//   - caller is followed by all users he is inviting.
+	//   - invite
 }
 
 func (e *Endpoint) handleGroupImage(r *http.Request) (string, error) {

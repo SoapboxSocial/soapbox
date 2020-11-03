@@ -97,6 +97,21 @@ func (b *Backend) GetGroupsForUser(user, limit, offset int) ([]*Group, error) {
 }
 
 func (b *Backend) IsAdminForGroup(user, group int) (bool, error) {
-	// @TODO
-	return false, nil
+	stmt, err := b.db.Prepare("SELECT COUNT(*) FROM group_members WHERE group_id = ? AND user_id = ? AND role = ?;")
+	if err != nil {
+		return false, err
+	}
+
+	row := stmt.QueryRow(group, user, "admin")
+	var count int
+	err = row.Scan(&count)
+	if err != nil {
+		return false, err
+	}
+
+	return count == 1, nil
+}
+
+func (b *Backend) InviteUsers(from, group int, users []int) error {
+	return nil
 }

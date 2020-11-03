@@ -142,9 +142,15 @@ func (e *Endpoint) InviteUsersToGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// @TODO:
-	//   - caller is followed by all users he is inviting.
-	//   - invite
+	// @TODO INVITE USERS
+
+	// @TODO
+	err = e.backend.InviteUsers(userID, group, []int{1})
+	if err != nil {
+		// @TODO
+	}
+
+	httputil.JsonSuccess(w)
 }
 
 func (e *Endpoint) handleGroupImage(r *http.Request) (string, error) {

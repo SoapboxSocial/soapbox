@@ -112,6 +112,6 @@ func (b *Backend) IsAdminForGroup(user, group int) (bool, error) {
 	return count == 1, nil
 }
 
-func (b *Backend) InviteUsers(from, group int, users []int) error {
+func (b *Backend) InviteUser(from, group, user int) error {
 	return nil
 }

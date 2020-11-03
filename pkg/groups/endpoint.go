@@ -12,11 +12,13 @@ import (
 	auth "github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/images"
+	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 )
 
 type Endpoint struct {
 	backend *Backend
 	images  *images.Backend
+	queue   *pubsub.Queue
 }
 
 func NewEndpoint(backend *Backend, ib *images.Backend) *Endpoint {
@@ -80,6 +82,8 @@ func (e *Endpoint) CreateGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	e.queue.Publish(pubsub.GroupTopic, pubsub.NewGroupEvent(id, userID, name))
+
 	err = httputil.JsonEncode(w, map[string]interface{}{"success": true, "id": id})
 	if err != nil {
 		log.Println("error writing response: " + err.Error())
@@ -119,7 +123,12 @@ func (e *Endpoint) InviteUsersToGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// @TODO ENSURE WE HAVE USER IDS
+	idsStr := r.Form.Get("ids")
+	ids := strings.Split(idsStr, ",")
+	if len(ids) == 0 {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "missing ids")
+		return
+	}
 
 	group, err := strconv.Atoi(params["id"])
 	if err != nil {
@@ -144,12 +153,20 @@ func (e *Endpoint) InviteUsersToGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// @TODO INVITE USERS
+	for _, id := range ids {
+		go func(val string) {
+			id, err := strconv.Atoi(val)
+			if err != nil {
+				return
+			}
 
-	// @TODO
-	err = e.backend.InviteUsers(userID, group, []int{1})
-	if err != nil {
-		// @TODO
+			err = e.backend.InviteUser(userID, group, id)
+			if err != nil {
+				return
+			}
+
+			e.queue.Publish(pubsub.GroupTopic, pubsub.NewGroupInviteEvent(userID, id, group))
+		}(id)
 	}
 
 	httputil.JsonSuccess(w)

@@ -69,7 +69,7 @@ func main() {
 
 	service = notifications.NewService("app.social.soapbox", client)
 
-	events := queue.Subscribe(pubsub.RoomTopic, pubsub.UserTopic)
+	events := queue.Subscribe(pubsub.RoomTopic, pubsub.UserTopic, pubsub.GroupTopic)
 
 	for event := range events {
 		go handleEvent(event)
@@ -112,6 +112,8 @@ func getHandler(eventType pubsub.EventType) handlerFunc {
 		return onRoomJoined
 	case pubsub.EventTypeRoomInvite:
 		return onRoomInvite
+	case pubsub.EventTypeGroupInvite:
+		return onGroupInvite
 	default:
 		return nil
 	}
@@ -242,6 +244,23 @@ func onNewFollower(event *pubsub.Event) ([]int, *notifications.PushNotification,
 	}
 
 	return []int{int(targetID)}, notifications.NewFollowerNotification(creator, displayName), nil
+}
+
+func onGroupInvite(event *pubsub.Event) ([]int, *notifications.PushNotification, error) {
+	// @TODO
+	//creator, err := getId(event, "from")
+	//if err != nil {
+	//	return nil, nil, err
+	//}
+	//
+	//targetID, ok := event.Params["id"].(float64)
+	//if !ok {
+	//	return nil, nil, errors.New("failed to recover target ID")
+	//}
+	//
+	//// @TODO GET GROUP NAME
+	////return []int{int(targetID)}, notifications.NewFollowerNotification(creator, displayName), nil
+	return nil, nil, nil
 }
 
 func onRoomInvite(event *pubsub.Event) ([]int, *notifications.PushNotification, error) {

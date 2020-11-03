@@ -1,6 +1,7 @@
 package me
 
 import (
+	"errors"
 	"log"
 	"net/http"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/dghubble/oauth1"
 
 	auth "github.com/soapboxsocial/soapbox/pkg/api/middleware"
+	"github.com/soapboxsocial/soapbox/pkg/groups"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/linkedaccounts"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
@@ -16,6 +18,7 @@ import (
 
 type MeEndpoint struct {
 	users       *users.UserBackend
+	groups      *groups.Backend
 	ns          *notifications.Storage
 	oauthConfig *oauth1.Config
 	la          *linkedaccounts.Backend
@@ -29,12 +32,14 @@ type MeEndpoint struct {
 type Notification struct {
 	Timestamp int64                              `json:"timestamp"`
 	From      *users.NotificationUser            `json:"from"`
+	Group     *groups.Group                      `json:"group"`
 	Category  notifications.NotificationCategory `json:"category"`
 }
 
-func NewMeEndpoint(users *users.UserBackend, ns *notifications.Storage, config *oauth1.Config, la *linkedaccounts.Backend) *MeEndpoint {
+func NewMeEndpoint(users *users.UserBackend, groups *groups.Backend, ns *notifications.Storage, config *oauth1.Config, la *linkedaccounts.Backend) *MeEndpoint {
 	return &MeEndpoint{
 		users:       users,
+		groups:      groups,
 		ns:          ns,
 		oauthConfig: config,
 		la:          la,
@@ -84,6 +89,23 @@ func (m *MeEndpoint) GetNotifications(w http.ResponseWriter, r *http.Request) {
 		}
 
 		populatedNotification.From = from
+
+		if notification.Category == notifications.GROUP_INVITE {
+			id, err := getId(notification, "group")
+			if err != nil {
+				log.Printf("getId err: %v\n", err)
+				continue
+			}
+
+			group, err := m.groups.FindById(id)
+			if err != nil {
+				log.Printf("users.NotificationUserFor err: %v\n", err)
+				continue
+			}
+
+			populatedNotification.Group = group
+		}
+
 		populated = append(populated, populatedNotification)
 	}
 
@@ -151,4 +173,13 @@ func (m *MeEndpoint) RemoveTwitter(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httputil.JsonSuccess(w)
+}
+
+func getId(event *notifications.Notification, field string) (int, error) {
+	creator, ok := event.Arguments[field].(float64)
+	if !ok {
+		return 0, errors.New("failed to recover creator")
+	}
+
+	return int(creator), nil
 }

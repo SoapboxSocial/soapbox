@@ -141,18 +141,34 @@ func pushNotification(target int, notification *notifications.PushNotification) 
 
 	notificationLimiter.SentNotification(target, notification.Arguments, notification.Category)
 
-	if notification.Category != notifications.NEW_FOLLOWER {
+	store := getNotificationForStore(notification)
+	if store == nil {
 		return
 	}
 
-	err = notificationStorage.Store(target, &notifications.Notification{
-		Timestamp: time.Now().Unix(),
-		From:      notification.Arguments["id"].(int),
-		Category:  notification.Category,
-	})
-
+	err = notificationStorage.Store(target, store)
 	if err != nil {
 		log.Printf("notificationStorage.Store err: %v\n", err)
+	}
+}
+
+func getNotificationForStore(notification *notifications.PushNotification) *notifications.Notification {
+	switch notification.Category {
+	case notifications.NEW_FOLLOWER:
+		return &notifications.Notification{
+			Timestamp: time.Now().Unix(),
+			From:      notification.Arguments["id"].(int),
+			Category:  notification.Category,
+		}
+	case notifications.GROUP_INVITE:
+		return &notifications.Notification{
+			Timestamp: time.Now().Unix(),
+			From:      notification.Arguments["from"].(int),
+			Category:  notification.Category,
+			Arguments: map[string]interface{}{"group": notification.Arguments["id"].(int)},
+		}
+	default:
+		return nil
 	}
 }
 
@@ -275,7 +291,7 @@ func onGroupInvite(event *pubsub.Event) ([]int, *notifications.PushNotification,
 		return nil, nil, err
 	}
 
-	return []int{targetID}, notifications.NewGroupInviteNotification(groupId, displayName, group), nil
+	return []int{targetID}, notifications.NewGroupInviteNotification(groupId, creator, displayName, group), nil
 }
 
 func onRoomInvite(event *pubsub.Event) ([]int, *notifications.PushNotification, error) {

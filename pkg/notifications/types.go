@@ -27,9 +27,10 @@ type PushNotification struct {
 
 // Notification is stored in redis for the notification endpoint.
 type Notification struct {
-	Timestamp int64                `json:"timestamp"`
-	From      int                  `json:"from"`
-	Category  NotificationCategory `json:"category"`
+	Timestamp int64                  `json:"timestamp"`
+	From      int                    `json:"from"`
+	Category  NotificationCategory   `json:"category"`
+	Arguments map[string]interface{} `json:"arguments"`
 }
 
 func NewRoomNotification(id int, creator string) *PushNotification {
@@ -113,7 +114,7 @@ func NewRoomInviteNotificationWithName(id int, from, room string) *PushNotificat
 	}
 }
 
-func NewGroupInviteNotification(id int, from, group string) *PushNotification {
+func NewGroupInviteNotification(groupId, fromId int, from, group string) *PushNotification {
 	return &PushNotification{
 		Category: ROOM_JOINED,
 		Alert: Alert{
@@ -121,6 +122,6 @@ func NewGroupInviteNotification(id int, from, group string) *PushNotification {
 			Key:       "group_invite_notification",
 			Arguments: []string{from, group},
 		},
-		Arguments: map[string]interface{}{"id": id},
+		Arguments: map[string]interface{}{"id": groupId, "from": fromId},
 	}
 }

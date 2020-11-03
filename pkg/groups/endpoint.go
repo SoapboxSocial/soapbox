@@ -21,10 +21,11 @@ type Endpoint struct {
 	queue   *pubsub.Queue
 }
 
-func NewEndpoint(backend *Backend, ib *images.Backend) *Endpoint {
+func NewEndpoint(backend *Backend, ib *images.Backend, queue *pubsub.Queue) *Endpoint {
 	return &Endpoint{
 		backend: backend,
 		images:  ib,
+		queue:   queue,
 	}
 }
 

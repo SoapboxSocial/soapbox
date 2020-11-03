@@ -97,7 +97,7 @@ func main() {
 	)
 
 	groupsBackend := groups.NewBackend(db)
-	groupsEndpoint := groups.NewEndpoint(groupsBackend, ib)
+	groupsEndpoint := groups.NewEndpoint(groupsBackend, ib, queue)
 
 	userRoutes.HandleFunc("/{id:[0-9]+}", usersEndpoints.GetUserByID).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/followers", usersEndpoints.GetFollowersForUser).Methods("GET")

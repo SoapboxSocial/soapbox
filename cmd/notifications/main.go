@@ -286,7 +286,7 @@ func onGroupInvite(event *pubsub.Event) ([]int, *notifications.PushNotification,
 		return nil, nil, err
 	}
 
-	group, err := getGroupName(creator)
+	group, err := getGroupName(groupId)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -116,7 +116,7 @@ func NewRoomInviteNotificationWithName(id int, from, room string) *PushNotificat
 
 func NewGroupInviteNotification(groupId, fromId int, from, group string) *PushNotification {
 	return &PushNotification{
-		Category: ROOM_JOINED,
+		Category: GROUP_INVITE,
 		Alert: Alert{
 			Body:      fmt.Sprintf("%s invited you to join the group \"%s\"", from, group),
 			Key:       "group_invite_notification",

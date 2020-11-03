@@ -97,7 +97,7 @@ func (b *Backend) GetGroupsForUser(user, limit, offset int) ([]*Group, error) {
 }
 
 func (b *Backend) FindById(id int) (*Group, error) {
-	stmt, err := b.db.Prepare("SELECT id, name, description, image, group_types.name AS group_type FROM groups INNER JOIN group_types ON (groups.group_type = group_types.id) WHERE groups.id = $1;")
+	stmt, err := b.db.Prepare("SELECT groups.id, groups.name, groups.description, groups.image, group_types.name AS group_type FROM groups INNER JOIN group_types ON (groups.group_type = group_types.id) WHERE groups.id = $1;")
 	if err != nil {
 		return nil, err
 	}
@@ -115,14 +115,13 @@ func (b *Backend) FindById(id int) (*Group, error) {
 }
 
 func (b *Backend) IsAdminForGroup(user, group int) (bool, error) {
-	stmt, err := b.db.Prepare("SELECT COUNT(*) FROM group_members WHERE group_id = ? AND user_id = ? AND role = ?;")
-	if err != nil {
-		return false, err
-	}
+	row := b.db.QueryRow(
+		"SELECT COUNT(*) FROM group_members WHERE group_id = $1 AND user_id = $2 AND role = $3;",
+		group, user, "admin",
+	)
 
-	row := stmt.QueryRow(group, user, "admin")
 	var count int
-	err = row.Scan(&count)
+	err := row.Scan(&count)
 	if err != nil {
 		return false, err
 	}

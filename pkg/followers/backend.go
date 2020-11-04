@@ -90,12 +90,12 @@ func (fb *FollowersBackend) GetAllFollowerIDsFor(id int) ([]int, error) {
 }
 
 func (fb *FollowersBackend) GetFriends(id int) ([]*users.User, error) {
-	stmt, err := fb.db.Prepare("SELECT users.id, users.display_name, users.username, users.image FROM users WHERE id in (SELECT user_id AS user from followers WHERE follower = $1 INTERSECT SELECT follower as user FROM followers WHERE user_id = $2);")
+	stmt, err := fb.db.Prepare("SELECT users.id, users.display_name, users.username, users.image FROM users WHERE id in (SELECT user_id AS user from followers WHERE follower = $1 INTERSECT SELECT follower as user FROM followers WHERE user_id = $1);")
 	if err != nil {
 		return nil, err
 	}
 
-	return fb.executeUserQuery(stmt, id, id)
+	return fb.executeUserQuery(stmt, id)
 }
 
 func (fb *FollowersBackend) executeUserQuery(stmt *sql.Stmt, args ...interface{}) ([]*users.User, error) {

@@ -11,6 +11,7 @@ type Group struct {
 	Description string `json:"description"`
 	Image       string `json:"image,omitempty"`
 	GroupType   string `json:"group_type"`
+	IsMember    *bool  `json:"is_member,omitempty"`
 }
 
 type Backend struct {
@@ -127,6 +128,39 @@ func (b *Backend) IsAdminForGroup(user, group int) (bool, error) {
 	}
 
 	return count == 1, nil
+}
+
+func (b *Backend) GetGroupForUser(user, groupId int) (*Group, error) {
+	query := `SELECT
+		groups.id, groups.name, groups.description, groups.image, 
+		(SELECT COUNT(*) FROM group_members WHERE group_id = $1 AND user_id = $2) AS is_member,
+		group_types.name AS group_type FROM groups INNER JOIN group_types ON (groups.group_type = group_types.id) WHERE groups.id = $3;`
+
+	stmt, err := b.db.Prepare(query)
+	if err != nil {
+		return nil, err
+	}
+
+	group := &Group{}
+
+	var isMember int
+	err = stmt.QueryRow(groupId, user, groupId).Scan(
+		&group.ID,
+		&group.Name,
+		&group.Description,
+		&group.Image,
+		&isMember,
+		&group.GroupType,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var member = isMember == 1
+	group.IsMember = &member
+
+	return group, nil
 }
 
 func (b *Backend) InviteUser(from, group, user int) error {

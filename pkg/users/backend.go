@@ -92,7 +92,7 @@ func (ub *UserBackend) ProfileByID(id, from int) (*Profile, error) {
        (SELECT COUNT(*) FROM followers WHERE user_id = id) AS followers,
        (SELECT COUNT(*) FROM followers WHERE follower = id) AS following,
        (SELECT COUNT(*) FROM followers WHERE follower = id AND user_id = $1) AS followed_by,
-       (SELECT COUNT(*) FROM followers WHERE follower = $2 AND user_id = id) AS is_following FROM users WHERE id = $3;`
+       (SELECT COUNT(*) FROM followers WHERE follower = $1 AND user_id = id) AS is_following FROM users WHERE id = $2;`
 
 	stmt, err := ub.db.Prepare(query)
 	if err != nil {
@@ -102,7 +102,7 @@ func (ub *UserBackend) ProfileByID(id, from int) (*Profile, error) {
 	profile := &Profile{}
 
 	var followedBy, isFollowing int
-	err = stmt.QueryRow(from, from, id).Scan(
+	err = stmt.QueryRow(from, id).Scan(
 		&profile.ID,
 		&profile.DisplayName,
 		&profile.Username,

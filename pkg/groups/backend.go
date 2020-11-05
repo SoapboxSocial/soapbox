@@ -3,6 +3,8 @@ package groups
 import (
 	"context"
 	"database/sql"
+
+	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
 type Group struct {
@@ -166,6 +168,21 @@ func (b *Backend) GetGroupForUser(user, groupId int) (*Group, error) {
 	group.IsInvited = &invited
 
 	return group, nil
+}
+
+func (b *Backend) GetInviterForUser(userId, groupId int) (*users.User, error) {
+	stmt, err := b.db.Prepare("SELECT users.* FROM users INNER JOIN group_invites ON (users.id = group_invites.from_id) WHERE group_invites.user_id = $1 AND group_invites.group_id = $2;")
+	if err != nil {
+		return nil, err
+	}
+
+	user := &users.User{}
+	err = stmt.QueryRow(userId, groupId).Scan(&user.ID, &user.DisplayName, &user.Username, &user.Image, &user.Bio, &user.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }
 
 func (b *Backend) InviteUser(from, group, user int) error {

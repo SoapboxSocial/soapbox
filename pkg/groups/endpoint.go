@@ -1,6 +1,7 @@
 package groups
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -35,6 +36,7 @@ func (e *Endpoint) Router() *mux.Router {
 
 	r.Path("/create").Methods("POST").HandlerFunc(e.CreateGroup)
 	r.Path("/{id:[0-9]+}").Methods("GET").HandlerFunc(e.GetGroup)
+	r.Path("/{id:[0-9]+}/invite").Methods("GET").HandlerFunc(e.GetUserInviteForGroup)
 	r.Path("/{id:[0-9]+}/invite").Methods("POST").HandlerFunc(e.InviteUsersToGroup)
 
 	return r
@@ -133,6 +135,11 @@ func (e *Endpoint) GetGroup(w http.ResponseWriter, r *http.Request) {
 
 	result, err := e.backend.GetGroupForUser(userID, id)
 	if err != nil {
+		if err == sql.ErrNoRows {
+			httputil.JsonError(w, http.StatusNotFound, httputil.ErrorCodeNotFound, "not found")
+			return
+		}
+
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToGetFollowers, "")
 		return
 	}
@@ -199,6 +206,37 @@ func (e *Endpoint) InviteUsersToGroup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httputil.JsonSuccess(w)
+}
+
+func (e *Endpoint) GetUserInviteForGroup(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	group, err := strconv.Atoi(params["id"])
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid group")
+		return
+	}
+
+	userID, ok := auth.GetUserIDFromContext(r.Context())
+	if !ok {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	result, err := e.backend.GetInviterForUser(userID, group)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			httputil.JsonError(w, http.StatusNotFound, httputil.ErrorCodeNotFound, "not found")
+			return
+		}
+
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToGetFollowers, "")
+		return
+	}
+
+	err = httputil.JsonEncode(w, result)
+	if err != nil {
+		log.Printf("failed to write user response: %s\n", err.Error())
+	}
 }
 
 func (e *Endpoint) handleGroupImage(r *http.Request) (string, error) {

@@ -185,6 +185,16 @@ func (b *Backend) GetInviterForUser(userId, groupId int) (*users.User, error) {
 	return user, nil
 }
 
+func (b *Backend) DeclineInvite(userId, groupId int) error {
+	stmt, err := b.db.Prepare("DELETE FROM group_invites WHERE user_id = $1 AND group_id = $2")
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(userId, groupId)
+	return err
+}
+
 func (b *Backend) InviteUser(from, group, user int) error {
 	stmt, err := b.db.Prepare("INSERT INTO group_invites (user_id, group_id, from_id) VALUES ($1, $2, $3);")
 	if err != nil {

@@ -202,7 +202,11 @@ func (b *Backend) AcceptInvite(userId, groupId int) error {
 		return err
 	}
 
-	row := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM group_invites WHERE user_id = $1 AND group_id = $2")
+	row := tx.QueryRowContext(
+		ctx,
+		"SELECT COUNT(*) FROM group_invites WHERE user_id = $1 AND group_id = $2",
+		userId, groupId,
+	)
 
 	var count int
 	err = row.Scan(&count)

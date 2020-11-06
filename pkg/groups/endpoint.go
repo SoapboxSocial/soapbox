@@ -284,6 +284,7 @@ func (e *Endpoint) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 
 	err = e.backend.AcceptInvite(userID, group)
 	if err != nil {
+		log.Println(err)
 		// @TODO BETTER
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 		return

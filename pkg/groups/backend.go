@@ -260,7 +260,7 @@ func (b *Backend) InviteUser(from, group, user int) error {
 	return nil
 }
 
-func (b *Backend) GetAllMembers(id int, limit, offset int) ([]*users.User, error) {
+func (b *Backend) GetAllMembers(id, limit, offset int) ([]*users.User, error) {
 	stmt, err := b.db.Prepare("SELECT users.id, users.display_name, users.username, users.image FROM users INNER JOIN group_members ON (users.id = group_members.user_id) WHERE group_members.group = $1 LIMIT $2 OFFSET $3;")
 	if err != nil {
 		return nil, err

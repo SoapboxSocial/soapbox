@@ -21,6 +21,7 @@ import (
 	usersapi "github.com/soapboxsocial/soapbox/pkg/api/users"
 	"github.com/soapboxsocial/soapbox/pkg/devices"
 	"github.com/soapboxsocial/soapbox/pkg/followers"
+	"github.com/soapboxsocial/soapbox/pkg/groups"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/images"
 	"github.com/soapboxsocial/soapbox/pkg/linkedaccounts"
@@ -94,6 +95,10 @@ func main() {
 		rooms.NewCurrentRoomBackend(rdb),
 		activeUsersBackend,
 	)
+
+	groupsBackend := groups.NewBackend(db)
+	groupsEndpoint := groups.NewEndpoint(groupsBackend, ib, queue)
+
 	userRoutes.HandleFunc("/{id:[0-9]+}", usersEndpoints.GetUserByID).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/followers", usersEndpoints.GetFollowersForUser).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/following", usersEndpoints.GetFollowedByForUser).Methods("GET")
@@ -103,6 +108,7 @@ func main() {
 	userRoutes.HandleFunc("/edit", usersEndpoints.EditUser).Methods("POST")
 	userRoutes.HandleFunc("/search", usersEndpoints.Search).Methods("GET")
 	userRoutes.HandleFunc("/active", usersEndpoints.GetActiveUsersFor).Methods("GET")
+	userRoutes.HandleFunc("/{id:[0-9]+}/groups", groupsEndpoint.GetGroupsForUser).Methods("GET")
 
 	userRoutes.Use(amw.Middleware)
 
@@ -121,12 +127,16 @@ func main() {
 
 	pb := linkedaccounts.NewLinkedAccountsBackend(db)
 
-	meEndpoint := me.NewMeEndpoint(ub, ns, oauth, pb)
+	meEndpoint := me.NewMeEndpoint(ub, groupsBackend, ns, oauth, pb)
 	meRoutes.HandleFunc("", meEndpoint.GetMe).Methods("GET")
 	meRoutes.HandleFunc("/notifications", meEndpoint.GetNotifications).Methods("GET")
 	meRoutes.HandleFunc("/profiles/twitter", meEndpoint.AddTwitter).Methods("POST")
 	meRoutes.HandleFunc("/profiles/twitter", meEndpoint.RemoveTwitter).Methods("DELETE")
 	meRoutes.Use(amw.Middleware)
+
+	groupsRouter := groupsEndpoint.Router()
+	groupsRouter.Use(amw.Middleware)
+	mount(r, "/v1/groups/", groupsRouter)
 
 	headersOk := handlers.AllowedHeaders([]string{
 		"Content-Type",

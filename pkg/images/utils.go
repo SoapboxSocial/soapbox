@@ -5,10 +5,26 @@ import (
 	"fmt"
 	"image/jpeg"
 	"image/png"
+	"io/ioutil"
+	"mime/multipart"
 	"net/http"
 
 	"github.com/pkg/errors"
 )
+
+func MultipartFileToPng(file multipart.File) ([]byte, error) {
+	imgBytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+
+	pngBytes, err := ToPNG(imgBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return pngBytes, nil
+}
 
 func ToPNG(imageBytes []byte) ([]byte, error) {
 	contentType := http.DetectContentType(imageBytes)

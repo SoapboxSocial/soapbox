@@ -9,6 +9,7 @@ const (
 	NEW_FOLLOWER NotificationCategory = "NEW_FOLLOWER"
 	ROOM_INVITE  NotificationCategory = "ROOM_INVITE"
 	ROOM_JOINED  NotificationCategory = "ROOM_JOINED"
+	GROUP_INVITE NotificationCategory = "GROUP_INVITE"
 )
 
 type Alert struct {
@@ -26,9 +27,10 @@ type PushNotification struct {
 
 // Notification is stored in redis for the notification endpoint.
 type Notification struct {
-	Timestamp int64                `json:"timestamp"`
-	From      int                  `json:"from"`
-	Category  NotificationCategory `json:"category"`
+	Timestamp int64                  `json:"timestamp"`
+	From      int                    `json:"from"`
+	Category  NotificationCategory   `json:"category"`
+	Arguments map[string]interface{} `json:"arguments"`
 }
 
 func NewRoomNotification(id int, creator string) *PushNotification {
@@ -109,5 +111,17 @@ func NewRoomInviteNotificationWithName(id int, from, room string) *PushNotificat
 			Arguments: []string{from, room},
 		},
 		Arguments: map[string]interface{}{"id": id},
+	}
+}
+
+func NewGroupInviteNotification(groupId, fromId int, from, group string) *PushNotification {
+	return &PushNotification{
+		Category: GROUP_INVITE,
+		Alert: Alert{
+			Body:      fmt.Sprintf("%s invited you to join the group \"%s\"", from, group),
+			Key:       "group_invite_notification",
+			Arguments: []string{from, group},
+		},
+		Arguments: map[string]interface{}{"id": groupId, "from": fromId},
 	}
 }

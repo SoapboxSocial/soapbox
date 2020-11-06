@@ -2,7 +2,6 @@ package users
 
 import (
 	"database/sql"
-	"io/ioutil"
 	"log"
 	"mime/multipart"
 	"net/http"
@@ -339,12 +338,7 @@ func (u *UsersEndpoint) GetActiveUsersFor(w http.ResponseWriter, r *http.Request
 }
 
 func (u *UsersEndpoint) processProfilePicture(file multipart.File) (string, error) {
-	imgBytes, err := ioutil.ReadAll(file)
-	if err != nil {
-		return "", err
-	}
-
-	pngBytes, err := images.ToPNG(imgBytes)
+	pngBytes, err := images.MultipartFileToPng(file)
 	if err != nil {
 		return "", err
 	}

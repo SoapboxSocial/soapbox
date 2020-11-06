@@ -37,6 +37,7 @@ func (e *Endpoint) Router() *mux.Router {
 	r.Path("/{id:[0-9]+}").Methods("GET").HandlerFunc(e.GetGroup)
 	r.Path("/{id:[0-9]+}/invite").Methods("GET").HandlerFunc(e.GetUserInviteForGroup)
 	r.Path("/{id:[0-9]+}/invite").Methods("POST").HandlerFunc(e.InviteUsersToGroup)
+	r.Path("/{id:[0-9]+}/members").Methods("GET").HandlerFunc(e.GetGroupMembers)
 
 	// @TODO NOT SURE IF I AM HAPPY WITH THESE
 	r.Path("/{id:[0-9]+}/invite/decline").Methods("POST").HandlerFunc(e.DeclineInvite)
@@ -291,6 +292,30 @@ func (e *Endpoint) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httputil.JsonSuccess(w)
+}
+
+func (e *Endpoint) GetGroupMembers(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	id, err := strconv.Atoi(params["id"])
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	limit := httputil.GetInt(r.URL.Query(), "limit", 10)
+	offset := httputil.GetInt(r.URL.Query(), "offset", 0)
+
+	result, err := e.backend.GetAllMembers(id, limit, offset)
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToGetFollowers, "")
+		return
+	}
+
+	err = httputil.JsonEncode(w, result)
+	if err != nil {
+		log.Printf("failed to write user response: %s\n", err.Error())
+	}
 }
 
 func (e *Endpoint) handleGroupImage(r *http.Request) (string, error) {

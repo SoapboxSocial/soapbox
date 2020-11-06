@@ -67,7 +67,7 @@ func (b *Backend) CreateGroup(creator int, name, description, image, groupType s
 	err = tx.Commit()
 	if err != nil {
 		_ = tx.Rollback()
-		return 0, nil
+		return 0, err
 	}
 
 	return id, nil
@@ -193,6 +193,53 @@ func (b *Backend) DeclineInvite(userId, groupId int) error {
 
 	_, err = stmt.Exec(userId, groupId)
 	return err
+}
+
+func (b *Backend) AcceptInvite(userId, groupId int) error {
+	ctx := context.Background()
+	tx, err := b.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	row := tx.QueryRowContext(ctx, "SELECT COUNT(*) FROM group_invites WHERE user_id = $1 AND group_id = $2")
+
+	var count int
+	err = row.Scan(&count)
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	_, err = tx.ExecContext(
+		ctx,
+		"DELETE FROM group_invites WHERE user_id = $1 AND group_id = $2",
+		userId, groupId,
+	)
+
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	_, err = tx.ExecContext(
+		ctx,
+		"INSERT INTO group_members (group_id, user_id, role) VALUES ($1, $2, $3);",
+		groupId, userId, "user",
+	)
+
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	return nil
 }
 
 func (b *Backend) InviteUser(from, group, user int) error {

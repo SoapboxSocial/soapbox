@@ -263,10 +263,33 @@ func (e *Endpoint) DeclineInvite(w http.ResponseWriter, r *http.Request) {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 		return
 	}
+
+	httputil.JsonSuccess(w)
 }
 
 func (e *Endpoint) AcceptInvite(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
 
+	group, err := strconv.Atoi(params["id"])
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid group")
+		return
+	}
+
+	userID, ok := auth.GetUserIDFromContext(r.Context())
+	if !ok {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	err = e.backend.AcceptInvite(userID, group)
+	if err != nil {
+		// @TODO BETTER
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	httputil.JsonSuccess(w)
 }
 
 func (e *Endpoint) handleGroupImage(r *http.Request) (string, error) {

@@ -171,13 +171,13 @@ func (b *Backend) GetGroupForUser(user, groupId int) (*Group, error) {
 }
 
 func (b *Backend) GetInviterForUser(userId, groupId int) (*users.User, error) {
-	stmt, err := b.db.Prepare("SELECT users.* FROM users INNER JOIN group_invites ON (users.id = group_invites.from_id) WHERE group_invites.user_id = $1 AND group_invites.group_id = $2;")
+	stmt, err := b.db.Prepare("SELECT users.id, users.display_name, users.username, users.image FROM users INNER JOIN group_invites ON (users.id = group_invites.from_id) WHERE group_invites.user_id = $1 AND group_invites.group_id = $2;")
 	if err != nil {
 		return nil, err
 	}
 
 	user := &users.User{}
-	err = stmt.QueryRow(userId, groupId).Scan(&user.ID, &user.DisplayName, &user.Username, &user.Image, &user.Bio, &user.Email)
+	err = stmt.QueryRow(userId, groupId).Scan(&user.ID, &user.DisplayName, &user.Username, &user.Image)
 	if err != nil {
 		return nil, err
 	}

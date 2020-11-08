@@ -16,7 +16,6 @@ type Group struct {
 	Members     *int   `json:"members"`
 	IsMember    *bool  `json:"is_member,omitempty"`
 	IsInvited   *bool  `json:"is_invited,omitempty"`
-	IsAdmin     *bool  `json:"is_admin,omitempty"`
 }
 
 type Backend struct {

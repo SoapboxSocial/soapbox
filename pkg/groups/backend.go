@@ -138,7 +138,7 @@ func (b *Backend) GetGroupForUser(user, groupId int) (*Group, error) {
 	query := `SELECT
 		groups.id, groups.name, groups.description, groups.image,
 		(SELECT COUNT(*) FROM group_members WHERE group_id = $1) AS members,
-		(SELECT role FROM group_members WHERE group_id = $1 AND user_id = $2),
+		(SELECT coalesce((SELECT role FROM group_members WHERE group_id = $1 AND user_id = $2), '')),
 		(SELECT COUNT(*) FROM group_invites WHERE group_id = $1 AND user_id = $2) AS is_invited,
 		group_types.name AS group_type FROM groups INNER JOIN group_types ON (groups.group_type = group_types.id) WHERE groups.id = $1;`
 

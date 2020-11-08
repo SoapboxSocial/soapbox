@@ -13,6 +13,7 @@ type Group struct {
 	Description string `json:"description"`
 	Image       string `json:"image,omitempty"`
 	GroupType   string `json:"group_type"`
+	Members     *int   `json:"members"`
 	IsMember    *bool  `json:"is_member,omitempty"`
 	IsInvited   *bool  `json:"is_invited,omitempty"`
 }
@@ -136,6 +137,7 @@ func (b *Backend) IsAdminForGroup(user, group int) (bool, error) {
 func (b *Backend) GetGroupForUser(user, groupId int) (*Group, error) {
 	query := `SELECT
 		groups.id, groups.name, groups.description, groups.image,
+		(SELECT COUNT(*) FROM group_members WHERE group_id = $1) AS members,
 		(SELECT COUNT(*) FROM group_members WHERE group_id = $1 AND user_id = $2) AS is_member,
 		(SELECT COUNT(*) FROM group_invites WHERE group_id = $1 AND user_id = $2) AS is_invited,
 		group_types.name AS group_type FROM groups INNER JOIN group_types ON (groups.group_type = group_types.id) WHERE groups.id = $1;`
@@ -153,6 +155,7 @@ func (b *Backend) GetGroupForUser(user, groupId int) (*Group, error) {
 		&group.Name,
 		&group.Description,
 		&group.Image,
+		&group.Members,
 		&isMember,
 		&isInvited,
 		&group.GroupType,
@@ -261,7 +264,7 @@ func (b *Backend) InviteUser(from, group, user int) error {
 }
 
 func (b *Backend) GetAllMembers(id, limit, offset int) ([]*users.User, error) {
-	stmt, err := b.db.Prepare("SELECT users.id, users.display_name, users.username, users.image FROM users INNER JOIN group_members ON (users.id = group_members.user_id) WHERE group_members.group = $1 LIMIT $2 OFFSET $3;")
+	stmt, err := b.db.Prepare("SELECT users.id, users.display_name, users.username, users.image FROM users INNER JOIN group_members ON (users.id = group_members.user_id) WHERE group_members.group_id = $1 LIMIT $2 OFFSET $3;")
 	if err != nil {
 		return nil, err
 	}

@@ -8,14 +8,14 @@ import (
 )
 
 type Group struct {
-	ID          int    `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Image       string `json:"image,omitempty"`
-	GroupType   string `json:"group_type"`
-	Members     *int   `json:"members"`
-	IsMember    *bool  `json:"is_member,omitempty"`
-	IsInvited   *bool  `json:"is_invited,omitempty"`
+	ID          int     `json:"id"`
+	Name        string  `json:"name"`
+	Description string  `json:"description"`
+	Image       string  `json:"image,omitempty"`
+	GroupType   string  `json:"group_type"`
+	Members     *int    `json:"members"`
+	IsInvited   *bool   `json:"is_invited,omitempty"`
+	Role        *string `json:"role,omitempty"`
 }
 
 type Backend struct {
@@ -138,7 +138,7 @@ func (b *Backend) GetGroupForUser(user, groupId int) (*Group, error) {
 	query := `SELECT
 		groups.id, groups.name, groups.description, groups.image,
 		(SELECT COUNT(*) FROM group_members WHERE group_id = $1) AS members,
-		(SELECT COUNT(*) FROM group_members WHERE group_id = $1 AND user_id = $2) AS is_member,
+		(SELECT role FROM group_members WHERE group_id = $1 AND user_id = $2),
 		(SELECT COUNT(*) FROM group_invites WHERE group_id = $1 AND user_id = $2) AS is_invited,
 		group_types.name AS group_type FROM groups INNER JOIN group_types ON (groups.group_type = group_types.id) WHERE groups.id = $1;`
 
@@ -149,14 +149,15 @@ func (b *Backend) GetGroupForUser(user, groupId int) (*Group, error) {
 
 	group := &Group{}
 
-	var isMember, isInvited int
+	var role string
+	var isInvited int
 	err = stmt.QueryRow(groupId, user).Scan(
 		&group.ID,
 		&group.Name,
 		&group.Description,
 		&group.Image,
 		&group.Members,
-		&isMember,
+		&role,
 		&isInvited,
 		&group.GroupType,
 	)
@@ -165,10 +166,12 @@ func (b *Backend) GetGroupForUser(user, groupId int) (*Group, error) {
 		return nil, err
 	}
 
-	var member = isMember == 1
 	var invited = isInvited == 1
-	group.IsMember = &member
 	group.IsInvited = &invited
+
+	if role != "" {
+		group.Role = &role
+	}
 
 	return group, nil
 }

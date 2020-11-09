@@ -309,6 +309,23 @@ func (b *Backend) InviteUser(from, group, user int) error {
 	return nil
 }
 
+func (b *Backend) IsPublic(group int) (bool, error) {
+	stmt, err := b.db.Prepare("SELECT COUNT(*) FROM groups WHERE id = $1 AND group_type = (SELECT id FROM group_types WHERE name = 'public');")
+	if err != nil {
+		return false, err
+	}
+
+	row := stmt.QueryRow(group)
+
+	var count int
+	err = row.Scan(&count)
+	if err != nil {
+		return false, err
+	}
+
+	return count == 1, nil
+}
+
 func (b *Backend) GetAllMembers(id, limit, offset int) ([]*users.User, error) {
 	stmt, err := b.db.Prepare("SELECT users.id, users.display_name, users.username, users.image FROM users INNER JOIN group_members ON (users.id = group_members.user_id) WHERE group_members.group_id = $1 LIMIT $2 OFFSET $3;")
 	if err != nil {

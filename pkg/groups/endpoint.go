@@ -323,7 +323,16 @@ func (e *Endpoint) JoinGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// @TODO CHECK IF GROUP IS PUBLIC
+	public, err := e.backend.IsPublic(group)
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	if !public {
+		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
 
 	err = e.backend.Join(userID, group)
 	if err != nil {

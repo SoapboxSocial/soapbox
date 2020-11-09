@@ -101,6 +101,39 @@ func (b *Backend) GetGroupsForUser(user, limit, offset int) ([]*Group, error) {
 	return result, nil
 }
 
+func (b *Backend) GetGroupsForProfile(user, limit, offset int) ([]*Group, error) {
+	query := `SELECT 
+		groups.id, groups.name, groups.description, groups.image, group_types.name AS group_type
+		FROM groups
+		INNER JOIN group_members ON (groups.id = group_members.group_id) INNER JOIN group_types ON (groups.group_type = group_types.id) 
+		WHERE group_members.user_id = $1 AND group_types.name != 'private' LIMIT $2 OFFSET $3;`
+
+	stmt, err := b.db.Prepare(query)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := stmt.Query(user, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]*Group, 0)
+
+	for rows.Next() {
+		group := &Group{}
+
+		err := rows.Scan(&group.ID, &group.Name, &group.Description, &group.Image, &group.GroupType)
+		if err != nil {
+			return nil, err // @todo
+		}
+
+		result = append(result, group)
+	}
+
+	return result, nil
+}
+
 func (b *Backend) FindById(id int) (*Group, error) {
 	stmt, err := b.db.Prepare("SELECT groups.id, groups.name, groups.description, groups.image, group_types.name AS group_type FROM groups INNER JOIN group_types ON (groups.group_type = group_types.id) WHERE groups.id = $1;")
 	if err != nil {

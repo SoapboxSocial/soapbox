@@ -107,10 +107,23 @@ func (e *Endpoint) GetGroupsForUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	userID, ok := auth.GetUserIDFromContext(r.Context())
+	if !ok {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
 	limit := httputil.GetInt(r.URL.Query(), "limit", 10)
 	offset := httputil.GetInt(r.URL.Query(), "offset", 0)
 
-	result, err := e.backend.GetGroupsForUser(id, limit, offset)
+	var result []*Group
+
+	if userID == id {
+		result, err = e.backend.GetGroupsForUser(id, limit, offset)
+	} else {
+		result, err = e.backend.GetGroupsForProfile(id, limit, offset)
+	}
+
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToGetFollowers, "")
 		return

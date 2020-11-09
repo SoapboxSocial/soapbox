@@ -285,6 +285,16 @@ func (b *Backend) AcceptInvite(userId, groupId int) error {
 	return nil
 }
 
+func (b *Backend) Join(user, group int) error {
+	stmt, err := b.db.Prepare("INSERT INTO group_members (group_id, user_id, role) VALUES ($1, $2, $3);")
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(user, group, "user")
+	return err
+}
+
 func (b *Backend) InviteUser(from, group, user int) error {
 	stmt, err := b.db.Prepare("INSERT INTO group_invites (user_id, group_id, from_id) VALUES ($1, $2, $3);")
 	if err != nil {

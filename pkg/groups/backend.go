@@ -106,7 +106,7 @@ func (b *Backend) GetGroupsForProfile(user, limit, offset int) ([]*Group, error)
 		groups.id, groups.name, groups.description, groups.image, group_types.name AS group_type
 		FROM groups
 		INNER JOIN group_members ON (groups.id = group_members.group_id) INNER JOIN group_types ON (groups.group_type = group_types.id) 
-		WHERE group_members.user_id = $1 AND groups.group_type != 1 LIMIT $2 OFFSET $3;`
+		WHERE group_members.user_id = $1 AND group_types.name != 'private' LIMIT $2 OFFSET $3;`
 
 	stmt, err := b.db.Prepare(query)
 	if err != nil {

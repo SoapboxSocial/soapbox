@@ -291,7 +291,7 @@ func (b *Backend) Join(user, group int) error {
 		return err
 	}
 
-	_, err = stmt.Exec(user, group, "user")
+	_, err = stmt.Exec(group, user, "user")
 	return err
 }
 

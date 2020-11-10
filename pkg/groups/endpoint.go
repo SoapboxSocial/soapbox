@@ -319,7 +319,7 @@ func (e *Endpoint) JoinGroup(w http.ResponseWriter, r *http.Request) {
 
 	userID, ok := auth.GetUserIDFromContext(r.Context())
 	if !ok {
-		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 		return
 	}
 

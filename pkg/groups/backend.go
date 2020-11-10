@@ -286,13 +286,41 @@ func (b *Backend) AcceptInvite(userId, groupId int) error {
 }
 
 func (b *Backend) Join(user, group int) error {
-	stmt, err := b.db.Prepare("INSERT INTO group_members (group_id, user_id, role) VALUES ($1, $2, $3);")
+	ctx := context.Background()
+	tx, err := b.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 
-	_, err = stmt.Exec(group, user, "user")
-	return err
+	_, err = tx.ExecContext(
+		ctx,
+		"DELETE FROM group_invites WHERE user_id = $1 AND group_id = $2",
+		user, group,
+	)
+
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	_, err = tx.ExecContext(
+		ctx,
+		"INSERT INTO group_members (group_id, user_id, role) VALUES ($1, $2, $3);",
+		group, user, "user",
+	)
+
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	return nil
 }
 
 func (b *Backend) InviteUser(from, group, user int) error {

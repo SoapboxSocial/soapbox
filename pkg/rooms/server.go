@@ -190,9 +190,15 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 
 		s.mux.Lock()
 		id := s.nextID
+
+		name :=  strings.TrimSpace(payload.Create.Name)
+		if len([]rune(name)) > 30 {
+			name = string([]rune(name)[:30])
+		}
+
 		room = NewRoom(
 			id,
-			strings.TrimSpace(payload.Create.Name), // @TODO LIMIT
+			name,
 			s.queue,
 			payload.Create.GetVisibility() == pb.Visibility_PRIVATE,
 			user.ID,

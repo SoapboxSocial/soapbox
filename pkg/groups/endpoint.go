@@ -43,6 +43,8 @@ func (e *Endpoint) Router() *mux.Router {
 	r.Path("/{id:[0-9]+}/invite/decline").Methods("POST").HandlerFunc(e.DeclineInvite)
 	r.Path("/{id:[0-9]+}/invite/accept").Methods("POST").HandlerFunc(e.AcceptInvite)
 
+	r.Path("/{id:[0-9]+}/join").Methods("POST").HandlerFunc(e.JoinGroup)
+
 	return r
 }
 
@@ -298,7 +300,42 @@ func (e *Endpoint) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 
 	err = e.backend.AcceptInvite(userID, group)
 	if err != nil {
-		log.Println(err)
+		// @TODO BETTER
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	httputil.JsonSuccess(w)
+}
+
+func (e *Endpoint) JoinGroup(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	group, err := strconv.Atoi(params["id"])
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid group")
+		return
+	}
+
+	userID, ok := auth.GetUserIDFromContext(r.Context())
+	if !ok {
+		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	public, err := e.backend.IsPublic(group)
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	if !public {
+		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	err = e.backend.Join(userID, group)
+	if err != nil {
 		// @TODO BETTER
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 		return

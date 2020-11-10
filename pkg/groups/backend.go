@@ -285,6 +285,44 @@ func (b *Backend) AcceptInvite(userId, groupId int) error {
 	return nil
 }
 
+func (b *Backend) Join(user, group int) error {
+	ctx := context.Background()
+	tx, err := b.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.ExecContext(
+		ctx,
+		"DELETE FROM group_invites WHERE user_id = $1 AND group_id = $2",
+		user, group,
+	)
+
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	_, err = tx.ExecContext(
+		ctx,
+		"INSERT INTO group_members (group_id, user_id, role) VALUES ($1, $2, $3);",
+		group, user, "user",
+	)
+
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	return nil
+}
+
 func (b *Backend) InviteUser(from, group, user int) error {
 	stmt, err := b.db.Prepare("INSERT INTO group_invites (user_id, group_id, from_id) VALUES ($1, $2, $3);")
 	if err != nil {
@@ -297,6 +335,23 @@ func (b *Backend) InviteUser(from, group, user int) error {
 	}
 
 	return nil
+}
+
+func (b *Backend) IsPublic(group int) (bool, error) {
+	stmt, err := b.db.Prepare("SELECT COUNT(*) FROM groups WHERE id = $1 AND group_type = (SELECT id FROM group_types WHERE name = 'public');")
+	if err != nil {
+		return false, err
+	}
+
+	row := stmt.QueryRow(group)
+
+	var count int
+	err = row.Scan(&count)
+	if err != nil {
+		return false, err
+	}
+
+	return count == 1, nil
 }
 
 func (b *Backend) GetAllMembers(id, limit, offset int) ([]*users.User, error) {

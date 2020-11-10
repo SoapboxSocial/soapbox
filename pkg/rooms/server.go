@@ -192,7 +192,7 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 		id := s.nextID
 		room = NewRoom(
 			id,
-			strings.TrimSpace(payload.Create.Name),
+			strings.TrimSpace(payload.Create.Name), // @TODO LIMIT
 			s.queue,
 			payload.Create.GetVisibility() == pb.Visibility_PRIVATE,
 			user.ID,

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"mime/multipart"
 	"net/http"
@@ -252,12 +251,7 @@ func (l *LoginEndpoint) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (l *LoginEndpoint) processProfilePicture(file multipart.File) (string, error) {
-	imgBytes, err := ioutil.ReadAll(file)
-	if err != nil {
-		return "", err
-	}
-
-	pngBytes, err := images.ToPNG(imgBytes)
+	pngBytes, err := images.MultipartFileToPng(file)
 	if err != nil {
 		return "", err
 	}

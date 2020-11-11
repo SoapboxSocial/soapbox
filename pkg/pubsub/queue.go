@@ -10,8 +10,9 @@ import (
 type Topic string
 
 const (
-	RoomTopic Topic = "room"
-	UserTopic Topic = "user"
+	RoomTopic  Topic = "room"
+	UserTopic  Topic = "user"
+	GroupTopic Topic = "group"
 )
 
 type Queue struct {

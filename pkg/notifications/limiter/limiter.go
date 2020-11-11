@@ -28,8 +28,13 @@ func NewLimiter(rdb *redis.Client, currentRoom *rooms.CurrentRoomBackend) *Limit
 }
 
 func (l *Limiter) ShouldSendNotification(target int, args map[string]interface{}, category notifications.NotificationCategory) bool {
-	if category == notifications.NEW_FOLLOWER || category == notifications.NEW_ROOM {
+	// @TODO WE SHOULD LIMIT NEW FOLLOWER NOTIFICATION SO SOMEONE CANT REFOLLOW AND SPAM
+	if category == notifications.NEW_FOLLOWER || category == notifications.GROUP_INVITE {
 		return true
+	}
+
+	if category == notifications.NEW_ROOM {
+		return !l.isLimited(limiterKeyForRoom(target, args["id"].(int)))
 	}
 
 	id := args["id"].(int)

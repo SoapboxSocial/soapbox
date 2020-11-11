@@ -1,6 +1,7 @@
 package me
 
 import (
+	"errors"
 	"log"
 	"net/http"
 
@@ -9,6 +10,7 @@ import (
 	"github.com/gorilla/mux"
 
 	auth "github.com/soapboxsocial/soapbox/pkg/api/middleware"
+	"github.com/soapboxsocial/soapbox/pkg/groups"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/linkedaccounts"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
@@ -17,14 +19,28 @@ import (
 
 type Endpoint struct {
 	users       *users.UserBackend
+	groups      *groups.Backend
 	ns          *notifications.Storage
 	oauthConfig *oauth1.Config
 	la          *linkedaccounts.Backend
 }
 
-func NewEndpoint(users *users.UserBackend, ns *notifications.Storage, config *oauth1.Config, la *linkedaccounts.Backend) *Endpoint {
+// Notification that the API returns.
+// @TODO IN THE FUTURE WE MAY WANT TO BE ABLE TO SEND NOTIFICATIONS WITHOUT A USER, AND OTHER DATA?
+// For example:
+//   - group invites
+//   - terms of service updates?
+type Notification struct {
+	Timestamp int64                              `json:"timestamp"`
+	From      *users.NotificationUser            `json:"from"`
+	Group     *groups.Group                      `json:"group"`
+	Category  notifications.NotificationCategory `json:"category"`
+}
+
+func NewMeEndpoint(users *users.UserBackend, groups *groups.Backend, ns *notifications.Storage, config *oauth1.Config, la *linkedaccounts.Backend) *MeEndpoint {
 	return &Endpoint{
 		users:       users,
+		groups:      groups,
 		ns:          ns,
 		oauthConfig: config,
 		la:          la,
@@ -74,7 +90,38 @@ func (m *Endpoint) notifications(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = httputil.JsonEncode(w, list)
+	populated := make([]Notification, 0)
+	for _, notification := range list {
+		populatedNotification := Notification{Timestamp: notification.Timestamp, Category: notification.Category}
+
+		from, err := m.users.NotificationUserFor(notification.From)
+		if err != nil {
+			log.Printf("users.NotificationUserFor err: %v\n", err)
+			continue
+		}
+
+		populatedNotification.From = from
+
+		if notification.Category == notifications.GROUP_INVITE {
+			id, err := getId(notification, "group")
+			if err != nil {
+				log.Printf("getId err: %v\n", err)
+				continue
+			}
+
+			group, err := m.groups.FindById(id)
+			if err != nil {
+				log.Printf("users.NotificationUserFor err: %v\n", err)
+				continue
+			}
+
+			populatedNotification.Group = group
+		}
+
+		populated = append(populated, populatedNotification)
+	}
+
+	err = httputil.JsonEncode(w, populated)
 	if err != nil {
 		log.Printf("failed to write me response: %s\n", err.Error())
 	}
@@ -138,4 +185,13 @@ func (m *Endpoint) removeTwitter(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httputil.JsonSuccess(w)
+}
+
+func getId(event *notifications.Notification, field string) (int, error) {
+	creator, ok := event.Arguments[field].(float64)
+	if !ok {
+		return 0, errors.New("failed to recover creator")
+	}
+
+	return int(creator), nil
 }

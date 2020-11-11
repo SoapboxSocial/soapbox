@@ -37,7 +37,7 @@ type Notification struct {
 	Category  notifications.NotificationCategory `json:"category"`
 }
 
-func NewMeEndpoint(users *users.UserBackend, groups *groups.Backend, ns *notifications.Storage, config *oauth1.Config, la *linkedaccounts.Backend) *Endpoint {
+func NewEndpoint(users *users.UserBackend, groups *groups.Backend, ns *notifications.Storage, config *oauth1.Config, la *linkedaccounts.Backend) *Endpoint {
 	return &Endpoint{
 		users:       users,
 		groups:      groups,

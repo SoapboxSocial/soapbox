@@ -45,7 +45,7 @@ func main() {
 	}
 
 	queue := pubsub.NewQueue(rdb)
-	events := queue.Subscribe(pubsub.UserTopic)
+	events := queue.Subscribe(pubsub.UserTopic, pubsub.GroupTopic)
 
 	userBackend = users.NewUserBackend(db)
 	groupsBackend = groups.NewBackend(db)
@@ -88,6 +88,10 @@ func handleGroupUpdate(event *pubsub.Event) error {
 	group, err := groupsBackend.FindById(int(id))
 	if err != nil {
 		return err
+	}
+
+	if group.GroupType == "private" {
+		return nil
 	}
 
 	body, err := json.Marshal(group)

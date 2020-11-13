@@ -26,14 +26,14 @@ type Endpoint struct {
 	client *elasticsearch.Client
 }
 
-func NewEndpoint() *Endpoint {
-	return &Endpoint{}
+func NewEndpoint(client *elasticsearch.Client) *Endpoint {
+	return &Endpoint{client: clientg}
 }
 
 func (e *Endpoint) Router() *mux.Router {
 	r := mux.NewRouter()
 
-	r.Path("/search").Methods("GET").HandlerFunc(e.Search)
+	r.Path("/").Methods("GET").HandlerFunc(e.Search)
 
 	return r
 }

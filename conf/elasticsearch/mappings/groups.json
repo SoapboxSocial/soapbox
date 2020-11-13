@@ -15,7 +15,8 @@
       "index": false
     },
     "group_type": {
-      "type": "keyword"
+      "type": "keyword",
+      "index": false
     },
     "id": {
       "type": "long"

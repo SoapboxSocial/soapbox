@@ -51,11 +51,6 @@ func NewServer(sfu *sfu.SFU, sm *sessions.SessionManager, ub *users.UserBackend,
 	}
 }
 
-// Deprecated: We will just keep this around for a bit but its deprecated.
-func (s *Server) ListRoomsV2(ctx context.Context, auth *pb.Auth) (*pb.RoomList, error) {
-	return s.roomsForUser(auth.Session)
-}
-
 // Deprecated: Remove
 func (s *Server) ListRooms(ctx context.Context, _ *empty.Empty) (*pb.RoomList, error) {
 	auth, err := authForContext(ctx)
@@ -63,14 +58,10 @@ func (s *Server) ListRooms(ctx context.Context, _ *empty.Empty) (*pb.RoomList, e
 		return nil, err
 	}
 
-	return s.roomsForUser(auth)
-}
-
-func (s *Server) roomsForUser(session string) (*pb.RoomList, error) {
 	s.mux.RLock()
 	defer s.mux.RUnlock()
 
-	id, err := s.sm.GetUserIDForSession(session)
+	id, err := s.sm.GetUserIDForSession(auth)
 	if err != nil {
 		return nil, err
 	}
@@ -105,19 +96,15 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 	var user *member
 
 	auth, _ := authForContext(stream.Context())
+	user, err = s.getMemberForSession(auth)
+	if err != nil {
+		return status.Errorf(codes.Unauthenticated, "unauthenticated")
+	}
+
 	// Auth will be able to be moved out.
 
 	switch payload := in.Payload.(type) {
 	case *pb.SignalRequest_Join:
-		if auth == "" {
-			auth = payload.Join.Session
-		}
-
-		user, err = s.getMemberForSession(auth)
-		if err != nil {
-			return status.Errorf(codes.Unauthenticated, "unauthenticated")
-		}
-
 		s.mux.RLock()
 		r, ok := s.rooms[int(payload.Join.Room)]
 		s.mux.RUnlock()
@@ -179,15 +166,6 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 			log.Printf("queue.Publish err: %v\n", err)
 		}
 	case *pb.SignalRequest_Create:
-		if auth == "" {
-			auth = payload.Create.Session
-		}
-
-		user, err = s.getMemberForSession(auth)
-		if err != nil {
-			return status.Errorf(codes.Unauthenticated, "unauthenticated")
-		}
-
 		s.mux.Lock()
 		id := s.nextID
 

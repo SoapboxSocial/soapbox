@@ -27,7 +27,7 @@ type Endpoint struct {
 }
 
 func NewEndpoint(client *elasticsearch.Client) *Endpoint {
-	return &Endpoint{client: clientg}
+	return &Endpoint{client: client}
 }
 
 func (e *Endpoint) Router() *mux.Router {

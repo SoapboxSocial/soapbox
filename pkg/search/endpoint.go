@@ -2,6 +2,7 @@ package search
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log"
 	"net/http"
@@ -9,7 +10,6 @@ import (
 	"sync"
 
 	"github.com/elastic/go-elasticsearch/v7"
-	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/gorilla/mux"
 
 	"github.com/soapboxsocial/soapbox/pkg/groups"
@@ -45,6 +45,15 @@ func (e *Endpoint) Search(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	query := r.URL.Query().Get("query")
+	if query == "" {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	limit := httputil.GetInt(r.URL.Query(), "limit", 10)
+	offset := httputil.GetInt(r.URL.Query(), "offset", 0)
+
 	response := Response{}
 
 	var wg sync.WaitGroup
@@ -53,7 +62,7 @@ func (e *Endpoint) Search(w http.ResponseWriter, r *http.Request) {
 			wg.Add(1)
 
 			go func() {
-				list, err := e.searchUsers("", 10, 10) // @todo
+				list, err := e.searchUsers(query, limit, offset)
 				if err != nil {
 					log.Printf("failed to search users: %s\n", err.Error())
 					wg.Done()
@@ -69,7 +78,7 @@ func (e *Endpoint) Search(w http.ResponseWriter, r *http.Request) {
 			wg.Add(1)
 
 			go func() {
-				list, err := e.searchGroups("", 10, 10) // @todo
+				list, err := e.searchGroups(query, limit, offset)
 				if err != nil {
 					log.Printf("failed to search groups: %s\n", err.Error())
 					wg.Done()
@@ -98,20 +107,65 @@ func types(query url.Values) ([]string, error) {
 }
 
 func (e *Endpoint) searchUsers(query string, limit, offset int) ([]*users.User, error) {
-	return nil, nil
-	//response, err := e.search(query, "users", limit, offset)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//
-	//return nil, nil
+	res, err := e.search("users", query, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	data := make([]*users.User, 0)
+	for _, hit := range res.Hits.Hits {
+		user := &users.User{}
+		err := json.Unmarshal(hit.Source, user)
+		if err != nil {
+			continue
+		}
+
+		data = append(data, user)
+	}
+
+	return data, nil
 }
 
 func (e *Endpoint) searchGroups(query string, limit, offset int) ([]*groups.Group, error) {
-	return nil, nil
+	res, err := e.search("groups", query, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	data := make([]*groups.Group, 0)
+	for _, hit := range res.Hits.Hits {
+		group := &groups.Group{}
+		err := json.Unmarshal(hit.Source, group)
+		if err != nil {
+			continue
+		}
+
+		data = append(data, group)
+	}
+
+	return data, nil
 }
 
-func (e *Endpoint) search(query, index string, limit, offset int) (*esapi.Response, error) {
+type hits struct {
+	Total    map[string]interface{} `json:"total"`
+	MaxScore float64                `json:"max_score"`
+	Hits     []struct {
+		Index  string          `json:"_index"`
+		Type   string          `json:"_type"`
+		ID     string          `json:"_id"`
+		Score  float64         `json:"_score"`
+		Source json.RawMessage `json:"_source"`
+	} `json:"hits"`
+}
+
+type result struct {
+	Took     int            `json:"took"`
+	TimedOut bool           `json:"timed_out"`
+	Shards   map[string]int `json:"_shards"`
+	Hits     hits           `json:"hits"`
+}
+
+func (e *Endpoint) search(index, query string, limit, offset int) (*result, error) {
 	res, err := e.client.Search(
 		e.client.Search.WithContext(context.Background()),
 		e.client.Search.WithIndex(index),
@@ -125,5 +179,11 @@ func (e *Endpoint) search(query, index string, limit, offset int) (*esapi.Respon
 		return nil, err
 	}
 
-	return res, nil
+	result := &result{}
+	err = json.NewDecoder(res.Body).Decode(result)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }

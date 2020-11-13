@@ -29,6 +29,7 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
+	"github.com/soapboxsocial/soapbox/pkg/search"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
@@ -63,7 +64,7 @@ func main() {
 		panic(err)
 	}
 
-	search := users.NewSearchBackend(client)
+	searchBackend := users.NewSearchBackend(client)
 
 	devicesBackend := devices.NewBackend(db)
 
@@ -90,7 +91,7 @@ func main() {
 		fb,
 		s,
 		ib,
-		search,
+		searchBackend,
 		queue,
 		rooms.NewCurrentRoomBackend(rdb),
 		activeUsersBackend,
@@ -106,7 +107,7 @@ func main() {
 	userRoutes.HandleFunc("/follow", usersEndpoints.FollowUser).Methods("POST")
 	userRoutes.HandleFunc("/unfollow", usersEndpoints.UnfollowUser).Methods("POST")
 	userRoutes.HandleFunc("/edit", usersEndpoints.EditUser).Methods("POST")
-	userRoutes.HandleFunc("/search", usersEndpoints.Search).Methods("GET")
+	userRoutes.HandleFunc("/searchBackend", usersEndpoints.Search).Methods("GET")
 	userRoutes.HandleFunc("/active", usersEndpoints.GetActiveUsersFor).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/groups", groupsEndpoint.GetGroupsForUser).Methods("GET")
 
@@ -137,6 +138,11 @@ func main() {
 	groupsRouter := groupsEndpoint.Router()
 	groupsRouter.Use(amw.Middleware)
 	mount(r, "/v1/groups/", groupsRouter)
+
+	searchEndpoint := search.NewEndpoint(client)
+	searchRouter := searchEndpoint.Router()
+	searchRouter.Use(amw.Middleware)
+	mount(r, "/v1/search/", groupsRouter)
 
 	headersOk := handlers.AllowedHeaders([]string{
 		"Content-Type",

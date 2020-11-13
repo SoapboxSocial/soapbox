@@ -116,7 +116,7 @@ func main() {
 	devicesEndpoint := devices.NewEndpoint(devicesBackend)
 	devicesRoutes := devicesEndpoint.Router()
 	devicesRoutes.Use(amw.Middleware)
-	mount(r, "/v1/devices/", devicesRoutes)
+	mount(r, "/v1/devices", devicesRoutes)
 
 	meRoutes := r.PathPrefix("/v1/me").Subrouter()
 
@@ -137,12 +137,12 @@ func main() {
 
 	groupsRouter := groupsEndpoint.Router()
 	groupsRouter.Use(amw.Middleware)
-	mount(r, "/v1/groups/", groupsRouter)
+	mount(r, "/v1/groups", groupsRouter)
 
 	searchEndpoint := search.NewEndpoint(client)
 	searchRouter := searchEndpoint.Router()
 	searchRouter.Use(amw.Middleware)
-	mount(r, "/v1/search/", groupsRouter)
+	mount(r, "/v1/search", searchRouter)
 
 	headersOk := handlers.AllowedHeaders([]string{
 		"Content-Type",
@@ -163,7 +163,20 @@ func mount(r *mux.Router, path string, handler http.Handler) {
 	r.PathPrefix(path).Handler(
 		http.StripPrefix(
 			strings.TrimSuffix(path, "/"),
-			handler,
+			AddSlashForRoot(handler),
 		),
 	)
+}
+
+// AddSlashForRoot adds a slash if the path is the root path.
+// This is necessary for our subrouters where there may be a root.
+func AddSlashForRoot(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// @TODO MAYBE ENSURE SUFFIX DOESN'T ALREADY EXIST?
+		if r.URL.Path == "" {
+			r.URL.Path = "/"
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }

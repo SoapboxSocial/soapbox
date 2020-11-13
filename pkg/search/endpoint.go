@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 
 	"github.com/elastic/go-elasticsearch/v7"
@@ -17,9 +19,15 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
+// @TODO maybe do a type?
+const (
+	usersIndex  = "users"
+	groupsIndex = "groups"
+)
+
 type Response struct {
-	Users  []*users.User   `json:"users"`
-	Groups []*groups.Group `json:"groups"`
+	Users  []*users.User   `json:"users,omitempty"`
+	Groups []*groups.Group `json:"groups,omitempty"`
 }
 
 type Endpoint struct {
@@ -91,6 +99,8 @@ func (e *Endpoint) Search(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	wg.Wait()
+
 	err = httputil.JsonEncode(w, response)
 	if err != nil {
 		log.Printf("failed to write search response: %s\n", err.Error())
@@ -103,7 +113,14 @@ func types(query url.Values) ([]string, error) {
 		return nil, errors.New("no indexes")
 	}
 
-	return nil, nil
+	vals := strings.Split(indexes, ",")
+	for _, val := range vals {
+		if val != usersIndex && val != groupsIndex {
+			return nil, fmt.Errorf("invalid index %s", vals)
+		}
+	}
+
+	return vals, nil
 }
 
 func (e *Endpoint) searchUsers(query string, limit, offset int) ([]*users.User, error) {
@@ -178,6 +195,8 @@ func (e *Endpoint) search(index, query string, limit, offset int) (*result, erro
 	if err != nil {
 		return nil, err
 	}
+
+	defer res.Body.Close()
 
 	result := &result{}
 	err = json.NewDecoder(res.Body).Decode(result)

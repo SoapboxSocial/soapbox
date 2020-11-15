@@ -374,7 +374,7 @@ func (s *Server) getMemberForSession(session string) (*member, error) {
 	}
 
 	// @TODO ROLE SHOULD BE BASED ON STUFF
-	return &member{ID: id, DisplayName: u.DisplayName, Image: u.Image, IsMuted: false, Role: SPEAKER}, nil
+	return &member{ID: id, DisplayName: u.DisplayName, Image: u.Image, IsMuted: true, Role: SPEAKER}, nil
 }
 
 func authForContext(ctx context.Context) (string, error) {

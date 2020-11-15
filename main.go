@@ -64,8 +64,6 @@ func main() {
 		panic(err)
 	}
 
-	searchBackend := users.NewSearchBackend(client)
-
 	devicesBackend := devices.NewBackend(db)
 
 	amw := middleware.NewAuthenticationMiddleware(s)
@@ -91,7 +89,6 @@ func main() {
 		fb,
 		s,
 		ib,
-		searchBackend,
 		queue,
 		rooms.NewCurrentRoomBackend(rdb),
 		activeUsersBackend,
@@ -107,7 +104,6 @@ func main() {
 	userRoutes.HandleFunc("/follow", usersEndpoints.FollowUser).Methods("POST")
 	userRoutes.HandleFunc("/unfollow", usersEndpoints.UnfollowUser).Methods("POST")
 	userRoutes.HandleFunc("/edit", usersEndpoints.EditUser).Methods("POST")
-	userRoutes.HandleFunc("/searchBackend", usersEndpoints.Search).Methods("GET")
 	userRoutes.HandleFunc("/active", usersEndpoints.GetActiveUsersFor).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/groups", groupsEndpoint.GetGroupsForUser).Methods("GET")
 

@@ -29,6 +29,7 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
+	"github.com/soapboxsocial/soapbox/pkg/search"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
@@ -63,7 +64,7 @@ func main() {
 		panic(err)
 	}
 
-	search := users.NewSearchBackend(client)
+	searchBackend := users.NewSearchBackend(client)
 
 	devicesBackend := devices.NewBackend(db)
 
@@ -90,7 +91,7 @@ func main() {
 		fb,
 		s,
 		ib,
-		search,
+		searchBackend,
 		queue,
 		rooms.NewCurrentRoomBackend(rdb),
 		activeUsersBackend,
@@ -106,7 +107,7 @@ func main() {
 	userRoutes.HandleFunc("/follow", usersEndpoints.FollowUser).Methods("POST")
 	userRoutes.HandleFunc("/unfollow", usersEndpoints.UnfollowUser).Methods("POST")
 	userRoutes.HandleFunc("/edit", usersEndpoints.EditUser).Methods("POST")
-	userRoutes.HandleFunc("/search", usersEndpoints.Search).Methods("GET")
+	userRoutes.HandleFunc("/searchBackend", usersEndpoints.Search).Methods("GET")
 	userRoutes.HandleFunc("/active", usersEndpoints.GetActiveUsersFor).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/groups", groupsEndpoint.GetGroupsForUser).Methods("GET")
 
@@ -115,7 +116,7 @@ func main() {
 	devicesEndpoint := devices.NewEndpoint(devicesBackend)
 	devicesRoutes := devicesEndpoint.Router()
 	devicesRoutes.Use(amw.Middleware)
-	mount(r, "/v1/devices/", devicesRoutes)
+	mount(r, "/v1/devices", devicesRoutes)
 
 	meRoutes := r.PathPrefix("/v1/me").Subrouter()
 
@@ -136,7 +137,12 @@ func main() {
 
 	groupsRouter := groupsEndpoint.Router()
 	groupsRouter.Use(amw.Middleware)
-	mount(r, "/v1/groups/", groupsRouter)
+	mount(r, "/v1/groups", groupsRouter)
+
+	searchEndpoint := search.NewEndpoint(client)
+	searchRouter := searchEndpoint.Router()
+	searchRouter.Use(amw.Middleware)
+	mount(r, "/v1/search", searchRouter)
 
 	headersOk := handlers.AllowedHeaders([]string{
 		"Content-Type",
@@ -157,7 +163,20 @@ func mount(r *mux.Router, path string, handler http.Handler) {
 	r.PathPrefix(path).Handler(
 		http.StripPrefix(
 			strings.TrimSuffix(path, "/"),
-			handler,
+			AddSlashForRoot(handler),
 		),
 	)
+}
+
+// AddSlashForRoot adds a slash if the path is the root path.
+// This is necessary for our subrouters where there may be a root.
+func AddSlashForRoot(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// @TODO MAYBE ENSURE SUFFIX DOESN'T ALREADY EXIST?
+		if r.URL.Path == "" {
+			r.URL.Path = "/"
+		}
+
+		next.ServeHTTP(w, r)
+	})
 }

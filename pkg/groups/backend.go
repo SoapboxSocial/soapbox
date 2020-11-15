@@ -13,7 +13,7 @@ type Group struct {
 	Description string  `json:"description"`
 	Image       string  `json:"image,omitempty"`
 	GroupType   string  `json:"group_type"`
-	Members     *int    `json:"members"`
+	Members     *int    `json:"members,omitempty"`
 	IsInvited   *bool   `json:"is_invited,omitempty"`
 	Role        *string `json:"role,omitempty"`
 }

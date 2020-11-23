@@ -395,3 +395,30 @@ func (b *Backend) GetAllMembers(id, limit, offset int) ([]*users.User, error) {
 
 	return result, nil
 }
+
+func (b *Backend) GetAllMemberIds(group, forUser int) ([]int, error) {
+	stmt, err := b.db.Prepare("SELECT user_id FROM group_members WHERE group_id = $1 AND user_id != $2;")
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := stmt.Query(group, forUser)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]int, 0)
+
+	for rows.Next() {
+		var id int
+
+		err := rows.Scan(&id)
+		if err != nil {
+			return nil, err // @todo
+		}
+
+		result = append(result, id)
+	}
+
+	return result, nil
+}

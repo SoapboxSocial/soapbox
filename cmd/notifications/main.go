@@ -237,7 +237,12 @@ func onGroupRoomCreation(event *pubsub.Event) ([]int, *notifications.PushNotific
 		targets = append(targets, followerIDs...)
 	}
 
-	// @todo get group member ids
+	memberIDs, err := groupsBackend.GetAllMemberIds(groupId, creator)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	targets = append(targets, memberIDs...)
 
 	name := event.Params["name"].(string)
 	room, ok := event.Params["id"].(float64)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"strings"
 	"sync"
@@ -71,7 +72,7 @@ func (s *Server) ListRooms(ctx context.Context, _ *empty.Empty) (*pb.RoomList, e
 
 	rooms := make([]*pb.RoomState, 0)
 	for _, r := range s.rooms {
-		if !s.CanJoin(id, r) {
+		if !s.canJoin(id, r) {
 			continue
 		}
 
@@ -120,7 +121,7 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 			return status.Errorf(codes.Internal, "join error room full")
 		}
 
-		if !s.CanJoin(user.ID, r) {
+		if !s.canJoin(user.ID, r) {
 			return status.Errorf(codes.Internal, "user not invited")
 		}
 
@@ -177,13 +178,21 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 			name = string([]rune(name)[:30])
 		}
 
+		var group *groups.Group
+		if payload.Create.GetGroup() != 0 {
+			group, err = s.getGroup(user.ID, int(payload.Create.GetGroup()))
+			if err != nil {
+				return status.Errorf(codes.Internal, "group error %s", err)
+			}
+		}
+
 		room = NewRoom(
 			id,
 			name,
 			s.queue,
 			payload.Create.GetVisibility() == pb.Visibility_PRIVATE,
 			user.ID,
-			int(payload.Create.GetGroup()),
+			group,
 		)
 		s.nextID++
 		s.mux.Unlock()
@@ -368,22 +377,26 @@ func (s *Server) setupConnection(room int, stream pb.RoomService_SignalServer) (
 	return peer, nil
 }
 
-func (s *Server) CanJoin(peer int, room *Room) bool {
+func (s *Server) getGroup(peer, id int) (*groups.Group, error) {
+	isMember, err := s.groups.IsGroupMember(peer, id)
+	if err != nil || isMember == false {
+		return nil, fmt.Errorf("user %d is not member of group %d", peer, id)
+	}
+
+	return s.groups.FindById(id)
+}
+
+func (s *Server) canJoin(peer int, room *Room) bool {
 	group := room.Group()
-	if group == 0 {
+	if group == nil {
 		return room.CanJoin(peer)
 	}
 
-	public, err := s.groups.IsPublic(group)
-	if err != nil {
-		return false
-	}
-
-	if public {
+	if group.GroupType == "public" {
 		return true
 	}
 
-	isMember, err := s.groups.IsGroupMember(peer, group)
+	isMember, err := s.groups.IsGroupMember(peer, group.ID)
 	if err != nil {
 		return false
 	}

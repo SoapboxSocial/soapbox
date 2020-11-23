@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/soapboxsocial/soapbox/pkg/groups"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 )
@@ -52,7 +53,7 @@ type Room struct {
 
 	id    int
 	name  string
-	group int
+	group *groups.Group
 
 	members map[int]*peer
 
@@ -65,7 +66,7 @@ type Room struct {
 	kicked    map[int]bool
 }
 
-func NewRoom(id int, name string, queue *pubsub.Queue, isPrivate bool, owner, group int) *Room {
+func NewRoom(id int, name string, queue *pubsub.Queue, isPrivate bool, owner int, group *groups.Group) *Room {
 	r := &Room{
 		mux:       sync.RWMutex{},
 		id:        id,
@@ -83,7 +84,7 @@ func NewRoom(id int, name string, queue *pubsub.Queue, isPrivate bool, owner, gr
 	return r
 }
 
-func (r *Room) Group() int {
+func (r *Room) Group() *groups.Group {
 	return r.group
 }
 

@@ -101,7 +101,7 @@ func handleEvent(event *pubsub.Event) {
 	}
 
 	for _, target := range targets {
-		pushNotification(target, notification)
+		pushNotification(target, event, notification)
 	}
 }
 
@@ -122,8 +122,8 @@ func getHandler(eventType pubsub.EventType) handlerFunc {
 	}
 }
 
-func pushNotification(target int, notification *notifications.PushNotification) {
-	if !notificationLimiter.ShouldSendNotification(target, notification.Arguments, notification.Category) {
+func pushNotification(target int, event *pubsub.Event, notification *notifications.PushNotification) {
+	if !notificationLimiter.ShouldSendNotification(target, event) {
 		return
 	}
 
@@ -139,7 +139,7 @@ func pushNotification(target int, notification *notifications.PushNotification) 
 		}
 	}
 
-	notificationLimiter.SentNotification(target, notification.Arguments, notification.Category)
+	notificationLimiter.SentNotification(target, event)
 
 	store := getNotificationForStore(notification)
 	if store == nil {

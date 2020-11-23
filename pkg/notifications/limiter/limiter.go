@@ -32,10 +32,12 @@ func NewLimiter(rdb *redis.Client, currentRoom *rooms.CurrentRoomBackend) *Limit
 func (l *Limiter) ShouldSendNotification(target int, event *pubsub.Event) bool {
 	switch event.Type {
 	case pubsub.EventTypeNewRoom, pubsub.EventTypeRoomJoin:
+		// 30 minutes for any notification with the same room ID
 		if l.isLimited(limiterKeyForRoom(target, event)) {
 			return false
 		}
 
+		// 5 minutes for any notification with the same room member
 		if l.isLimited(limiterKeyForRoomMember(target, event)) {
 			return false
 		}

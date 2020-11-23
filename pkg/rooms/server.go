@@ -364,7 +364,7 @@ func (s *Server) onRoomJoinedEvent(isNew bool, peer int, room *Room) {
 
 func (s *Server) getGroup(peer, id int) (*groups.Group, error) {
 	isMember, err := s.groups.IsGroupMember(peer, id)
-	if err != nil || isMember == false {
+	if err != nil || !isMember {
 		return nil, fmt.Errorf("user %d is not member of group %d", peer, id)
 	}
 

@@ -336,7 +336,12 @@ func (s *Server) onRoomJoinedEvent(isNew bool, peer int, room *Room) {
 
 	var event pubsub.Event
 	if isNew {
-		event = pubsub.NewRoomCreationEvent(room.Name(), room.id, peer, visibility)
+		group := room.Group()
+		if group == nil {
+			event = pubsub.NewRoomCreationEvent(room.Name(), room.id, peer, visibility)
+		} else {
+			event = pubsub.NewRoomCreationEventWithGroup(room.Name(), room.id, peer, group.ID, visibility)
+		}
 	} else {
 		event = pubsub.NewRoomJoinEvent(room.Name(), room.id, peer, visibility)
 	}

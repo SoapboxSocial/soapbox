@@ -130,6 +130,21 @@ func handleEvent(event *pubsub.Event) *Event {
 				"name":     event.Params["name"],
 			},
 		}
+	case pubsub.EventTypeNewGroupRoom:
+		id, err := getId(event, "creator")
+		if err != nil {
+			return nil
+		}
+
+		return &Event{
+			id:   strconv.Itoa(id),
+			name: "room_new",
+			properties: map[string]interface{}{
+				"room_id":    event.Params["id"],
+				"visibility": event.Params["visibility"],
+				"group_id": event.Params["group"],
+			},
+		}
 	}
 
 	return nil

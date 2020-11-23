@@ -7,6 +7,7 @@ import (
 	"github.com/go-redis/redis/v8"
 
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
+	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
 )
 
@@ -54,8 +55,8 @@ func (l *Limiter) ShouldSendNotification(target int, args map[string]interface{}
 	return false
 }
 
-func (l *Limiter) SentNotification(target int, args map[string]interface{}, category notifications.NotificationCategory) {
-	if category == notifications.NEW_FOLLOWER {
+func (l *Limiter) SentNotification(target int, event *pubsub.Event) {
+	if event.Type == pubsub.EventTypeNewFollower {
 		return
 	}
 

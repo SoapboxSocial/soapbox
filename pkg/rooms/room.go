@@ -534,13 +534,23 @@ func (r *Room) ToProtoForPeer() *pb.RoomState {
 		})
 	}
 
-	return &pb.RoomState{
+	state := &pb.RoomState{
 		Id:         int64(r.id),
 		Name:       r.name,
 		Role:       string(SPEAKER), // @TODO THIS SHOULD DEPEND ON WHO OWNS THE ROOM ETC
 		Members:    members,
 		Visibility: visibility,
 	}
+
+	if r.group != nil {
+		state.Group = &pb.RoomState_Group{
+			Id: int64(r.group.ID),
+			Name: r.group.Name,
+			Image: r.group.Image,
+		}
+	}
+
+	return state
 }
 
 func has(peers map[int]*peer, fn func(*peer) bool) bool {

@@ -78,17 +78,17 @@ func (l *Limiter) limit(key string, duration time.Duration) {
 }
 
 func limiterKeyForRoom(target int, event *pubsub.Event) string {
-	return fmt.Sprintf("notifications_%d_room_%d", target, event.Params["id"])
+	return fmt.Sprintf("notifications_%d_room_%v", target, event.Params["id"])
 }
 
 func limiterKeyForRoomMember(target int, event *pubsub.Event) string {
-	return fmt.Sprintf("notifications_%d_room_member_%d", target, event.Params["creator"])
+	return fmt.Sprintf("notifications_%d_room_member_%v", target, event.Params["creator"])
 }
 
 func limiterKeyForRoomInvite(target int, event *pubsub.Event) string {
-	return fmt.Sprintf("notifications_%d_room_invite_%d", target, event.Params["room"])
+	return fmt.Sprintf("notifications_%d_room_invite_%v", target, event.Params["room"])
 }
 
 func limiterKeyForFollowerEvent(target int, event *pubsub.Event) string {
-	return fmt.Sprintf("notifications_%d_follower_%d", target, event.Params["follower"])
+	return fmt.Sprintf("notifications_%d_follower_%v", target, event.Params["follower"])
 }

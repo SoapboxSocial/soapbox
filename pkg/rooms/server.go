@@ -335,8 +335,9 @@ func (s *Server) onRoomJoinedEvent(isNew bool, peer int, room *Room) {
 	}
 
 	var event pubsub.Event
+	group := room.Group()
+
 	if isNew {
-		group := room.Group()
 		if group == nil {
 			event = pubsub.NewRoomCreationEvent(room.Name(), room.id, peer, visibility)
 		} else {
@@ -351,20 +352,18 @@ func (s *Server) onRoomJoinedEvent(isNew bool, peer int, room *Room) {
 		log.Printf("queue.Publish err: %v\n", err)
 	}
 
-	go func() {
-		if room.IsPrivate() {
-			return
-		}
+	if visibility == pubsub.Private {
+		return
+	}
 
-		if room.Group() != nil && room.Group().GroupType != "public" {
-			return
-		}
+	if group != nil && group.GroupType != "public" {
+		return
+	}
 
-		err := s.currentRoom.SetCurrentRoomForUser(peer, room.id)
-		if err != nil {
-			log.Printf("failed to set current room err: %v", err)
-		}
-	}()
+	err = s.currentRoom.SetCurrentRoomForUser(peer, room.id)
+	if err != nil {
+		log.Printf("failed to set current room err: %v", err)
+	}
 }
 
 func (s *Server) getGroup(peer, id int) (*groups.Group, error) {

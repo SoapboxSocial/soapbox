@@ -48,6 +48,8 @@ type peer struct {
 	rtc    *sfu.WebRTCTransport
 }
 
+type OnJoinHandler func(isNew bool, peer int, room *Room)
+
 type Room struct {
 	mux sync.RWMutex
 
@@ -64,9 +66,11 @@ type Room struct {
 	isPrivate bool
 	invited   map[int]bool
 	kicked    map[int]bool
+
+	onJoin OnJoinHandler
 }
 
-func NewRoom(id int, name string, queue *pubsub.Queue, isPrivate bool, owner int, group *groups.Group) *Room {
+func NewRoom(id int, name string, queue *pubsub.Queue, isPrivate bool, owner int, group *groups.Group, onJoin OnJoinHandler) *Room {
 	r := &Room{
 		mux:       sync.RWMutex{},
 		id:        id,
@@ -77,11 +81,16 @@ func NewRoom(id int, name string, queue *pubsub.Queue, isPrivate bool, owner int
 		invited:   make(map[int]bool),
 		kicked:    make(map[int]bool),
 		group:     group,
+		onJoin:    onJoin,
 	}
 
 	r.invited[owner] = true
 
 	return r
+}
+
+func (r *Room) ID() int {
+	return r.id
 }
 
 func (r *Room) Group() *groups.Group {
@@ -121,7 +130,7 @@ func (r *Room) OnDisconnected(f func(room, peer int)) {
 	r.onDisconnectedHandlerFunc = f
 }
 
-func (r *Room) Handle(me *member, stream pb.RoomService_SignalServer, rtc *sfu.WebRTCTransport) error {
+func (r *Room) Handle(me *member, stream pb.RoomService_SignalServer, rtc *sfu.WebRTCTransport, isNew bool) error {
 	id := me.ID
 
 	log.Printf("peer %d joined %d", id, r.id)
@@ -173,6 +182,8 @@ func (r *Room) Handle(me *member, stream pb.RoomService_SignalServer, rtc *sfu.W
 			From: int64(id),
 			Data: data,
 		})
+
+		go r.onJoin(isNew, id, r)
 	})
 
 	for {
@@ -544,8 +555,8 @@ func (r *Room) ToProtoForPeer() *pb.RoomState {
 
 	if r.group != nil {
 		state.Group = &pb.RoomState_Group{
-			Id: int64(r.group.ID),
-			Name: r.group.Name,
+			Id:    int64(r.group.ID),
+			Name:  r.group.Name,
 			Image: r.group.Image,
 		}
 	}

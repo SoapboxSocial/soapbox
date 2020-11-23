@@ -107,6 +107,7 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 
 	// Auth will be able to be moved out.
 
+	isNew := false
 	switch payload := in.Payload.(type) {
 	case *pb.SignalRequest_Join:
 		s.mux.RLock()
@@ -150,26 +151,8 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 			log.Printf("error sending join response %s", err)
 			return status.Errorf(codes.Internal, "join error %s", err)
 		}
-
-		visibility := pubsub.Public
-		if r.IsPrivate() {
-			visibility = pubsub.Private
-		}
-
-		err := s.queue.Publish(
-			pubsub.RoomTopic,
-			pubsub.NewRoomJoinEvent(
-				r.Name(),
-				int(payload.Join.Room),
-				user.ID,
-				visibility,
-			),
-		)
-
-		if err != nil {
-			log.Printf("queue.Publish err: %v\n", err)
-		}
 	case *pb.SignalRequest_Create:
+		isNew = true
 		s.mux.Lock()
 		id := s.nextID
 
@@ -193,6 +176,7 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 			payload.Create.GetVisibility() == pb.Visibility_PRIVATE,
 			user.ID,
 			group,
+			s.onRoomJoinedEvent,
 		)
 		s.nextID++
 		s.mux.Unlock()
@@ -256,45 +240,12 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 		s.rooms[id] = room
 		s.mux.Unlock()
 
-		// @TODO CHECK GROUP
-		visibility := pubsub.Public
-		if payload.Create.Visibility == pb.Visibility_PRIVATE {
-			visibility = pubsub.Private
-		}
-
-		err := s.queue.Publish(
-			pubsub.RoomTopic,
-			pubsub.NewRoomCreationEvent(
-				payload.Create.Name,
-				id,
-				user.ID,
-				visibility,
-			),
-		)
-
-		if err != nil {
-			log.Printf("queue.Publish err: %v\n", err)
-		}
-
 		log.Printf("created room: %d", id)
 	default:
 		return status.Error(codes.FailedPrecondition, "not joined or created room")
 	}
 
-	go func() {
-		// @TODO THIS IS TEMP
-		// @TODO WE NEED TO CHECK GROUP HERE
-		if room.IsPrivate() {
-			return
-		}
-
-		err := s.currentRoom.SetCurrentRoomForUser(user.ID, room.id)
-		if err != nil {
-			log.Printf("failed to set current room err: %v", err)
-		}
-	}()
-
-	return room.Handle(user, stream, peer)
+	return room.Handle(user, stream, peer, isNew)
 }
 
 func (s *Server) setupConnection(room int, stream pb.RoomService_SignalServer) (*sfu.WebRTCTransport, error) {
@@ -375,6 +326,44 @@ func (s *Server) setupConnection(room int, stream pb.RoomService_SignalServer) (
 	})
 
 	return peer, nil
+}
+
+func (s *Server) onRoomJoinedEvent(isNew bool, peer int, room *Room) {
+	visibility := pubsub.Public
+	if room.IsPrivate() {
+		visibility = pubsub.Private
+	}
+
+	var event pubsub.Event
+	if isNew {
+		event = pubsub.NewRoomCreationEvent(room.Name(), room.id, peer, visibility)
+	} else {
+		event = pubsub.NewRoomJoinEvent(room.Name(), room.id, peer, visibility)
+	}
+
+	err := s.queue.Publish(
+		pubsub.RoomTopic,
+		event,
+	)
+
+	if err != nil {
+		log.Printf("queue.Publish err: %v\n", err)
+	}
+
+	go func() {
+		if room.IsPrivate() {
+			return
+		}
+
+		if room.Group() != nil && room.Group().GroupType != "public" {
+			return
+		}
+
+		err := s.currentRoom.SetCurrentRoomForUser(peer, room.id)
+		if err != nil {
+			log.Printf("failed to set current room err: %v", err)
+		}
+	}()
 }
 
 func (s *Server) getGroup(peer, id int) (*groups.Group, error) {

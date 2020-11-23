@@ -341,11 +341,7 @@ func (s *Server) onRoomJoinedEvent(isNew bool, peer int, room *Room) {
 		event = pubsub.NewRoomJoinEvent(room.Name(), room.id, peer, visibility)
 	}
 
-	err := s.queue.Publish(
-		pubsub.RoomTopic,
-		event,
-	)
-
+	err := s.queue.Publish(pubsub.RoomTopic, event)
 	if err != nil {
 		log.Printf("queue.Publish err: %v\n", err)
 	}

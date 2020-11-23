@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
+	"github.com/soapboxsocial/soapbox/pkg/groups"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
@@ -26,10 +27,11 @@ const MAX_PEERS = 16
 type Server struct {
 	mux sync.RWMutex
 
-	sfu   *sfu.SFU
-	sm    *sessions.SessionManager
-	ub    *users.UserBackend
-	queue *pubsub.Queue
+	sfu    *sfu.SFU
+	sm     *sessions.SessionManager
+	ub     *users.UserBackend
+	groups *groups.Backend
+	queue  *pubsub.Queue
 
 	currentRoom *CurrentRoomBackend
 
@@ -38,7 +40,7 @@ type Server struct {
 	nextID int
 }
 
-func NewServer(sfu *sfu.SFU, sm *sessions.SessionManager, ub *users.UserBackend, queue *pubsub.Queue, cr *CurrentRoomBackend) *Server {
+func NewServer(sfu *sfu.SFU, sm *sessions.SessionManager, ub *users.UserBackend, queue *pubsub.Queue, cr *CurrentRoomBackend, groups *groups.Backend) *Server {
 	return &Server{
 		mux:         sync.RWMutex{},
 		sfu:         sfu,
@@ -48,6 +50,7 @@ func NewServer(sfu *sfu.SFU, sm *sessions.SessionManager, ub *users.UserBackend,
 		currentRoom: cr,
 		rooms:       make(map[int]*Room),
 		nextID:      1,
+		groups:      groups,
 	}
 }
 
@@ -68,7 +71,7 @@ func (s *Server) ListRooms(ctx context.Context, _ *empty.Empty) (*pb.RoomList, e
 
 	rooms := make([]*pb.RoomState, 0)
 	for _, r := range s.rooms {
-		if !r.CanJoin(id) {
+		if !s.CanJoin(id, r) {
 			continue
 		}
 
@@ -117,7 +120,7 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 			return status.Errorf(codes.Internal, "join error room full")
 		}
 
-		if !r.CanJoin(user.ID) {
+		if !s.CanJoin(user.ID, r) {
 			return status.Errorf(codes.Internal, "user not invited")
 		}
 
@@ -180,6 +183,7 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 			s.queue,
 			payload.Create.GetVisibility() == pb.Visibility_PRIVATE,
 			user.ID,
+			int(payload.Create.GetGroup()),
 		)
 		s.nextID++
 		s.mux.Unlock()
@@ -360,6 +364,29 @@ func (s *Server) setupConnection(room int, stream pb.RoomService_SignalServer) (
 	})
 
 	return peer, nil
+}
+
+func (s *Server) CanJoin(peer int, room *Room) bool {
+	group := room.Group()
+	if group == 0 {
+		return room.CanJoin(peer)
+	}
+
+	public, err := s.groups.IsPublic(group)
+	if err != nil {
+		return false
+	}
+
+	if public {
+		return true
+	}
+
+	isMember, err := s.groups.IsGroupMember(peer, group)
+	if err != nil {
+		return false
+	}
+
+	return isMember
 }
 
 func (s *Server) getMemberForSession(session string) (*member, error) {

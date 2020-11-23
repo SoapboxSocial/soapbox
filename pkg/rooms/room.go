@@ -50,8 +50,9 @@ type peer struct {
 type Room struct {
 	mux sync.RWMutex
 
-	id   int
-	name string
+	id    int
+	name  string
+	group int
 
 	members map[int]*peer
 
@@ -64,7 +65,7 @@ type Room struct {
 	kicked    map[int]bool
 }
 
-func NewRoom(id int, name string, queue *pubsub.Queue, isPrivate bool, owner int) *Room {
+func NewRoom(id int, name string, queue *pubsub.Queue, isPrivate bool, owner, group int) *Room {
 	r := &Room{
 		mux:       sync.RWMutex{},
 		id:        id,
@@ -74,11 +75,16 @@ func NewRoom(id int, name string, queue *pubsub.Queue, isPrivate bool, owner int
 		isPrivate: isPrivate,
 		invited:   make(map[int]bool),
 		kicked:    make(map[int]bool),
+		group: group,
 	}
 
 	r.invited[owner] = true
 
 	return r
+}
+
+func (r *Room) Group() int {
+	return r.group
 }
 
 func (r *Room) IsPrivate() bool {

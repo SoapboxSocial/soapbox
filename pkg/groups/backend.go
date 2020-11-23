@@ -167,6 +167,21 @@ func (b *Backend) IsAdminForGroup(user, group int) (bool, error) {
 	return count == 1, nil
 }
 
+func (b *Backend) IsGroupMember(user, group int) (bool, error) {
+	row := b.db.QueryRow(
+		"SELECT COUNT(*) FROM group_members WHERE group_id = $1 AND user_id = $2;",
+		group, user,
+	)
+
+	var count int
+	err := row.Scan(&count)
+	if err != nil {
+		return false, err
+	}
+
+	return count == 1, nil
+}
+
 func (b *Backend) GetGroupForUser(user, groupId int) (*Group, error) {
 	query := `SELECT
 		groups.id, groups.name, groups.description, groups.image,

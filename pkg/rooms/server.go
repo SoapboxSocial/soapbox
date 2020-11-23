@@ -247,6 +247,7 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 		s.rooms[id] = room
 		s.mux.Unlock()
 
+		// @TODO CHECK GROUP
 		visibility := pubsub.Public
 		if payload.Create.Visibility == pb.Visibility_PRIVATE {
 			visibility = pubsub.Private
@@ -273,6 +274,7 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 
 	go func() {
 		// @TODO THIS IS TEMP
+		// @TODO WE NEED TO CHECK GROUP HERE
 		if room.IsPrivate() {
 			return
 		}

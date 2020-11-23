@@ -75,7 +75,7 @@ func NewRoom(id int, name string, queue *pubsub.Queue, isPrivate bool, owner, gr
 		isPrivate: isPrivate,
 		invited:   make(map[int]bool),
 		kicked:    make(map[int]bool),
-		group: group,
+		group:     group,
 	}
 
 	r.invited[owner] = true

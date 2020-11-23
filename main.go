@@ -35,7 +35,7 @@ import (
 )
 
 // @todo do this in config
-const sendgrid_api = "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"
+const sendgrid_api = "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"
 
 // @TODO: THINK ABOUT CHANGING QUEUES TO REDIS PUBSUB
 

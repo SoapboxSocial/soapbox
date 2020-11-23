@@ -10,10 +10,12 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
 )
 
-var keyNotificationCooldown = 30 * time.Minute
-var roomInviteNotificationCooldown = 5 * time.Minute
-
-var valueString = "placeholder"
+var (
+	followerCooldown   = 30 * time.Minute
+	roomInviteCooldown = 5 * time.Minute
+	roomMemberCooldown = 5 * time.Minute
+	roomCooldown       = 30 * time.Minute
+)
 
 type Limiter struct {
 	rdb         *redis.Client
@@ -28,55 +30,63 @@ func NewLimiter(rdb *redis.Client, currentRoom *rooms.CurrentRoomBackend) *Limit
 }
 
 func (l *Limiter) ShouldSendNotification(target int, event *pubsub.Event) bool {
-	// @TODO WE SHOULD LIMIT NEW FOLLOWER NOTIFICATION SO SOMEONE CANT REFOLLOW AND SPAM
-	//if category == notifications.NEW_FOLLOWER || category == notifications.GROUP_INVITE {
-	//	return true
-	//}
-	//
-	//if category == notifications.NEW_ROOM {
-	//	return !l.isLimited(limiterKeyForRoom(target, args["id"].(int)))
-	//}
-	//
-	//id := args["id"].(int)
-	//room, _ := l.currentRoom.GetCurrentRoomForUser(target)
-	//if room == id {
-	//	return false
-	//}
-	//
-	//if category == notifications.ROOM_JOINED {
-	//	return !l.isLimited(limiterKeyForRoom(target, args["id"].(int)))
-	//}
-	//
-	//if category == notifications.ROOM_INVITE {
-	//	return !l.isLimited(limiterKeyForRoomInvite(target, args["id"].(int)))
-	//}
+	switch event.Type {
+	case pubsub.EventTypeNewRoom, pubsub.EventTypeRoomJoin:
+		if l.isLimited(limiterKeyForRoom(target, event)) {
+			return false
+		}
+
+		if l.isLimited(limiterKeyForRoomMember(target, event)) {
+			return false
+		}
+	case pubsub.EventTypeRoomInvite:
+		return !l.isLimited(limiterKeyForRoomInvite(target, event))
+	case pubsub.EventTypeNewFollower:
+		return !l.isLimited(limiterKeyForFollowerEvent(target, event))
+	case pubsub.EventTypeGroupInvite:
+		return true
+	default:
+		return false
+	}
 
 	return false
 }
 
 func (l *Limiter) SentNotification(target int, event *pubsub.Event) {
-
-	// @TODO CHECK IF KEYS ARE OK?
-
-	//if event.Type == pubsub.EventTypeRoomJoin || event.Type == pubsub.EventTypeNewRoom {
-	//	l.rdb.Set(l.rdb.Context(), limiterKeyForRoom(target, event.Params["id"].(int)), valueString, keyNotificationCooldown)
-	//	return
-	//}
-	//
-	//if event.Type == pubsub.EventTypeRoomInvite {
-	//	l.rdb.Set(l.rdb.Context(), limiterKeyForRoomInvite(target, event.Params["id"].(int)), valueString, roomInviteNotificationCooldown)
-	//}
+	switch event.Type {
+	case pubsub.EventTypeNewRoom, pubsub.EventTypeRoomJoin:
+		l.limit(limiterKeyForRoomMember(target, event), roomMemberCooldown)
+		l.limit(limiterKeyForRoom(target, event), roomCooldown)
+	case pubsub.EventTypeRoomInvite:
+		l.limit(limiterKeyForFollowerEvent(target, event), roomInviteCooldown)
+	case pubsub.EventTypeNewFollower:
+		l.limit(limiterKeyForFollowerEvent(target, event), followerCooldown)
+	}
 }
+
+const placeholder = "placeholder"
 
 func (l *Limiter) isLimited(key string) bool {
 	res, _ := l.rdb.Get(l.rdb.Context(), key).Result()
-	return res == valueString
+	return res == placeholder
 }
 
-func limiterKeyForRoom(target, id int) string {
-	return fmt.Sprintf("%d_room_%d", target, id)
+func (l *Limiter) limit(key string, duration time.Duration) {
+	l.rdb.Set(l.rdb.Context(), key, placeholder, duration)
 }
 
-func limiterKeyForRoomInvite(target, id int) string {
-	return fmt.Sprintf("%d_room_invite_%d", target, id)
+func limiterKeyForRoom(target int, event *pubsub.Event) string {
+	return fmt.Sprintf("notifications_%d_room_%d", target, event.Params["id"])
+}
+
+func limiterKeyForRoomMember(target int, event *pubsub.Event) string {
+	return fmt.Sprintf("notifications_%d_room_member_%d", target, event.Params["creator"])
+}
+
+func limiterKeyForRoomInvite(target int, event *pubsub.Event) string {
+	return fmt.Sprintf("notifications_%d_room_invite_%d", target, event.Params["room"])
+}
+
+func limiterKeyForFollowerEvent(target int, event *pubsub.Event) string {
+	return fmt.Sprintf("notifications_%d_follower_%d", target, event.Params["follower"])
 }

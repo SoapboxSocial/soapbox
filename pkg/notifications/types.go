@@ -55,6 +55,30 @@ func NewRoomNotificationWithName(id int, creator, name string) *PushNotification
 	}
 }
 
+func NewRoomWithGroupNotification(id int, creator, group string) *PushNotification {
+	return &PushNotification{
+		Category: NEW_ROOM,
+		Alert: Alert{
+			Key:       "new_room_with_group_notification",
+			Body:      fmt.Sprintf("%s created a room in \"%s\", why not join them?", creator, group),
+			Arguments: []string{creator},
+		},
+		Arguments: map[string]interface{}{"id": id},
+	}
+}
+
+func NewRoomWithGroupAndNameNotification(id int, creator, group, name string) *PushNotification {
+	return &PushNotification{
+		Category: NEW_ROOM,
+		Alert: Alert{
+			Key:       "new_room_with_group_and_name_notification",
+			Body:      fmt.Sprintf("%s created the room \"%s\" in \"%s\", why not join them?", creator, name, group),
+			Arguments: []string{creator, name, group},
+		},
+		Arguments: map[string]interface{}{"id": id},
+	}
+}
+
 func NewFollowerNotification(id int, follower string) *PushNotification {
 	return &PushNotification{
 		Category: NEW_FOLLOWER,
@@ -70,7 +94,6 @@ func NewRoomJoinedNotification(id int, participant string) *PushNotification {
 	return &PushNotification{
 		Category: ROOM_JOINED,
 		Alert: Alert{
-			Body:      fmt.Sprintf("%s joined a room, why not join them?", participant),
 			Key:       "room_joined_notification",
 			Arguments: []string{participant},
 		},
@@ -82,7 +105,6 @@ func NewRoomJoinedNotificationWithName(id int, participant, name string) *PushNo
 	return &PushNotification{
 		Category: ROOM_JOINED,
 		Alert: Alert{
-			Body:      fmt.Sprintf("%s joined the room \"%s\", why not join them?", participant, name),
 			Key:       "room_joined_with_name_notification",
 			Arguments: []string{participant, name},
 		},
@@ -94,7 +116,6 @@ func NewRoomInviteNotification(id int, from string) *PushNotification {
 	return &PushNotification{
 		Category: ROOM_INVITE,
 		Alert: Alert{
-			Body:      fmt.Sprintf("%s invited you to join a room", from),
 			Key:       "room_invite_notification",
 			Arguments: []string{from},
 		},
@@ -106,7 +127,6 @@ func NewRoomInviteNotificationWithName(id int, from, room string) *PushNotificat
 	return &PushNotification{
 		Category: ROOM_JOINED,
 		Alert: Alert{
-			Body:      fmt.Sprintf("%s invited you to join the room \"%s\"", from, room),
 			Key:       "room_invite_with_name_notification",
 			Arguments: []string{from, room},
 		},
@@ -118,7 +138,6 @@ func NewGroupInviteNotification(groupId, fromId int, from, group string) *PushNo
 	return &PushNotification{
 		Category: GROUP_INVITE,
 		Alert: Alert{
-			Body:      fmt.Sprintf("%s invited you to join the group \"%s\"", from, group),
 			Key:       "group_invite_notification",
 			Arguments: []string{from, group},
 		},

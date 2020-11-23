@@ -55,7 +55,6 @@ func NewRoomCreationEvent(name string, id, creator int, visibility RoomVisibilit
 	}
 }
 
-
 func NewRoomCreationEventWithGroup(name string, id, creator, group int, visibility RoomVisibility) Event {
 	return Event{
 		Type:   EventTypeNewGroupRoom,

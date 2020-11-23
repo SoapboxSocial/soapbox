@@ -142,7 +142,7 @@ func handleEvent(event *pubsub.Event) *Event {
 			properties: map[string]interface{}{
 				"room_id":    event.Params["id"],
 				"visibility": event.Params["visibility"],
-				"group_id": event.Params["group"],
+				"group_id":   event.Params["group"],
 			},
 		}
 	}

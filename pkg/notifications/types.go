@@ -61,7 +61,7 @@ func NewRoomWithGroupNotification(id int, creator, group string) *PushNotificati
 		Alert: Alert{
 			Key:       "new_room_with_group_notification",
 			Body:      fmt.Sprintf("%s created a room in \"%s\", why not join them?", creator, group),
-			Arguments: []string{creator},
+			Arguments: []string{creator, group},
 		},
 		Arguments: map[string]interface{}{"id": id},
 	}

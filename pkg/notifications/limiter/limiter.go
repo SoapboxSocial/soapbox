@@ -14,7 +14,8 @@ var (
 	followerCooldown   = 30 * time.Minute
 	roomInviteCooldown = 5 * time.Minute
 	roomMemberCooldown = 5 * time.Minute
-	roomCooldown       = 30 * time.Minute
+	roomCooldown       = 10 * time.Minute
+	groupRoomCooldown  = 10 * time.Minute
 )
 
 type Limiter struct {
@@ -31,6 +32,12 @@ func NewLimiter(rdb *redis.Client, currentRoom *rooms.CurrentRoomBackend) *Limit
 
 func (l *Limiter) ShouldSendNotification(target int, event *pubsub.Event) bool {
 	switch event.Type {
+	case pubsub.EventTypeNewGroupRoom:
+		if l.isLimited(limiterKeyForGroupRoom(target, event)) {
+			return false
+		}
+
+		fallthrough
 	case pubsub.EventTypeNewRoom, pubsub.EventTypeRoomJoin:
 		// 30 minutes for any notification with the same room ID
 		if l.isLimited(limiterKeyForRoom(target, event)) {
@@ -56,6 +63,9 @@ func (l *Limiter) ShouldSendNotification(target int, event *pubsub.Event) bool {
 
 func (l *Limiter) SentNotification(target int, event *pubsub.Event) {
 	switch event.Type {
+	case pubsub.EventTypeNewGroupRoom:
+		l.limit(limiterKeyForGroupRoom(target, event), groupRoomCooldown)
+		fallthrough
 	case pubsub.EventTypeNewRoom, pubsub.EventTypeRoomJoin:
 		l.limit(limiterKeyForRoomMember(target, event), roomMemberCooldown)
 		l.limit(limiterKeyForRoom(target, event), roomCooldown)
@@ -75,6 +85,10 @@ func (l *Limiter) isLimited(key string) bool {
 
 func (l *Limiter) limit(key string, duration time.Duration) {
 	l.rdb.Set(l.rdb.Context(), key, placeholder, duration)
+}
+
+func limiterKeyForGroupRoom(target int, event *pubsub.Event) string {
+	return fmt.Sprintf("notifications_%d_room_in_group_%v", target, event.Params["group"])
 }
 
 func limiterKeyForRoom(target int, event *pubsub.Event) string {

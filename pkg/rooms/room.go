@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	"github.com/soapboxsocial/soapbox/pkg/groups"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 )
@@ -47,11 +48,14 @@ type peer struct {
 	rtc    *sfu.WebRTCTransport
 }
 
+type OnJoinHandler func(isNew bool, peer int, room *Room)
+
 type Room struct {
 	mux sync.RWMutex
 
-	id   int
-	name string
+	id    int
+	name  string
+	group *groups.Group
 
 	members map[int]*peer
 
@@ -62,9 +66,11 @@ type Room struct {
 	isPrivate bool
 	invited   map[int]bool
 	kicked    map[int]bool
+
+	onJoin OnJoinHandler
 }
 
-func NewRoom(id int, name string, queue *pubsub.Queue, isPrivate bool, owner int) *Room {
+func NewRoom(id int, name string, queue *pubsub.Queue, isPrivate bool, owner int, group *groups.Group, onJoin OnJoinHandler) *Room {
 	r := &Room{
 		mux:       sync.RWMutex{},
 		id:        id,
@@ -74,11 +80,21 @@ func NewRoom(id int, name string, queue *pubsub.Queue, isPrivate bool, owner int
 		isPrivate: isPrivate,
 		invited:   make(map[int]bool),
 		kicked:    make(map[int]bool),
+		group:     group,
+		onJoin:    onJoin,
 	}
 
 	r.invited[owner] = true
 
 	return r
+}
+
+func (r *Room) ID() int {
+	return r.id
+}
+
+func (r *Room) Group() *groups.Group {
+	return r.group
 }
 
 func (r *Room) IsPrivate() bool {
@@ -114,7 +130,7 @@ func (r *Room) OnDisconnected(f func(room, peer int)) {
 	r.onDisconnectedHandlerFunc = f
 }
 
-func (r *Room) Handle(me *member, stream pb.RoomService_SignalServer, rtc *sfu.WebRTCTransport) error {
+func (r *Room) Handle(me *member, stream pb.RoomService_SignalServer, rtc *sfu.WebRTCTransport, isNew bool) error {
 	id := me.ID
 
 	log.Printf("peer %d joined %d", id, r.id)
@@ -166,6 +182,8 @@ func (r *Room) Handle(me *member, stream pb.RoomService_SignalServer, rtc *sfu.W
 			From: int64(id),
 			Data: data,
 		})
+
+		go r.onJoin(isNew, id, r)
 	})
 
 	for {
@@ -527,13 +545,23 @@ func (r *Room) ToProtoForPeer() *pb.RoomState {
 		})
 	}
 
-	return &pb.RoomState{
+	state := &pb.RoomState{
 		Id:         int64(r.id),
 		Name:       r.name,
 		Role:       string(SPEAKER), // @TODO THIS SHOULD DEPEND ON WHO OWNS THE ROOM ETC
 		Members:    members,
 		Visibility: visibility,
 	}
+
+	if r.group != nil {
+		state.Group = &pb.RoomState_Group{
+			Id:    int64(r.group.ID),
+			Name:  r.group.Name,
+			Image: r.group.Image,
+		}
+	}
+
+	return state
 }
 
 func has(peers map[int]*peer, fn func(*peer) bool) bool {

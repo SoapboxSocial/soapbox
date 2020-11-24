@@ -10,6 +10,7 @@ import (
 	sfu "github.com/pion/ion-sfu/pkg"
 	"google.golang.org/grpc"
 
+	"github.com/soapboxsocial/soapbox/pkg/groups"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
@@ -61,6 +62,7 @@ func main() {
 			users.NewUserBackend(db),
 			pubsub.NewQueue(rdb),
 			rooms.NewCurrentRoomBackend(rdb),
+			groups.NewBackend(db),
 		),
 	)
 

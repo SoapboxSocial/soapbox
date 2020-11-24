@@ -167,6 +167,21 @@ func (b *Backend) IsAdminForGroup(user, group int) (bool, error) {
 	return count == 1, nil
 }
 
+func (b *Backend) IsGroupMember(user, group int) (bool, error) {
+	row := b.db.QueryRow(
+		"SELECT COUNT(*) FROM group_members WHERE group_id = $1 AND user_id = $2;",
+		group, user,
+	)
+
+	var count int
+	err := row.Scan(&count)
+	if err != nil {
+		return false, err
+	}
+
+	return count == 1, nil
+}
+
 func (b *Backend) GetGroupForUser(user, groupId int) (*Group, error) {
 	query := `SELECT
 		groups.id, groups.name, groups.description, groups.image,
@@ -376,6 +391,33 @@ func (b *Backend) GetAllMembers(id, limit, offset int) ([]*users.User, error) {
 		}
 
 		result = append(result, user)
+	}
+
+	return result, nil
+}
+
+func (b *Backend) GetAllMemberIds(group, forUser int) ([]int, error) {
+	stmt, err := b.db.Prepare("SELECT user_id FROM group_members WHERE group_id = $1 AND user_id != $2;")
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := stmt.Query(group, forUser)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]int, 0)
+
+	for rows.Next() {
+		var id int
+
+		err := rows.Scan(&id)
+		if err != nil {
+			return nil, err // @todo
+		}
+
+		result = append(result, id)
 	}
 
 	return result, nil

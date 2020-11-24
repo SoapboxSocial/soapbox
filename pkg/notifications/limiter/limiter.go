@@ -48,6 +48,8 @@ func (l *Limiter) ShouldSendNotification(target int, event *pubsub.Event) bool {
 		if l.isLimited(limiterKeyForRoomMember(target, event)) {
 			return false
 		}
+
+		return true
 	case pubsub.EventTypeRoomInvite:
 		return !l.isLimited(limiterKeyForRoomInvite(target, event))
 	case pubsub.EventTypeNewFollower:
@@ -57,8 +59,6 @@ func (l *Limiter) ShouldSendNotification(target int, event *pubsub.Event) bool {
 	default:
 		return false
 	}
-
-	return false
 }
 
 func (l *Limiter) SentNotification(target int, event *pubsub.Event) {
@@ -88,21 +88,21 @@ func (l *Limiter) limit(key string, duration time.Duration) {
 }
 
 func limiterKeyForGroupRoom(target int, event *pubsub.Event) string {
-	return fmt.Sprintf("notifications_%d_room_in_group_%v", target, event.Params["group"])
+	return fmt.Sprintf("notifications_limit_%d_room_in_group_%v", target, event.Params["group"])
 }
 
 func limiterKeyForRoom(target int, event *pubsub.Event) string {
-	return fmt.Sprintf("notifications_%d_room_%v", target, event.Params["id"])
+	return fmt.Sprintf("notifications_limit_%d_room_%v", target, event.Params["id"])
 }
 
 func limiterKeyForRoomMember(target int, event *pubsub.Event) string {
-	return fmt.Sprintf("notifications_%d_room_member_%v", target, event.Params["creator"])
+	return fmt.Sprintf("notifications_limit_%d_room_member_%v", target, event.Params["creator"])
 }
 
 func limiterKeyForRoomInvite(target int, event *pubsub.Event) string {
-	return fmt.Sprintf("notifications_%d_room_invite_%v", target, event.Params["room"])
+	return fmt.Sprintf("notifications_limit_%d_room_invite_%v", target, event.Params["room"])
 }
 
 func limiterKeyForFollowerEvent(target int, event *pubsub.Event) string {
-	return fmt.Sprintf("notifications_%d_follower_%v", target, event.Params["follower"])
+	return fmt.Sprintf("notifications_limit_%d_follower_%v", target, event.Params["follower"])
 }

@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	followerCooldown   = 30 * time.Minute
+	followerCooldown   = 15 * time.Minute
 	roomInviteCooldown = 5 * time.Minute
 	roomMemberCooldown = 5 * time.Minute
 	roomCooldown       = 10 * time.Minute
@@ -74,7 +74,7 @@ func (l *Limiter) SentNotification(target int, event *pubsub.Event) {
 		l.limit(limiterKeyForRoomMember(target, event), roomMemberCooldown)
 		l.limit(limiterKeyForRoom(target, event), roomCooldown)
 	case pubsub.EventTypeRoomInvite:
-		l.limit(limiterKeyForFollowerEvent(target, event), roomInviteCooldown)
+		l.limit(limiterKeyForRoomInvite(target, event), roomInviteCooldown)
 	case pubsub.EventTypeNewFollower:
 		l.limit(limiterKeyForFollowerEvent(target, event), followerCooldown)
 	}

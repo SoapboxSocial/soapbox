@@ -49,6 +49,10 @@ func (l *Limiter) ShouldSendNotification(target int, event *pubsub.Event) bool {
 			return false
 		}
 
+		if l.isUserInRoom(target, event) {
+			return false
+		}
+
 		return true
 	case pubsub.EventTypeRoomInvite:
 		return !l.isLimited(limiterKeyForRoomInvite(target, event))
@@ -87,6 +91,20 @@ func (l *Limiter) limit(key string, duration time.Duration) {
 	l.rdb.Set(l.rdb.Context(), key, placeholder, duration)
 }
 
+func (l *Limiter) isUserInRoom(user int, event *pubsub.Event) bool {
+	room, _ := l.currentRoom.GetCurrentRoomForUser(user)
+	if room == 0 {
+		return false
+	}
+
+	id, err := getInt(event, "id")
+	if err != nil {
+		return false
+	}
+
+	return id == room
+}
+
 func limiterKeyForGroupRoom(target int, event *pubsub.Event) string {
 	return fmt.Sprintf("notifications_limit_%d_room_in_group_%v", target, event.Params["group"])
 }
@@ -105,4 +123,13 @@ func limiterKeyForRoomInvite(target int, event *pubsub.Event) string {
 
 func limiterKeyForFollowerEvent(target int, event *pubsub.Event) string {
 	return fmt.Sprintf("notifications_limit_%d_follower_%v", target, event.Params["follower"])
+}
+
+func getInt(event *pubsub.Event, value string) (int, error) {
+	id, ok := event.Params[value].(float64)
+	if !ok {
+		return 0, fmt.Errorf("failed to recover %s", value)
+	}
+
+	return int(id), nil
 }

@@ -72,7 +72,7 @@ func getHandler(eventType pubsub.EventType) handlerFunc {
 	switch eventType {
 	case pubsub.EventTypeUserUpdate, pubsub.EventTypeNewUser:
 		return handleUserUpdate
-	case pubsub.EventTypeNewGroup: // @TODO UPDATE EVENT
+	case pubsub.EventTypeNewGroup, pubsub.EventTypeGroupUpdate:
 		return handleGroupUpdate
 	default:
 		return nil

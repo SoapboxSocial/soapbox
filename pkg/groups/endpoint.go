@@ -35,6 +35,7 @@ func (e *Endpoint) Router() *mux.Router {
 
 	r.Path("/create").Methods("POST").HandlerFunc(e.CreateGroup)
 	r.Path("/{id:[0-9]+}").Methods("GET").HandlerFunc(e.GetGroup)
+	r.Path("/{id:[0-9]+}/edit").Methods("POST").HandlerFunc(e.EditGroup)
 	r.Path("/{id:[0-9]+}/invite").Methods("GET").HandlerFunc(e.GetUserInviteForGroup)
 	r.Path("/{id:[0-9]+}/invite").Methods("POST").HandlerFunc(e.InviteUsersToGroup)
 	r.Path("/{id:[0-9]+}/members").Methods("GET").HandlerFunc(e.GetGroupMembers)
@@ -366,6 +367,78 @@ func (e *Endpoint) GetGroupMembers(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("failed to write user response: %s\n", err.Error())
 	}
+}
+
+func (e *Endpoint) EditGroup(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseMultipartForm(10 << 20)
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	params := mux.Vars(r)
+	group, err := strconv.Atoi(params["id"])
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	userID, ok := auth.GetUserIDFromContext(r.Context())
+	if !ok {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	isAdmin, err := e.backend.IsAdminForGroup(userID, group)
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	if !isAdmin {
+		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeUnauthorized, "invalid id")
+		return
+	}
+
+	description := strings.TrimSpace(strings.ReplaceAll(r.Form.Get("description"), "\n", " "))
+	if len([]rune(description)) > 300 {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	oldPath, err := e.backend.GetGroupImage(group)
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	image := oldPath
+	path, err := e.handleGroupImage(r)
+	if err != nil && err != http.ErrMissingFile {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	if path != "" {
+		image = path
+	}
+
+	err = e.backend.UpdateGroup(group, description, image)
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	if image != oldPath {
+		_ = e.images.Remove(oldPath)
+	}
+
+	err = e.queue.Publish(pubsub.GroupTopic, pubsub.NewGroupUpdateEvent(group))
+	if err != nil {
+		log.Printf("queue.Publish err: %v\n", err)
+	}
+
+	httputil.JsonSuccess(w)
 }
 
 func (e *Endpoint) handleGroupImage(r *http.Request) (string, error) {

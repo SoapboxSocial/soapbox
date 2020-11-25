@@ -74,7 +74,7 @@ func (l *Limiter) SentNotification(target int, event *pubsub.Event) {
 		l.limit(limiterKeyForRoomMember(target, event), roomMemberCooldown)
 		l.limit(limiterKeyForRoom(target, event), roomCooldown)
 	case pubsub.EventTypeRoomInvite:
-		l.limit(limiterKeyForFollowerEvent(target, event), roomInviteCooldown)
+		l.limit(limiterKeyForRoomInvite(target, event), roomInviteCooldown)
 	case pubsub.EventTypeNewFollower:
 		l.limit(limiterKeyForFollowerEvent(target, event), followerCooldown)
 	}

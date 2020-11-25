@@ -392,8 +392,18 @@ func (r *Room) onCommand(from int, cmd *pb.SignalRequest_Command) error {
 
 func (r *Room) onInvite(from int, invite *pb.Invite) error {
 	r.mux.Lock()
+	defer r.mux.Unlock()
+
+	peer := r.members[from]
+	if peer == nil {
+		return nil
+	}
+
+	if r.isPrivate && peer.me.Role != ADMIN {
+		return nil
+	}
+
 	r.invited[int(invite.Id)] = true
-	r.mux.Unlock()
 
 	err := r.queue.Publish(pubsub.RoomTopic, pubsub.NewRoomInviteEvent(r.name, r.id, from, int(invite.Id)))
 	if err != nil {

@@ -265,7 +265,7 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	image := ""
+	image := oldPath
 	if file != nil {
 		image, err = u.processProfilePicture(file)
 		if err != nil {
@@ -280,7 +280,7 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if image != "" {
+	if image != oldPath {
 		_ = u.ib.Remove(oldPath)
 	}
 

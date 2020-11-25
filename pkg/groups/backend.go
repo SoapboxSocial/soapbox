@@ -422,3 +422,20 @@ func (b *Backend) GetAllMemberIds(group, forUser int) ([]int, error) {
 
 	return result, nil
 }
+
+func (b *Backend) GetGroupImage(id int) (string, error) {
+	stmt, err := b.db.Prepare("SELECT image FROM groups WHERE id = $1;")
+	if err != nil {
+		return "", err
+	}
+
+	r := stmt.QueryRow(id)
+
+	var name string
+	err = r.Scan(&name)
+	if err != nil {
+		return "", err
+	}
+
+	return name, err
+}

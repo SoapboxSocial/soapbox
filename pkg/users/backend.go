@@ -200,25 +200,14 @@ func (ub *UserBackend) CreateUser(email, displayName, bio, image, username strin
 }
 
 func (ub *UserBackend) UpdateUser(id int, displayName, bio, image string) error {
-	query := "UPDATE users SET display_name = $1, bio = $2"
-	params := []interface{}{displayName, bio}
-
-	count := "$3"
-	if image != "" {
-		query += ", image = $3"
-		count = "$4"
-		params = append(params, image)
-	}
-
-	query += " WHERE id = " + count + ";"
-	params = append(params, id)
+	query := "UPDATE users SET display_name = $1, bio = $2, image = $3 WHERE id = $4;"
 
 	stmt, err := ub.db.Prepare(query)
 	if err != nil {
 		return err
 	}
 
-	_, err = stmt.Exec(params...)
+	_, err = stmt.Exec(displayName, bio, image, id)
 	return err
 }
 

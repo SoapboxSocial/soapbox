@@ -231,7 +231,7 @@ func (u *UsersEndpoint) UnfollowUser(w http.ResponseWriter, r *http.Request) {
 func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(10 << 20)
 	if err != nil {
-		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "kek")
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}
 
@@ -265,7 +265,7 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	image := ""
+	image := oldPath
 	if file != nil {
 		image, err = u.processProfilePicture(file)
 		if err != nil {
@@ -280,7 +280,7 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if image != "" {
+	if image != oldPath {
 		_ = u.ib.Remove(oldPath)
 	}
 

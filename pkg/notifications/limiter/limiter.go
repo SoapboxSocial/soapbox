@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	followerCooldown   = 30 * time.Minute
+	followerCooldown   = 15 * time.Minute
 	roomInviteCooldown = 5 * time.Minute
 	roomMemberCooldown = 5 * time.Minute
 	roomCooldown       = 10 * time.Minute

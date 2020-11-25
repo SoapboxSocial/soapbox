@@ -439,3 +439,15 @@ func (b *Backend) GetGroupImage(id int) (string, error) {
 
 	return name, err
 }
+
+func (b *Backend) UpdateGroup(id int, description, image string) error {
+	query := "UPDATE groups SET description = $1, image = $2 WHERE id = $3;"
+
+	stmt, err := b.db.Prepare(query)
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(description, image, id)
+	return err
+}

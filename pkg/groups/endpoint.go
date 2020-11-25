@@ -400,8 +400,8 @@ func (e *Endpoint) EditGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	bio := strings.TrimSpace(strings.ReplaceAll(r.Form.Get("description"), "\n", " "))
-	if len([]rune(bio)) > 300 {
+	description := strings.TrimSpace(strings.ReplaceAll(r.Form.Get("description"), "\n", " "))
+	if len([]rune(description)) > 300 {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}
@@ -412,13 +412,33 @@ func (e *Endpoint) EditGroup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	file, _, err := r.FormFile("image")
+	image := oldPath
+	path, err := e.handleGroupImage(r)
 	if err != nil && err != http.ErrMissingFile {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}
 
-	// @TODO WORK ON EDITING.
+	if path != "" {
+		image = path
+	}
+
+	err = e.backend.UpdateGroup(group, description, image)
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	if image != oldPath {
+		_ = e.images.Remove(oldPath)
+	}
+
+	err = e.queue.Publish(pubsub.GroupTopic, pubsub.NewGroupUpdateEvent(group))
+	if err != nil {
+		log.Printf("queue.Publish err: %v\n", err)
+	}
+
+	httputil.JsonSuccess(w)
 }
 
 func (e *Endpoint) handleGroupImage(r *http.Request) (string, error) {

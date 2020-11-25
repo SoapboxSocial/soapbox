@@ -13,6 +13,7 @@ const (
 	EventTypeNewGroup
 	EventTypeGroupInvite
 	EventTypeNewGroupRoom
+	EventTypeGroupUpdate
 )
 
 type RoomVisibility string
@@ -87,6 +88,13 @@ func NewGroupCreationEvent(id, creator int, name string) Event {
 	return Event{
 		Type:   EventTypeNewGroup,
 		Params: map[string]interface{}{"id": id, "creator": creator, "name": name},
+	}
+}
+
+func NewGroupUpdateEvent(id int) Event {
+	return Event{
+		Type:   EventTypeGroupUpdate,
+		Params: map[string]interface{}{"id": id},
 	}
 }
 

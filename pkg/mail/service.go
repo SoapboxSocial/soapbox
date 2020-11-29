@@ -1,6 +1,8 @@
 package mail
 
 import (
+	"fmt"
+
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
@@ -24,6 +26,14 @@ func (s *Service) SendPinEmail(recipient, pin string) error {
 
 	m.AddPersonalizations(p)
 
-	_, err := s.client.Send(m)
-	return err
+	resp, err := s.client.Send(m)
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode >= 400 {
+		return fmt.Errorf("failed to send email %v", resp.Body)
+	}
+
+	return nil
 }

@@ -101,7 +101,7 @@ func handleEvent(event *pubsub.Event) {
 	}
 
 	for _, target := range targets {
-		pushNotification(target, notification)
+		pushNotification(target, event, notification)
 	}
 }
 
@@ -117,13 +117,15 @@ func getHandler(eventType pubsub.EventType) handlerFunc {
 		return onRoomInvite
 	case pubsub.EventTypeGroupInvite:
 		return onGroupInvite
+	case pubsub.EventTypeNewGroupRoom:
+		return onGroupRoomCreation
 	default:
 		return nil
 	}
 }
 
-func pushNotification(target int, notification *notifications.PushNotification) {
-	if !notificationLimiter.ShouldSendNotification(target, notification.Arguments, notification.Category) {
+func pushNotification(target int, event *pubsub.Event, notification *notifications.PushNotification) {
+	if !notificationLimiter.ShouldSendNotification(target, event) {
 		return
 	}
 
@@ -139,7 +141,7 @@ func pushNotification(target int, notification *notifications.PushNotification) 
 		}
 	}
 
-	notificationLimiter.SentNotification(target, notification.Arguments, notification.Category)
+	notificationLimiter.SentNotification(target, event)
 
 	store := getNotificationForStore(notification)
 	if store == nil {
@@ -204,6 +206,61 @@ func onRoomCreation(event *pubsub.Event) ([]int, *notifications.PushNotification
 		}
 
 		return notifications.NewRoomNotificationWithName(int(room), displayName, name)
+	}()
+
+	return targets, notification, nil
+}
+func onGroupRoomCreation(event *pubsub.Event) ([]int, *notifications.PushNotification, error) {
+	creator, err := getCreatorId(event)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	groupId, err := getId(event, "group")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	group, err := groupsBackend.FindById(groupId)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	targets := make([]int, 0)
+
+	if group.GroupType == "public" {
+		followerIDs, err := followersBackend.GetAllFollowerIDsFor(creator)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		targets = append(targets, followerIDs...)
+	}
+
+	memberIDs, err := groupsBackend.GetAllMemberIds(groupId, creator)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	targets = append(targets, memberIDs...)
+
+	name := event.Params["name"].(string)
+	room, ok := event.Params["id"].(float64)
+	if !ok {
+		return nil, nil, errors.New("failed to recover room ID")
+	}
+
+	displayName, err := getDisplayName(creator)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	notification := func() *notifications.PushNotification {
+		if name == "" {
+			return notifications.NewRoomWithGroupNotification(int(room), displayName, group.Name)
+		}
+
+		return notifications.NewRoomWithGroupAndNameNotification(int(room), displayName, group.Name, name)
 	}()
 
 	return targets, notification, nil

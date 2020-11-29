@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"strings"
 	"sync"
@@ -15,6 +16,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
+	"github.com/soapboxsocial/soapbox/pkg/groups"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
@@ -26,10 +28,11 @@ const MAX_PEERS = 16
 type Server struct {
 	mux sync.RWMutex
 
-	sfu   *sfu.SFU
-	sm    *sessions.SessionManager
-	ub    *users.UserBackend
-	queue *pubsub.Queue
+	sfu    *sfu.SFU
+	sm     *sessions.SessionManager
+	ub     *users.UserBackend
+	groups *groups.Backend
+	queue  *pubsub.Queue
 
 	currentRoom *CurrentRoomBackend
 
@@ -38,7 +41,7 @@ type Server struct {
 	nextID int
 }
 
-func NewServer(sfu *sfu.SFU, sm *sessions.SessionManager, ub *users.UserBackend, queue *pubsub.Queue, cr *CurrentRoomBackend) *Server {
+func NewServer(sfu *sfu.SFU, sm *sessions.SessionManager, ub *users.UserBackend, queue *pubsub.Queue, cr *CurrentRoomBackend, groups *groups.Backend) *Server {
 	return &Server{
 		mux:         sync.RWMutex{},
 		sfu:         sfu,
@@ -48,12 +51,8 @@ func NewServer(sfu *sfu.SFU, sm *sessions.SessionManager, ub *users.UserBackend,
 		currentRoom: cr,
 		rooms:       make(map[int]*Room),
 		nextID:      1,
+		groups:      groups,
 	}
-}
-
-// Deprecated: We will just keep this around for a bit but its deprecated.
-func (s *Server) ListRoomsV2(ctx context.Context, auth *pb.Auth) (*pb.RoomList, error) {
-	return s.roomsForUser(auth.Session)
 }
 
 // Deprecated: Remove
@@ -63,21 +62,17 @@ func (s *Server) ListRooms(ctx context.Context, _ *empty.Empty) (*pb.RoomList, e
 		return nil, err
 	}
 
-	return s.roomsForUser(auth)
-}
-
-func (s *Server) roomsForUser(session string) (*pb.RoomList, error) {
 	s.mux.RLock()
 	defer s.mux.RUnlock()
 
-	id, err := s.sm.GetUserIDForSession(session)
+	id, err := s.sm.GetUserIDForSession(auth)
 	if err != nil {
 		return nil, err
 	}
 
 	rooms := make([]*pb.RoomState, 0)
 	for _, r := range s.rooms {
-		if !r.CanJoin(id) {
+		if !s.canJoin(id, r) {
 			continue
 		}
 
@@ -105,19 +100,16 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 	var user *member
 
 	auth, _ := authForContext(stream.Context())
+	user, err = s.getMemberForSession(auth)
+	if err != nil {
+		return status.Errorf(codes.Unauthenticated, "unauthenticated")
+	}
+
 	// Auth will be able to be moved out.
 
+	isNew := false
 	switch payload := in.Payload.(type) {
 	case *pb.SignalRequest_Join:
-		if auth == "" {
-			auth = payload.Join.Session
-		}
-
-		user, err = s.getMemberForSession(auth)
-		if err != nil {
-			return status.Errorf(codes.Unauthenticated, "unauthenticated")
-		}
-
 		s.mux.RLock()
 		r, ok := s.rooms[int(payload.Join.Room)]
 		s.mux.RUnlock()
@@ -130,7 +122,7 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 			return status.Errorf(codes.Internal, "join error room full")
 		}
 
-		if !r.CanJoin(user.ID) {
+		if !s.canJoin(user.ID, r) {
 			return status.Errorf(codes.Internal, "user not invited")
 		}
 
@@ -159,35 +151,8 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 			log.Printf("error sending join response %s", err)
 			return status.Errorf(codes.Internal, "join error %s", err)
 		}
-
-		visibility := pubsub.Public
-		if r.IsPrivate() {
-			visibility = pubsub.Private
-		}
-
-		err := s.queue.Publish(
-			pubsub.RoomTopic,
-			pubsub.NewRoomJoinEvent(
-				r.Name(),
-				int(payload.Join.Room),
-				user.ID,
-				visibility,
-			),
-		)
-
-		if err != nil {
-			log.Printf("queue.Publish err: %v\n", err)
-		}
 	case *pb.SignalRequest_Create:
-		if auth == "" {
-			auth = payload.Create.Session
-		}
-
-		user, err = s.getMemberForSession(auth)
-		if err != nil {
-			return status.Errorf(codes.Unauthenticated, "unauthenticated")
-		}
-
+		isNew = true
 		s.mux.Lock()
 		id := s.nextID
 
@@ -196,12 +161,22 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 			name = string([]rune(name)[:30])
 		}
 
+		var group *groups.Group
+		if payload.Create.GetGroup() != 0 {
+			group, err = s.getGroup(user.ID, int(payload.Create.GetGroup()))
+			if err != nil {
+				return status.Errorf(codes.Internal, "group error %s", err)
+			}
+		}
+
 		room = NewRoom(
 			id,
 			name,
 			s.queue,
 			payload.Create.GetVisibility() == pb.Visibility_PRIVATE,
 			user.ID,
+			group,
+			s.onRoomJoinedEvent,
 		)
 		s.nextID++
 		s.mux.Unlock()
@@ -265,43 +240,12 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 		s.rooms[id] = room
 		s.mux.Unlock()
 
-		visibility := pubsub.Public
-		if payload.Create.Visibility == pb.Visibility_PRIVATE {
-			visibility = pubsub.Private
-		}
-
-		err := s.queue.Publish(
-			pubsub.RoomTopic,
-			pubsub.NewRoomCreationEvent(
-				payload.Create.Name,
-				id,
-				user.ID,
-				visibility,
-			),
-		)
-
-		if err != nil {
-			log.Printf("queue.Publish err: %v\n", err)
-		}
-
 		log.Printf("created room: %d", id)
 	default:
 		return status.Error(codes.FailedPrecondition, "not joined or created room")
 	}
 
-	go func() {
-		// @TODO THIS IS TEMP
-		if room.IsPrivate() {
-			return
-		}
-
-		err := s.currentRoom.SetCurrentRoomForUser(user.ID, room.id)
-		if err != nil {
-			log.Printf("failed to set current room err: %v", err)
-		}
-	}()
-
-	return room.Handle(user, stream, peer)
+	return room.Handle(user, stream, peer, isNew)
 }
 
 func (s *Server) setupConnection(room int, stream pb.RoomService_SignalServer) (*sfu.WebRTCTransport, error) {
@@ -384,6 +328,71 @@ func (s *Server) setupConnection(room int, stream pb.RoomService_SignalServer) (
 	return peer, nil
 }
 
+func (s *Server) onRoomJoinedEvent(isNew bool, peer int, room *Room) {
+	visibility := pubsub.Public
+	if room.IsPrivate() {
+		visibility = pubsub.Private
+	}
+
+	var event pubsub.Event
+	group := room.Group()
+
+	if isNew {
+		if group == nil {
+			event = pubsub.NewRoomCreationEvent(room.Name(), room.id, peer, visibility)
+		} else {
+			event = pubsub.NewRoomCreationEventWithGroup(room.Name(), room.id, peer, group.ID, visibility)
+		}
+	} else {
+		event = pubsub.NewRoomJoinEvent(room.Name(), room.id, peer, visibility)
+	}
+
+	err := s.queue.Publish(pubsub.RoomTopic, event)
+	if err != nil {
+		log.Printf("queue.Publish err: %v\n", err)
+	}
+
+	if visibility == pubsub.Private {
+		return
+	}
+
+	if group != nil && group.GroupType != "public" {
+		return
+	}
+
+	err = s.currentRoom.SetCurrentRoomForUser(peer, room.id)
+	if err != nil {
+		log.Printf("failed to set current room err: %v", err)
+	}
+}
+
+func (s *Server) getGroup(peer, id int) (*groups.Group, error) {
+	isMember, err := s.groups.IsGroupMember(peer, id)
+	if err != nil || !isMember {
+		return nil, fmt.Errorf("user %d is not member of group %d", peer, id)
+	}
+
+	return s.groups.FindById(id)
+}
+
+func (s *Server) canJoin(peer int, room *Room) bool {
+	group := room.Group()
+	if group == nil {
+		return room.CanJoin(peer)
+	}
+
+	if group.GroupType == "public" {
+		return true
+	}
+
+	isMember, err := s.groups.IsGroupMember(peer, group.ID)
+	if err != nil {
+		return false
+	}
+
+	return isMember
+}
+
 func (s *Server) getMemberForSession(session string) (*member, error) {
 	id, err := s.sm.GetUserIDForSession(session)
 	if err != nil {
@@ -396,7 +405,7 @@ func (s *Server) getMemberForSession(session string) (*member, error) {
 	}
 
 	// @TODO ROLE SHOULD BE BASED ON STUFF
-	return &member{ID: id, DisplayName: u.DisplayName, Image: u.Image, IsMuted: false, Role: SPEAKER}, nil
+	return &member{ID: id, DisplayName: u.DisplayName, Image: u.Image, IsMuted: true, Role: SPEAKER}, nil
 }
 
 func authForContext(ctx context.Context) (string, error) {

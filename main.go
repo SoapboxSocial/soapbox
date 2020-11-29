@@ -29,12 +29,13 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
+	"github.com/soapboxsocial/soapbox/pkg/search"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
 // @todo do this in config
-const sendgrid_api = "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"
+const sendgrid_api = "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"
 
 // @TODO: THINK ABOUT CHANGING QUEUES TO REDIS PUBSUB
 
@@ -63,8 +64,6 @@ func main() {
 		panic(err)
 	}
 
-	search := users.NewSearchBackend(client)
-
 	devicesBackend := devices.NewBackend(db)
 
 	amw := middleware.NewAuthenticationMiddleware(s)
@@ -90,7 +89,6 @@ func main() {
 		fb,
 		s,
 		ib,
-		search,
 		queue,
 		rooms.NewCurrentRoomBackend(rdb),
 		activeUsersBackend,
@@ -106,7 +104,6 @@ func main() {
 	userRoutes.HandleFunc("/follow", usersEndpoints.FollowUser).Methods("POST")
 	userRoutes.HandleFunc("/unfollow", usersEndpoints.UnfollowUser).Methods("POST")
 	userRoutes.HandleFunc("/edit", usersEndpoints.EditUser).Methods("POST")
-	userRoutes.HandleFunc("/search", usersEndpoints.Search).Methods("GET")
 	userRoutes.HandleFunc("/active", usersEndpoints.GetActiveUsersFor).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/groups", groupsEndpoint.GetGroupsForUser).Methods("GET")
 
@@ -132,7 +129,12 @@ func main() {
 
 	groupsRouter := groupsEndpoint.Router()
 	groupsRouter.Use(amw.Middleware)
-	mount(r, "/v1/groups/", groupsRouter)
+	mount(r, "/v1/groups", groupsRouter)
+
+	searchEndpoint := search.NewEndpoint(client)
+	searchRouter := searchEndpoint.Router()
+	searchRouter.Use(amw.Middleware)
+	mount(r, "/v1/search", searchRouter)
 
 	headersOk := handlers.AllowedHeaders([]string{
 		"Content-Type",
@@ -157,8 +159,6 @@ func mount(r *mux.Router, path string, handler http.Handler) {
 		),
 	)
 }
-
-// @TODO MOVE TO HTTP
 
 // AddSlashForRoot adds a slash if the path is the root path.
 // This is necessary for our subrouters where there may be a root.

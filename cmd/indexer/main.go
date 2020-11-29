@@ -15,6 +15,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/go-redis/redis/v8"
 
+	"github.com/soapboxsocial/soapbox/pkg/groups"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 
 	"github.com/soapboxsocial/soapbox/pkg/users"
@@ -24,6 +25,7 @@ type handlerFunc func(*pubsub.Event) error
 
 var client *elasticsearch.Client
 var userBackend *users.UserBackend
+var groupsBackend *groups.Backend
 
 func main() {
 	rdb := redis.NewClient(&redis.Options{
@@ -43,9 +45,10 @@ func main() {
 	}
 
 	queue := pubsub.NewQueue(rdb)
-	events := queue.Subscribe(pubsub.UserTopic)
+	events := queue.Subscribe(pubsub.UserTopic, pubsub.GroupTopic)
 
 	userBackend = users.NewUserBackend(db)
+	groupsBackend = groups.NewBackend(db)
 
 	for event := range events {
 		go handleEvent(event)
@@ -69,9 +72,46 @@ func getHandler(eventType pubsub.EventType) handlerFunc {
 	switch eventType {
 	case pubsub.EventTypeUserUpdate, pubsub.EventTypeNewUser:
 		return handleUserUpdate
+	case pubsub.EventTypeNewGroup, pubsub.EventTypeGroupUpdate:
+		return handleGroupUpdate
 	default:
 		return nil
 	}
+}
+
+func handleGroupUpdate(event *pubsub.Event) error {
+	id, ok := event.Params["id"].(float64)
+	if !ok {
+		return errors.New("failed to recover user ID")
+	}
+
+	group, err := groupsBackend.FindById(int(id))
+	if err != nil {
+		return err
+	}
+
+	if group.GroupType == "private" {
+		return nil
+	}
+
+	body, err := json.Marshal(group)
+	if err != nil {
+		return err
+	}
+
+	req := esapi.IndexRequest{
+		Index:      "groups",
+		DocumentID: strconv.Itoa(group.ID),
+		Body:       strings.NewReader(string(body)),
+		Refresh:    "true",
+	}
+
+	res, err := req.Do(context.Background(), client)
+	if err != nil {
+		return err
+	}
+
+	return res.Body.Close()
 }
 
 func handleUserUpdate(event *pubsub.Event) error {

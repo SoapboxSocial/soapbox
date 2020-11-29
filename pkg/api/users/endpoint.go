@@ -29,8 +29,6 @@ type UsersEndpoint struct {
 	currentRoom *rooms.CurrentRoomBackend
 	activeUsers *activeusers.Backend
 
-	search *users.Search
-
 	queue *pubsub.Queue
 }
 
@@ -39,7 +37,6 @@ func NewUsersEndpoint(
 	fb *followers.FollowersBackend,
 	sm *sessions.SessionManager,
 	ib *images.Backend,
-	search *users.Search,
 	queue *pubsub.Queue,
 	cr *rooms.CurrentRoomBackend,
 	au *activeusers.Backend,
@@ -49,7 +46,6 @@ func NewUsersEndpoint(
 		fb:          fb,
 		sm:          sm,
 		ib:          ib,
-		search:      search,
 		queue:       queue,
 		currentRoom: cr,
 		activeUsers: au,
@@ -235,7 +231,7 @@ func (u *UsersEndpoint) UnfollowUser(w http.ResponseWriter, r *http.Request) {
 func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(10 << 20)
 	if err != nil {
-		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "kek")
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}
 
@@ -269,7 +265,7 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	image := ""
+	image := oldPath
 	if file != nil {
 		image, err = u.processProfilePicture(file)
 		if err != nil {
@@ -284,7 +280,7 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if image != "" {
+	if image != oldPath {
 		_ = u.ib.Remove(oldPath)
 	}
 
@@ -294,28 +290,6 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httputil.JsonSuccess(w)
-}
-
-func (u *UsersEndpoint) Search(w http.ResponseWriter, r *http.Request) {
-	query := r.URL.Query().Get("query")
-	if query == "" {
-		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
-		return
-	}
-
-	limit := httputil.GetInt(r.URL.Query(), "limit", 10)
-	offset := httputil.GetInt(r.URL.Query(), "offset", 0)
-
-	resp, err := u.search.FindUsers(query, limit, offset)
-	if err != nil {
-		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
-		return
-	}
-
-	err = httputil.JsonEncode(w, resp)
-	if err != nil {
-		log.Printf("failed to write search response: %s\n", err.Error())
-	}
 }
 
 func (u *UsersEndpoint) GetActiveUsersFor(w http.ResponseWriter, r *http.Request) {

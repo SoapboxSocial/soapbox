@@ -13,7 +13,7 @@ type Group struct {
 	Description string  `json:"description"`
 	Image       string  `json:"image,omitempty"`
 	GroupType   string  `json:"group_type"`
-	Members     *int    `json:"members"`
+	Members     *int    `json:"members,omitempty"`
 	IsInvited   *bool   `json:"is_invited,omitempty"`
 	Role        *string `json:"role,omitempty"`
 }
@@ -156,6 +156,21 @@ func (b *Backend) IsAdminForGroup(user, group int) (bool, error) {
 	row := b.db.QueryRow(
 		"SELECT COUNT(*) FROM group_members WHERE group_id = $1 AND user_id = $2 AND role = $3;",
 		group, user, "admin",
+	)
+
+	var count int
+	err := row.Scan(&count)
+	if err != nil {
+		return false, err
+	}
+
+	return count == 1, nil
+}
+
+func (b *Backend) IsGroupMember(user, group int) (bool, error) {
+	row := b.db.QueryRow(
+		"SELECT COUNT(*) FROM group_members WHERE group_id = $1 AND user_id = $2;",
+		group, user,
 	)
 
 	var count int
@@ -379,4 +394,60 @@ func (b *Backend) GetAllMembers(id, limit, offset int) ([]*users.User, error) {
 	}
 
 	return result, nil
+}
+
+func (b *Backend) GetAllMemberIds(group, forUser int) ([]int, error) {
+	stmt, err := b.db.Prepare("SELECT user_id FROM group_members WHERE group_id = $1 AND user_id != $2;")
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := stmt.Query(group, forUser)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]int, 0)
+
+	for rows.Next() {
+		var id int
+
+		err := rows.Scan(&id)
+		if err != nil {
+			return nil, err // @todo
+		}
+
+		result = append(result, id)
+	}
+
+	return result, nil
+}
+
+func (b *Backend) GetGroupImage(id int) (string, error) {
+	stmt, err := b.db.Prepare("SELECT image FROM groups WHERE id = $1;")
+	if err != nil {
+		return "", err
+	}
+
+	r := stmt.QueryRow(id)
+
+	var name string
+	err = r.Scan(&name)
+	if err != nil {
+		return "", err
+	}
+
+	return name, err
+}
+
+func (b *Backend) UpdateGroup(id int, description, image string) error {
+	query := "UPDATE groups SET description = $1, image = $2 WHERE id = $3;"
+
+	stmt, err := b.db.Prepare(query)
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(description, image, id)
+	return err
 }

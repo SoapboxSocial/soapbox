@@ -306,6 +306,11 @@ func (e *Endpoint) AcceptInvite(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err = e.queue.Publish(pubsub.GroupTopic, pubsub.NewGroupJoinEvent(userID, group))
+	if err != nil {
+		log.Printf("queue.Publish err: %v\n", err)
+	}
+
 	httputil.JsonSuccess(w)
 }
 
@@ -340,6 +345,11 @@ func (e *Endpoint) JoinGroup(w http.ResponseWriter, r *http.Request) {
 		// @TODO BETTER
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 		return
+	}
+
+	err = e.queue.Publish(pubsub.GroupTopic, pubsub.NewGroupJoinEvent(userID, group))
+	if err != nil {
+		log.Printf("queue.Publish err: %v\n", err)
 	}
 
 	httputil.JsonSuccess(w)

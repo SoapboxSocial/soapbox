@@ -145,6 +145,19 @@ func handleEvent(event *pubsub.Event) *Event {
 				"group_id":   event.Params["group"],
 			},
 		}
+	case pubsub.EventTypeNewFollower:
+		id, err := getId(event, "follower")
+		if err != nil {
+			return nil
+		}
+
+		return &Event{
+			id:   strconv.Itoa(id),
+			name: "followed",
+			properties: map[string]interface{}{
+				"following_id":    event.Params["id"],
+			},
+		}
 	}
 
 	return nil

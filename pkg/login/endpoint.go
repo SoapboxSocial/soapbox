@@ -14,6 +14,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gorilla/mux"
+
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/images"
 	"github.com/soapboxsocial/soapbox/pkg/mail"
@@ -43,7 +45,7 @@ type tokenState struct {
 	pin   string
 }
 
-type LoginEndpoint struct {
+type Endpoint struct {
 	sync.Mutex
 
 	// @todo use redis
@@ -60,8 +62,8 @@ type LoginEndpoint struct {
 	queue *pubsub.Queue
 }
 
-func NewLoginEndpoint(ub *users.UserBackend, manager *sessions.SessionManager, mail *mail.Service, ib *images.Backend, queue *pubsub.Queue) LoginEndpoint {
-	return LoginEndpoint{
+func NewEndpoint(ub *users.UserBackend, manager *sessions.SessionManager, mail *mail.Service, ib *images.Backend, queue *pubsub.Queue) Endpoint {
+	return Endpoint{
 		tokens:        make(map[string]tokenState),
 		registrations: make(map[string]string),
 		users:         ub,
@@ -72,7 +74,17 @@ func NewLoginEndpoint(ub *users.UserBackend, manager *sessions.SessionManager, m
 	}
 }
 
-func (l *LoginEndpoint) Start(w http.ResponseWriter, r *http.Request) {
+func (e *Endpoint) Router() *mux.Router {
+	r := mux.NewRouter()
+
+	r.Path("/start").Methods("POST").HandlerFunc(e.start)
+	r.Path("/pin").Methods("POST").HandlerFunc(e.submitPin)
+	r.Path("/register").Methods("POST").HandlerFunc(e.register)
+
+	return r
+}
+
+func (e *Endpoint) start(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
@@ -85,17 +97,26 @@ func (l *LoginEndpoint) Start(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token := generateToken()
+	token, err := generateToken()
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
 
-	pin := generatePin()
+	pin, err := generatePin()
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
 	if email == TestEmail {
 		pin = "098316"
 	}
 
-	l.tokens[token] = tokenState{email: email, pin: pin}
+	e.tokens[token] = tokenState{email: email, pin: pin}
 
 	if email != TestEmail {
-		err = l.mail.SendPinEmail(email, pin)
+		err = e.mail.SendPinEmail(email, pin)
 		if err != nil {
 			log.Println("failed to send code: ", err.Error())
 			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToLogin, "failed to send code")
@@ -108,7 +129,7 @@ func (l *LoginEndpoint) Start(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (l *LoginEndpoint) SubmitPin(w http.ResponseWriter, r *http.Request) {
+func (e *Endpoint) submitPin(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
@@ -118,7 +139,7 @@ func (l *LoginEndpoint) SubmitPin(w http.ResponseWriter, r *http.Request) {
 	token := r.Form.Get("token")
 	pin := r.Form.Get("pin")
 
-	state, ok := l.tokens[token]
+	state, ok := e.tokens[token]
 	if !ok {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
 		return
@@ -129,12 +150,12 @@ func (l *LoginEndpoint) SubmitPin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	delete(l.tokens, token)
+	delete(e.tokens, token)
 
-	user, err := l.users.FindByEmail(state.email)
+	user, err := e.users.FindByEmail(state.email)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			l.enterRegistrationState(w, token, state.email)
+			e.enterRegistrationState(w, token, state.email)
 			return
 		}
 
@@ -142,7 +163,7 @@ func (l *LoginEndpoint) SubmitPin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = l.sessions.NewSession(token, *user, expiration)
+	err = e.sessions.NewSession(token, *user, expiration)
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToLogin, "")
 		return
@@ -156,15 +177,15 @@ func (l *LoginEndpoint) SubmitPin(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (l *LoginEndpoint) enterRegistrationState(w http.ResponseWriter, token, email string) {
-	l.registrations[token] = email
+func (e *Endpoint) enterRegistrationState(w http.ResponseWriter, token, email string) {
+	e.registrations[token] = email
 	err := httputil.JsonEncode(w, loginState{State: LoginStateRegister})
 	if err != nil {
 		log.Println("error writing response: " + err.Error())
 	}
 }
 
-func (l *LoginEndpoint) Register(w http.ResponseWriter, r *http.Request) {
+func (e *Endpoint) register(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(10 << 20)
 	if err != nil {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
@@ -177,7 +198,7 @@ func (l *LoginEndpoint) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	email, ok := l.registrations[token]
+	email, ok := e.registrations[token]
 	if !ok {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
 		return
@@ -201,16 +222,16 @@ func (l *LoginEndpoint) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	image, err := l.processProfilePicture(file)
+	image, err := e.processProfilePicture(file)
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}
 
 	// @TODO ALLOW BIO DURING ON-BOARDING
-	lastID, err := l.users.CreateUser(email, name, "", image, username)
+	lastID, err := e.users.CreateUser(email, name, "", image, username)
 	if err != nil {
-		_ = l.ib.Remove(image)
+		_ = e.ib.Remove(image)
 
 		if err.Error() == "pq: duplicate key value violates unique constraint \"idx_username\"" {
 			httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeUsernameAlreadyExists, "username already exists")
@@ -229,9 +250,9 @@ func (l *LoginEndpoint) Register(w http.ResponseWriter, r *http.Request) {
 		Image:       image,
 	}
 
-	err = l.sessions.NewSession(token, user, expiration)
+	err = e.sessions.NewSession(token, user, expiration)
 	if err != nil {
-		_ = l.ib.Remove(image)
+		_ = e.ib.Remove(image)
 
 		log.Println("failed to create session: ", err.Error())
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToLogin, "")
@@ -244,19 +265,19 @@ func (l *LoginEndpoint) Register(w http.ResponseWriter, r *http.Request) {
 		log.Println("error writing response: " + err.Error())
 	}
 
-	err = l.queue.Publish(pubsub.UserTopic, pubsub.NewUserEvent(lastID, username))
+	err = e.queue.Publish(pubsub.UserTopic, pubsub.NewUserEvent(lastID, username))
 	if err != nil {
 		log.Printf("queue.Publish err: %v\n", err)
 	}
 }
 
-func (l *LoginEndpoint) processProfilePicture(file multipart.File) (string, error) {
+func (e *Endpoint) processProfilePicture(file multipart.File) (string, error) {
 	pngBytes, err := images.MultipartFileToPng(file)
 	if err != nil {
 		return "", err
 	}
 
-	name, err := l.ib.Store(pngBytes)
+	name, err := e.ib.Store(pngBytes)
 	if err != nil {
 		return "", err
 	}
@@ -276,23 +297,29 @@ func validateUsername(username string) bool {
 	return len(username) < 100 && len(username) > 2 && usernameRegex.MatchString(username)
 }
 
-func generateToken() string {
+func generateToken() (string, error) {
 	b := make([]byte, 16)
-	rand.Read(b)
-	return fmt.Sprintf("%x", b)
+	_, err := rand.Read(b)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%x", b), nil
 }
 
-func generatePin() string {
+func generatePin() (string, error) {
 	max := 6
 	b := make([]byte, max)
 	n, err := io.ReadAtLeast(rand.Reader, b, max)
 	if n != max {
-		panic(err)
+		return "", err
 	}
+
 	for i := 0; i < len(b); i++ {
 		b[i] = table[int(b[i])%len(table)]
 	}
-	return string(b)
+
+	return string(b), nil
 }
 
 var table = []byte{'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'}

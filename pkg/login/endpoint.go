@@ -97,9 +97,18 @@ func (e *Endpoint) start(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token := generateToken()
+	token, err := generateToken()
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
 
-	pin := generatePin()
+	pin, err := generatePin()
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
 	if email == TestEmail {
 		pin = "098316"
 	}
@@ -288,23 +297,29 @@ func validateUsername(username string) bool {
 	return len(username) < 100 && len(username) > 2 && usernameRegex.MatchString(username)
 }
 
-func generateToken() string {
+func generateToken() (string, error) {
 	b := make([]byte, 16)
-	rand.Read(b)
-	return fmt.Sprintf("%x", b)
+	_, err := rand.Read(b)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%x", b), nil
 }
 
-func generatePin() string {
+func generatePin() (string, error) {
 	max := 6
 	b := make([]byte, max)
 	n, err := io.ReadAtLeast(rand.Reader, b, max)
 	if n != max {
-		panic(err)
+		return "", err
 	}
+
 	for i := 0; i < len(b); i++ {
 		b[i] = table[int(b[i])%len(table)]
 	}
-	return string(b)
+
+	return string(b), nil
 }
 
 var table = []byte{'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'}

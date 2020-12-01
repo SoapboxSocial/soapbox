@@ -451,3 +451,15 @@ func (b *Backend) UpdateGroup(id int, description, image string) error {
 	_, err = stmt.Exec(description, image, id)
 	return err
 }
+
+func (b *Backend) DeleteGroup(id int) error {
+	query := "DELETE FROM groups WHERE id = $1;"
+
+	stmt, err := b.db.Prepare(query)
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(id)
+	return err
+}

@@ -35,6 +35,7 @@ func (e *Endpoint) Router() *mux.Router {
 
 	r.Path("/create").Methods("POST").HandlerFunc(e.CreateGroup)
 	r.Path("/{id:[0-9]+}").Methods("GET").HandlerFunc(e.GetGroup)
+	r.Path("/{id:[0-9]+}").Methods("DELETE").HandlerFunc(e.DeleteGroup)
 	r.Path("/{id:[0-9]+}/edit").Methods("POST").HandlerFunc(e.EditGroup)
 	r.Path("/{id:[0-9]+}/invite").Methods("GET").HandlerFunc(e.GetUserInviteForGroup)
 	r.Path("/{id:[0-9]+}/invite").Methods("POST").HandlerFunc(e.InviteUsersToGroup)
@@ -444,6 +445,41 @@ func (e *Endpoint) EditGroup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = e.queue.Publish(pubsub.GroupTopic, pubsub.NewGroupUpdateEvent(group))
+	if err != nil {
+		log.Printf("queue.Publish err: %v\n", err)
+	}
+
+	httputil.JsonSuccess(w)
+}
+
+func (e *Endpoint) DeleteGroup(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	id, err := strconv.Atoi(params["id"])
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	userID, ok := auth.GetUserIDFromContext(r.Context())
+	if !ok {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	ok, err = e.backend.IsAdminForGroup(userID, id)
+	if !ok {
+		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeUnauthorized, "unauthorized")
+		return
+	}
+
+	err = e.backend.DeleteGroup(id)
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	err = e.queue.Publish(pubsub.GroupTopic, pubsub.NewGroupDeleteEvent(id))
 	if err != nil {
 		log.Printf("queue.Publish err: %v\n", err)
 	}

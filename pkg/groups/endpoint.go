@@ -468,7 +468,7 @@ func (e *Endpoint) DeleteGroup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	isAdmin, err := e.backend.IsAdminForGroup(userID, id)
-	if !isAdmin {
+	if !isAdmin || err != nil {
 		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeUnauthorized, "unauthorized")
 		return
 	}

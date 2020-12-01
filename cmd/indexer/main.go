@@ -137,13 +137,13 @@ func userUpdateRequest(event *pubsub.Event) (esapi.Request, error) {
 }
 
 func groupDeleteRequest(event *pubsub.Event) (esapi.Request, error) {
-	id, ok := event.Params["id"].(float64)
+	id, ok := event.Params["group"].(float64)
 	if !ok {
-		return nil, errors.New("failed to recover user ID")
+		return nil, errors.New("failed to recover group ID")
 	}
 
 	return esapi.DeleteRequest{
-		Index:      "users",
+		Index:      "groups",
 		DocumentID: strconv.Itoa(int(id)),
 		Refresh:    "true",
 	}, nil

@@ -80,6 +80,7 @@ CREATE TABLE IF NOT exists group_invites (
 
 CREATE UNIQUE INDEX idx_group_invites ON group_invites (group_id, user_id);
 
+-- @TODO FIGURE OUT IF ID IS REALLY ALL WE NEED
 CREATE TABLE IF NOT exists stories (
     id INT NOT NULL,
     user_id INT NOT NULL,

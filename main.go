@@ -15,7 +15,6 @@ import (
 	"github.com/sendgrid/sendgrid-go"
 
 	"github.com/soapboxsocial/soapbox/pkg/activeusers"
-	"github.com/soapboxsocial/soapbox/pkg/api/login"
 	"github.com/soapboxsocial/soapbox/pkg/api/me"
 	"github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	usersapi "github.com/soapboxsocial/soapbox/pkg/api/users"
@@ -25,6 +24,7 @@ import (
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/images"
 	"github.com/soapboxsocial/soapbox/pkg/linkedaccounts"
+	"github.com/soapboxsocial/soapbox/pkg/login"
 	"github.com/soapboxsocial/soapbox/pkg/mail"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
@@ -73,14 +73,12 @@ func main() {
 	r.MethodNotAllowedHandler = http.HandlerFunc(httputil.NotAllowedHandler)
 	r.NotFoundHandler = http.HandlerFunc(httputil.NotFoundHandler)
 
-	loginRoutes := r.PathPrefix("/v1/login").Methods("POST").Subrouter()
-
 	ib := images.NewImagesBackend("/cdn/images")
 	ms := mail.NewMailService(sendgrid.NewSendClient(sendgrid_api))
-	loginHandlers := login.NewLoginEndpoint(ub, s, ms, ib, queue)
-	loginRoutes.HandleFunc("/start", loginHandlers.Start)
-	loginRoutes.HandleFunc("/pin", loginHandlers.SubmitPin)
-	loginRoutes.HandleFunc("/register", loginHandlers.Register)
+
+	loginEndpoints := login.NewEndpoint(ub, s, ms, ib, queue)
+	loginRouter := loginEndpoints.Router()
+	mount(r, "/v1/login", loginRouter)
 
 	userRoutes := r.PathPrefix("/v1/users").Subrouter()
 

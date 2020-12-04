@@ -5,7 +5,6 @@ import (
 )
 
 type Endpoint struct {
-
 }
 
 func NewEndpoint() *Endpoint {

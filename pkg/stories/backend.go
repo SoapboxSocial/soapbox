@@ -10,8 +10,8 @@ func NewBackend(db *sql.DB) *Backend {
 	return &Backend{db}
 }
 
-func (b *Backend) GetStoriesForUser(user int) ([]string, error) {
-	stmt, err := b.db.Prepare("SELECT id FROM stories WHERE user_id = $1 ORDER BY timestamp;")
+func (b *Backend) GetStoriesForUser(user int) ([]*Story, error) {
+	stmt, err := b.db.Prepare("SELECT id, expires_at FROM stories WHERE user_id = $1 ORDER BY expires_at ASC;")
 	if err != nil {
 		return nil, err
 	}
@@ -21,17 +21,17 @@ func (b *Backend) GetStoriesForUser(user int) ([]string, error) {
 		return nil, err
 	}
 
-	result := make([]string, 0)
+	result := make([]*Story, 0)
 
 	for rows.Next() {
-		var id string
+		story := &Story{}
 
-		err := rows.Scan(&id)
+		err := rows.Scan(&story.ID, &story.ExpiresAt)
 		if err != nil {
 			return nil, err // @todo
 		}
 
-		result = append(result, id)
+		result = append(result, story)
 	}
 
 	return result, nil

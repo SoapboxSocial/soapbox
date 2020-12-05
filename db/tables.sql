@@ -84,7 +84,7 @@ CREATE UNIQUE INDEX idx_group_invites ON group_invites (group_id, user_id);
 CREATE TABLE IF NOT exists stories (
     id INT NOT NULL,
     user_id INT NOT NULL,
-    timestamp INT NOT NULL,
+    expires_at INT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 

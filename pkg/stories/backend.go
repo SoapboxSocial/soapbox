@@ -2,7 +2,6 @@ package stories
 
 import (
 	"database/sql"
-	"strings"
 )
 
 type Backend struct {

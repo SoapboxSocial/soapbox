@@ -29,11 +29,23 @@ func (e *Endpoint) Router() *mux.Router {
 }
 
 func (e *Endpoint) UploadStory(w http.ResponseWriter, r *http.Request) {
-	//userID, ok := auth.GetUserIDFromContext(r.Context())
-	//if !ok {
-	//	httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
-	//	return
-	//}
+	err := r.ParseMultipartForm(10 << 20)
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	timestamp, err := strconv.Atoi(r.Form.Get("device_timestamp"))
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	_, ok := auth.GetUserIDFromContext(r.Context())
+	if !ok {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
 }
 
 func (e *Endpoint) DeleteStory(w http.ResponseWriter, r *http.Request) {

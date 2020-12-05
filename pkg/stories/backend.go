@@ -11,7 +11,7 @@ func NewBackend(db *sql.DB) *Backend {
 }
 
 func (b *Backend) GetStoriesForUser(user int) ([]string, error) {
-	stmt, err := b.db.Prepare("SELECT id FROM stories WHERE user_id $1 ORDER BY timestamp;")
+	stmt, err := b.db.Prepare("SELECT id FROM stories WHERE user_id = $1 ORDER BY timestamp;")
 	if err != nil {
 		return nil, err
 	}

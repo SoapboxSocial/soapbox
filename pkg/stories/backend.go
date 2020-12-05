@@ -1,6 +1,9 @@
 package stories
 
-import "database/sql"
+import (
+	"database/sql"
+	"strings"
+)
 
 type Backend struct {
 	db *sql.DB

@@ -48,3 +48,13 @@ func (b *Backend) DeleteStory(story, user int) error {
 	_, err = stmt.Exec(story, user)
 	return err
 }
+
+func (b *Backend) AddStory(story, user, expires, timestamp int) error {
+	stmt, err := b.db.Prepare("INSERT INTO stories (id, user_id, expires_at, device_timestamp) VALUES ($1, $2, $3, $4);")
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(story, user, expires, timestamp)
+	return err
+}

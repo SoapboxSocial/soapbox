@@ -14,10 +14,11 @@ import (
 
 type Endpoint struct {
 	backend *Backend
+	files *FileBackend
 }
 
-func NewEndpoint(backend *Backend) *Endpoint {
-	return &Endpoint{backend: backend}
+func NewEndpoint(backend *Backend, files *FileBackend) *Endpoint {
+	return &Endpoint{backend: backend, files: files}
 }
 
 func (e *Endpoint) Router() *mux.Router {

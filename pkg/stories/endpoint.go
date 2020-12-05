@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gorilla/mux"
 
@@ -35,17 +36,23 @@ func (e *Endpoint) UploadStory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	timestamp, err := strconv.Atoi(r.Form.Get("device_timestamp"))
+	timestamp, err := strconv.ParseInt(r.Form.Get("device_timestamp"), 10, 64)
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}
 
-	_, ok := auth.GetUserIDFromContext(r.Context())
+	userID, ok := auth.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 		return
 	}
+
+	expires := time.Now().Add(24 * time.Hour).Unix()
+
+	// @TODO SAVE STORY TO DISK GENERATE ID.
+
+	e.backend.AddStory(story, userID, expires, timestamp)
 }
 
 func (e *Endpoint) DeleteStory(w http.ResponseWriter, r *http.Request) {

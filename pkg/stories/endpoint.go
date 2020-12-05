@@ -14,7 +14,7 @@ import (
 
 type Endpoint struct {
 	backend *Backend
-	files *FileBackend
+	files   *FileBackend
 }
 
 func NewEndpoint(backend *Backend, files *FileBackend) *Endpoint {

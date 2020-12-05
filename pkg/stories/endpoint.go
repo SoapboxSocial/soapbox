@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/mux"
 
+	auth "github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 )
 
@@ -36,7 +37,27 @@ func (e *Endpoint) UploadStory(w http.ResponseWriter, r *http.Request) {
 }
 
 func (e *Endpoint) DeleteStory(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
 
+	id, err := strconv.Atoi(params["id"])
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	userID, ok := auth.GetUserIDFromContext(r.Context())
+	if !ok {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	err = e.backend.DeleteStory(id, userID)
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	// @TODO trigger event to delete from file.
 }
 
 func (e *Endpoint) GetStoriesForUser(w http.ResponseWriter, r *http.Request) {

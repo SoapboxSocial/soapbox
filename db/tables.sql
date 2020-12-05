@@ -85,6 +85,7 @@ CREATE TABLE IF NOT exists stories (
     id INT NOT NULL,
     user_id INT NOT NULL,
     expires_at INT NOT NULL,
+    device_timestamp INT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 

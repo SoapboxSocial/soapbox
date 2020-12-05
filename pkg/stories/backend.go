@@ -11,7 +11,7 @@ func NewBackend(db *sql.DB) *Backend {
 }
 
 func (b *Backend) GetStoriesForUser(user int) ([]*Story, error) {
-	stmt, err := b.db.Prepare("SELECT id, expires_at FROM stories WHERE user_id = $1 ORDER BY expires_at ASC;")
+	stmt, err := b.db.Prepare("SELECT id, expires_at, device_timestamp FROM stories WHERE user_id = $1 ORDER BY expires_at ASC;")
 	if err != nil {
 		return nil, err
 	}
@@ -26,7 +26,7 @@ func (b *Backend) GetStoriesForUser(user int) ([]*Story, error) {
 	for rows.Next() {
 		story := &Story{}
 
-		err := rows.Scan(&story.ID, &story.ExpiresAt)
+		err := rows.Scan(&story.ID, &story.ExpiresAt, &story.DeviceTimestamp)
 		if err != nil {
 			return nil, err // @todo
 		}
@@ -35,4 +35,16 @@ func (b *Backend) GetStoriesForUser(user int) ([]*Story, error) {
 	}
 
 	return result, nil
+}
+
+func (b *Backend) DeleteStory(story, user int) error {
+	query := "DELETE FROM stories WHERE id = $1 AND user_id = $2;"
+
+	stmt, err := b.db.Prepare(query)
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(story, user)
+	return err
 }

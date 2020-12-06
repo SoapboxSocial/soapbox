@@ -1,9 +1,11 @@
 package stories
 
 import (
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -51,9 +53,38 @@ func (e *Endpoint) UploadStory(w http.ResponseWriter, r *http.Request) {
 
 	expires := time.Now().Add(24 * time.Hour).Unix()
 
-	// @TODO SAVE STORY TO DISK GENERATE ID.
+	file, _, err := r.FormFile("story")
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "no story")
+		return
+	}
 
-	e.backend.AddStory(story, userID, expires, timestamp)
+	bytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "no story")
+		return
+	}
+
+	name, err := e.files.Store(bytes)
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "no story")
+		return
+	}
+
+	story, err := IDFromName(name)
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "no story")
+		return
+	}
+
+	err = e.backend.AddStory(story, userID, expires, timestamp)
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "no story")
+		return
+	}
+
+	// @TODO CLEANUP
+	httputil.JsonSuccess(w)
 }
 
 func (e *Endpoint) DeleteStory(w http.ResponseWriter, r *http.Request) {
@@ -99,4 +130,9 @@ func (e *Endpoint) GetStoriesForUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("failed to write story response: %s\n", err.Error())
 	}
+}
+
+func IDFromName(name string) (int, error) {
+	raw := strings.Trim(name, ".aac")
+	return strconv.Atoi(raw)
 }

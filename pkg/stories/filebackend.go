@@ -10,6 +10,10 @@ type FileBackend struct {
 	path string
 }
 
+func NewFileBackend(path string) *FileBackend {
+	return &FileBackend{path: path}
+}
+
 func (fb *FileBackend) Store(bytes []byte) (string, error) {
 	file, err := ioutil.TempFile(fb.path, "*.aac")
 	if err != nil {

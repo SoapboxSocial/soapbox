@@ -31,6 +31,7 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
 	"github.com/soapboxsocial/soapbox/pkg/search"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
+	"github.com/soapboxsocial/soapbox/pkg/stories"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
@@ -132,6 +133,10 @@ func main() {
 	groupsRouter := groupsEndpoint.Router()
 	groupsRouter.Use(amw.Middleware)
 	mount(r, "/v1/groups", groupsRouter)
+
+	storiesEndpoint := stories.NewEndpoint(stories.NewBackend(db), stories.NewFileBackend("/cdn/stories"))
+	storiesRouter := storiesEndpoint.Router()
+	mount(r, "/v1/stories", storiesRouter)
 
 	searchEndpoint := search.NewEndpoint(client)
 	searchRouter := searchEndpoint.Router()

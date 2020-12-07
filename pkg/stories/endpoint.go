@@ -33,7 +33,7 @@ func (e *Endpoint) Router() *mux.Router {
 }
 
 func (e *Endpoint) UploadStory(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseMultipartForm(10 << 20)
+	err := r.ParseMultipartForm(2 << 20)
 	if err != nil {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
 		return
@@ -71,13 +71,7 @@ func (e *Endpoint) UploadStory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	story, err := IDFromName(name)
-	if err != nil {
-		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "no story")
-		return
-	}
-
-	err = e.backend.AddStory(story, userID, expires, timestamp)
+	err = e.backend.AddStory(IDFromName(name), userID, expires, timestamp)
 	if err != nil {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "no story")
 		return
@@ -132,7 +126,6 @@ func (e *Endpoint) GetStoriesForUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func IDFromName(name string) (int, error) {
-	raw := strings.Trim(name, ".aac")
-	return strconv.Atoi(raw)
+func IDFromName(name string) string {
+	return strings.Trim(name, ".aac")
 }

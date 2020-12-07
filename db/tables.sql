@@ -82,7 +82,7 @@ CREATE UNIQUE INDEX idx_group_invites ON group_invites (group_id, user_id);
 
 -- @TODO FIGURE OUT IF ID IS REALLY ALL WE NEED
 CREATE TABLE IF NOT exists stories (
-    id INT NOT NULL,
+    id VARCHAR(256) NOT NULL,
     user_id INT NOT NULL,
     expires_at INT NOT NULL,
     device_timestamp INT NOT NULL,

@@ -61,7 +61,7 @@ func (e *Endpoint) UploadStory(w http.ResponseWriter, r *http.Request) {
 
 	bytes, err := ioutil.ReadAll(file)
 	if err != nil {
-		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "no story")
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "failed to upload")
 		return
 	}
 

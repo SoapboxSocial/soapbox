@@ -136,6 +136,7 @@ func main() {
 
 	storiesEndpoint := stories.NewEndpoint(stories.NewBackend(db), stories.NewFileBackend("/cdn/stories"))
 	storiesRouter := storiesEndpoint.Router()
+	storiesRouter.Use(amw.Middleware)
 	mount(r, "/v1/stories", storiesRouter)
 
 	searchEndpoint := search.NewEndpoint(client)

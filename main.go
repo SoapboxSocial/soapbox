@@ -96,6 +96,11 @@ func main() {
 	groupsBackend := groups.NewBackend(db)
 	groupsEndpoint := groups.NewEndpoint(groupsBackend, ib, queue)
 
+	storiesEndpoint := stories.NewEndpoint(stories.NewBackend(db), stories.NewFileBackend("/cdn/stories"))
+	storiesRouter := storiesEndpoint.Router()
+	storiesRouter.Use(amw.Middleware)
+	mount(r, "/v1/stories", storiesRouter)
+
 	userRoutes.HandleFunc("/{id:[0-9]+}", usersEndpoints.GetUserByID).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/followers", usersEndpoints.GetFollowersForUser).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/following", usersEndpoints.GetFollowedByForUser).Methods("GET")
@@ -105,6 +110,7 @@ func main() {
 	userRoutes.HandleFunc("/edit", usersEndpoints.EditUser).Methods("POST")
 	userRoutes.HandleFunc("/active", usersEndpoints.GetActiveUsersFor).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/groups", groupsEndpoint.GetGroupsForUser).Methods("GET")
+	userRoutes.HandleFunc("/{id:[0-9]+}/stories", storiesEndpoint.GetStoriesForUser).Methods("GET")
 
 	userRoutes.Use(amw.Middleware)
 
@@ -133,11 +139,6 @@ func main() {
 	groupsRouter := groupsEndpoint.Router()
 	groupsRouter.Use(amw.Middleware)
 	mount(r, "/v1/groups", groupsRouter)
-
-	storiesEndpoint := stories.NewEndpoint(stories.NewBackend(db), stories.NewFileBackend("/cdn/stories"))
-	storiesRouter := storiesEndpoint.Router()
-	storiesRouter.Use(amw.Middleware)
-	mount(r, "/v1/stories", storiesRouter)
 
 	searchEndpoint := search.NewEndpoint(client)
 	searchRouter := searchEndpoint.Router()

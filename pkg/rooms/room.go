@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"log"
+	"strings"
 	"sync"
 
 	sfu "github.com/pion/ion-sfu/pkg"
@@ -467,8 +468,13 @@ func (r *Room) onRoomRename(from int, rename *pb.SignalRequest_Command) {
 		return
 	}
 
+	name := strings.TrimSpace(string(rename.Data))
+	if len([]rune(name)) > 30 {
+		name = string([]rune(name)[:30])
+	}
+
 	r.mux.Lock()
-	r.name = string(rename.Data)
+	r.name = name
 	r.mux.Unlock()
 
 	go r.notify(&pb.SignalReply_Event{

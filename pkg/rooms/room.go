@@ -6,7 +6,6 @@ import (
 	"errors"
 	"io"
 	"log"
-	"strings"
 	"sync"
 
 	sfu "github.com/pion/ion-sfu/pkg"

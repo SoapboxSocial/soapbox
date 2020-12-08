@@ -12,13 +12,13 @@ func NewBackend(db *sql.DB) *Backend {
 	return &Backend{db}
 }
 
-func (b *Backend) GetStoriesForUser(user int) ([]*Story, error) {
-	stmt, err := b.db.Prepare("SELECT id, expires_at, device_timestamp FROM stories WHERE user_id = $1 ORDER BY device_timestamp;")
+func (b *Backend) GetStoriesForUser(user int, time int64) ([]*Story, error) {
+	stmt, err := b.db.Prepare("SELECT id, expires_at, device_timestamp FROM stories WHERE user_id = $1 AND expires_at >= $2 ORDER BY device_timestamp;")
 	if err != nil {
 		return nil, err
 	}
 
-	rows, err := stmt.Query(user)
+	rows, err := stmt.Query(user, time)
 	if err != nil {
 		return nil, err
 	}

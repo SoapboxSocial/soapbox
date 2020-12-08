@@ -114,7 +114,7 @@ func (e *Endpoint) GetStoriesForUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	stories, err := e.backend.GetStoriesForUser(id)
+	stories, err := e.backend.GetStoriesForUser(id, time.Now().Unix())
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 		return

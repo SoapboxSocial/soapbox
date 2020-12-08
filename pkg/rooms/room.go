@@ -16,6 +16,7 @@ import (
 
 	"github.com/soapboxsocial/soapbox/pkg/groups"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
+	"github.com/soapboxsocial/soapbox/pkg/rooms/internal"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 )
 
@@ -468,13 +469,8 @@ func (r *Room) onRoomRename(from int, rename *pb.SignalRequest_Command) {
 		return
 	}
 
-	name := strings.TrimSpace(string(rename.Data))
-	if len([]rune(name)) > 30 {
-		name = string([]rune(name)[:30])
-	}
-
 	r.mux.Lock()
-	r.name = name
+	r.name = internal.TrimRoomNameToLimit(string(rename.Data))
 	r.mux.Unlock()
 
 	go r.notify(&pb.SignalReply_Event{

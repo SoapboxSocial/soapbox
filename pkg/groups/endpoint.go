@@ -217,6 +217,11 @@ func (e *Endpoint) InviteUsersToGroup(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
+			isMember, err := e.backend.IsGroupMember(id, group)
+			if isMember || err != nil {
+				return
+			}
+
 			err = e.backend.InviteUser(userID, group, id)
 			if err != nil {
 				return

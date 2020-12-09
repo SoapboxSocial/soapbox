@@ -20,13 +20,13 @@ CREATE TABLE IF NOT EXISTS followers (
 );
 
 -- Check token length
-CREATE TABLE IF NOT exists devices (
+CREATE TABLE IF NOT EXISTS devices (
     token VARCHAR(64) PRIMARY KEY,
     user_id INT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE TABLE IF NOT exists linked_accounts (
+CREATE TABLE IF NOT EXISTS linked_accounts (
     user_id INT NOT NULL,
     provider VARCHAR(7) NOT NULL,
     profile_id BIGINT NOT NULl,
@@ -40,14 +40,14 @@ CREATE TABLE IF NOT exists linked_accounts (
 CREATE UNIQUE INDEX idx_profiles ON linked_accounts (provider, profile_id);
 CREATE UNIQUE INDEX idx_provider ON linked_accounts (provider, user_id);
 
-CREATE TABLE IF NOT exists group_types (
+CREATE TABLE IF NOT EXISTS group_types (
     id SERIAL PRIMARY KEY,
     name VARCHAR(30)
 );
 
 INSERT INTO group_types (name) VALUES ('public'), ('private'), ('restricted');
 
-CREATE TABLE IF NOT exists groups (
+CREATE TABLE IF NOT EXISTS groups (
     id SERIAL PRIMARY KEY,
     name VARCHAR(256) NOT NULL,
     description TEXT NOT NULL DEFAULT '',
@@ -58,7 +58,7 @@ CREATE TABLE IF NOT exists groups (
 
 CREATE UNIQUE INDEX idx_group_name ON groups (lower(name));
 
-CREATE TABLE IF NOT exists group_members (
+CREATE TABLE IF NOT EXISTS group_members (
     group_id INT NOT NULL,
     user_id INT NOT NULL,
     role VARCHAR(5) NOT NULL,
@@ -69,7 +69,7 @@ CREATE TABLE IF NOT exists group_members (
 
 CREATE UNIQUE INDEX idx_group_membership ON group_members (group_id, user_id);
 
-CREATE TABLE IF NOT exists group_invites (
+CREATE TABLE IF NOT EXISTS group_invites (
     group_id INT NOT NULL,
     from_id INT NOT NULL,
     user_id INT NOT NULL,
@@ -81,8 +81,8 @@ CREATE TABLE IF NOT exists group_invites (
 CREATE UNIQUE INDEX idx_group_invites ON group_invites (group_id, user_id);
 
 -- @TODO FIGURE OUT IF ID IS REALLY ALL WE NEED
-CREATE TABLE IF NOT exists stories (
-    id VARCHAR(256) NOT NULL,
+CREATE TABLE IF NOT EXISTS stories (
+    id VARCHAR(256) PRIMARY KEY,
     user_id INT NOT NULL,
     expires_at INT NOT NULL,
     device_timestamp INT NOT NULL,
@@ -90,3 +90,11 @@ CREATE TABLE IF NOT exists stories (
 );
 
 CREATE UNIQUE INDEX idx_stories ON stories (id, user_id);
+
+CREATE TABLE IF NOT EXISTS story_reactions (
+    story_id VARCHAR(256) NOT NULL,
+    user_id INT NOT NULL,
+    reaction VARCHAR(10) NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (story_id) REFERENCES stories(id) ON DELETE CASCADE,
+);

@@ -33,6 +33,8 @@ func (b *Backend) GetStoriesForUser(user int, time int64) ([]*Story, error) {
 			return nil, err // @todo
 		}
 
+		story.Reactions = make([]Reaction, 0)
+
 		result = append(result, story)
 	}
 

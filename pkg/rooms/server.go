@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"strings"
 	"sync"
 
 	"github.com/golang/protobuf/ptypes/empty"
@@ -18,6 +17,7 @@ import (
 
 	"github.com/soapboxsocial/soapbox/pkg/groups"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
+	"github.com/soapboxsocial/soapbox/pkg/rooms/internal"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
 	"github.com/soapboxsocial/soapbox/pkg/users"
@@ -156,10 +156,7 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 		s.mux.Lock()
 		id := s.nextID
 
-		name := strings.TrimSpace(payload.Create.Name)
-		if len([]rune(name)) > 30 {
-			name = string([]rune(name)[:30])
-		}
+		name := internal.TrimRoomNameToLimit(payload.Create.Name)
 
 		var group *groups.Group
 		if payload.Create.GetGroup() != 0 {

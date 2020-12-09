@@ -80,7 +80,6 @@ CREATE TABLE IF NOT EXISTS group_invites (
 
 CREATE UNIQUE INDEX idx_group_invites ON group_invites (group_id, user_id);
 
--- @TODO FIGURE OUT IF ID IS REALLY ALL WE NEED
 CREATE TABLE IF NOT EXISTS stories (
     id VARCHAR(256) PRIMARY KEY,
     user_id INT NOT NULL,
@@ -98,3 +97,5 @@ CREATE TABLE IF NOT EXISTS story_reactions (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (story_id) REFERENCES stories(id) ON DELETE CASCADE,
 );
+
+CREATE UNIQUE INDEX idx_stories_react ON story_reactions (story_id, user_id);

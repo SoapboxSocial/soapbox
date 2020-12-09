@@ -95,7 +95,7 @@ CREATE TABLE IF NOT EXISTS story_reactions (
     user_id INT NOT NULL,
     reaction VARCHAR(10) NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (story_id) REFERENCES stories(id) ON DELETE CASCADE,
+    FOREIGN KEY (story_id) REFERENCES stories(id) ON DELETE CASCADE
 );
 
 CREATE UNIQUE INDEX idx_stories_react ON story_reactions (story_id, user_id);

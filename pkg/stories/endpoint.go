@@ -122,5 +122,5 @@ func (e *Endpoint) GetStoriesForUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func IDFromName(name string) string {
-	return strings.Trim(name, ".aac")
+	return strings.TrimSuffix(name, ".aac")
 }

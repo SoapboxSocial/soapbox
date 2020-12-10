@@ -27,7 +27,7 @@ func (e *Endpoint) Router() *mux.Router {
 	r := mux.NewRouter()
 
 	r.Path("/upload").Methods("POST").HandlerFunc(e.UploadStory)
-	r.Path("/delete/{id:[0-9]+}").Methods("DELETE").HandlerFunc(e.DeleteStory)
+	r.Path("/{id:[0-9]+}").Methods("DELETE").HandlerFunc(e.DeleteStory)
 
 	return r
 }
@@ -84,19 +84,14 @@ func (e *Endpoint) UploadStory(w http.ResponseWriter, r *http.Request) {
 func (e *Endpoint) DeleteStory(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	id, err := strconv.Atoi(params["id"])
-	if err != nil {
-		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid id")
-		return
-	}
-
+	id := params["id"]
 	userID, ok := auth.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 		return
 	}
 
-	err = e.backend.DeleteStory(id, userID)
+	err := e.backend.DeleteStory(id, userID)
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 		return

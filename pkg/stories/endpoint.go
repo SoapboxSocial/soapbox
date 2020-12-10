@@ -120,7 +120,3 @@ func (e *Endpoint) GetStoriesForUser(w http.ResponseWriter, r *http.Request) {
 		log.Printf("failed to write story response: %s\n", err.Error())
 	}
 }
-
-func IDFromName(name string) string {
-	return strings.TrimSuffix(name, ".aac")
-}

@@ -12,6 +12,34 @@ func NewBackend(db *sql.DB) *Backend {
 	return &Backend{db}
 }
 
+// DeleteExpired deletes all stories where the expire_at time has passed and returns their IDs.
+func (b *Backend) DeleteExpired(time int64) ([]string, error) {
+	stmt, err := b.db.Prepare("DELETE FROM stories WHERE expires_at <= $1 RETURNING id;")
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := stmt.Query(time)
+
+	result := make([]string, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var id string
+
+		err := rows.Scan(&id)
+		if err != nil {
+			continue
+		}
+
+		result = append(result, id)
+	}
+
+	return result, nil
+}
+
 func (b *Backend) GetStoriesForUser(user int, time int64) ([]*Story, error) {
 	stmt, err := b.db.Prepare("SELECT id, expires_at, device_timestamp FROM stories WHERE user_id = $1 AND expires_at >= $2 ORDER BY device_timestamp;")
 	if err != nil {

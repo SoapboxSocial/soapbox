@@ -2,6 +2,7 @@ package stories
 
 import (
 	"database/sql"
+	"errors"
 )
 
 type Backend struct {
@@ -77,8 +78,21 @@ func (b *Backend) DeleteStory(story string, user int) error {
 		return err
 	}
 
-	_, err = stmt.Exec(story, user)
-	return err
+	res, err := stmt.Exec(story, user)
+	if err != nil {
+		return err
+	}
+
+	count, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if count != 1 {
+		return errors.New("no story deleted")
+	}
+
+	return nil
 }
 
 func (b *Backend) AddStory(story string, user int, expires, timestamp int64) error {

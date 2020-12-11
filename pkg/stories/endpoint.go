@@ -96,7 +96,12 @@ func (e *Endpoint) DeleteStory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// @TODO trigger event to delete from file.
+	err = e.files.Remove(id + ".aac")
+	if err != nil {
+		log.Printf("files.Remove err: %v\n", err)
+	}
+
+	httputil.JsonSuccess(w)
 }
 
 func (e *Endpoint) GetStoriesForUser(w http.ResponseWriter, r *http.Request) {

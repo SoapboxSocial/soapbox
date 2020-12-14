@@ -11,15 +11,17 @@ import (
 
 	auth "github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
+	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 )
 
 type Endpoint struct {
 	backend *Backend
 	files   *FileBackend
+	queue   *pubsub.Queue
 }
 
-func NewEndpoint(backend *Backend, files *FileBackend) *Endpoint {
-	return &Endpoint{backend: backend, files: files}
+func NewEndpoint(backend *Backend, files *FileBackend, queue *pubsub.Queue) *Endpoint {
+	return &Endpoint{backend: backend, files: files, queue: queue}
 }
 
 func (e *Endpoint) Router() *mux.Router {
@@ -75,6 +77,8 @@ func (e *Endpoint) UploadStory(w http.ResponseWriter, r *http.Request) {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "no story")
 		return
 	}
+
+	_ = e.queue.Publish(pubsub.StoryTopic, pubsub.NewStoryCreationEvent(userID))
 
 	// @TODO CLEANUP
 	httputil.JsonSuccess(w)

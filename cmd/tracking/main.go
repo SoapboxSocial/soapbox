@@ -24,7 +24,7 @@ func main() {
 
 	queue := pubsub.NewQueue(rdb)
 
-	events := queue.Subscribe(pubsub.RoomTopic, pubsub.UserTopic, pubsub.GroupTopic)
+	events := queue.Subscribe(pubsub.RoomTopic, pubsub.UserTopic, pubsub.GroupTopic, pubsub.StoryTopic)
 
 	for evt := range events {
 		event := handleEvent(evt)
@@ -170,6 +170,17 @@ func handleEvent(event *pubsub.Event) *Event {
 			properties: map[string]interface{}{
 				"group": event.Params["group"],
 			},
+		}
+	case pubsub.EventTypeNewStory:
+		id, err := getId(event, "creator")
+		if err != nil {
+			return nil
+		}
+
+		return &Event{
+			id:         strconv.Itoa(id),
+			name:       "story_new",
+			properties: map[string]interface{}{},
 		}
 	}
 

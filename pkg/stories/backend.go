@@ -62,7 +62,12 @@ func (b *Backend) GetStoriesForUser(user int, time int64) ([]*Story, error) {
 			return nil, err // @todo
 		}
 
-		story.Reactions = make([]Reaction, 0)
+		reactions, err := b.GetReactions(story.ID)
+		if err != nil {
+			continue
+		}
+
+		story.Reactions = reactions
 
 		result = append(result, story)
 	}
@@ -103,4 +108,40 @@ func (b *Backend) AddStory(story string, user int, expires, timestamp int64) err
 
 	_, err = stmt.Exec(story, user, expires, timestamp)
 	return err
+}
+
+func (b *Backend) ReactToStory(story, reaction string, user int) error {
+	stmt, err := b.db.Prepare("INSERT INTO story_reactions (story_id, user_id, reaction) VALUES ($1, $2, $3);")
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(story, user, reaction)
+	return err
+}
+
+func (b *Backend) GetReactions(story string) ([]Reaction, error) {
+	reactions := make([]Reaction, 0)
+	stmt, err := b.db.Prepare("SELECT reaction, COUNT(*) FROM story_reactions WHERE story_id = $1 GROUP BY reaction;")
+	if err != nil {
+		return reactions, err
+	}
+
+	rows, err := stmt.Query(story)
+	if err != nil {
+		return reactions, err
+	}
+
+	for rows.Next() {
+		reaction := Reaction{}
+
+		err := rows.Scan(&reaction.Emoji, &reaction.Count)
+		if err != nil {
+			return nil, err // @todo
+		}
+
+		reactions = append(reactions, reaction)
+	}
+
+	return reactions, nil
 }

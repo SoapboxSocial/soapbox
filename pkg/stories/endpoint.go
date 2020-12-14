@@ -29,6 +29,7 @@ func (e *Endpoint) Router() *mux.Router {
 
 	r.Path("/upload").Methods("POST").HandlerFunc(e.UploadStory)
 	r.Path("/{id:[0-9]+}").Methods("DELETE").HandlerFunc(e.DeleteStory)
+	r.Path("/{id:[0-9]+}/react").Methods("POST").HandlerFunc(e.Reacted)
 
 	return r
 }
@@ -127,4 +128,37 @@ func (e *Endpoint) GetStoriesForUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("failed to write story response: %s\n", err.Error())
 	}
+}
+
+func (e *Endpoint) Reacted(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	params := mux.Vars(r)
+
+	id := params["id"]
+
+	userID, ok := auth.GetUserIDFromContext(r.Context())
+	if !ok {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	reaction := r.Form.Get("reaction")
+
+	if reaction != "👍" && reaction != "🔥" && reaction != "❤️" {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid reaction")
+		return
+	}
+
+	err = e.backend.ReactToStory(id, reaction, userID)
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	httputil.JsonSuccess(w)
 }

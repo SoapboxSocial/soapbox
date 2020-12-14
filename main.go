@@ -96,7 +96,7 @@ func main() {
 	groupsBackend := groups.NewBackend(db)
 	groupsEndpoint := groups.NewEndpoint(groupsBackend, ib, queue)
 
-	storiesEndpoint := stories.NewEndpoint(stories.NewBackend(db), stories.NewFileBackend("/cdn/stories"))
+	storiesEndpoint := stories.NewEndpoint(stories.NewBackend(db), stories.NewFileBackend("/cdn/stories"), queue)
 	storiesRouter := storiesEndpoint.Router()
 	storiesRouter.Use(amw.Middleware)
 	mount(r, "/v1/stories", storiesRouter)

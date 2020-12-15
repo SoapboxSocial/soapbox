@@ -134,6 +134,7 @@ func main() {
 	meRoutes.HandleFunc("/notifications", meEndpoint.GetNotifications).Methods("GET")
 	meRoutes.HandleFunc("/profiles/twitter", meEndpoint.AddTwitter).Methods("POST")
 	meRoutes.HandleFunc("/profiles/twitter", meEndpoint.RemoveTwitter).Methods("DELETE")
+	meRoutes.HandleFunc("/feed", meEndpoint.GetFeed).Methods("GET")
 	meRoutes.Use(amw.Middleware)
 
 	groupsRouter := groupsEndpoint.Router()

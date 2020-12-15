@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/dghubble/go-twitter/twitter"
 	"github.com/dghubble/oauth1"
@@ -13,6 +14,7 @@ import (
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/linkedaccounts"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
+	"github.com/soapboxsocial/soapbox/pkg/stories"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
@@ -22,6 +24,7 @@ type MeEndpoint struct {
 	ns          *notifications.Storage
 	oauthConfig *oauth1.Config
 	la          *linkedaccounts.Backend
+	stories     *stories.Backend
 }
 
 // Notification that the API returns.
@@ -173,6 +176,41 @@ func (m *MeEndpoint) RemoveTwitter(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httputil.JsonSuccess(w)
+}
+
+func (m *MeEndpoint) GetFeed(w http.ResponseWriter, r *http.Request) {
+	id, ok := auth.GetUserIDFromContext(r.Context())
+	if !ok {
+		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "unauthorized")
+		return
+	}
+
+	s, err := m.stories.GetStoriesForFollower(id, time.Now().Unix())
+	if err != nil {
+		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "unauthorized")
+		return
+	}
+
+	feeds := make([]stories.StoryFeed, 0)
+	for id, results := range s {
+		user, err := m.users.FindByID(id)
+		if err != nil {
+			continue
+		}
+
+		user.Bio = ""
+		user.Email = nil
+
+		feeds = append(feeds, stories.StoryFeed{
+			User: *user,
+			Stories: results,
+		})
+	}
+
+	err = httputil.JsonEncode(w, feeds)
+	if err != nil {
+		log.Printf("failed to write me response: %s\n", err.Error())
+	}
 }
 
 func getId(event *notifications.Notification, field string) (int, error) {

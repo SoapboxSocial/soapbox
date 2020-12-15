@@ -75,6 +75,10 @@ func (b *Backend) GetStoriesForUser(user int, time int64) ([]*Story, error) {
 	return result, nil
 }
 
+func (b *Backend) GetStoriesForFollower(user int, time int64) (map[int]Story, error) {
+	return nil, nil
+}
+
 func (b *Backend) DeleteStory(story string, user int) error {
 	query := "DELETE FROM stories WHERE id = $1 AND user_id = $2;"
 

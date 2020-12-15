@@ -39,13 +39,14 @@ type Notification struct {
 	Category  notifications.NotificationCategory `json:"category"`
 }
 
-func NewMeEndpoint(users *users.UserBackend, groups *groups.Backend, ns *notifications.Storage, config *oauth1.Config, la *linkedaccounts.Backend) *MeEndpoint {
+func NewMeEndpoint(users *users.UserBackend, groups *groups.Backend, ns *notifications.Storage, config *oauth1.Config, la *linkedaccounts.Backend, backend *stories.Backend) *MeEndpoint {
 	return &MeEndpoint{
 		users:       users,
 		groups:      groups,
 		ns:          ns,
 		oauthConfig: config,
 		la:          la,
+		stories:     backend,
 	}
 }
 
@@ -202,7 +203,7 @@ func (m *MeEndpoint) GetFeed(w http.ResponseWriter, r *http.Request) {
 		user.Email = nil
 
 		feeds = append(feeds, stories.StoryFeed{
-			User: *user,
+			User:    *user,
 			Stories: results,
 		})
 	}

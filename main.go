@@ -96,7 +96,8 @@ func main() {
 	groupsBackend := groups.NewBackend(db)
 	groupsEndpoint := groups.NewEndpoint(groupsBackend, ib, queue)
 
-	storiesEndpoint := stories.NewEndpoint(stories.NewBackend(db), stories.NewFileBackend("/cdn/stories"), queue)
+	storiesBackend := stories.NewBackend(db)
+	storiesEndpoint := stories.NewEndpoint(storiesBackend, stories.NewFileBackend("/cdn/stories"), queue)
 	storiesRouter := storiesEndpoint.Router()
 	storiesRouter.Use(amw.Middleware)
 	mount(r, "/v1/stories", storiesRouter)
@@ -129,12 +130,12 @@ func main() {
 
 	pb := linkedaccounts.NewLinkedAccountsBackend(db)
 
-	meEndpoint := me.NewMeEndpoint(ub, groupsBackend, ns, oauth, pb)
+	meEndpoint := me.NewMeEndpoint(ub, groupsBackend, ns, oauth, pb, storiesBackend)
+	meRoutes.HandleFunc("/feed", meEndpoint.GetFeed).Methods("GET")
 	meRoutes.HandleFunc("", meEndpoint.GetMe).Methods("GET")
 	meRoutes.HandleFunc("/notifications", meEndpoint.GetNotifications).Methods("GET")
 	meRoutes.HandleFunc("/profiles/twitter", meEndpoint.AddTwitter).Methods("POST")
 	meRoutes.HandleFunc("/profiles/twitter", meEndpoint.RemoveTwitter).Methods("DELETE")
-	meRoutes.HandleFunc("/feed", meEndpoint.GetFeed).Methods("GET")
 	meRoutes.Use(amw.Middleware)
 
 	groupsRouter := groupsEndpoint.Router()

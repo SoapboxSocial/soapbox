@@ -75,8 +75,44 @@ func (b *Backend) GetStoriesForUser(user int, time int64) ([]*Story, error) {
 	return result, nil
 }
 
-func (b *Backend) GetStoriesForFollower(user int, time int64) (map[int]Story, error) {
-	return nil, nil
+func (b *Backend) GetStoriesForFollower(user int, time int64) (map[int][]Story, error) {
+	stmt, err := b.db.Prepare("SELECT stories.user_id, stories.id, stories.expires_at, stories.device_timestamp FROM stories INNER JOIN followers ON (stories.user_id = followers.user_id) WHERE followers.follower = $1 AND stories.expires_at >= $2;")
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := stmt.Query(user, time)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make(map[int][]Story, 0)
+
+	for rows.Next() {
+		story := Story{}
+
+		var user int
+		err := rows.Scan(&user, &story.ID, &story.ExpiresAt, &story.DeviceTimestamp)
+		if err != nil {
+			return nil, err // @todo
+		}
+
+		reactions, err := b.GetReactions(story.ID)
+		if err != nil {
+			continue
+		}
+
+		story.Reactions = reactions
+
+		_, ok := result[user]
+		if !ok {
+			result[user] = make([]Story, 0)
+		}
+
+		result[user] = append(result[user], story)
+	}
+
+	return result, nil
 }
 
 func (b *Backend) DeleteStory(story string, user int) error {

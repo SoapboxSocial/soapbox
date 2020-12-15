@@ -68,6 +68,9 @@ sudo chmod -R 0777 /cdn/stories
 cd $GOPATH/src/github.com/soapboxsocial/soapbox && sudo go build -o /usr/local/bin/soapbox main.go
 cd $GOPATH/src/github.com/soapboxsocial/soapbox/cmd/indexer && sudo go build -o /usr/local/bin/indexer main.go
 cd $GOPATH/src/github.com/soapboxsocial/soapbox/cmd/rooms && sudo go build -o /usr/local/bin/rooms main.go
+cd $GOPATH/src/github.com/soapboxsocial/soapbox/cmd/stories && sudo go build -o /usr/local/bin/stories main.go
+
+crontab /vagrant/conf/crontab
 
 touch /vagrant/provisioned
 

@@ -86,7 +86,7 @@ func (b *Backend) GetStoriesForFollower(user int, time int64) (map[int][]Story, 
 		return nil, err
 	}
 
-	result := make(map[int][]Story, 0)
+	result := make(map[int][]Story)
 
 	for rows.Next() {
 		story := Story{}

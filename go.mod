@@ -15,7 +15,6 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/lib/pq v1.9.0
 	github.com/lucas-clemente/quic-go v0.19.3 // indirect
-	github.com/matryer/moq v0.1.3 // indirect
 	github.com/pion/ion-sfu v1.0.29
 	github.com/pion/webrtc/v3 v3.0.0-beta.9
 	github.com/pkg/errors v0.9.1

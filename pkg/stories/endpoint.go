@@ -160,5 +160,7 @@ func (e *Endpoint) Reacted(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	_ = e.queue.Publish(pubsub.StoryTopic, pubsub.NewStoryReactionEvent(userID))
+
 	httputil.JsonSuccess(w)
 }

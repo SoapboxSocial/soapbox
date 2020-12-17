@@ -17,6 +17,7 @@ const (
 	EventTypeGroupJoin
 	EventTypeGroupDelete
 	EventTypeNewStory
+	EventTypeStoryReaction
 )
 
 type RoomVisibility string
@@ -77,6 +78,13 @@ func NewStoryCreationEvent(creator int) Event {
 	return Event{
 		Type:   EventTypeNewStory,
 		Params: map[string]interface{}{"creator": creator},
+	}
+}
+
+func NewStoryReactionEvent(user int) Event {
+	return Event{
+		Type:   EventTypeStoryReaction,
+		Params: map[string]interface{}{"id": user},
 	}
 }
 

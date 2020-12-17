@@ -182,6 +182,17 @@ func handleEvent(event *pubsub.Event) *Event {
 			name:       "story_new",
 			properties: map[string]interface{}{},
 		}
+	case pubsub.EventTypeStoryReaction:
+		id, err := getId(event, "id")
+		if err != nil {
+			return nil
+		}
+
+		return &Event{
+			id:         strconv.Itoa(id),
+			name:       "story_reaction",
+			properties: map[string]interface{}{},
+		}
 	}
 
 	return nil

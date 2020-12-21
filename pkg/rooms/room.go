@@ -317,6 +317,8 @@ func (r *Room) onPayload(from int, in *pb.SignalRequest) error {
 		return r.onInvite(from, payload.Invite)
 	case *pb.SignalRequest_Kick:
 		return r.onKick(from, payload.Kick)
+	case *pb.SignalRequest_ScreenRecorded:
+		return r.onScreenRecord(from)
 	}
 
 	return nil
@@ -426,6 +428,15 @@ func (r *Room) onKick(from int, kick *pb.Kick) error {
 	if err != nil {
 		log.Printf("rtc.Close error %v\n", err)
 	}
+
+	return nil
+}
+
+func (r *Room) onScreenRecord(from int) error {
+	go r.notify(&pb.SignalReply_Event{
+		Type: pb.SignalReply_Event_RECORDED_SCREEN,
+		From: int64(from),
+	})
 
 	return nil
 }

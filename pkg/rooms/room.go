@@ -463,7 +463,7 @@ func (r *Room) onMuteUser(from int, cmd *pb.MuteUser) error {
 	err := p.stream.Send(&pb.SignalReply{
 		Payload: &pb.SignalReply_Event_{
 			Event: &pb.SignalReply_Event{
-				Type: pb.SignalReply_Event_RECORDED_SCREEN,
+				Type: pb.SignalReply_Event_MUTED_BY_ADMIN,
 				From: int64(from),
 			},
 		},

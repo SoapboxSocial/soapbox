@@ -335,17 +335,7 @@ func (r *Room) onCommand(from int, cmd *pb.SignalRequest_Command) error {
 		// @TODO IN DEVELOPMENT
 		break
 	case pb.SignalRequest_Command_MUTE_SPEAKER:
-		r.mux.Lock()
-		_, ok := r.members[from]
-		if ok {
-			r.members[from].me.IsMuted = true
-		}
-		r.mux.Unlock()
-
-		go r.notify(&pb.SignalReply_Event{
-			Type: pb.SignalReply_Event_MUTED_SPEAKER,
-			From: int64(from),
-		})
+		r.onMute(from)
 	case pb.SignalRequest_Command_UNMUTE_SPEAKER:
 		r.mux.Lock()
 		_, ok := r.members[from]
@@ -448,17 +438,15 @@ func (r *Room) onMuteUser(from int, cmd *pb.MuteUser) error {
 		return nil
 	}
 
+	r.onMute(int(cmd.Id))
+
 	r.mux.Lock()
 	p, ok := r.members[int(cmd.Id)]
-	if ok {
-		r.members[int(cmd.Id)].me.IsMuted = true
-	}
 	r.mux.Unlock()
 
-	go r.notify(&pb.SignalReply_Event{
-		Type: pb.SignalReply_Event_MUTED_SPEAKER,
-		From: cmd.Id,
-	})
+	if !ok {
+		return nil
+	}
 
 	err := p.stream.Send(&pb.SignalReply{
 		Payload: &pb.SignalReply_Event_{
@@ -506,6 +494,20 @@ func (r *Room) onRemoveAdmin(from int, remove *pb.SignalRequest_Command) {
 		Type: pb.SignalReply_Event_REMOVED_ADMIN,
 		From: int64(from),
 		Data: remove.Data,
+	})
+}
+
+func (r *Room) onMute(from int) {
+	r.mux.Lock()
+	_, ok := r.members[from]
+	if ok {
+		r.members[from].me.IsMuted = true
+	}
+	r.mux.Unlock()
+
+	go r.notify(&pb.SignalReply_Event{
+		Type: pb.SignalReply_Event_MUTED_SPEAKER,
+		From: int64(from),
 	})
 }
 

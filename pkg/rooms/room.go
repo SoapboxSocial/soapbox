@@ -449,9 +449,9 @@ func (r *Room) onMuteUser(from int, cmd *pb.MuteUser) error {
 	}
 
 	r.mux.Lock()
-	p, ok := r.members[from]
+	p, ok := r.members[int(cmd.Id)]
 	if ok {
-		r.members[from].me.IsMuted = true
+		r.members[int(cmd.Id)].me.IsMuted = true
 	}
 	r.mux.Unlock()
 

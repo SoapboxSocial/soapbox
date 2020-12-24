@@ -319,6 +319,8 @@ func (r *Room) onPayload(from int, in *pb.SignalRequest) error {
 		return r.onKick(from, payload.Kick)
 	case *pb.SignalRequest_ScreenRecorded:
 		return r.onScreenRecord(from)
+	case *pb.SignalRequest_MuteUser:
+		return r.onMuteUser(from, payload.MuteUser)
 	}
 
 	return nil
@@ -333,17 +335,7 @@ func (r *Room) onCommand(from int, cmd *pb.SignalRequest_Command) error {
 		// @TODO IN DEVELOPMENT
 		break
 	case pb.SignalRequest_Command_MUTE_SPEAKER:
-		r.mux.Lock()
-		_, ok := r.members[from]
-		if ok {
-			r.members[from].me.IsMuted = true
-		}
-		r.mux.Unlock()
-
-		go r.notify(&pb.SignalReply_Event{
-			Type: pb.SignalReply_Event_MUTED_SPEAKER,
-			From: int64(from),
-		})
+		r.onMute(from)
 	case pb.SignalRequest_Command_UNMUTE_SPEAKER:
 		r.mux.Lock()
 		_, ok := r.members[from]
@@ -441,6 +433,37 @@ func (r *Room) onScreenRecord(from int) error {
 	return nil
 }
 
+func (r *Room) onMuteUser(from int, cmd *pb.MuteUser) error {
+	if !r.isAdmin(from) {
+		return nil
+	}
+
+	r.onMute(int(cmd.Id))
+
+	r.mux.Lock()
+	p, ok := r.members[int(cmd.Id)]
+	r.mux.Unlock()
+
+	if !ok {
+		return nil
+	}
+
+	err := p.stream.Send(&pb.SignalReply{
+		Payload: &pb.SignalReply_Event_{
+			Event: &pb.SignalReply_Event{
+				Type: pb.SignalReply_Event_MUTED_BY_ADMIN,
+				From: int64(from),
+			},
+		},
+	})
+
+	if err != nil {
+		log.Printf("failed to write to data channel: %s\n", err.Error())
+	}
+
+	return nil
+}
+
 func (r *Room) onAddAdmin(from int, add *pb.SignalRequest_Command) {
 	if !r.isAdmin(from) {
 		return
@@ -471,6 +494,20 @@ func (r *Room) onRemoveAdmin(from int, remove *pb.SignalRequest_Command) {
 		Type: pb.SignalReply_Event_REMOVED_ADMIN,
 		From: int64(from),
 		Data: remove.Data,
+	})
+}
+
+func (r *Room) onMute(from int) {
+	r.mux.Lock()
+	_, ok := r.members[from]
+	if ok {
+		r.members[from].me.IsMuted = true
+	}
+	r.mux.Unlock()
+
+	go r.notify(&pb.SignalReply_Event{
+		Type: pb.SignalReply_Event_MUTED_SPEAKER,
+		From: int64(from),
 	})
 }
 

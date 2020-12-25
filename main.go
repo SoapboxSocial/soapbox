@@ -14,7 +14,6 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/sendgrid/sendgrid-go"
 
-	"github.com/soapboxsocial/soapbox/pkg/activeusers"
 	"github.com/soapboxsocial/soapbox/pkg/api/me"
 	"github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	usersapi "github.com/soapboxsocial/soapbox/pkg/api/users"
@@ -58,7 +57,6 @@ func main() {
 	ub := users.NewUserBackend(db)
 	fb := followers.NewFollowersBackend(db)
 	ns := notifications.NewStorage(rdb)
-	activeUsersBackend := activeusers.NewBackend(rdb, db)
 
 	client, err := elasticsearch.NewDefaultClient()
 	if err != nil {
@@ -90,7 +88,6 @@ func main() {
 		ib,
 		queue,
 		rooms.NewCurrentRoomBackend(rdb),
-		activeUsersBackend,
 	)
 
 	groupsBackend := groups.NewBackend(db)
@@ -109,7 +106,6 @@ func main() {
 	userRoutes.HandleFunc("/follow", usersEndpoints.FollowUser).Methods("POST")
 	userRoutes.HandleFunc("/unfollow", usersEndpoints.UnfollowUser).Methods("POST")
 	userRoutes.HandleFunc("/edit", usersEndpoints.EditUser).Methods("POST")
-	userRoutes.HandleFunc("/active", usersEndpoints.GetActiveUsersFor).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/groups", groupsEndpoint.GetGroupsForUser).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/stories", storiesEndpoint.GetStoriesForUser).Methods("GET")
 

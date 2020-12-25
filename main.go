@@ -14,7 +14,6 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/sendgrid/sendgrid-go"
 
-	"github.com/soapboxsocial/soapbox/pkg/activeusers"
 	"github.com/soapboxsocial/soapbox/pkg/api/me"
 	"github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	usersapi "github.com/soapboxsocial/soapbox/pkg/api/users"

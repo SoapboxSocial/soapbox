@@ -58,7 +58,6 @@ func main() {
 	ub := users.NewUserBackend(db)
 	fb := followers.NewFollowersBackend(db)
 	ns := notifications.NewStorage(rdb)
-	activeUsersBackend := activeusers.NewBackend(rdb, db)
 
 	client, err := elasticsearch.NewDefaultClient()
 	if err != nil {
@@ -90,7 +89,6 @@ func main() {
 		ib,
 		queue,
 		rooms.NewCurrentRoomBackend(rdb),
-		activeUsersBackend,
 	)
 
 	groupsBackend := groups.NewBackend(db)

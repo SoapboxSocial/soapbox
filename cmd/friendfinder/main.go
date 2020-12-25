@@ -1,0 +1,8 @@
+package main
+
+func main() {
+	// @TODO: WHEN TWITTER IS CONNECTED:
+	//    - GET ALL FOLLOWERS
+	//    - CHECK IF FOLLOWERS IS ON SOAPBOX
+	//    - NOTIFY ALL PEOPLE ON SOAPBOX
+}

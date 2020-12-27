@@ -14,8 +14,6 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/sendgrid/sendgrid-go"
 
-	"github.com/soapboxsocial/soapbox/pkg/activeusers"
-	"github.com/soapboxsocial/soapbox/pkg/api/login"
 	"github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	usersapi "github.com/soapboxsocial/soapbox/pkg/api/users"
 	"github.com/soapboxsocial/soapbox/pkg/devices"
@@ -24,6 +22,7 @@ import (
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/images"
 	"github.com/soapboxsocial/soapbox/pkg/linkedaccounts"
+	"github.com/soapboxsocial/soapbox/pkg/login"
 	"github.com/soapboxsocial/soapbox/pkg/mail"
 	"github.com/soapboxsocial/soapbox/pkg/me"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
@@ -31,6 +30,7 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
 	"github.com/soapboxsocial/soapbox/pkg/search"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
+	"github.com/soapboxsocial/soapbox/pkg/stories"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
@@ -57,7 +57,6 @@ func main() {
 	ub := users.NewUserBackend(db)
 	fb := followers.NewFollowersBackend(db)
 	ns := notifications.NewStorage(rdb)
-	activeUsersBackend := activeusers.NewBackend(rdb, db)
 
 	client, err := elasticsearch.NewDefaultClient()
 	if err != nil {
@@ -73,14 +72,12 @@ func main() {
 	r.MethodNotAllowedHandler = http.HandlerFunc(httputil.NotAllowedHandler)
 	r.NotFoundHandler = http.HandlerFunc(httputil.NotFoundHandler)
 
-	loginRoutes := r.PathPrefix("/v1/login").Methods("POST").Subrouter()
-
 	ib := images.NewImagesBackend("/cdn/images")
 	ms := mail.NewMailService(sendgrid.NewSendClient(sendgrid_api))
-	loginHandlers := login.NewLoginEndpoint(ub, s, ms, ib, queue)
-	loginRoutes.HandleFunc("/start", loginHandlers.Start)
-	loginRoutes.HandleFunc("/pin", loginHandlers.SubmitPin)
-	loginRoutes.HandleFunc("/register", loginHandlers.Register)
+
+	loginEndpoints := login.NewEndpoint(ub, s, ms, ib, queue)
+	loginRouter := loginEndpoints.Router()
+	mount(r, "/v1/login", loginRouter)
 
 	userRoutes := r.PathPrefix("/v1/users").Subrouter()
 
@@ -91,11 +88,16 @@ func main() {
 		ib,
 		queue,
 		rooms.NewCurrentRoomBackend(rdb),
-		activeUsersBackend,
 	)
 
 	groupsBackend := groups.NewBackend(db)
 	groupsEndpoint := groups.NewEndpoint(groupsBackend, ib, queue)
+
+	storiesBackend := stories.NewBackend(db)
+	storiesEndpoint := stories.NewEndpoint(storiesBackend, stories.NewFileBackend("/cdn/stories"), queue)
+	storiesRouter := storiesEndpoint.Router()
+	storiesRouter.Use(amw.Middleware)
+	mount(r, "/v1/stories", storiesRouter)
 
 	userRoutes.HandleFunc("/{id:[0-9]+}", usersEndpoints.GetUserByID).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/followers", usersEndpoints.GetFollowersForUser).Methods("GET")
@@ -104,8 +106,8 @@ func main() {
 	userRoutes.HandleFunc("/follow", usersEndpoints.FollowUser).Methods("POST")
 	userRoutes.HandleFunc("/unfollow", usersEndpoints.UnfollowUser).Methods("POST")
 	userRoutes.HandleFunc("/edit", usersEndpoints.EditUser).Methods("POST")
-	userRoutes.HandleFunc("/active", usersEndpoints.GetActiveUsersFor).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/groups", groupsEndpoint.GetGroupsForUser).Methods("GET")
+	userRoutes.HandleFunc("/{id:[0-9]+}/stories", storiesEndpoint.GetStoriesForUser).Methods("GET")
 
 	userRoutes.Use(amw.Middleware)
 
@@ -124,6 +126,7 @@ func main() {
 
 	meEndpoint := me.NewEndpoint(ub, groupsBackend, ns, oauth, pb)
 	meRoutes := meEndpoint.Router()
+
 	meRoutes.Use(amw.Middleware)
 	mount(r, "/v1/me", meRoutes)
 

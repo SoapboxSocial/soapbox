@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/dghubble/go-twitter/twitter"
 	"github.com/dghubble/oauth1"
@@ -14,6 +15,7 @@ import (
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/linkedaccounts"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
+	"github.com/soapboxsocial/soapbox/pkg/stories"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
@@ -23,6 +25,7 @@ type Endpoint struct {
 	ns          *notifications.Storage
 	oauthConfig *oauth1.Config
 	la          *linkedaccounts.Backend
+	stories     *stories.Backend
 }
 
 // Notification that the API returns.
@@ -37,13 +40,14 @@ type Notification struct {
 	Category  notifications.NotificationCategory `json:"category"`
 }
 
-func NewEndpoint(users *users.UserBackend, groups *groups.Backend, ns *notifications.Storage, config *oauth1.Config, la *linkedaccounts.Backend) *Endpoint {
+func NewEndpoint(users *users.UserBackend, groups *groups.Backend, ns *notifications.Storage, config *oauth1.Config, la *linkedaccounts.Backend, backend *stories.Backend) *Endpoint {
 	return &Endpoint{
 		users:       users,
 		groups:      groups,
 		ns:          ns,
 		oauthConfig: config,
 		la:          la,
+		stories:     backend,
 	}
 }
 
@@ -54,6 +58,7 @@ func (m *Endpoint) Router() *mux.Router {
 	r.HandleFunc("/notifications", m.notifications).Methods("GET")
 	r.HandleFunc("/profiles/twitter", m.addTwitter).Methods("POST")
 	r.HandleFunc("/profiles/twitter", m.removeTwitter).Methods("DELETE")
+	r.HandleFunc("/feed", m.removeTwitter).Methods("GET")
 
 	return r
 }
@@ -185,6 +190,41 @@ func (m *Endpoint) removeTwitter(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httputil.JsonSuccess(w)
+}
+
+func (m *Endpoint) feed(w http.ResponseWriter, r *http.Request) {
+	id, ok := auth.GetUserIDFromContext(r.Context())
+	if !ok {
+		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "unauthorized")
+		return
+	}
+
+	s, err := m.stories.GetStoriesForFollower(id, time.Now().Unix())
+	if err != nil {
+		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "unauthorized")
+		return
+	}
+
+	feeds := make([]stories.StoryFeed, 0)
+	for id, results := range s {
+		user, err := m.users.FindByID(id)
+		if err != nil {
+			continue
+		}
+
+		user.Bio = ""
+		user.Email = nil
+
+		feeds = append(feeds, stories.StoryFeed{
+			User:    *user,
+			Stories: results,
+		})
+	}
+
+	err = httputil.JsonEncode(w, feeds)
+	if err != nil {
+		log.Printf("failed to write me response: %s\n", err.Error())
+	}
 }
 
 func getId(event *notifications.Notification, field string) (int, error) {

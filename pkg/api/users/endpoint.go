@@ -10,7 +10,6 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/soapboxsocial/soapbox/pkg/activeusers"
 	auth "github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	"github.com/soapboxsocial/soapbox/pkg/followers"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
@@ -27,7 +26,6 @@ type UsersEndpoint struct {
 	sm          *sessions.SessionManager
 	ib          *images.Backend
 	currentRoom *rooms.CurrentRoomBackend
-	activeUsers *activeusers.Backend
 
 	queue *pubsub.Queue
 }
@@ -39,7 +37,6 @@ func NewUsersEndpoint(
 	ib *images.Backend,
 	queue *pubsub.Queue,
 	cr *rooms.CurrentRoomBackend,
-	au *activeusers.Backend,
 ) *UsersEndpoint {
 	return &UsersEndpoint{
 		ub:          ub,
@@ -48,7 +45,6 @@ func NewUsersEndpoint(
 		ib:          ib,
 		queue:       queue,
 		currentRoom: cr,
-		activeUsers: au,
 	}
 }
 
@@ -290,25 +286,6 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	httputil.JsonSuccess(w)
-}
-
-func (u *UsersEndpoint) GetActiveUsersFor(w http.ResponseWriter, r *http.Request) {
-	userID, ok := auth.GetUserIDFromContext(r.Context())
-	if !ok {
-		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
-		return
-	}
-
-	resp, err := u.activeUsers.FetchActiveUsersFollowedBy(userID)
-	if err != nil {
-		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
-		return
-	}
-
-	err = httputil.JsonEncode(w, resp)
-	if err != nil {
-		log.Printf("failed to write active users response: %s\n", err.Error())
-	}
 }
 
 func (u *UsersEndpoint) processProfilePicture(file multipart.File) (string, error) {

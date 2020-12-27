@@ -24,7 +24,7 @@ func main() {
 
 	queue := pubsub.NewQueue(rdb)
 
-	events := queue.Subscribe(pubsub.RoomTopic, pubsub.UserTopic, pubsub.GroupTopic)
+	events := queue.Subscribe(pubsub.RoomTopic, pubsub.UserTopic, pubsub.GroupTopic, pubsub.StoryTopic)
 
 	for evt := range events {
 		event := handleEvent(evt)
@@ -144,6 +144,54 @@ func handleEvent(event *pubsub.Event) *Event {
 				"visibility": event.Params["visibility"],
 				"group_id":   event.Params["group"],
 			},
+		}
+	case pubsub.EventTypeNewFollower:
+		id, err := getId(event, "follower")
+		if err != nil {
+			return nil
+		}
+
+		return &Event{
+			id:   strconv.Itoa(id),
+			name: "followed",
+			properties: map[string]interface{}{
+				"following_id": event.Params["id"],
+			},
+		}
+	case pubsub.EventTypeGroupJoin:
+		id, err := getId(event, "id")
+		if err != nil {
+			return nil
+		}
+
+		return &Event{
+			id:   strconv.Itoa(id),
+			name: "group_join",
+			properties: map[string]interface{}{
+				"group": event.Params["group"],
+			},
+		}
+	case pubsub.EventTypeNewStory:
+		id, err := getId(event, "creator")
+		if err != nil {
+			return nil
+		}
+
+		return &Event{
+			id:         strconv.Itoa(id),
+			name:       "story_new",
+			properties: map[string]interface{}{},
+		}
+	case pubsub.EventTypeStoryReaction:
+		id, err := getId(event, "id")
+		if err != nil {
+			return nil
+		}
+
+		return &Event{
+			id:         strconv.Itoa(id),
+			name:       "story_reaction",
+			properties: map[string]interface{}{},
 		}
 	}
 

@@ -14,6 +14,10 @@ const (
 	EventTypeGroupInvite
 	EventTypeNewGroupRoom
 	EventTypeGroupUpdate
+	EventTypeGroupJoin
+	EventTypeGroupDelete
+	EventTypeNewStory
+	EventTypeStoryReaction
 )
 
 type RoomVisibility string
@@ -70,6 +74,20 @@ func NewRoomJoinEvent(name string, id, creator int, visibility RoomVisibility) E
 	}
 }
 
+func NewStoryCreationEvent(creator int) Event {
+	return Event{
+		Type:   EventTypeNewStory,
+		Params: map[string]interface{}{"creator": creator},
+	}
+}
+
+func NewStoryReactionEvent(user int) Event {
+	return Event{
+		Type:   EventTypeStoryReaction,
+		Params: map[string]interface{}{"id": user},
+	}
+}
+
 func NewRoomInviteEvent(name string, room, creator, target int) Event {
 	return Event{
 		Type:   EventTypeRoomInvite,
@@ -102,5 +120,19 @@ func NewGroupInviteEvent(from, id, group int) Event {
 	return Event{
 		Type:   EventTypeGroupInvite,
 		Params: map[string]interface{}{"from": from, "id": id, "group": group},
+	}
+}
+
+func NewGroupJoinEvent(id, group int) Event {
+	return Event{
+		Type:   EventTypeGroupJoin,
+		Params: map[string]interface{}{"id": id, "group": group},
+	}
+}
+
+func NewGroupDeleteEvent(group int) Event {
+	return Event{
+		Type:   EventTypeGroupDelete,
+		Params: map[string]interface{}{"group": group},
 	}
 }

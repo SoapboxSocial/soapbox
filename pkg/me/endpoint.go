@@ -58,7 +58,7 @@ func (m *Endpoint) Router() *mux.Router {
 	r.HandleFunc("/notifications", m.notifications).Methods("GET")
 	r.HandleFunc("/profiles/twitter", m.addTwitter).Methods("POST")
 	r.HandleFunc("/profiles/twitter", m.removeTwitter).Methods("DELETE")
-	r.HandleFunc("/feed", m.removeTwitter).Methods("GET")
+	r.HandleFunc("/feed", m.feed).Methods("GET")
 
 	return r
 }

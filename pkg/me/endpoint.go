@@ -72,7 +72,7 @@ func (m *Endpoint) me(w http.ResponseWriter, r *http.Request) {
 
 	user, err := m.users.FindByID(id)
 	if err != nil {
-		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToGetUser, "failed to get self")
+		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeFailedToGetUser, "failed to get self")
 		return
 	}
 

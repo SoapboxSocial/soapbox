@@ -8,6 +8,8 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
+const placeholder = "val"
+
 type Storage struct {
 	rdb *redis.Client
 }
@@ -29,6 +31,8 @@ func (s *Storage) Store(user int, notification *Notification) error {
 	if err != nil {
 		return err
 	}
+
+	s.setHasNewNotifications(user)
 
 	return s.rdb.LTrim(s.rdb.Context(), key, 0, 9).Err()
 }
@@ -52,6 +56,27 @@ func (s *Storage) GetNotifications(user int) ([]*Notification, error) {
 	}
 
 	return notifications, nil
+}
+
+func (s *Storage) MarkNotificationsViewed(user int) {
+	s.rdb.Del(s.rdb.Context(), hasNewNotificationsKey(user))
+}
+
+func (s *Storage) HasNewNotifications(user int) bool {
+	res, err := s.rdb.Get(s.rdb.Context(), hasNewNotificationsKey(user)).Result()
+	if err != nil {
+		return false
+	}
+
+	return res == placeholder
+}
+
+func (s *Storage) setHasNewNotifications(user int) {
+	s.rdb.Set(s.rdb.Context(), hasNewNotificationsKey(user), placeholder, 0)
+}
+
+func hasNewNotificationsKey(user int) string {
+	return fmt.Sprintf("has_new_notifications_%d", user)
 }
 
 func notificationListKey(user int) string {

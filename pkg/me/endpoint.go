@@ -28,6 +28,14 @@ type Endpoint struct {
 	stories     *stories.Backend
 }
 
+// Me is returned to the user calling the `/me` endpoint.
+// It contains the user and additional information.
+type Me struct {
+	*users.User
+
+	HasNotifications bool `json:"has_notifications"`
+}
+
 // Notification that the API returns.
 // @TODO IN THE FUTURE WE MAY WANT TO BE ABLE TO SEND NOTIFICATIONS WITHOUT A USER, AND OTHER DATA?
 // For example:
@@ -36,7 +44,7 @@ type Endpoint struct {
 type Notification struct {
 	Timestamp int64                              `json:"timestamp"`
 	From      *users.NotificationUser            `json:"from"`
-	Group     *groups.Group                      `json:"group"`
+	Group     *groups.Group                      `json:"group,omitempty"`
 	Category  notifications.NotificationCategory `json:"category"`
 }
 
@@ -76,7 +84,10 @@ func (m *Endpoint) me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = httputil.JsonEncode(w, user)
+	has := m.ns.HasNewNotifications(id)
+	me := &Me{user, has}
+
+	err = httputil.JsonEncode(w, me)
 	if err != nil {
 		log.Printf("failed to write me response: %s\n", err.Error())
 	}
@@ -125,6 +136,8 @@ func (m *Endpoint) notifications(w http.ResponseWriter, r *http.Request) {
 
 		populated = append(populated, populatedNotification)
 	}
+
+	m.ns.MarkNotificationsViewed(id)
 
 	err = httputil.JsonEncode(w, populated)
 	if err != nil {

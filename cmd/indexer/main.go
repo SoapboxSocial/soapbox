@@ -71,7 +71,7 @@ func handleEvent(event *pubsub.Event) {
 
 func requestFor(event *pubsub.Event) (esapi.Request, error) {
 	switch event.Type {
-	case pubsub.EventTypeUserUpdate, pubsub.EventTypeNewUser, pubsub.EventTypeNewFollower:
+	case pubsub.EventTypeUserUpdate, pubsub.EventTypeNewUser, pubsub.EventTypeNewFollower: // @TODO think about unfollows
 		return userUpdateRequest(event)
 	case pubsub.EventTypeNewGroup, pubsub.EventTypeGroupUpdate:
 		return groupUpdateRequest(event)

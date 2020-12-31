@@ -38,7 +38,7 @@ func main() {
 			panic(err)
 		}
 
-		err := queue.Publish(pubsub.UserTopic, pubsub.NewUserUpdateEvent(id))
+		err = queue.Publish(pubsub.UserTopic, pubsub.NewUserUpdateEvent(id))
 		if err != nil {
 			panic(err)
 		}

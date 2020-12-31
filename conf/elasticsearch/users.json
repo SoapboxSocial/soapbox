@@ -1,0 +1,50 @@
+{
+  "settings": {
+    "index": {
+      "sort.field": "followers",
+      "sort.order": "desc"
+    },
+    "analysis": {
+      "filter": {
+        "ngram_filter": {
+          "type": "edge_ngram",
+          "min_gram": 1,
+          "max_gram": 15
+        }
+      },
+      "analyzer": {
+        "ngram_analyzer": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase",
+            "ngram_filter"
+          ]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "display_name": {
+        "type": "text",
+        "analyzer": "ngram_analyzer",
+        "search_analyzer": "standard"
+      },
+      "username": {
+        "type": "text",
+        "analyzer": "ngram_analyzer",
+        "search_analyzer": "standard"
+      },
+      "image": {
+        "type": "text"
+      },
+      "followers": {
+        "type": "long"
+      },
+      "id": {
+        "type": "long"
+      }
+    }
+  }
+}

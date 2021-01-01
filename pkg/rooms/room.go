@@ -71,7 +71,16 @@ type Room struct {
 	onJoin OnJoinHandler
 }
 
-func NewRoom(id int, name string, queue *pubsub.Queue, isPrivate bool, owner int, group *groups.Group, onJoin OnJoinHandler) *Room {
+func NewRoom(
+	id int,
+	name string,
+	queue *pubsub.Queue,
+	isPrivate bool,
+	owner int,
+	group *groups.Group,
+	invites []int64,
+	onJoin OnJoinHandler,
+) *Room {
 	r := &Room{
 		mux:       sync.RWMutex{},
 		id:        id,
@@ -86,6 +95,14 @@ func NewRoom(id int, name string, queue *pubsub.Queue, isPrivate bool, owner int
 	}
 
 	r.invited[owner] = true
+
+	if isPrivate {
+		go func() {
+			for _, id := range invites {
+				r.inviteUser(owner, int(id))
+			}
+		}()
+	}
 
 	return r
 }
@@ -398,12 +415,7 @@ func (r *Room) onInvite(from int, invite *pb.Invite) error {
 		return nil
 	}
 
-	r.invited[int(invite.Id)] = true
-
-	err := r.queue.Publish(pubsub.RoomTopic, pubsub.NewRoomInviteEvent(r.name, r.id, from, int(invite.Id)))
-	if err != nil {
-		log.Printf("queue.Publish err: %v\n", err)
-	}
+	r.inviteUser(from, int(invite.Id))
 
 	return nil
 }
@@ -537,6 +549,15 @@ func (r *Room) isAdmin(peer int) bool {
 	}
 
 	return p.me.Role == ADMIN
+}
+
+func (r *Room) inviteUser(from int, to int) {
+	r.invited[to] = true
+
+	err := r.queue.Publish(pubsub.RoomTopic, pubsub.NewRoomInviteEvent(r.name, r.id, from, to))
+	if err != nil {
+		log.Printf("queue.Publish err: %v\n", err)
+	}
 }
 
 func (r *Room) notify(event *pb.SignalReply_Event) {

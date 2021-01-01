@@ -173,6 +173,7 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 			payload.Create.GetVisibility() == pb.Visibility_PRIVATE,
 			user.ID,
 			group,
+			payload.Create.Users,
 			s.onRoomJoinedEvent,
 		)
 		s.nextID++

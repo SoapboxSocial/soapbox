@@ -551,7 +551,7 @@ func (r *Room) isAdmin(peer int) bool {
 	return p.me.Role == ADMIN
 }
 
-func (r *Room) inviteUser(from int, to int) {
+func (r *Room) inviteUser(from, to int) {
 	r.invited[to] = true
 
 	err := r.queue.Publish(pubsub.RoomTopic, pubsub.NewRoomInviteEvent(r.name, r.id, from, to))

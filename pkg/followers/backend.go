@@ -53,7 +53,7 @@ func (fb *FollowersBackend) GetAllUsersFollowing(id, limit, offset int) ([]*user
 	return fb.executeUserQuery(stmt, id, limit, offset)
 }
 
-func (fb *FollowersBackend) GetAllUsersFollowedBy(id int, limit, offset int) ([]*users.User, error) {
+func (fb *FollowersBackend) GetAllUsersFollowedBy(id, limit, offset int) ([]*users.User, error) {
 	stmt, err := fb.db.Prepare("SELECT users.id, users.display_name, users.username, users.image FROM users INNER JOIN followers ON (users.id = followers.user_id) WHERE followers.follower = $1 LIMIT $2 OFFSET $3;")
 	if err != nil {
 		return nil, err

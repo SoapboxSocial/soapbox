@@ -71,7 +71,7 @@ func handleEvent(event *pubsub.Event) {
 
 func requestFor(event *pubsub.Event) (esapi.Request, error) {
 	switch event.Type {
-	case pubsub.EventTypeUserUpdate, pubsub.EventTypeNewUser:
+	case pubsub.EventTypeUserUpdate, pubsub.EventTypeNewUser, pubsub.EventTypeNewFollower: // @TODO think about unfollows
 		return userUpdateRequest(event)
 	case pubsub.EventTypeNewGroup, pubsub.EventTypeGroupUpdate:
 		return groupUpdateRequest(event)
@@ -116,12 +116,10 @@ func userUpdateRequest(event *pubsub.Event) (esapi.Request, error) {
 		return nil, errors.New("failed to recover user ID")
 	}
 
-	user, err := userBackend.FindByID(int(id))
+	user, err := userBackend.GetUserForSearchEngine(int(id))
 	if err != nil {
 		return nil, err
 	}
-
-	user.Email = nil
 
 	body, err := json.Marshal(user)
 	if err != nil {

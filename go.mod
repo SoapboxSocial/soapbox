@@ -23,6 +23,7 @@ require (
 	github.com/pion/srtp v1.5.2 // indirect
 	github.com/pion/webrtc/v3 v3.0.3
 	github.com/pkg/errors v0.9.1
+	github.com/segmentio/ksuid v1.0.3
 	github.com/sendgrid/rest v2.6.2+incompatible // indirect
 	github.com/sendgrid/sendgrid-go v3.7.2+incompatible
 	github.com/sideshow/apns2 v0.20.0

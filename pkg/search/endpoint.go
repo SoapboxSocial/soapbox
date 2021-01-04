@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/elastic/go-elasticsearch/v7"
+	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/gorilla/mux"
 
 	"github.com/soapboxsocial/soapbox/pkg/groups"
@@ -165,15 +166,20 @@ func (e *Endpoint) searchGroups(query string, limit, offset int) ([]*groups.Grou
 }
 
 func (e *Endpoint) search(index, query string, limit, offset int) (*internal.Result, error) {
-	res, err := e.client.Search(
+	config := []func(*esapi.SearchRequest){
 		e.client.Search.WithContext(context.Background()),
 		e.client.Search.WithIndex(index),
 		e.client.Search.WithQuery(query),
 		e.client.Search.WithSize(limit),
 		e.client.Search.WithFrom(offset),
 		e.client.Search.WithTrackTotalHits(true),
-	)
+	}
 
+	if index == "users" && query == "*" {
+		config = append(config, e.client.Search.WithSort("followers:desc"))
+	}
+
+	res, err := e.client.Search(config...)
 	if err != nil {
 		return nil, err
 	}

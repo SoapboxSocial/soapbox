@@ -71,7 +71,16 @@ type Room struct {
 	onJoin OnJoinHandler
 }
 
-func NewRoom(id int, name string, queue *pubsub.Queue, isPrivate bool, owner int, group *groups.Group, onJoin OnJoinHandler) *Room {
+func NewRoom(
+	id int,
+	name string,
+	queue *pubsub.Queue,
+	isPrivate bool,
+	owner int,
+	group *groups.Group,
+	invites []int64,
+	onJoin OnJoinHandler,
+) *Room {
 	r := &Room{
 		mux:       sync.RWMutex{},
 		id:        id,
@@ -86,6 +95,14 @@ func NewRoom(id int, name string, queue *pubsub.Queue, isPrivate bool, owner int
 	}
 
 	r.invited[owner] = true
+
+	if isPrivate {
+		go func() {
+			for _, id := range invites {
+				r.inviteUser(owner, int(id))
+			}
+		}()
+	}
 
 	return r
 }
@@ -317,6 +334,10 @@ func (r *Room) onPayload(from int, in *pb.SignalRequest) error {
 		return r.onInvite(from, payload.Invite)
 	case *pb.SignalRequest_Kick:
 		return r.onKick(from, payload.Kick)
+	case *pb.SignalRequest_ScreenRecorded:
+		return r.onScreenRecord(from)
+	case *pb.SignalRequest_MuteUser:
+		return r.onMuteUser(from, payload.MuteUser)
 	}
 
 	return nil
@@ -331,17 +352,7 @@ func (r *Room) onCommand(from int, cmd *pb.SignalRequest_Command) error {
 		// @TODO IN DEVELOPMENT
 		break
 	case pb.SignalRequest_Command_MUTE_SPEAKER:
-		r.mux.Lock()
-		_, ok := r.members[from]
-		if ok {
-			r.members[from].me.IsMuted = true
-		}
-		r.mux.Unlock()
-
-		go r.notify(&pb.SignalReply_Event{
-			Type: pb.SignalReply_Event_MUTED_SPEAKER,
-			From: int64(from),
-		})
+		r.onMute(from)
 	case pb.SignalRequest_Command_UNMUTE_SPEAKER:
 		r.mux.Lock()
 		_, ok := r.members[from]
@@ -404,12 +415,7 @@ func (r *Room) onInvite(from int, invite *pb.Invite) error {
 		return nil
 	}
 
-	r.invited[int(invite.Id)] = true
-
-	err := r.queue.Publish(pubsub.RoomTopic, pubsub.NewRoomInviteEvent(r.name, r.id, from, int(invite.Id)))
-	if err != nil {
-		log.Printf("queue.Publish err: %v\n", err)
-	}
+	r.inviteUser(from, int(invite.Id))
 
 	return nil
 }
@@ -425,6 +431,46 @@ func (r *Room) onKick(from int, kick *pb.Kick) error {
 	err := r.members[int(kick.Id)].rtc.Close()
 	if err != nil {
 		log.Printf("rtc.Close error %v\n", err)
+	}
+
+	return nil
+}
+
+func (r *Room) onScreenRecord(from int) error {
+	go r.notify(&pb.SignalReply_Event{
+		Type: pb.SignalReply_Event_RECORDED_SCREEN,
+		From: int64(from),
+	})
+
+	return nil
+}
+
+func (r *Room) onMuteUser(from int, cmd *pb.MuteUser) error {
+	if !r.isAdmin(from) {
+		return nil
+	}
+
+	r.onMute(int(cmd.Id))
+
+	r.mux.Lock()
+	p, ok := r.members[int(cmd.Id)]
+	r.mux.Unlock()
+
+	if !ok {
+		return nil
+	}
+
+	err := p.stream.Send(&pb.SignalReply{
+		Payload: &pb.SignalReply_Event_{
+			Event: &pb.SignalReply_Event{
+				Type: pb.SignalReply_Event_MUTED_BY_ADMIN,
+				From: int64(from),
+			},
+		},
+	})
+
+	if err != nil {
+		log.Printf("failed to write to data channel: %s\n", err.Error())
 	}
 
 	return nil
@@ -463,6 +509,20 @@ func (r *Room) onRemoveAdmin(from int, remove *pb.SignalRequest_Command) {
 	})
 }
 
+func (r *Room) onMute(from int) {
+	r.mux.Lock()
+	_, ok := r.members[from]
+	if ok {
+		r.members[from].me.IsMuted = true
+	}
+	r.mux.Unlock()
+
+	go r.notify(&pb.SignalReply_Event{
+		Type: pb.SignalReply_Event_MUTED_SPEAKER,
+		From: int64(from),
+	})
+}
+
 func (r *Room) onRoomRename(from int, rename *pb.SignalRequest_Command) {
 	if !r.isAdmin(from) {
 		return
@@ -489,6 +549,15 @@ func (r *Room) isAdmin(peer int) bool {
 	}
 
 	return p.me.Role == ADMIN
+}
+
+func (r *Room) inviteUser(from, to int) {
+	r.invited[to] = true
+
+	err := r.queue.Publish(pubsub.RoomTopic, pubsub.NewRoomInviteEvent(r.name, r.id, from, to))
+	if err != nil {
+		log.Printf("queue.Publish err: %v\n", err)
+	}
 }
 
 func (r *Room) notify(event *pb.SignalReply_Event) {

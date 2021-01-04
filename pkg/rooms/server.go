@@ -49,5 +49,10 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 			log.Printf("signal error %v %v", errStatus.Message(), errStatus.Code())
 			return err
 		}
+
+		id, err := SessionID(stream.Context())
+		if err != nil {
+			_ = peer.Close()
+		}
 	}
 }

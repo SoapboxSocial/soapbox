@@ -5,6 +5,16 @@ import (
 	"strings"
 )
 
+// SearchUser is used for our search engine.
+type SearchUser struct {
+	ID          int    `json:"id"`
+	DisplayName string `json:"display_name"`
+	Username    string `json:"username"`
+	Image       string `json:"image"`
+	Bio         string `json:"bio"`
+	Followers   int    `json:"followers"`
+}
+
 type User struct {
 	ID          int     `json:"id"`
 	DisplayName string  `json:"display_name"`
@@ -51,6 +61,33 @@ func NewUserBackend(db *sql.DB) *UserBackend {
 	return &UserBackend{
 		db: db,
 	}
+}
+
+func (ub *UserBackend) GetUserForSearchEngine(id int) (*SearchUser, error) {
+	query := `SELECT 
+       id, display_name, username, image, bio,
+       (SELECT COUNT(*) FROM followers WHERE user_id = id) AS followers FROM users WHERE id = $1;`
+
+	stmt, err := ub.db.Prepare(query)
+	if err != nil {
+		return nil, err
+	}
+
+	profile := &SearchUser{}
+	err = stmt.QueryRow(id).Scan(
+		&profile.ID,
+		&profile.DisplayName,
+		&profile.Username,
+		&profile.Image,
+		&profile.Bio,
+		&profile.Followers,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return profile, nil
 }
 
 func (ub *UserBackend) GetMyProfile(id int) (*Profile, error) {

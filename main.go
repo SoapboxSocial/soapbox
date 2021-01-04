@@ -14,7 +14,6 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/sendgrid/sendgrid-go"
 
-	"github.com/soapboxsocial/soapbox/pkg/api/me"
 	"github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	usersapi "github.com/soapboxsocial/soapbox/pkg/api/users"
 	"github.com/soapboxsocial/soapbox/pkg/devices"
@@ -25,6 +24,7 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/linkedaccounts"
 	"github.com/soapboxsocial/soapbox/pkg/login"
 	"github.com/soapboxsocial/soapbox/pkg/mail"
+	"github.com/soapboxsocial/soapbox/pkg/me"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
@@ -105,6 +105,7 @@ func main() {
 	userRoutes.HandleFunc("/friends", usersEndpoints.GetMyFriends).Methods("GET")
 	userRoutes.HandleFunc("/follow", usersEndpoints.FollowUser).Methods("POST")
 	userRoutes.HandleFunc("/unfollow", usersEndpoints.UnfollowUser).Methods("POST")
+	userRoutes.HandleFunc("/multi-follow", usersEndpoints.MultiFollowUsers).Methods("POST")
 	userRoutes.HandleFunc("/edit", usersEndpoints.EditUser).Methods("POST")
 	userRoutes.HandleFunc("/{id:[0-9]+}/groups", groupsEndpoint.GetGroupsForUser).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/stories", storiesEndpoint.GetStoriesForUser).Methods("GET")
@@ -116,8 +117,6 @@ func main() {
 	devicesRoutes.Use(amw.Middleware)
 	mount(r, "/v1/devices", devicesRoutes)
 
-	meRoutes := r.PathPrefix("/v1/me").Subrouter()
-
 	// twitter oauth config
 	oauth := oauth1.NewConfig(
 		"nAzgMi6loUf3cl0hIkkXhZSth",
@@ -126,13 +125,11 @@ func main() {
 
 	pb := linkedaccounts.NewLinkedAccountsBackend(db)
 
-	meEndpoint := me.NewMeEndpoint(ub, groupsBackend, ns, oauth, pb, storiesBackend)
-	meRoutes.HandleFunc("/feed", meEndpoint.GetFeed).Methods("GET")
-	meRoutes.HandleFunc("", meEndpoint.GetMe).Methods("GET")
-	meRoutes.HandleFunc("/notifications", meEndpoint.GetNotifications).Methods("GET")
-	meRoutes.HandleFunc("/profiles/twitter", meEndpoint.AddTwitter).Methods("POST")
-	meRoutes.HandleFunc("/profiles/twitter", meEndpoint.RemoveTwitter).Methods("DELETE")
+	meEndpoint := me.NewEndpoint(ub, groupsBackend, ns, oauth, pb, storiesBackend)
+	meRoutes := meEndpoint.Router()
+
 	meRoutes.Use(amw.Middleware)
+	mount(r, "/v1/me", meRoutes)
 
 	groupsRouter := groupsEndpoint.Router()
 	groupsRouter.Use(amw.Middleware)

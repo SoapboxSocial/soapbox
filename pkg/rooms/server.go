@@ -11,6 +11,7 @@ import (
 
 	"github.com/soapboxsocial/soapbox/pkg/groups"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
+	"github.com/soapboxsocial/soapbox/pkg/rooms/internal"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
 	"github.com/soapboxsocial/soapbox/pkg/users"
@@ -50,7 +51,7 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 			return err
 		}
 
-		id, err := SessionID(stream.Context())
+		id, err := internal.SessionID(stream.Context())
 		if err != nil {
 			_ = peer.Close()
 		}

@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	"github.com/golang/protobuf/ptypes/empty"
-	sfu "github.com/pion/ion-sfu/pkg"
+	"github.com/pion/ion-sfu/pkg/sfu"
 	"github.com/pion/webrtc/v3"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"

@@ -5,4 +5,4 @@ protobuf:
  	  --proto_path=$(PROTO_PATH) \
  	  --go_out=plugins=grpc:. \
  	  --grpc-gateway_out=:. \
- 	  room.proto
+ 	  room.proto signal.proto

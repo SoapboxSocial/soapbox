@@ -1,9 +1,13 @@
 package rooms
 
 import (
+	"io"
+	"log"
 	"sync"
 
 	"github.com/pion/ion-sfu/pkg/sfu"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/soapboxsocial/soapbox/pkg/groups"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
@@ -23,11 +27,27 @@ type Server struct {
 
 	currentRoom *CurrentRoomBackend
 
-	rooms map[int]*Room
-
-	nextID int
+	rooms map[string]*Room
 }
 
 func (s *Server) Signal(stream pb.SFU_SignalServer) error {
-	return nil
+	peer := sfu.NewPeer(s.sfu)
+	for {
+		in, err := stream.Recv()
+		if err != nil {
+			_ = peer.Close()
+
+			if err == io.EOF {
+				return nil
+			}
+
+			errStatus, _ := status.FromError(err)
+			if errStatus.Code() == codes.Canceled {
+				return nil
+			}
+
+			log.Printf("signal error %v %v", errStatus.Message(), errStatus.Code())
+			return err
+		}
+	}
 }

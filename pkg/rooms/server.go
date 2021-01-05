@@ -110,7 +110,10 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 
 		room = r
 	case *pb.SignalRequest_Create:
-		break
+		create := in.GetCreate()
+		if create == nil {
+			return status.Errorf(codes.Internal, "something went wrong")
+		}
 	default:
 		return status.Error(codes.FailedPrecondition, "invalid message")
 	}

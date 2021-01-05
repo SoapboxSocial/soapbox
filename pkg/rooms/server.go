@@ -50,7 +50,7 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 		return nil
 	}
 
-	id, err := internal.SessionID(stream.Context())
+	session, err := internal.SessionID(stream.Context())
 	if err != nil {
 		_ = peer.Close()
 	}
@@ -82,7 +82,7 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 
 		description := webrtc.SessionDescription{
 			Type: newSDPType(join.Description.Type),
-			SDP: string(join.Description.Sdp),
+			SDP:  string(join.Description.Sdp),
 		}
 
 		answer, err := setup(peer, join.Room, stream, description)
@@ -94,10 +94,10 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 			Id: in.Id,
 			Payload: &pb.SignalReply_Join{
 				Join: &pb.JoinReply{
-					Room: r.ToProtoForPeer(),
+					//Room: r.ToProtoForPeer(),
 					Description: &pb.SessionDescription{
 						Type: answer.Type.String(),
-						Sdp: []byte(answer.SDP),
+						Sdp:  []byte(answer.SDP),
 					},
 				},
 			},
@@ -117,10 +117,19 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 
 	// @TODO Connect to room?
 
-	//go room.Handle()
+	errChan := make(chan error)
+	go func() {
+		err := room.Handle(id, peer) // @TODO
+		errChan <- err
+	}()
 
 	for {
-		// @TODO READ OTHER PACKETS
+		select {
+		case <-errChan:
+			// @TODO
+			return nil
+		default:
+		}
 	}
 }
 
@@ -171,7 +180,7 @@ func setup(peer *sfu.Peer, room string, stream pb.SFU_SignalServer, description 
 	peer.OnOffer = func(o *webrtc.SessionDescription) {
 		description := &pb.SessionDescription{
 			Type: o.Type.String(),
-			Sdp: []byte(o.SDP),
+			Sdp:  []byte(o.SDP),
 		}
 
 		err := stream.Send(&pb.SignalReply{

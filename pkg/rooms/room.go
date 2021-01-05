@@ -5,6 +5,7 @@ import (
 
 	"github.com/pion/ion-sfu/pkg/sfu"
 
+	"github.com/soapboxsocial/soapbox/pkg/rooms/internal"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 )
 
@@ -161,11 +162,11 @@ func (r *Room) onRenameRoom(from int, cmd *pb.Command_RenameRoom) {
 		return
 	}
 
-	r.name = cmd.Name
+	r.name = internal.TrimRoomNameToLimit(cmd.Name)
 
 	r.notify(&pb.Event{
 		From:    int64(from),
-		Payload: &pb.Event_RenamedRoom_{RenamedRoom: &pb.Event_RenamedRoom{Name: cmd.Name}},
+		Payload: &pb.Event_RenamedRoom_{RenamedRoom: &pb.Event_RenamedRoom{Name: r.Name}},
 	})
 }
 

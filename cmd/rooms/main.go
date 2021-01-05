@@ -54,7 +54,7 @@ func main() {
 	}
 
 	s := grpc.NewServer()
-	pb.RegisterRoomServiceServer(
+	pb.RegisterSFUServer(
 		s,
 		rooms.NewServer(
 			sfu.NewSFU(config),

@@ -34,6 +34,7 @@ type Server struct {
 	rooms map[string]*Room
 }
 
+// @TODO WEBRTC
 func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 	peer := sfu.NewPeer(s.sfu)
 

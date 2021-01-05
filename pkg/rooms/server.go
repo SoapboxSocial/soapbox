@@ -162,15 +162,27 @@ func setup(peer *sfu.Peer, room string, stream pb.SFU_SignalServer, description 
 
 	// Notify user of new ice candidate
 	peer.OnIceCandidate = func(candidate *webrtc.ICECandidateInit, target int) {
-		bytes, err := json.Marshal(candidate)
-		if err != nil {
-			log.Printf("OnIceCandidate error %s", err)
+		candidateProto := &pb.ICECandidate{
+			Candidate: candidate.Candidate,
 		}
-		err = stream.Send(&pb.SignalReply{
+
+		if candidate.SDPMid != nil {
+			candidateProto.SdpMid = *candidate.SDPMid
+		}
+
+		if candidate.SDPMLineIndex != nil {
+			candidateProto.SdpMLineIndex = int64(*candidate.SDPMLineIndex)
+		}
+
+		if candidate.UsernameFragment != nil {
+			candidateProto.UsernameFragment = *candidate.UsernameFragment
+		}
+
+		err := stream.Send(&pb.SignalReply{
 			Payload: &pb.SignalReply_Trickle{
 				Trickle: &pb.Trickle{
-					Init:   string(bytes),
-					Target: pb.Trickle_Target(target),
+					IceCandidate: candidateProto,
+					Target:       pb.Trickle_Target(target),
 				},
 			},
 		})

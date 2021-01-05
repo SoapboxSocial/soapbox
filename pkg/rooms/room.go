@@ -11,7 +11,8 @@ import (
 type Room struct {
 	mux sync.RWMutex
 
-	id string
+	id   string
+	name string
 
 	members map[int]Member
 
@@ -104,7 +105,7 @@ func (r *Room) onInviteAdmin(from int, cmd *pb.Command_InviteAdmin) {
 
 	r.adminInvites[int(cmd.Id)] = true
 
-	member.notify(&pb.Event{
+	member.Notify(&pb.Event{
 		From:    int64(from),
 		Payload: &pb.Event_InvitedAdmin_{InvitedAdmin: &pb.Event_InvitedAdmin{}},
 	})
@@ -150,6 +151,6 @@ func (r *Room) notify(event *pb.Event) {
 			continue
 		}
 
-		member.notify(event)
+		member.Notify(event)
 	}
 }

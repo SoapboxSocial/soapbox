@@ -11,6 +11,10 @@ type Member struct {
 	peer *sfu.Peer
 }
 
-func (m *Member) notify(event *pb.Event) {
+func (m *Member) Receive() (*pb.Command, error) {
+	return nil, nil
+}
+
+func (m *Member) Notify(event *pb.Event) {
 
 }

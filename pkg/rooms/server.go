@@ -218,26 +218,6 @@ func setup(peer *sfu.Peer, room string, stream pb.SFU_SignalServer, description 
 	}
 
 	return answer, nil
-
-	// send answer
-	//err = stream.Send(&pb.SignalReply{
-	//	Id: messageId,
-	//	Payload: &pb.SignalReply_Join{
-	//		Join: &pb.JoinReply{
-	//			Description: &pb.SessionDescription{
-	//				Type: answer.Type.String(),
-	//				Sdp: []byte(answer.SDP),
-	//			},
-	//		},
-	//	},
-	//})
-	//
-	//if err != nil {
-	//	log.Printf("error sending join response %s", err)
-	//	return status.Errorf(codes.Internal, "join error %s", err)
-	//}
-	//
-	//return nil
 }
 
 func newSDPType(raw string) webrtc.SDPType {

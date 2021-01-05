@@ -86,11 +86,11 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 			return err
 		}
 
-		// @TODO ADD ROOM TO REPLY
 		err = stream.Send(&pb.SignalReply{
 			Id: in.Id,
 			Payload: &pb.SignalReply_Join{
 				Join: &pb.JoinReply{
+					Room: r.ToProtoForPeer(),
 					Description: &pb.SessionDescription{
 						Type: answer.Type.String(),
 						Sdp: []byte(answer.SDP),

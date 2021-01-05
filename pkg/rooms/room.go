@@ -150,7 +150,19 @@ func (r *Room) onRemoveAdmin(from int, cmd *pb.Command_RemoveAdmin) {
 }
 
 func (r *Room) onRenameRoom(from int, cmd *pb.Command_RenameRoom) {
+	r.mux.Lock()
+	defer r.mux.Unlock()
 
+	if !r.IsAdmin(from) {
+		return
+	}
+
+	r.name = cmd.Name
+
+	r.notify(&pb.Event{
+		From:    int64(from),
+		Payload: &pb.Event_RenamedRoom_{RenamedRoom: &pb.Event_RenamedRoom{Name: cmd.Name}},
+	})
 }
 
 func (r *Room) onInviteUser(from int, cmd *pb.Command_InviteUser) {

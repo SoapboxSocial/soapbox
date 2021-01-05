@@ -71,6 +71,52 @@ func (Visibility) EnumDescriptor() ([]byte, []int) {
 	return file_room_proto_rawDescGZIP(), []int{0}
 }
 
+type RoomState_RoomMember_Role int32
+
+const (
+	RoomState_RoomMember_REGULAR RoomState_RoomMember_Role = 0
+	RoomState_RoomMember_ADMIN   RoomState_RoomMember_Role = 1
+)
+
+// Enum value maps for RoomState_RoomMember_Role.
+var (
+	RoomState_RoomMember_Role_name = map[int32]string{
+		0: "REGULAR",
+		1: "ADMIN",
+	}
+	RoomState_RoomMember_Role_value = map[string]int32{
+		"REGULAR": 0,
+		"ADMIN":   1,
+	}
+)
+
+func (x RoomState_RoomMember_Role) Enum() *RoomState_RoomMember_Role {
+	p := new(RoomState_RoomMember_Role)
+	*p = x
+	return p
+}
+
+func (x RoomState_RoomMember_Role) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RoomState_RoomMember_Role) Descriptor() protoreflect.EnumDescriptor {
+	return file_room_proto_enumTypes[1].Descriptor()
+}
+
+func (RoomState_RoomMember_Role) Type() protoreflect.EnumType {
+	return &file_room_proto_enumTypes[1]
+}
+
+func (x RoomState_RoomMember_Role) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use RoomState_RoomMember_Role.Descriptor instead.
+func (RoomState_RoomMember_Role) EnumDescriptor() ([]byte, []int) {
+	return file_room_proto_rawDescGZIP(), []int{2, 0, 0}
+}
+
 type Command struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1640,12 +1686,12 @@ type RoomState_RoomMember struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Id          int64  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
-	DisplayName string `protobuf:"bytes,2,opt,name=displayName,proto3" json:"displayName,omitempty"`
-	Image       string `protobuf:"bytes,3,opt,name=image,proto3" json:"image,omitempty"`
-	Role        string `protobuf:"bytes,4,opt,name=role,proto3" json:"role,omitempty"`
-	Muted       bool   `protobuf:"varint,5,opt,name=muted,proto3" json:"muted,omitempty"`
-	Ssrc        uint32 `protobuf:"varint,6,opt,name=ssrc,proto3" json:"ssrc,omitempty"`
+	Id          int64                     `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	DisplayName string                    `protobuf:"bytes,2,opt,name=displayName,proto3" json:"displayName,omitempty"`
+	Image       string                    `protobuf:"bytes,3,opt,name=image,proto3" json:"image,omitempty"`
+	Role        RoomState_RoomMember_Role `protobuf:"varint,4,opt,name=role,proto3,enum=RoomState_RoomMember_Role" json:"role,omitempty"`
+	Muted       bool                      `protobuf:"varint,5,opt,name=muted,proto3" json:"muted,omitempty"`
+	Ssrc        uint32                    `protobuf:"varint,6,opt,name=ssrc,proto3" json:"ssrc,omitempty"`
 }
 
 func (x *RoomState_RoomMember) Reset() {
@@ -1701,11 +1747,11 @@ func (x *RoomState_RoomMember) GetImage() string {
 	return ""
 }
 
-func (x *RoomState_RoomMember) GetRole() string {
+func (x *RoomState_RoomMember) GetRole() RoomState_RoomMember_Role {
 	if x != nil {
 		return x.Role
 	}
-	return ""
+	return RoomState_RoomMember_REGULAR
 }
 
 func (x *RoomState_RoomMember) GetMuted() bool {
@@ -1905,7 +1951,7 @@ var file_room_proto_rawDesc = []byte{
 	0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x1a, 0x10,
 	0x0a, 0x0e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x65, 0x64, 0x53, 0x63, 0x72, 0x65, 0x65, 0x6e,
 	0x1a, 0x0e, 0x0a, 0x0c, 0x4d, 0x75, 0x74, 0x65, 0x64, 0x42, 0x79, 0x41, 0x64, 0x6d, 0x69, 0x6e,
-	0x42, 0x09, 0x0a, 0x07, 0x70, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x22, 0xa1, 0x03, 0x0a, 0x09,
+	0x42, 0x09, 0x0a, 0x07, 0x70, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x22, 0xdd, 0x03, 0x0a, 0x09,
 	0x52, 0x6f, 0x6f, 0x6d, 0x53, 0x74, 0x61, 0x74, 0x65, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18,
 	0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x02, 0x69, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d,
 	0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x2f, 0x0a,
@@ -1918,24 +1964,28 @@ var file_room_proto_rawDesc = []byte{
 	0x69, 0x74, 0x79, 0x52, 0x0a, 0x76, 0x69, 0x73, 0x69, 0x62, 0x69, 0x6c, 0x69, 0x74, 0x79, 0x12,
 	0x26, 0x0a, 0x05, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x18, 0x06, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x10,
 	0x2e, 0x52, 0x6f, 0x6f, 0x6d, 0x53, 0x74, 0x61, 0x74, 0x65, 0x2e, 0x47, 0x72, 0x6f, 0x75, 0x70,
-	0x52, 0x05, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x1a, 0x92, 0x01, 0x0a, 0x0a, 0x52, 0x6f, 0x6f, 0x6d,
+	0x52, 0x05, 0x67, 0x72, 0x6f, 0x75, 0x70, 0x1a, 0xce, 0x01, 0x0a, 0x0a, 0x52, 0x6f, 0x6f, 0x6d,
 	0x4d, 0x65, 0x6d, 0x62, 0x65, 0x72, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01,
 	0x28, 0x03, 0x52, 0x02, 0x69, 0x64, 0x12, 0x20, 0x0a, 0x0b, 0x64, 0x69, 0x73, 0x70, 0x6c, 0x61,
 	0x79, 0x4e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x64, 0x69, 0x73,
 	0x70, 0x6c, 0x61, 0x79, 0x4e, 0x61, 0x6d, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x69, 0x6d, 0x61, 0x67,
-	0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x69, 0x6d, 0x61, 0x67, 0x65, 0x12, 0x12,
-	0x0a, 0x04, 0x72, 0x6f, 0x6c, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x72, 0x6f,
-	0x6c, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x6d, 0x75, 0x74, 0x65, 0x64, 0x18, 0x05, 0x20, 0x01, 0x28,
-	0x08, 0x52, 0x05, 0x6d, 0x75, 0x74, 0x65, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x73, 0x73, 0x72, 0x63,
-	0x18, 0x06, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x04, 0x73, 0x73, 0x72, 0x63, 0x1a, 0x41, 0x0a, 0x05,
-	0x47, 0x72, 0x6f, 0x75, 0x70, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x03, 0x52, 0x02, 0x69, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x69, 0x6d, 0x61,
-	0x67, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x69, 0x6d, 0x61, 0x67, 0x65, 0x2a,
-	0x25, 0x0a, 0x0a, 0x56, 0x69, 0x73, 0x69, 0x62, 0x69, 0x6c, 0x69, 0x74, 0x79, 0x12, 0x0a, 0x0a,
-	0x06, 0x50, 0x55, 0x42, 0x4c, 0x49, 0x43, 0x10, 0x00, 0x12, 0x0b, 0x0a, 0x07, 0x50, 0x52, 0x49,
-	0x56, 0x41, 0x54, 0x45, 0x10, 0x01, 0x42, 0x0e, 0x5a, 0x0c, 0x70, 0x6b, 0x67, 0x2f, 0x72, 0x6f,
-	0x6f, 0x6d, 0x73, 0x2f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x69, 0x6d, 0x61, 0x67, 0x65, 0x12, 0x2e,
+	0x0a, 0x04, 0x72, 0x6f, 0x6c, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x1a, 0x2e, 0x52,
+	0x6f, 0x6f, 0x6d, 0x53, 0x74, 0x61, 0x74, 0x65, 0x2e, 0x52, 0x6f, 0x6f, 0x6d, 0x4d, 0x65, 0x6d,
+	0x62, 0x65, 0x72, 0x2e, 0x52, 0x6f, 0x6c, 0x65, 0x52, 0x04, 0x72, 0x6f, 0x6c, 0x65, 0x12, 0x14,
+	0x0a, 0x05, 0x6d, 0x75, 0x74, 0x65, 0x64, 0x18, 0x05, 0x20, 0x01, 0x28, 0x08, 0x52, 0x05, 0x6d,
+	0x75, 0x74, 0x65, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x73, 0x73, 0x72, 0x63, 0x18, 0x06, 0x20, 0x01,
+	0x28, 0x0d, 0x52, 0x04, 0x73, 0x73, 0x72, 0x63, 0x22, 0x1e, 0x0a, 0x04, 0x52, 0x6f, 0x6c, 0x65,
+	0x12, 0x0b, 0x0a, 0x07, 0x52, 0x45, 0x47, 0x55, 0x4c, 0x41, 0x52, 0x10, 0x00, 0x12, 0x09, 0x0a,
+	0x05, 0x41, 0x44, 0x4d, 0x49, 0x4e, 0x10, 0x01, 0x1a, 0x41, 0x0a, 0x05, 0x47, 0x72, 0x6f, 0x75,
+	0x70, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x02, 0x69,
+	0x64, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x69, 0x6d, 0x61, 0x67, 0x65, 0x18, 0x03,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x69, 0x6d, 0x61, 0x67, 0x65, 0x2a, 0x25, 0x0a, 0x0a, 0x56,
+	0x69, 0x73, 0x69, 0x62, 0x69, 0x6c, 0x69, 0x74, 0x79, 0x12, 0x0a, 0x0a, 0x06, 0x50, 0x55, 0x42,
+	0x4c, 0x49, 0x43, 0x10, 0x00, 0x12, 0x0b, 0x0a, 0x07, 0x50, 0x52, 0x49, 0x56, 0x41, 0x54, 0x45,
+	0x10, 0x01, 0x42, 0x0e, 0x5a, 0x0c, 0x70, 0x6b, 0x67, 0x2f, 0x72, 0x6f, 0x6f, 0x6d, 0x73, 0x2f,
+	0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1950,74 +2000,76 @@ func file_room_proto_rawDescGZIP() []byte {
 	return file_room_proto_rawDescData
 }
 
-var file_room_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_room_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_room_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
 var file_room_proto_goTypes = []interface{}{
-	(Visibility)(0),              // 0: Visibility
-	(*Command)(nil),              // 1: Command
-	(*Event)(nil),                // 2: Event
-	(*RoomState)(nil),            // 3: RoomState
-	(*Command_Mute)(nil),         // 4: Command.Mute
-	(*Command_Unmute)(nil),       // 5: Command.Unmute
-	(*Command_Reaction)(nil),     // 6: Command.Reaction
-	(*Command_LinkShare)(nil),    // 7: Command.LinkShare
-	(*Command_InviteAdmin)(nil),  // 8: Command.InviteAdmin
-	(*Command_AcceptAdmin)(nil),  // 9: Command.AcceptAdmin
-	(*Command_RemoveAdmin)(nil),  // 10: Command.RemoveAdmin
-	(*Command_RenameRoom)(nil),   // 11: Command.RenameRoom
-	(*Command_InviteUser)(nil),   // 12: Command.InviteUser
-	(*Command_KickUser)(nil),     // 13: Command.KickUser
-	(*Command_MuteUser)(nil),     // 14: Command.MuteUser
-	(*Command_RecordScreen)(nil), // 15: Command.RecordScreen
-	(*Event_Joined)(nil),         // 16: Event.Joined
-	(*Event_Left)(nil),           // 17: Event.Left
-	(*Event_Muted)(nil),          // 18: Event.Muted
-	(*Event_Unmuted)(nil),        // 19: Event.Unmuted
-	(*Event_Reacted)(nil),        // 20: Event.Reacted
-	(*Event_LinkShared)(nil),     // 21: Event.LinkShared
-	(*Event_InvitedAdmin)(nil),   // 22: Event.InvitedAdmin
-	(*Event_AddedAdmin)(nil),     // 23: Event.AddedAdmin
-	(*Event_RemovedAdmin)(nil),   // 24: Event.RemovedAdmin
-	(*Event_RenamedRoom)(nil),    // 25: Event.RenamedRoom
-	(*Event_RecordedScreen)(nil), // 26: Event.RecordedScreen
-	(*Event_MutedByAdmin)(nil),   // 27: Event.MutedByAdmin
-	(*RoomState_RoomMember)(nil), // 28: RoomState.RoomMember
-	(*RoomState_Group)(nil),      // 29: RoomState.Group
+	(Visibility)(0),                // 0: Visibility
+	(RoomState_RoomMember_Role)(0), // 1: RoomState.RoomMember.Role
+	(*Command)(nil),                // 2: Command
+	(*Event)(nil),                  // 3: Event
+	(*RoomState)(nil),              // 4: RoomState
+	(*Command_Mute)(nil),           // 5: Command.Mute
+	(*Command_Unmute)(nil),         // 6: Command.Unmute
+	(*Command_Reaction)(nil),       // 7: Command.Reaction
+	(*Command_LinkShare)(nil),      // 8: Command.LinkShare
+	(*Command_InviteAdmin)(nil),    // 9: Command.InviteAdmin
+	(*Command_AcceptAdmin)(nil),    // 10: Command.AcceptAdmin
+	(*Command_RemoveAdmin)(nil),    // 11: Command.RemoveAdmin
+	(*Command_RenameRoom)(nil),     // 12: Command.RenameRoom
+	(*Command_InviteUser)(nil),     // 13: Command.InviteUser
+	(*Command_KickUser)(nil),       // 14: Command.KickUser
+	(*Command_MuteUser)(nil),       // 15: Command.MuteUser
+	(*Command_RecordScreen)(nil),   // 16: Command.RecordScreen
+	(*Event_Joined)(nil),           // 17: Event.Joined
+	(*Event_Left)(nil),             // 18: Event.Left
+	(*Event_Muted)(nil),            // 19: Event.Muted
+	(*Event_Unmuted)(nil),          // 20: Event.Unmuted
+	(*Event_Reacted)(nil),          // 21: Event.Reacted
+	(*Event_LinkShared)(nil),       // 22: Event.LinkShared
+	(*Event_InvitedAdmin)(nil),     // 23: Event.InvitedAdmin
+	(*Event_AddedAdmin)(nil),       // 24: Event.AddedAdmin
+	(*Event_RemovedAdmin)(nil),     // 25: Event.RemovedAdmin
+	(*Event_RenamedRoom)(nil),      // 26: Event.RenamedRoom
+	(*Event_RecordedScreen)(nil),   // 27: Event.RecordedScreen
+	(*Event_MutedByAdmin)(nil),     // 28: Event.MutedByAdmin
+	(*RoomState_RoomMember)(nil),   // 29: RoomState.RoomMember
+	(*RoomState_Group)(nil),        // 30: RoomState.Group
 }
 var file_room_proto_depIdxs = []int32{
-	4,  // 0: Command.mute:type_name -> Command.Mute
-	5,  // 1: Command.unmute:type_name -> Command.Unmute
-	6,  // 2: Command.reaction:type_name -> Command.Reaction
-	7,  // 3: Command.linkShare:type_name -> Command.LinkShare
-	8,  // 4: Command.inviteAdmin:type_name -> Command.InviteAdmin
-	9,  // 5: Command.acceptAdmin:type_name -> Command.AcceptAdmin
-	10, // 6: Command.removeAdmin:type_name -> Command.RemoveAdmin
-	11, // 7: Command.renameRoom:type_name -> Command.RenameRoom
-	12, // 8: Command.inviteUser:type_name -> Command.InviteUser
-	13, // 9: Command.kickUser:type_name -> Command.KickUser
-	14, // 10: Command.muteUser:type_name -> Command.MuteUser
-	15, // 11: Command.recordScreen:type_name -> Command.RecordScreen
-	16, // 12: Event.joined:type_name -> Event.Joined
-	17, // 13: Event.left:type_name -> Event.Left
-	18, // 14: Event.muted:type_name -> Event.Muted
-	19, // 15: Event.unmuted:type_name -> Event.Unmuted
-	20, // 16: Event.reacted:type_name -> Event.Reacted
-	21, // 17: Event.linkShared:type_name -> Event.LinkShared
-	22, // 18: Event.invitedAdmin:type_name -> Event.InvitedAdmin
-	23, // 19: Event.addedAdmin:type_name -> Event.AddedAdmin
-	24, // 20: Event.removedAdmin:type_name -> Event.RemovedAdmin
-	25, // 21: Event.renamedRoom:type_name -> Event.RenamedRoom
-	26, // 22: Event.recordedScreen:type_name -> Event.RecordedScreen
-	27, // 23: Event.mutedByAdmin:type_name -> Event.MutedByAdmin
-	28, // 24: RoomState.members:type_name -> RoomState.RoomMember
+	5,  // 0: Command.mute:type_name -> Command.Mute
+	6,  // 1: Command.unmute:type_name -> Command.Unmute
+	7,  // 2: Command.reaction:type_name -> Command.Reaction
+	8,  // 3: Command.linkShare:type_name -> Command.LinkShare
+	9,  // 4: Command.inviteAdmin:type_name -> Command.InviteAdmin
+	10, // 5: Command.acceptAdmin:type_name -> Command.AcceptAdmin
+	11, // 6: Command.removeAdmin:type_name -> Command.RemoveAdmin
+	12, // 7: Command.renameRoom:type_name -> Command.RenameRoom
+	13, // 8: Command.inviteUser:type_name -> Command.InviteUser
+	14, // 9: Command.kickUser:type_name -> Command.KickUser
+	15, // 10: Command.muteUser:type_name -> Command.MuteUser
+	16, // 11: Command.recordScreen:type_name -> Command.RecordScreen
+	17, // 12: Event.joined:type_name -> Event.Joined
+	18, // 13: Event.left:type_name -> Event.Left
+	19, // 14: Event.muted:type_name -> Event.Muted
+	20, // 15: Event.unmuted:type_name -> Event.Unmuted
+	21, // 16: Event.reacted:type_name -> Event.Reacted
+	22, // 17: Event.linkShared:type_name -> Event.LinkShared
+	23, // 18: Event.invitedAdmin:type_name -> Event.InvitedAdmin
+	24, // 19: Event.addedAdmin:type_name -> Event.AddedAdmin
+	25, // 20: Event.removedAdmin:type_name -> Event.RemovedAdmin
+	26, // 21: Event.renamedRoom:type_name -> Event.RenamedRoom
+	27, // 22: Event.recordedScreen:type_name -> Event.RecordedScreen
+	28, // 23: Event.mutedByAdmin:type_name -> Event.MutedByAdmin
+	29, // 24: RoomState.members:type_name -> RoomState.RoomMember
 	0,  // 25: RoomState.visibility:type_name -> Visibility
-	29, // 26: RoomState.group:type_name -> RoomState.Group
-	28, // 27: Event.Joined.user:type_name -> RoomState.RoomMember
-	28, // [28:28] is the sub-list for method output_type
-	28, // [28:28] is the sub-list for method input_type
-	28, // [28:28] is the sub-list for extension type_name
-	28, // [28:28] is the sub-list for extension extendee
-	0,  // [0:28] is the sub-list for field type_name
+	30, // 26: RoomState.group:type_name -> RoomState.Group
+	29, // 27: Event.Joined.user:type_name -> RoomState.RoomMember
+	1,  // 28: RoomState.RoomMember.role:type_name -> RoomState.RoomMember.Role
+	29, // [29:29] is the sub-list for method output_type
+	29, // [29:29] is the sub-list for method input_type
+	29, // [29:29] is the sub-list for extension type_name
+	29, // [29:29] is the sub-list for extension extendee
+	0,  // [0:29] is the sub-list for field type_name
 }
 
 func init() { file_room_proto_init() }
@@ -2408,7 +2460,7 @@ func file_room_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_room_proto_rawDesc,
-			NumEnums:      1,
+			NumEnums:      2,
 			NumMessages:   29,
 			NumExtensions: 0,
 			NumServices:   0,

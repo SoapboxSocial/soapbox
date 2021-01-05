@@ -1,7 +1,6 @@
 package rooms
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"

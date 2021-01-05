@@ -36,41 +36,42 @@ type Server struct {
 
 func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 	peer := sfu.NewPeer(s.sfu)
+
+	in, err := stream.Recv()
+	if err != nil {
+		_ = peer.Close()
+
+		if err == io.EOF {
+			return nil
+		}
+
+		errStatus, _ := status.FromError(err)
+		if errStatus.Code() == codes.Canceled {
+			return nil
+		}
+
+		log.Printf("signal error %v %v", errStatus.Message(), errStatus.Code())
+		return err
+	}
+
+	id, err := internal.SessionID(stream.Context())
+	if err != nil {
+		_ = peer.Close()
+	}
+
+	switch in.Payload.(type) {
+	case *pb.SignalRequest_Join:
+		break
+	case *pb.SignalRequest_Create:
+		break
+	default:
+		return status.Error(codes.FailedPrecondition, "invalid message")
+	}
+
+	// @TODO Connect to room?
+
 	for {
-		in, err := stream.Recv()
-		if err != nil {
-			_ = peer.Close()
-
-			if err == io.EOF {
-				return nil
-			}
-
-			errStatus, _ := status.FromError(err)
-			if errStatus.Code() == codes.Canceled {
-				return nil
-			}
-
-			log.Printf("signal error %v %v", errStatus.Message(), errStatus.Code())
-			return err
-		}
-
-		id, err := internal.SessionID(stream.Context())
-		if err != nil {
-			_ = peer.Close()
-		}
-
-		switch in.Payload.(type) {
-		case *pb.SignalRequest_Join:
-			break
-		case *pb.SignalRequest_Create:
-			break
-		case *pb.SignalRequest_Description:
-			break
-		case *pb.SignalRequest_Trickle:
-			break
-		default:
-			return status.Error(codes.FailedPrecondition, "invalid message")
-		}
+		// @TODO READ OTHER PACKETS
 	}
 }
 

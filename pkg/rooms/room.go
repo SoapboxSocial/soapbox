@@ -6,6 +6,11 @@ import (
 	"github.com/pion/ion-sfu/pkg/sfu"
 )
 
+type Member struct {
+	id   int
+	peer *sfu.Peer
+}
+
 type Room struct {
 	mux sync.RWMutex
 

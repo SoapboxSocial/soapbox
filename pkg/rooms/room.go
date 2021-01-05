@@ -152,6 +152,8 @@ func (r *Room) onRemoveAdmin(from int, cmd *pb.Command_RemoveAdmin) {
 	if !r.IsAdmin(from) {
 		return
 	}
+
+	// @TODO
 }
 
 func (r *Room) onRenameRoom(from int, cmd *pb.Command_RenameRoom) {
@@ -166,7 +168,7 @@ func (r *Room) onRenameRoom(from int, cmd *pb.Command_RenameRoom) {
 
 	r.notify(&pb.Event{
 		From:    int64(from),
-		Payload: &pb.Event_RenamedRoom_{RenamedRoom: &pb.Event_RenamedRoom{Name: r.Name}},
+		Payload: &pb.Event_RenamedRoom_{RenamedRoom: &pb.Event_RenamedRoom{Name: r.name}},
 	})
 }
 

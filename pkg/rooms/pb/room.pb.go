@@ -8,10 +8,10 @@ package pb
 
 import (
 	proto "github.com/golang/protobuf/proto"
-	_ "github.com/golang/protobuf/ptypes/empty"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
+	sync "sync"
 )
 
 const (
@@ -25,23 +25,1504 @@ const (
 // of the legacy proto package is being used.
 const _ = proto.ProtoPackageIsVersion4
 
+type Command struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Types that are assignable to Payload:
+	//	*Command_Mute_
+	//	*Command_Unmute_
+	//	*Command_Reaction_
+	//	*Command_LinkShare_
+	//	*Command_InviteAdmin_
+	//	*Command_AcceptAdmin_
+	//	*Command_RemoveAdmin_
+	//	*Command_RenameRoom_
+	//	*Command_InviteUser_
+	//	*Command_KickUser_
+	//	*Command_MuteUser_
+	//	*Command_RecordScreen_
+	Payload isCommand_Payload `protobuf_oneof:"payload"`
+}
+
+func (x *Command) Reset() {
+	*x = Command{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_room_proto_msgTypes[0]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Command) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Command) ProtoMessage() {}
+
+func (x *Command) ProtoReflect() protoreflect.Message {
+	mi := &file_room_proto_msgTypes[0]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Command.ProtoReflect.Descriptor instead.
+func (*Command) Descriptor() ([]byte, []int) {
+	return file_room_proto_rawDescGZIP(), []int{0}
+}
+
+func (m *Command) GetPayload() isCommand_Payload {
+	if m != nil {
+		return m.Payload
+	}
+	return nil
+}
+
+func (x *Command) GetMute() *Command_Mute {
+	if x, ok := x.GetPayload().(*Command_Mute_); ok {
+		return x.Mute
+	}
+	return nil
+}
+
+func (x *Command) GetUnmute() *Command_Unmute {
+	if x, ok := x.GetPayload().(*Command_Unmute_); ok {
+		return x.Unmute
+	}
+	return nil
+}
+
+func (x *Command) GetReaction() *Command_Reaction {
+	if x, ok := x.GetPayload().(*Command_Reaction_); ok {
+		return x.Reaction
+	}
+	return nil
+}
+
+func (x *Command) GetLinkShare() *Command_LinkShare {
+	if x, ok := x.GetPayload().(*Command_LinkShare_); ok {
+		return x.LinkShare
+	}
+	return nil
+}
+
+func (x *Command) GetInviteAdmin() *Command_InviteAdmin {
+	if x, ok := x.GetPayload().(*Command_InviteAdmin_); ok {
+		return x.InviteAdmin
+	}
+	return nil
+}
+
+func (x *Command) GetAcceptAdmin() *Command_AcceptAdmin {
+	if x, ok := x.GetPayload().(*Command_AcceptAdmin_); ok {
+		return x.AcceptAdmin
+	}
+	return nil
+}
+
+func (x *Command) GetRemoveAdmin() *Command_RemoveAdmin {
+	if x, ok := x.GetPayload().(*Command_RemoveAdmin_); ok {
+		return x.RemoveAdmin
+	}
+	return nil
+}
+
+func (x *Command) GetRenameRoom() *Command_RenameRoom {
+	if x, ok := x.GetPayload().(*Command_RenameRoom_); ok {
+		return x.RenameRoom
+	}
+	return nil
+}
+
+func (x *Command) GetInviteUser() *Command_InviteUser {
+	if x, ok := x.GetPayload().(*Command_InviteUser_); ok {
+		return x.InviteUser
+	}
+	return nil
+}
+
+func (x *Command) GetKickUser() *Command_KickUser {
+	if x, ok := x.GetPayload().(*Command_KickUser_); ok {
+		return x.KickUser
+	}
+	return nil
+}
+
+func (x *Command) GetMuteUser() *Command_MuteUser {
+	if x, ok := x.GetPayload().(*Command_MuteUser_); ok {
+		return x.MuteUser
+	}
+	return nil
+}
+
+func (x *Command) GetRecordScreen() *Command_RecordScreen {
+	if x, ok := x.GetPayload().(*Command_RecordScreen_); ok {
+		return x.RecordScreen
+	}
+	return nil
+}
+
+type isCommand_Payload interface {
+	isCommand_Payload()
+}
+
+type Command_Mute_ struct {
+	Mute *Command_Mute `protobuf:"bytes,1,opt,name=mute,proto3,oneof"`
+}
+
+type Command_Unmute_ struct {
+	Unmute *Command_Unmute `protobuf:"bytes,2,opt,name=unmute,proto3,oneof"`
+}
+
+type Command_Reaction_ struct {
+	Reaction *Command_Reaction `protobuf:"bytes,3,opt,name=reaction,proto3,oneof"`
+}
+
+type Command_LinkShare_ struct {
+	LinkShare *Command_LinkShare `protobuf:"bytes,4,opt,name=linkShare,proto3,oneof"`
+}
+
+type Command_InviteAdmin_ struct {
+	InviteAdmin *Command_InviteAdmin `protobuf:"bytes,5,opt,name=inviteAdmin,proto3,oneof"`
+}
+
+type Command_AcceptAdmin_ struct {
+	AcceptAdmin *Command_AcceptAdmin `protobuf:"bytes,6,opt,name=acceptAdmin,proto3,oneof"`
+}
+
+type Command_RemoveAdmin_ struct {
+	RemoveAdmin *Command_RemoveAdmin `protobuf:"bytes,7,opt,name=removeAdmin,proto3,oneof"`
+}
+
+type Command_RenameRoom_ struct {
+	RenameRoom *Command_RenameRoom `protobuf:"bytes,8,opt,name=renameRoom,proto3,oneof"`
+}
+
+type Command_InviteUser_ struct {
+	InviteUser *Command_InviteUser `protobuf:"bytes,9,opt,name=inviteUser,proto3,oneof"`
+}
+
+type Command_KickUser_ struct {
+	KickUser *Command_KickUser `protobuf:"bytes,10,opt,name=kickUser,proto3,oneof"`
+}
+
+type Command_MuteUser_ struct {
+	MuteUser *Command_MuteUser `protobuf:"bytes,11,opt,name=muteUser,proto3,oneof"`
+}
+
+type Command_RecordScreen_ struct {
+	RecordScreen *Command_RecordScreen `protobuf:"bytes,12,opt,name=recordScreen,proto3,oneof"`
+}
+
+func (*Command_Mute_) isCommand_Payload() {}
+
+func (*Command_Unmute_) isCommand_Payload() {}
+
+func (*Command_Reaction_) isCommand_Payload() {}
+
+func (*Command_LinkShare_) isCommand_Payload() {}
+
+func (*Command_InviteAdmin_) isCommand_Payload() {}
+
+func (*Command_AcceptAdmin_) isCommand_Payload() {}
+
+func (*Command_RemoveAdmin_) isCommand_Payload() {}
+
+func (*Command_RenameRoom_) isCommand_Payload() {}
+
+func (*Command_InviteUser_) isCommand_Payload() {}
+
+func (*Command_KickUser_) isCommand_Payload() {}
+
+func (*Command_MuteUser_) isCommand_Payload() {}
+
+func (*Command_RecordScreen_) isCommand_Payload() {}
+
+type Event struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	From int64 `protobuf:"varint,1,opt,name=from,proto3" json:"from,omitempty"`
+	// Types that are assignable to Payload:
+	//	*Event_Muted_
+	//	*Event_Unmuted_
+	//	*Event_Reacted_
+	//	*Event_LinkShared_
+	//	*Event_AddedAdmin_
+	//	*Event_RemovedAdmin_
+	//	*Event_RenamedRoom_
+	//	*Event_RecordedScreen_
+	//	*Event_MutedByAdmin_
+	Payload isEvent_Payload `protobuf_oneof:"payload"`
+}
+
+func (x *Event) Reset() {
+	*x = Event{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_room_proto_msgTypes[1]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Event) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Event) ProtoMessage() {}
+
+func (x *Event) ProtoReflect() protoreflect.Message {
+	mi := &file_room_proto_msgTypes[1]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Event.ProtoReflect.Descriptor instead.
+func (*Event) Descriptor() ([]byte, []int) {
+	return file_room_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *Event) GetFrom() int64 {
+	if x != nil {
+		return x.From
+	}
+	return 0
+}
+
+func (m *Event) GetPayload() isEvent_Payload {
+	if m != nil {
+		return m.Payload
+	}
+	return nil
+}
+
+func (x *Event) GetMuted() *Event_Muted {
+	if x, ok := x.GetPayload().(*Event_Muted_); ok {
+		return x.Muted
+	}
+	return nil
+}
+
+func (x *Event) GetUnmuted() *Event_Unmuted {
+	if x, ok := x.GetPayload().(*Event_Unmuted_); ok {
+		return x.Unmuted
+	}
+	return nil
+}
+
+func (x *Event) GetReacted() *Event_Reacted {
+	if x, ok := x.GetPayload().(*Event_Reacted_); ok {
+		return x.Reacted
+	}
+	return nil
+}
+
+func (x *Event) GetLinkShared() *Event_LinkShared {
+	if x, ok := x.GetPayload().(*Event_LinkShared_); ok {
+		return x.LinkShared
+	}
+	return nil
+}
+
+func (x *Event) GetAddedAdmin() *Event_AddedAdmin {
+	if x, ok := x.GetPayload().(*Event_AddedAdmin_); ok {
+		return x.AddedAdmin
+	}
+	return nil
+}
+
+func (x *Event) GetRemovedAdmin() *Event_RemovedAdmin {
+	if x, ok := x.GetPayload().(*Event_RemovedAdmin_); ok {
+		return x.RemovedAdmin
+	}
+	return nil
+}
+
+func (x *Event) GetRenamedRoom() *Event_RenamedRoom {
+	if x, ok := x.GetPayload().(*Event_RenamedRoom_); ok {
+		return x.RenamedRoom
+	}
+	return nil
+}
+
+func (x *Event) GetRecordedScreen() *Event_RecordedScreen {
+	if x, ok := x.GetPayload().(*Event_RecordedScreen_); ok {
+		return x.RecordedScreen
+	}
+	return nil
+}
+
+func (x *Event) GetMutedByAdmin() *Event_MutedByAdmin {
+	if x, ok := x.GetPayload().(*Event_MutedByAdmin_); ok {
+		return x.MutedByAdmin
+	}
+	return nil
+}
+
+type isEvent_Payload interface {
+	isEvent_Payload()
+}
+
+type Event_Muted_ struct {
+	Muted *Event_Muted `protobuf:"bytes,2,opt,name=muted,proto3,oneof"`
+}
+
+type Event_Unmuted_ struct {
+	Unmuted *Event_Unmuted `protobuf:"bytes,3,opt,name=unmuted,proto3,oneof"`
+}
+
+type Event_Reacted_ struct {
+	Reacted *Event_Reacted `protobuf:"bytes,4,opt,name=reacted,proto3,oneof"`
+}
+
+type Event_LinkShared_ struct {
+	LinkShared *Event_LinkShared `protobuf:"bytes,5,opt,name=linkShared,proto3,oneof"`
+}
+
+type Event_AddedAdmin_ struct {
+	AddedAdmin *Event_AddedAdmin `protobuf:"bytes,6,opt,name=addedAdmin,proto3,oneof"`
+}
+
+type Event_RemovedAdmin_ struct {
+	RemovedAdmin *Event_RemovedAdmin `protobuf:"bytes,7,opt,name=removedAdmin,proto3,oneof"`
+}
+
+type Event_RenamedRoom_ struct {
+	RenamedRoom *Event_RenamedRoom `protobuf:"bytes,8,opt,name=renamedRoom,proto3,oneof"`
+}
+
+type Event_RecordedScreen_ struct {
+	RecordedScreen *Event_RecordedScreen `protobuf:"bytes,9,opt,name=recordedScreen,proto3,oneof"`
+}
+
+type Event_MutedByAdmin_ struct {
+	MutedByAdmin *Event_MutedByAdmin `protobuf:"bytes,10,opt,name=mutedByAdmin,proto3,oneof"`
+}
+
+func (*Event_Muted_) isEvent_Payload() {}
+
+func (*Event_Unmuted_) isEvent_Payload() {}
+
+func (*Event_Reacted_) isEvent_Payload() {}
+
+func (*Event_LinkShared_) isEvent_Payload() {}
+
+func (*Event_AddedAdmin_) isEvent_Payload() {}
+
+func (*Event_RemovedAdmin_) isEvent_Payload() {}
+
+func (*Event_RenamedRoom_) isEvent_Payload() {}
+
+func (*Event_RecordedScreen_) isEvent_Payload() {}
+
+func (*Event_MutedByAdmin_) isEvent_Payload() {}
+
+type Command_Mute struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *Command_Mute) Reset() {
+	*x = Command_Mute{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_room_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Command_Mute) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Command_Mute) ProtoMessage() {}
+
+func (x *Command_Mute) ProtoReflect() protoreflect.Message {
+	mi := &file_room_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Command_Mute.ProtoReflect.Descriptor instead.
+func (*Command_Mute) Descriptor() ([]byte, []int) {
+	return file_room_proto_rawDescGZIP(), []int{0, 0}
+}
+
+type Command_Unmute struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *Command_Unmute) Reset() {
+	*x = Command_Unmute{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_room_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Command_Unmute) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Command_Unmute) ProtoMessage() {}
+
+func (x *Command_Unmute) ProtoReflect() protoreflect.Message {
+	mi := &file_room_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Command_Unmute.ProtoReflect.Descriptor instead.
+func (*Command_Unmute) Descriptor() ([]byte, []int) {
+	return file_room_proto_rawDescGZIP(), []int{0, 1}
+}
+
+type Command_Reaction struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Emoji []byte `protobuf:"bytes,1,opt,name=emoji,proto3" json:"emoji,omitempty"`
+}
+
+func (x *Command_Reaction) Reset() {
+	*x = Command_Reaction{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_room_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Command_Reaction) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Command_Reaction) ProtoMessage() {}
+
+func (x *Command_Reaction) ProtoReflect() protoreflect.Message {
+	mi := &file_room_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Command_Reaction.ProtoReflect.Descriptor instead.
+func (*Command_Reaction) Descriptor() ([]byte, []int) {
+	return file_room_proto_rawDescGZIP(), []int{0, 2}
+}
+
+func (x *Command_Reaction) GetEmoji() []byte {
+	if x != nil {
+		return x.Emoji
+	}
+	return nil
+}
+
+type Command_LinkShare struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Link string `protobuf:"bytes,1,opt,name=link,proto3" json:"link,omitempty"`
+}
+
+func (x *Command_LinkShare) Reset() {
+	*x = Command_LinkShare{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_room_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Command_LinkShare) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Command_LinkShare) ProtoMessage() {}
+
+func (x *Command_LinkShare) ProtoReflect() protoreflect.Message {
+	mi := &file_room_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Command_LinkShare.ProtoReflect.Descriptor instead.
+func (*Command_LinkShare) Descriptor() ([]byte, []int) {
+	return file_room_proto_rawDescGZIP(), []int{0, 3}
+}
+
+func (x *Command_LinkShare) GetLink() string {
+	if x != nil {
+		return x.Link
+	}
+	return ""
+}
+
+type Command_InviteAdmin struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id int64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+}
+
+func (x *Command_InviteAdmin) Reset() {
+	*x = Command_InviteAdmin{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_room_proto_msgTypes[6]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Command_InviteAdmin) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Command_InviteAdmin) ProtoMessage() {}
+
+func (x *Command_InviteAdmin) ProtoReflect() protoreflect.Message {
+	mi := &file_room_proto_msgTypes[6]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Command_InviteAdmin.ProtoReflect.Descriptor instead.
+func (*Command_InviteAdmin) Descriptor() ([]byte, []int) {
+	return file_room_proto_rawDescGZIP(), []int{0, 4}
+}
+
+func (x *Command_InviteAdmin) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+type Command_AcceptAdmin struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *Command_AcceptAdmin) Reset() {
+	*x = Command_AcceptAdmin{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_room_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Command_AcceptAdmin) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Command_AcceptAdmin) ProtoMessage() {}
+
+func (x *Command_AcceptAdmin) ProtoReflect() protoreflect.Message {
+	mi := &file_room_proto_msgTypes[7]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Command_AcceptAdmin.ProtoReflect.Descriptor instead.
+func (*Command_AcceptAdmin) Descriptor() ([]byte, []int) {
+	return file_room_proto_rawDescGZIP(), []int{0, 5}
+}
+
+type Command_RemoveAdmin struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id int64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+}
+
+func (x *Command_RemoveAdmin) Reset() {
+	*x = Command_RemoveAdmin{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_room_proto_msgTypes[8]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Command_RemoveAdmin) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Command_RemoveAdmin) ProtoMessage() {}
+
+func (x *Command_RemoveAdmin) ProtoReflect() protoreflect.Message {
+	mi := &file_room_proto_msgTypes[8]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Command_RemoveAdmin.ProtoReflect.Descriptor instead.
+func (*Command_RemoveAdmin) Descriptor() ([]byte, []int) {
+	return file_room_proto_rawDescGZIP(), []int{0, 6}
+}
+
+func (x *Command_RemoveAdmin) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+type Command_RenameRoom struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+}
+
+func (x *Command_RenameRoom) Reset() {
+	*x = Command_RenameRoom{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_room_proto_msgTypes[9]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Command_RenameRoom) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Command_RenameRoom) ProtoMessage() {}
+
+func (x *Command_RenameRoom) ProtoReflect() protoreflect.Message {
+	mi := &file_room_proto_msgTypes[9]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Command_RenameRoom.ProtoReflect.Descriptor instead.
+func (*Command_RenameRoom) Descriptor() ([]byte, []int) {
+	return file_room_proto_rawDescGZIP(), []int{0, 7}
+}
+
+func (x *Command_RenameRoom) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type Command_InviteUser struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id int64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+}
+
+func (x *Command_InviteUser) Reset() {
+	*x = Command_InviteUser{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_room_proto_msgTypes[10]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Command_InviteUser) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Command_InviteUser) ProtoMessage() {}
+
+func (x *Command_InviteUser) ProtoReflect() protoreflect.Message {
+	mi := &file_room_proto_msgTypes[10]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Command_InviteUser.ProtoReflect.Descriptor instead.
+func (*Command_InviteUser) Descriptor() ([]byte, []int) {
+	return file_room_proto_rawDescGZIP(), []int{0, 8}
+}
+
+func (x *Command_InviteUser) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+type Command_KickUser struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id int64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+}
+
+func (x *Command_KickUser) Reset() {
+	*x = Command_KickUser{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_room_proto_msgTypes[11]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Command_KickUser) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Command_KickUser) ProtoMessage() {}
+
+func (x *Command_KickUser) ProtoReflect() protoreflect.Message {
+	mi := &file_room_proto_msgTypes[11]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Command_KickUser.ProtoReflect.Descriptor instead.
+func (*Command_KickUser) Descriptor() ([]byte, []int) {
+	return file_room_proto_rawDescGZIP(), []int{0, 9}
+}
+
+func (x *Command_KickUser) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+type Command_MuteUser struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id int64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+}
+
+func (x *Command_MuteUser) Reset() {
+	*x = Command_MuteUser{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_room_proto_msgTypes[12]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Command_MuteUser) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Command_MuteUser) ProtoMessage() {}
+
+func (x *Command_MuteUser) ProtoReflect() protoreflect.Message {
+	mi := &file_room_proto_msgTypes[12]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Command_MuteUser.ProtoReflect.Descriptor instead.
+func (*Command_MuteUser) Descriptor() ([]byte, []int) {
+	return file_room_proto_rawDescGZIP(), []int{0, 10}
+}
+
+func (x *Command_MuteUser) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+type Command_RecordScreen struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *Command_RecordScreen) Reset() {
+	*x = Command_RecordScreen{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_room_proto_msgTypes[13]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Command_RecordScreen) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Command_RecordScreen) ProtoMessage() {}
+
+func (x *Command_RecordScreen) ProtoReflect() protoreflect.Message {
+	mi := &file_room_proto_msgTypes[13]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Command_RecordScreen.ProtoReflect.Descriptor instead.
+func (*Command_RecordScreen) Descriptor() ([]byte, []int) {
+	return file_room_proto_rawDescGZIP(), []int{0, 11}
+}
+
+type Event_Muted struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *Event_Muted) Reset() {
+	*x = Event_Muted{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_room_proto_msgTypes[14]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Event_Muted) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Event_Muted) ProtoMessage() {}
+
+func (x *Event_Muted) ProtoReflect() protoreflect.Message {
+	mi := &file_room_proto_msgTypes[14]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Event_Muted.ProtoReflect.Descriptor instead.
+func (*Event_Muted) Descriptor() ([]byte, []int) {
+	return file_room_proto_rawDescGZIP(), []int{1, 0}
+}
+
+type Event_Unmuted struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *Event_Unmuted) Reset() {
+	*x = Event_Unmuted{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_room_proto_msgTypes[15]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Event_Unmuted) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Event_Unmuted) ProtoMessage() {}
+
+func (x *Event_Unmuted) ProtoReflect() protoreflect.Message {
+	mi := &file_room_proto_msgTypes[15]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Event_Unmuted.ProtoReflect.Descriptor instead.
+func (*Event_Unmuted) Descriptor() ([]byte, []int) {
+	return file_room_proto_rawDescGZIP(), []int{1, 1}
+}
+
+type Event_Reacted struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Emoji []byte `protobuf:"bytes,1,opt,name=emoji,proto3" json:"emoji,omitempty"`
+}
+
+func (x *Event_Reacted) Reset() {
+	*x = Event_Reacted{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_room_proto_msgTypes[16]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Event_Reacted) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Event_Reacted) ProtoMessage() {}
+
+func (x *Event_Reacted) ProtoReflect() protoreflect.Message {
+	mi := &file_room_proto_msgTypes[16]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Event_Reacted.ProtoReflect.Descriptor instead.
+func (*Event_Reacted) Descriptor() ([]byte, []int) {
+	return file_room_proto_rawDescGZIP(), []int{1, 2}
+}
+
+func (x *Event_Reacted) GetEmoji() []byte {
+	if x != nil {
+		return x.Emoji
+	}
+	return nil
+}
+
+type Event_LinkShared struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Link string `protobuf:"bytes,1,opt,name=link,proto3" json:"link,omitempty"`
+}
+
+func (x *Event_LinkShared) Reset() {
+	*x = Event_LinkShared{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_room_proto_msgTypes[17]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Event_LinkShared) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Event_LinkShared) ProtoMessage() {}
+
+func (x *Event_LinkShared) ProtoReflect() protoreflect.Message {
+	mi := &file_room_proto_msgTypes[17]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Event_LinkShared.ProtoReflect.Descriptor instead.
+func (*Event_LinkShared) Descriptor() ([]byte, []int) {
+	return file_room_proto_rawDescGZIP(), []int{1, 3}
+}
+
+func (x *Event_LinkShared) GetLink() string {
+	if x != nil {
+		return x.Link
+	}
+	return ""
+}
+
+type Event_AddedAdmin struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id int64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+}
+
+func (x *Event_AddedAdmin) Reset() {
+	*x = Event_AddedAdmin{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_room_proto_msgTypes[18]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Event_AddedAdmin) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Event_AddedAdmin) ProtoMessage() {}
+
+func (x *Event_AddedAdmin) ProtoReflect() protoreflect.Message {
+	mi := &file_room_proto_msgTypes[18]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Event_AddedAdmin.ProtoReflect.Descriptor instead.
+func (*Event_AddedAdmin) Descriptor() ([]byte, []int) {
+	return file_room_proto_rawDescGZIP(), []int{1, 4}
+}
+
+func (x *Event_AddedAdmin) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+type Event_RemovedAdmin struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id int64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+}
+
+func (x *Event_RemovedAdmin) Reset() {
+	*x = Event_RemovedAdmin{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_room_proto_msgTypes[19]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Event_RemovedAdmin) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Event_RemovedAdmin) ProtoMessage() {}
+
+func (x *Event_RemovedAdmin) ProtoReflect() protoreflect.Message {
+	mi := &file_room_proto_msgTypes[19]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Event_RemovedAdmin.ProtoReflect.Descriptor instead.
+func (*Event_RemovedAdmin) Descriptor() ([]byte, []int) {
+	return file_room_proto_rawDescGZIP(), []int{1, 5}
+}
+
+func (x *Event_RemovedAdmin) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+type Event_RenamedRoom struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+}
+
+func (x *Event_RenamedRoom) Reset() {
+	*x = Event_RenamedRoom{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_room_proto_msgTypes[20]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Event_RenamedRoom) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Event_RenamedRoom) ProtoMessage() {}
+
+func (x *Event_RenamedRoom) ProtoReflect() protoreflect.Message {
+	mi := &file_room_proto_msgTypes[20]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Event_RenamedRoom.ProtoReflect.Descriptor instead.
+func (*Event_RenamedRoom) Descriptor() ([]byte, []int) {
+	return file_room_proto_rawDescGZIP(), []int{1, 6}
+}
+
+func (x *Event_RenamedRoom) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type Event_RecordedScreen struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *Event_RecordedScreen) Reset() {
+	*x = Event_RecordedScreen{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_room_proto_msgTypes[21]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Event_RecordedScreen) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Event_RecordedScreen) ProtoMessage() {}
+
+func (x *Event_RecordedScreen) ProtoReflect() protoreflect.Message {
+	mi := &file_room_proto_msgTypes[21]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Event_RecordedScreen.ProtoReflect.Descriptor instead.
+func (*Event_RecordedScreen) Descriptor() ([]byte, []int) {
+	return file_room_proto_rawDescGZIP(), []int{1, 7}
+}
+
+type Event_MutedByAdmin struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *Event_MutedByAdmin) Reset() {
+	*x = Event_MutedByAdmin{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_room_proto_msgTypes[22]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Event_MutedByAdmin) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Event_MutedByAdmin) ProtoMessage() {}
+
+func (x *Event_MutedByAdmin) ProtoReflect() protoreflect.Message {
+	mi := &file_room_proto_msgTypes[22]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Event_MutedByAdmin.ProtoReflect.Descriptor instead.
+func (*Event_MutedByAdmin) Descriptor() ([]byte, []int) {
+	return file_room_proto_rawDescGZIP(), []int{1, 8}
+}
+
 var File_room_proto protoreflect.FileDescriptor
 
 var file_room_proto_rawDesc = []byte{
-	0x0a, 0x0a, 0x72, 0x6f, 0x6f, 0x6d, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x1b, 0x67, 0x6f,
-	0x6f, 0x67, 0x6c, 0x65, 0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f, 0x65, 0x6d,
-	0x70, 0x74, 0x79, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x42, 0x0e, 0x5a, 0x0c, 0x70, 0x6b, 0x67,
-	0x2f, 0x72, 0x6f, 0x6f, 0x6d, 0x73, 0x2f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x33,
+	0x0a, 0x0a, 0x72, 0x6f, 0x6f, 0x6d, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0xae, 0x07, 0x0a,
+	0x07, 0x43, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x12, 0x23, 0x0a, 0x04, 0x6d, 0x75, 0x74, 0x65,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0d, 0x2e, 0x43, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64,
+	0x2e, 0x4d, 0x75, 0x74, 0x65, 0x48, 0x00, 0x52, 0x04, 0x6d, 0x75, 0x74, 0x65, 0x12, 0x29, 0x0a,
+	0x06, 0x75, 0x6e, 0x6d, 0x75, 0x74, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0f, 0x2e,
+	0x43, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x2e, 0x55, 0x6e, 0x6d, 0x75, 0x74, 0x65, 0x48, 0x00,
+	0x52, 0x06, 0x75, 0x6e, 0x6d, 0x75, 0x74, 0x65, 0x12, 0x2f, 0x0a, 0x08, 0x72, 0x65, 0x61, 0x63,
+	0x74, 0x69, 0x6f, 0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x11, 0x2e, 0x43, 0x6f, 0x6d,
+	0x6d, 0x61, 0x6e, 0x64, 0x2e, 0x52, 0x65, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x48, 0x00, 0x52,
+	0x08, 0x72, 0x65, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x32, 0x0a, 0x09, 0x6c, 0x69, 0x6e,
+	0x6b, 0x53, 0x68, 0x61, 0x72, 0x65, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x12, 0x2e, 0x43,
+	0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x2e, 0x4c, 0x69, 0x6e, 0x6b, 0x53, 0x68, 0x61, 0x72, 0x65,
+	0x48, 0x00, 0x52, 0x09, 0x6c, 0x69, 0x6e, 0x6b, 0x53, 0x68, 0x61, 0x72, 0x65, 0x12, 0x38, 0x0a,
+	0x0b, 0x69, 0x6e, 0x76, 0x69, 0x74, 0x65, 0x41, 0x64, 0x6d, 0x69, 0x6e, 0x18, 0x05, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x14, 0x2e, 0x43, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x2e, 0x49, 0x6e, 0x76,
+	0x69, 0x74, 0x65, 0x41, 0x64, 0x6d, 0x69, 0x6e, 0x48, 0x00, 0x52, 0x0b, 0x69, 0x6e, 0x76, 0x69,
+	0x74, 0x65, 0x41, 0x64, 0x6d, 0x69, 0x6e, 0x12, 0x38, 0x0a, 0x0b, 0x61, 0x63, 0x63, 0x65, 0x70,
+	0x74, 0x41, 0x64, 0x6d, 0x69, 0x6e, 0x18, 0x06, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x14, 0x2e, 0x43,
+	0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x2e, 0x41, 0x63, 0x63, 0x65, 0x70, 0x74, 0x41, 0x64, 0x6d,
+	0x69, 0x6e, 0x48, 0x00, 0x52, 0x0b, 0x61, 0x63, 0x63, 0x65, 0x70, 0x74, 0x41, 0x64, 0x6d, 0x69,
+	0x6e, 0x12, 0x38, 0x0a, 0x0b, 0x72, 0x65, 0x6d, 0x6f, 0x76, 0x65, 0x41, 0x64, 0x6d, 0x69, 0x6e,
+	0x18, 0x07, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x14, 0x2e, 0x43, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64,
+	0x2e, 0x52, 0x65, 0x6d, 0x6f, 0x76, 0x65, 0x41, 0x64, 0x6d, 0x69, 0x6e, 0x48, 0x00, 0x52, 0x0b,
+	0x72, 0x65, 0x6d, 0x6f, 0x76, 0x65, 0x41, 0x64, 0x6d, 0x69, 0x6e, 0x12, 0x35, 0x0a, 0x0a, 0x72,
+	0x65, 0x6e, 0x61, 0x6d, 0x65, 0x52, 0x6f, 0x6f, 0x6d, 0x18, 0x08, 0x20, 0x01, 0x28, 0x0b, 0x32,
+	0x13, 0x2e, 0x43, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x2e, 0x52, 0x65, 0x6e, 0x61, 0x6d, 0x65,
+	0x52, 0x6f, 0x6f, 0x6d, 0x48, 0x00, 0x52, 0x0a, 0x72, 0x65, 0x6e, 0x61, 0x6d, 0x65, 0x52, 0x6f,
+	0x6f, 0x6d, 0x12, 0x35, 0x0a, 0x0a, 0x69, 0x6e, 0x76, 0x69, 0x74, 0x65, 0x55, 0x73, 0x65, 0x72,
+	0x18, 0x09, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x13, 0x2e, 0x43, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64,
+	0x2e, 0x49, 0x6e, 0x76, 0x69, 0x74, 0x65, 0x55, 0x73, 0x65, 0x72, 0x48, 0x00, 0x52, 0x0a, 0x69,
+	0x6e, 0x76, 0x69, 0x74, 0x65, 0x55, 0x73, 0x65, 0x72, 0x12, 0x2f, 0x0a, 0x08, 0x6b, 0x69, 0x63,
+	0x6b, 0x55, 0x73, 0x65, 0x72, 0x18, 0x0a, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x11, 0x2e, 0x43, 0x6f,
+	0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x2e, 0x4b, 0x69, 0x63, 0x6b, 0x55, 0x73, 0x65, 0x72, 0x48, 0x00,
+	0x52, 0x08, 0x6b, 0x69, 0x63, 0x6b, 0x55, 0x73, 0x65, 0x72, 0x12, 0x2f, 0x0a, 0x08, 0x6d, 0x75,
+	0x74, 0x65, 0x55, 0x73, 0x65, 0x72, 0x18, 0x0b, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x11, 0x2e, 0x43,
+	0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x2e, 0x4d, 0x75, 0x74, 0x65, 0x55, 0x73, 0x65, 0x72, 0x48,
+	0x00, 0x52, 0x08, 0x6d, 0x75, 0x74, 0x65, 0x55, 0x73, 0x65, 0x72, 0x12, 0x3b, 0x0a, 0x0c, 0x72,
+	0x65, 0x63, 0x6f, 0x72, 0x64, 0x53, 0x63, 0x72, 0x65, 0x65, 0x6e, 0x18, 0x0c, 0x20, 0x01, 0x28,
+	0x0b, 0x32, 0x15, 0x2e, 0x43, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x2e, 0x52, 0x65, 0x63, 0x6f,
+	0x72, 0x64, 0x53, 0x63, 0x72, 0x65, 0x65, 0x6e, 0x48, 0x00, 0x52, 0x0c, 0x72, 0x65, 0x63, 0x6f,
+	0x72, 0x64, 0x53, 0x63, 0x72, 0x65, 0x65, 0x6e, 0x1a, 0x06, 0x0a, 0x04, 0x4d, 0x75, 0x74, 0x65,
+	0x1a, 0x08, 0x0a, 0x06, 0x55, 0x6e, 0x6d, 0x75, 0x74, 0x65, 0x1a, 0x20, 0x0a, 0x08, 0x52, 0x65,
+	0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x14, 0x0a, 0x05, 0x65, 0x6d, 0x6f, 0x6a, 0x69, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x0c, 0x52, 0x05, 0x65, 0x6d, 0x6f, 0x6a, 0x69, 0x1a, 0x1f, 0x0a, 0x09,
+	0x4c, 0x69, 0x6e, 0x6b, 0x53, 0x68, 0x61, 0x72, 0x65, 0x12, 0x12, 0x0a, 0x04, 0x6c, 0x69, 0x6e,
+	0x6b, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6c, 0x69, 0x6e, 0x6b, 0x1a, 0x1d, 0x0a,
+	0x0b, 0x49, 0x6e, 0x76, 0x69, 0x74, 0x65, 0x41, 0x64, 0x6d, 0x69, 0x6e, 0x12, 0x0e, 0x0a, 0x02,
+	0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x02, 0x69, 0x64, 0x1a, 0x0d, 0x0a, 0x0b,
+	0x41, 0x63, 0x63, 0x65, 0x70, 0x74, 0x41, 0x64, 0x6d, 0x69, 0x6e, 0x1a, 0x1d, 0x0a, 0x0b, 0x52,
+	0x65, 0x6d, 0x6f, 0x76, 0x65, 0x41, 0x64, 0x6d, 0x69, 0x6e, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x02, 0x69, 0x64, 0x1a, 0x20, 0x0a, 0x0a, 0x52, 0x65,
+	0x6e, 0x61, 0x6d, 0x65, 0x52, 0x6f, 0x6f, 0x6d, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x1a, 0x1c, 0x0a, 0x0a,
+	0x49, 0x6e, 0x76, 0x69, 0x74, 0x65, 0x55, 0x73, 0x65, 0x72, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x02, 0x69, 0x64, 0x1a, 0x1a, 0x0a, 0x08, 0x4b, 0x69,
+	0x63, 0x6b, 0x55, 0x73, 0x65, 0x72, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x03, 0x52, 0x02, 0x69, 0x64, 0x1a, 0x1a, 0x0a, 0x08, 0x4d, 0x75, 0x74, 0x65, 0x55, 0x73,
+	0x65, 0x72, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x02,
+	0x69, 0x64, 0x1a, 0x0e, 0x0a, 0x0c, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x53, 0x63, 0x72, 0x65,
+	0x65, 0x6e, 0x42, 0x09, 0x0a, 0x07, 0x70, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x22, 0xd7, 0x05,
+	0x0a, 0x05, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x12, 0x12, 0x0a, 0x04, 0x66, 0x72, 0x6f, 0x6d, 0x18,
+	0x01, 0x20, 0x01, 0x28, 0x03, 0x52, 0x04, 0x66, 0x72, 0x6f, 0x6d, 0x12, 0x24, 0x0a, 0x05, 0x6d,
+	0x75, 0x74, 0x65, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0c, 0x2e, 0x45, 0x76, 0x65,
+	0x6e, 0x74, 0x2e, 0x4d, 0x75, 0x74, 0x65, 0x64, 0x48, 0x00, 0x52, 0x05, 0x6d, 0x75, 0x74, 0x65,
+	0x64, 0x12, 0x2a, 0x0a, 0x07, 0x75, 0x6e, 0x6d, 0x75, 0x74, 0x65, 0x64, 0x18, 0x03, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x0e, 0x2e, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x2e, 0x55, 0x6e, 0x6d, 0x75, 0x74,
+	0x65, 0x64, 0x48, 0x00, 0x52, 0x07, 0x75, 0x6e, 0x6d, 0x75, 0x74, 0x65, 0x64, 0x12, 0x2a, 0x0a,
+	0x07, 0x72, 0x65, 0x61, 0x63, 0x74, 0x65, 0x64, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0e,
+	0x2e, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x2e, 0x52, 0x65, 0x61, 0x63, 0x74, 0x65, 0x64, 0x48, 0x00,
+	0x52, 0x07, 0x72, 0x65, 0x61, 0x63, 0x74, 0x65, 0x64, 0x12, 0x33, 0x0a, 0x0a, 0x6c, 0x69, 0x6e,
+	0x6b, 0x53, 0x68, 0x61, 0x72, 0x65, 0x64, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x11, 0x2e,
+	0x45, 0x76, 0x65, 0x6e, 0x74, 0x2e, 0x4c, 0x69, 0x6e, 0x6b, 0x53, 0x68, 0x61, 0x72, 0x65, 0x64,
+	0x48, 0x00, 0x52, 0x0a, 0x6c, 0x69, 0x6e, 0x6b, 0x53, 0x68, 0x61, 0x72, 0x65, 0x64, 0x12, 0x33,
+	0x0a, 0x0a, 0x61, 0x64, 0x64, 0x65, 0x64, 0x41, 0x64, 0x6d, 0x69, 0x6e, 0x18, 0x06, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x11, 0x2e, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x2e, 0x41, 0x64, 0x64, 0x65, 0x64,
+	0x41, 0x64, 0x6d, 0x69, 0x6e, 0x48, 0x00, 0x52, 0x0a, 0x61, 0x64, 0x64, 0x65, 0x64, 0x41, 0x64,
+	0x6d, 0x69, 0x6e, 0x12, 0x39, 0x0a, 0x0c, 0x72, 0x65, 0x6d, 0x6f, 0x76, 0x65, 0x64, 0x41, 0x64,
+	0x6d, 0x69, 0x6e, 0x18, 0x07, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x13, 0x2e, 0x45, 0x76, 0x65, 0x6e,
+	0x74, 0x2e, 0x52, 0x65, 0x6d, 0x6f, 0x76, 0x65, 0x64, 0x41, 0x64, 0x6d, 0x69, 0x6e, 0x48, 0x00,
+	0x52, 0x0c, 0x72, 0x65, 0x6d, 0x6f, 0x76, 0x65, 0x64, 0x41, 0x64, 0x6d, 0x69, 0x6e, 0x12, 0x36,
+	0x0a, 0x0b, 0x72, 0x65, 0x6e, 0x61, 0x6d, 0x65, 0x64, 0x52, 0x6f, 0x6f, 0x6d, 0x18, 0x08, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x12, 0x2e, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x2e, 0x52, 0x65, 0x6e, 0x61,
+	0x6d, 0x65, 0x64, 0x52, 0x6f, 0x6f, 0x6d, 0x48, 0x00, 0x52, 0x0b, 0x72, 0x65, 0x6e, 0x61, 0x6d,
+	0x65, 0x64, 0x52, 0x6f, 0x6f, 0x6d, 0x12, 0x3f, 0x0a, 0x0e, 0x72, 0x65, 0x63, 0x6f, 0x72, 0x64,
+	0x65, 0x64, 0x53, 0x63, 0x72, 0x65, 0x65, 0x6e, 0x18, 0x09, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x15,
+	0x2e, 0x45, 0x76, 0x65, 0x6e, 0x74, 0x2e, 0x52, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x65, 0x64, 0x53,
+	0x63, 0x72, 0x65, 0x65, 0x6e, 0x48, 0x00, 0x52, 0x0e, 0x72, 0x65, 0x63, 0x6f, 0x72, 0x64, 0x65,
+	0x64, 0x53, 0x63, 0x72, 0x65, 0x65, 0x6e, 0x12, 0x39, 0x0a, 0x0c, 0x6d, 0x75, 0x74, 0x65, 0x64,
+	0x42, 0x79, 0x41, 0x64, 0x6d, 0x69, 0x6e, 0x18, 0x0a, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x13, 0x2e,
+	0x45, 0x76, 0x65, 0x6e, 0x74, 0x2e, 0x4d, 0x75, 0x74, 0x65, 0x64, 0x42, 0x79, 0x41, 0x64, 0x6d,
+	0x69, 0x6e, 0x48, 0x00, 0x52, 0x0c, 0x6d, 0x75, 0x74, 0x65, 0x64, 0x42, 0x79, 0x41, 0x64, 0x6d,
+	0x69, 0x6e, 0x1a, 0x07, 0x0a, 0x05, 0x4d, 0x75, 0x74, 0x65, 0x64, 0x1a, 0x09, 0x0a, 0x07, 0x55,
+	0x6e, 0x6d, 0x75, 0x74, 0x65, 0x64, 0x1a, 0x1f, 0x0a, 0x07, 0x52, 0x65, 0x61, 0x63, 0x74, 0x65,
+	0x64, 0x12, 0x14, 0x0a, 0x05, 0x65, 0x6d, 0x6f, 0x6a, 0x69, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0c,
+	0x52, 0x05, 0x65, 0x6d, 0x6f, 0x6a, 0x69, 0x1a, 0x20, 0x0a, 0x0a, 0x4c, 0x69, 0x6e, 0x6b, 0x53,
+	0x68, 0x61, 0x72, 0x65, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x6c, 0x69, 0x6e, 0x6b, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x04, 0x6c, 0x69, 0x6e, 0x6b, 0x1a, 0x1c, 0x0a, 0x0a, 0x41, 0x64, 0x64,
+	0x65, 0x64, 0x41, 0x64, 0x6d, 0x69, 0x6e, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x03, 0x52, 0x02, 0x69, 0x64, 0x1a, 0x1e, 0x0a, 0x0c, 0x52, 0x65, 0x6d, 0x6f, 0x76,
+	0x65, 0x64, 0x41, 0x64, 0x6d, 0x69, 0x6e, 0x12, 0x0e, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x03, 0x52, 0x02, 0x69, 0x64, 0x1a, 0x21, 0x0a, 0x0b, 0x52, 0x65, 0x6e, 0x61, 0x6d,
+	0x65, 0x64, 0x52, 0x6f, 0x6f, 0x6d, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x1a, 0x10, 0x0a, 0x0e, 0x52, 0x65,
+	0x63, 0x6f, 0x72, 0x64, 0x65, 0x64, 0x53, 0x63, 0x72, 0x65, 0x65, 0x6e, 0x1a, 0x0e, 0x0a, 0x0c,
+	0x4d, 0x75, 0x74, 0x65, 0x64, 0x42, 0x79, 0x41, 0x64, 0x6d, 0x69, 0x6e, 0x42, 0x09, 0x0a, 0x07,
+	0x70, 0x61, 0x79, 0x6c, 0x6f, 0x61, 0x64, 0x42, 0x0e, 0x5a, 0x0c, 0x70, 0x6b, 0x67, 0x2f, 0x72,
+	0x6f, 0x6f, 0x6d, 0x73, 0x2f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
-var file_room_proto_goTypes = []interface{}{}
+var (
+	file_room_proto_rawDescOnce sync.Once
+	file_room_proto_rawDescData = file_room_proto_rawDesc
+)
+
+func file_room_proto_rawDescGZIP() []byte {
+	file_room_proto_rawDescOnce.Do(func() {
+		file_room_proto_rawDescData = protoimpl.X.CompressGZIP(file_room_proto_rawDescData)
+	})
+	return file_room_proto_rawDescData
+}
+
+var file_room_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
+var file_room_proto_goTypes = []interface{}{
+	(*Command)(nil),              // 0: Command
+	(*Event)(nil),                // 1: Event
+	(*Command_Mute)(nil),         // 2: Command.Mute
+	(*Command_Unmute)(nil),       // 3: Command.Unmute
+	(*Command_Reaction)(nil),     // 4: Command.Reaction
+	(*Command_LinkShare)(nil),    // 5: Command.LinkShare
+	(*Command_InviteAdmin)(nil),  // 6: Command.InviteAdmin
+	(*Command_AcceptAdmin)(nil),  // 7: Command.AcceptAdmin
+	(*Command_RemoveAdmin)(nil),  // 8: Command.RemoveAdmin
+	(*Command_RenameRoom)(nil),   // 9: Command.RenameRoom
+	(*Command_InviteUser)(nil),   // 10: Command.InviteUser
+	(*Command_KickUser)(nil),     // 11: Command.KickUser
+	(*Command_MuteUser)(nil),     // 12: Command.MuteUser
+	(*Command_RecordScreen)(nil), // 13: Command.RecordScreen
+	(*Event_Muted)(nil),          // 14: Event.Muted
+	(*Event_Unmuted)(nil),        // 15: Event.Unmuted
+	(*Event_Reacted)(nil),        // 16: Event.Reacted
+	(*Event_LinkShared)(nil),     // 17: Event.LinkShared
+	(*Event_AddedAdmin)(nil),     // 18: Event.AddedAdmin
+	(*Event_RemovedAdmin)(nil),   // 19: Event.RemovedAdmin
+	(*Event_RenamedRoom)(nil),    // 20: Event.RenamedRoom
+	(*Event_RecordedScreen)(nil), // 21: Event.RecordedScreen
+	(*Event_MutedByAdmin)(nil),   // 22: Event.MutedByAdmin
+}
 var file_room_proto_depIdxs = []int32{
-	0, // [0:0] is the sub-list for method output_type
-	0, // [0:0] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	2,  // 0: Command.mute:type_name -> Command.Mute
+	3,  // 1: Command.unmute:type_name -> Command.Unmute
+	4,  // 2: Command.reaction:type_name -> Command.Reaction
+	5,  // 3: Command.linkShare:type_name -> Command.LinkShare
+	6,  // 4: Command.inviteAdmin:type_name -> Command.InviteAdmin
+	7,  // 5: Command.acceptAdmin:type_name -> Command.AcceptAdmin
+	8,  // 6: Command.removeAdmin:type_name -> Command.RemoveAdmin
+	9,  // 7: Command.renameRoom:type_name -> Command.RenameRoom
+	10, // 8: Command.inviteUser:type_name -> Command.InviteUser
+	11, // 9: Command.kickUser:type_name -> Command.KickUser
+	12, // 10: Command.muteUser:type_name -> Command.MuteUser
+	13, // 11: Command.recordScreen:type_name -> Command.RecordScreen
+	14, // 12: Event.muted:type_name -> Event.Muted
+	15, // 13: Event.unmuted:type_name -> Event.Unmuted
+	16, // 14: Event.reacted:type_name -> Event.Reacted
+	17, // 15: Event.linkShared:type_name -> Event.LinkShared
+	18, // 16: Event.addedAdmin:type_name -> Event.AddedAdmin
+	19, // 17: Event.removedAdmin:type_name -> Event.RemovedAdmin
+	20, // 18: Event.renamedRoom:type_name -> Event.RenamedRoom
+	21, // 19: Event.recordedScreen:type_name -> Event.RecordedScreen
+	22, // 20: Event.mutedByAdmin:type_name -> Event.MutedByAdmin
+	21, // [21:21] is the sub-list for method output_type
+	21, // [21:21] is the sub-list for method input_type
+	21, // [21:21] is the sub-list for extension type_name
+	21, // [21:21] is the sub-list for extension extendee
+	0,  // [0:21] is the sub-list for field type_name
 }
 
 func init() { file_room_proto_init() }
@@ -49,18 +1530,322 @@ func file_room_proto_init() {
 	if File_room_proto != nil {
 		return
 	}
+	if !protoimpl.UnsafeEnabled {
+		file_room_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Command); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_room_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Event); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_room_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Command_Mute); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_room_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Command_Unmute); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_room_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Command_Reaction); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_room_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Command_LinkShare); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_room_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Command_InviteAdmin); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_room_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Command_AcceptAdmin); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_room_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Command_RemoveAdmin); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_room_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Command_RenameRoom); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_room_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Command_InviteUser); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_room_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Command_KickUser); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_room_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Command_MuteUser); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_room_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Command_RecordScreen); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_room_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Event_Muted); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_room_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Event_Unmuted); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_room_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Event_Reacted); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_room_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Event_LinkShared); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_room_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Event_AddedAdmin); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_room_proto_msgTypes[19].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Event_RemovedAdmin); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_room_proto_msgTypes[20].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Event_RenamedRoom); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_room_proto_msgTypes[21].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Event_RecordedScreen); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_room_proto_msgTypes[22].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Event_MutedByAdmin); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+	}
+	file_room_proto_msgTypes[0].OneofWrappers = []interface{}{
+		(*Command_Mute_)(nil),
+		(*Command_Unmute_)(nil),
+		(*Command_Reaction_)(nil),
+		(*Command_LinkShare_)(nil),
+		(*Command_InviteAdmin_)(nil),
+		(*Command_AcceptAdmin_)(nil),
+		(*Command_RemoveAdmin_)(nil),
+		(*Command_RenameRoom_)(nil),
+		(*Command_InviteUser_)(nil),
+		(*Command_KickUser_)(nil),
+		(*Command_MuteUser_)(nil),
+		(*Command_RecordScreen_)(nil),
+	}
+	file_room_proto_msgTypes[1].OneofWrappers = []interface{}{
+		(*Event_Muted_)(nil),
+		(*Event_Unmuted_)(nil),
+		(*Event_Reacted_)(nil),
+		(*Event_LinkShared_)(nil),
+		(*Event_AddedAdmin_)(nil),
+		(*Event_RemovedAdmin_)(nil),
+		(*Event_RenamedRoom_)(nil),
+		(*Event_RecordedScreen_)(nil),
+		(*Event_MutedByAdmin_)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_room_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   0,
+			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_room_proto_goTypes,
 		DependencyIndexes: file_room_proto_depIdxs,
+		MessageInfos:      file_room_proto_msgTypes,
 	}.Build()
 	File_room_proto = out.File
 	file_room_proto_rawDesc = nil

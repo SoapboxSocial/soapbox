@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"strings"
 	"sync"
 
 	"github.com/pion/ion-sfu/pkg/sfu"
@@ -19,6 +20,8 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
+
+const MAX_PEERS = 16
 
 type Server struct {
 	mux sync.RWMutex
@@ -38,21 +41,13 @@ type Server struct {
 func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 	peer := sfu.NewPeer(s.sfu)
 
-	in, err := stream.Recv()
+	in, err := receive(peer, stream)
 	if err != nil {
-		_ = peer.Close()
-
-		if err == io.EOF {
-			return nil
-		}
-
-		errStatus, _ := status.FromError(err)
-		if errStatus.Code() == codes.Canceled {
-			return nil
-		}
-
-		log.Printf("signal error %v %v", errStatus.Message(), errStatus.Code())
 		return err
+	}
+
+	if in == nil {
+		return nil
 	}
 
 	id, err := internal.SessionID(stream.Context())
@@ -60,9 +55,56 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 		_ = peer.Close()
 	}
 
+	var room *Room
+
 	switch in.Payload.(type) {
 	case *pb.SignalRequest_Join:
-		break
+		join := in.GetJoin()
+		if join == nil {
+			return status.Errorf(codes.Internal, "something went wrong")
+		}
+
+		s.mux.RLock()
+		r, ok := s.rooms[join.Room]
+		s.mux.RUnlock()
+
+		if !ok {
+			return status.Errorf(codes.Internal, "join error room closed")
+		}
+
+		if r.PeerCount() >= MAX_PEERS {
+			return status.Errorf(codes.Internal, "join error room full")
+		}
+
+		description := webrtc.SessionDescription{
+			Type: newSDPType(join.Description.Type),
+			SDP: string(join.Description.Sdp),
+		}
+
+		answer, err := setup(peer, join.Room, stream, description)
+		if err != nil {
+			return err
+		}
+
+		// @TODO ADD ROOM TO REPLY
+		err = stream.Send(&pb.SignalReply{
+			Id: in.Id,
+			Payload: &pb.SignalReply_Join{
+				Join: &pb.JoinReply{
+					Description: &pb.SessionDescription{
+						Type: answer.Type.String(),
+						Sdp: []byte(answer.SDP),
+					},
+				},
+			},
+		})
+
+		if err != nil {
+			log.Printf("error sending join response %s", err)
+			return status.Errorf(codes.Internal, "join error %s", err)
+		}
+
+		room = r
 	case *pb.SignalRequest_Create:
 		break
 	default:
@@ -71,13 +113,36 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 
 	// @TODO Connect to room?
 
+	//go room.Handle()
+
 	for {
 		// @TODO READ OTHER PACKETS
 	}
 }
 
+func receive(peer *sfu.Peer, stream pb.SFU_SignalServer) (*pb.SignalRequest, error) {
+	in, err := stream.Recv()
+	if err != nil {
+		_ = peer.Close()
+
+		if err == io.EOF {
+			return nil, nil
+		}
+
+		errStatus, _ := status.FromError(err)
+		if errStatus.Code() == codes.Canceled {
+			return nil, nil
+		}
+
+		log.Printf("signal error %v %v", errStatus.Message(), errStatus.Code())
+		return nil, err
+	}
+
+	return in, nil
+}
+
 // setup properly sets up a peer to communicate with the SFU.
-func setup(peer *sfu.Peer, messageId, room string, stream pb.SFU_SignalServer, description webrtc.SessionDescription) error {
+func setup(peer *sfu.Peer, room string, stream pb.SFU_SignalServer, description webrtc.SessionDescription) (*webrtc.SessionDescription, error) {
 
 	// Notify user of new ice candidate
 	peer.OnIceCandidate = func(candidate *webrtc.ICECandidateInit, target int) {
@@ -141,30 +206,49 @@ func setup(peer *sfu.Peer, messageId, room string, stream pb.SFU_SignalServer, d
 			})
 			if err != nil {
 				log.Printf("grpc send error %v ", err)
-				return status.Errorf(codes.Internal, err.Error())
+				return nil, status.Errorf(codes.Internal, err.Error())
 			}
 		default:
-			return status.Errorf(codes.Unknown, err.Error())
+			return nil, status.Errorf(codes.Unknown, err.Error())
 		}
 	}
 
+	return answer, nil
+
 	// send answer
-	err = stream.Send(&pb.SignalReply{
-		Id: messageId,
-		Payload: &pb.SignalReply_Join{
-			Join: &pb.JoinReply{
-				Description: &pb.SessionDescription{
-					Type: answer.Type.String(),
-					Sdp: []byte(answer.SDP),
-				},
-			},
-		},
-	})
+	//err = stream.Send(&pb.SignalReply{
+	//	Id: messageId,
+	//	Payload: &pb.SignalReply_Join{
+	//		Join: &pb.JoinReply{
+	//			Description: &pb.SessionDescription{
+	//				Type: answer.Type.String(),
+	//				Sdp: []byte(answer.SDP),
+	//			},
+	//		},
+	//	},
+	//})
+	//
+	//if err != nil {
+	//	log.Printf("error sending join response %s", err)
+	//	return status.Errorf(codes.Internal, "join error %s", err)
+	//}
+	//
+	//return nil
+}
 
-	if err != nil {
-		log.Printf("error sending join response %s", err)
-		return status.Errorf(codes.Internal, "join error %s", err)
+func newSDPType(raw string) webrtc.SDPType {
+	val := strings.ToLower(raw)
+
+	switch val {
+	case "offer":
+		return webrtc.SDPTypeOffer
+	case "pranswer":
+		return webrtc.SDPTypePranswer
+	case "answer":
+		return webrtc.SDPTypeAnswer
+	case "rollback":
+		return webrtc.SDPTypeRollback
+	default:
+		return webrtc.SDPType(webrtc.Unknown)
 	}
-
-	return nil
 }

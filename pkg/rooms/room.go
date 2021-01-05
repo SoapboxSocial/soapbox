@@ -17,6 +17,8 @@ type Room struct {
 	members map[int]Member
 
 	adminInvites map[int]bool
+	kicked       map[int]bool
+	invited      map[int]bool
 }
 
 func (r *Room) ID() string {
@@ -98,6 +100,10 @@ func (r *Room) onInviteAdmin(from int, cmd *pb.Command_InviteAdmin) {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 
+	if !r.IsAdmin(from) {
+		return
+	}
+
 	member, ok := r.members[int(cmd.Id)]
 	if !ok {
 		return
@@ -112,11 +118,35 @@ func (r *Room) onInviteAdmin(from int, cmd *pb.Command_InviteAdmin) {
 }
 
 func (r *Room) onAcceptAdmin(from int) {
+	r.mux.Lock()
+	defer r.mux.Unlock()
 
+	if !r.adminInvites[from] {
+		return
+	}
+
+	delete(r.adminInvites, from)
+
+	_, ok := r.members[from]
+	if !ok {
+		return
+	}
+
+	// @TODO MARK ADMIN
+
+	r.notify(&pb.Event{
+		From:    int64(from),
+		Payload: &pb.Event_AddedAdmin_{AddedAdmin: &pb.Event_AddedAdmin{}},
+	})
 }
 
 func (r *Room) onRemoveAdmin(from int, cmd *pb.Command_RemoveAdmin) {
+	r.mux.Lock()
+	defer r.mux.Unlock()
 
+	if !r.IsAdmin(from) {
+		return
+	}
 }
 
 func (r *Room) onRenameRoom(from int, cmd *pb.Command_RenameRoom) {
@@ -133,6 +163,10 @@ func (r *Room) onKickUser(from int, cmd *pb.Command_KickUser) {
 
 func (r *Room) onMuteUser(from int, cmd *pb.Command_MuteUser) {
 
+}
+
+func (r *Room) IsAdmin(id int) bool {
+	return false // @TODO
 }
 
 func (r *Room) onRecordScreen(from int) {

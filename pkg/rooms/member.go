@@ -6,6 +6,8 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 )
 
+// @TODO ADD USER DATA
+
 type Member struct {
 	id   int
 	peer *sfu.Peer

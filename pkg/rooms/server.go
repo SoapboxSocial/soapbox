@@ -55,5 +55,14 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 		if err != nil {
 			_ = peer.Close()
 		}
+
+		switch in.Payload.(type) {
+		case *pb.SignalRequest_Join:
+			break
+		case *pb.SignalRequest_Create:
+			break
+		default:
+			return status.Error(codes.FailedPrecondition, "invalid message")
+		}
 	}
 }

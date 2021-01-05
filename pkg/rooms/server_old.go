@@ -82,7 +82,6 @@
 //	}
 //
 //	var room *Room
-//	var peer *sfu.WebRTCTransport
 //	var user *member
 //
 //	auth, _ := authForContext(stream.Context())

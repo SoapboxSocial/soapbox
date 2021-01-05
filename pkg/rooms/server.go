@@ -76,6 +76,10 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 			return status.Errorf(codes.Internal, "join error room full")
 		}
 
+		//if !s.canJoin(user.ID, r) {
+		//	return status.Errorf(codes.Internal, "user not invited")
+		//}
+
 		description := webrtc.SessionDescription{
 			Type: newSDPType(join.Description.Type),
 			SDP: string(join.Description.Sdp),

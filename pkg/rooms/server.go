@@ -61,6 +61,10 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 			break
 		case *pb.SignalRequest_Create:
 			break
+		case *pb.SignalRequest_Description:
+			break
+		case *pb.SignalRequest_Trickle:
+			break
 		default:
 			return status.Error(codes.FailedPrecondition, "invalid message")
 		}

@@ -41,19 +41,6 @@
 //	nextID int
 //}
 //
-//func NewServer(sfu *sfu.SFU, sm *sessions.SessionManager, ub *users.UserBackend, queue *pubsub.Queue, cr *CurrentRoomBackend, groups *groups.Backend) *ServerOld {
-//	return &ServerOld{
-//		mux:         sync.RWMutex{},
-//		sfu:         sfu,
-//		sm:          sm,
-//		ub:          ub,
-//		queue:       queue,
-//		currentRoom: cr,
-//		rooms:       make(map[int]*Room),
-//		nextID:      1,
-//		groups:      groups,
-//	}
-//}
 //
 //func (s *ServerOld) ListRooms(ctx context.Context, _ *empty.Empty) (*pb.RoomList, error) {
 //	auth, err := authForContext(ctx)
@@ -405,16 +392,3 @@
 //	return &member{ID: id, DisplayName: u.DisplayName, Image: u.Image, IsMuted: true, Role: SPEAKER}, nil
 //}
 //
-//func authForContext(ctx context.Context) (string, error) {
-//	md, ok := metadata.FromIncomingContext(ctx)
-//	if !ok {
-//		return "", errors.New("missing metadata")
-//	}
-//
-//	auth := md.Get("authorization")
-//	if len(auth) != 1 {
-//		return "", errors.New("unauthorized")
-//	}
-//
-//	return auth[0], nil
-//}

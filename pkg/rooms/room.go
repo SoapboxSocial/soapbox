@@ -62,18 +62,36 @@ func (r *Room) onMessage(from int, command *pb.Command) {
 
 func (r *Room) onMute(from int) {
 
+	// @TODO MARK MUTED
+
+	r.notify(&pb.Event{
+		From:    int64(from),
+		Payload: &pb.Event_Muted_{Muted: &pb.Event_Muted{}},
+	})
 }
 
 func (r *Room) onUnmute(from int) {
 
+	// @TODO MARK UNMUTED
+
+	r.notify(&pb.Event{
+		From:    int64(from),
+		Payload: &pb.Event_Unmuted_{Unmuted: &pb.Event_Unmuted{}},
+	})
 }
 
 func (r *Room) onReaction(from int, cmd *pb.Command_Reaction) {
-
+	r.notify(&pb.Event{
+		From:    int64(from),
+		Payload: &pb.Event_Reacted_{Reacted: &pb.Event_Reacted{Emoji: cmd.Emoji}},
+	})
 }
 
 func (r *Room) onLinkShare(from int, cmd *pb.Command_LinkShare) {
-
+	r.notify(&pb.Event{
+		From:    int64(from),
+		Payload: &pb.Event_LinkShared_{LinkShared: &pb.Event_LinkShared{Link: cmd.Link}},
+	})
 }
 
 func (r *Room) onInviteAdmin(from int, cmd *pb.Command_InviteAdmin) {
@@ -105,6 +123,12 @@ func (r *Room) onMuteUser(from int, cmd *pb.Command_MuteUser) {
 }
 
 func (r *Room) onRecordScreen(from int) {
-
+	r.notify(&pb.Event{
+		From:    int64(from),
+		Payload: &pb.Event_RecordedScreen_{RecordedScreen: &pb.Event_RecordedScreen{}},
+	})
 }
 
+func (r *Room) notify(event *pb.Event) {
+
+}

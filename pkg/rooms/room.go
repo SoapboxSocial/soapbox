@@ -31,31 +31,80 @@ func (r *Room) Handle(user int, peer *sfu.Peer) error {
 	return nil
 }
 
-func (r *Room) onMessage(command *pb.Command) {
+func (r *Room) onMessage(from int, command *pb.Command) {
 	switch command.Payload.(type) {
 	case *pb.Command_Mute_:
-		break
+		r.onMute(from)
 	case *pb.Command_Unmute_:
-		break
+		r.onUnmute(from)
 	case *pb.Command_Reaction_:
-		break
+		r.onReaction(from, command.GetReaction())
 	case *pb.Command_LinkShare_:
-		break
+		r.onLinkShare(from, command.GetLinkShare())
 	case *pb.Command_InviteAdmin_:
-		break
+		r.onInviteAdmin(from, command.GetInviteAdmin())
 	case *pb.Command_AcceptAdmin_:
-		break
+		r.onAcceptAdmin(from)
 	case *pb.Command_RemoveAdmin_:
-		break
+		r.onRemoveAdmin(from, command.GetRemoveAdmin())
 	case *pb.Command_RenameRoom_:
-		break
+		r.onRenameRoom(from, command.GetRenameRoom())
 	case *pb.Command_InviteUser_:
-		break
+		r.onInviteUser(from, command.GetInviteUser())
 	case *pb.Command_KickUser_:
-		break
+		r.onKickUser(from, command.GetKickUser())
 	case *pb.Command_MuteUser_:
-		break
+		r.onMuteUser(from, command.GetMuteUser())
 	case *pb.Command_RecordScreen_:
-		break
+		r.onRecordScreen(from)
 	}
 }
+
+func (r *Room) onMute(from int) {
+
+}
+
+func (r *Room) onUnmute(from int) {
+
+}
+
+func (r *Room) onReaction(from int, cmd *pb.Command_Reaction) {
+
+}
+
+func (r *Room) onLinkShare(from int, cmd *pb.Command_LinkShare) {
+
+}
+
+func (r *Room) onInviteAdmin(from int, cmd *pb.Command_InviteAdmin) {
+
+}
+
+func (r *Room) onAcceptAdmin(from int) {
+
+}
+
+func (r *Room) onRemoveAdmin(from int, cmd *pb.Command_RemoveAdmin) {
+
+}
+
+func (r *Room) onRenameRoom(from int, cmd *pb.Command_RenameRoom) {
+
+}
+
+func (r *Room) onInviteUser(from int, cmd *pb.Command_InviteUser) {
+
+}
+
+func (r *Room) onKickUser(from int, cmd *pb.Command_KickUser) {
+
+}
+
+func (r *Room) onMuteUser(from int, cmd *pb.Command_MuteUser) {
+
+}
+
+func (r *Room) onRecordScreen(from int) {
+
+}
+

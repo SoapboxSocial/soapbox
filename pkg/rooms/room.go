@@ -29,6 +29,10 @@ func (r *Room) PeerCount() int {
 	return 0
 }
 
+func (r *Room) IsAdmin(id int) bool {
+	return false // @TODO
+}
+
 func (r *Room) Handle(user int, peer *sfu.Peer) error {
 	return nil
 }
@@ -175,10 +179,6 @@ func (r *Room) onKickUser(from int, cmd *pb.Command_KickUser) {
 
 func (r *Room) onMuteUser(from int, cmd *pb.Command_MuteUser) {
 
-}
-
-func (r *Room) IsAdmin(id int) bool {
-	return false // @TODO
 }
 
 func (r *Room) onRecordScreen(from int) {

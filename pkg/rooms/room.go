@@ -8,15 +8,14 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 )
 
-type Member struct {
-	id   int
-	peer *sfu.Peer
-}
-
 type Room struct {
 	mux sync.RWMutex
 
 	id string
+
+	members map[int]Member
+
+	adminInvites map[int]bool
 }
 
 func (r *Room) ID() string {
@@ -95,7 +94,20 @@ func (r *Room) onLinkShare(from int, cmd *pb.Command_LinkShare) {
 }
 
 func (r *Room) onInviteAdmin(from int, cmd *pb.Command_InviteAdmin) {
+	r.mux.Lock()
+	defer r.mux.Unlock()
 
+	member, ok := r.members[int(cmd.Id)]
+	if !ok {
+		return
+	}
+
+	r.adminInvites[int(cmd.Id)] = true
+
+	member.notify(&pb.Event{
+		From:    int64(from),
+		Payload: &pb.Event_InvitedAdmin_{InvitedAdmin: &pb.Event_InvitedAdmin{}},
+	})
 }
 
 func (r *Room) onAcceptAdmin(from int) {
@@ -130,5 +142,14 @@ func (r *Room) onRecordScreen(from int) {
 }
 
 func (r *Room) notify(event *pb.Event) {
+	r.mux.RLock()
+	defer r.mux.RUnlock()
 
+	for id, member := range r.members {
+		if id == int(event.From) {
+			continue
+		}
+
+		member.notify(event)
+	}
 }

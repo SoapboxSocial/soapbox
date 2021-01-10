@@ -122,7 +122,7 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 		id := internal.GenerateRoomID()
 		name := internal.TrimRoomNameToLimit(create.Name)
 
-		var group *groups.Group
+		//var group *groups.Group
 		// @TODO
 		//if payload.Create.GetGroup() != 0 {
 		//	group, err = s.getGroup(user.ID, int(payload.Create.GetGroup()))
@@ -131,7 +131,7 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 		//	}
 		//}
 
-		room = NewRoom(id, name)
+		room = NewRoom(id, name) // @TODO THE REST
 
 		description := webrtc.SessionDescription{
 			Type: newSDPType(create.Description.Type),

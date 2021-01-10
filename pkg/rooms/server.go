@@ -147,6 +147,7 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 			Id: in.Id,
 			Payload: &pb.SignalReply_Create{
 				Create: &pb.CreateReply{
+					Id: id,
 					Description: &pb.SessionDescription{
 						Type: answer.Type.String(),
 						Sdp:  answer.SDP,
@@ -265,7 +266,7 @@ func setup(peer *sfu.Peer, room string, stream pb.SFU_SignalServer, description 
 		})
 
 		if err != nil {
-			log.Printf("oniceconnectionstatechange error %s", err)
+			log.Printf("OnICEConnectionStateChange error %s", err)
 		}
 	}
 

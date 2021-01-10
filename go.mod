@@ -9,7 +9,7 @@ require (
 	github.com/dghubble/oauth1 v0.6.0
 	github.com/dukex/mixpanel v0.0.0-20180925151559-f8d5594f958e
 	github.com/elastic/go-elasticsearch/v7 v7.10.0
-	github.com/go-redis/redis/v8 v8.4.7
+	github.com/go-redis/redis/v8 v8.4.8
 	github.com/golang/protobuf v1.4.3
 	github.com/google/uuid v1.1.4 // indirect
 	github.com/gorilla/handlers v1.5.1
@@ -27,7 +27,7 @@ require (
 	github.com/sendgrid/rest v2.6.2+incompatible // indirect
 	github.com/sendgrid/sendgrid-go v3.7.2+incompatible
 	github.com/sideshow/apns2 v0.20.0
-	golang.org/x/sys v0.0.0-20210108172913-0df2131ae363 // indirect
+	golang.org/x/sys v0.0.0-20210110051926-789bb1bd4061 // indirect
 	golang.org/x/text v0.3.5 // indirect
 	google.golang.org/genproto v0.0.0-20210108203827-ffc7fda8c3d7 // indirect
 	google.golang.org/grpc v1.34.0

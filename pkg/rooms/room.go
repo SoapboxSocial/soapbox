@@ -22,6 +22,10 @@ type Room struct {
 	invited      map[int]bool
 }
 
+func NewRoom(id, name string) *Room {
+	return &Room{id: id, name: name}
+}
+
 func (r *Room) ID() string {
 	return r.id
 }

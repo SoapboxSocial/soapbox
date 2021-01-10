@@ -118,11 +118,55 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 		if create == nil {
 			return status.Errorf(codes.Internal, "something went wrong")
 		}
+
+		id := internal.GenerateRoomID()
+		name := internal.TrimRoomNameToLimit(create.Name)
+
+		var group *groups.Group
+		// @TODO
+		//if payload.Create.GetGroup() != 0 {
+		//	group, err = s.getGroup(user.ID, int(payload.Create.GetGroup()))
+		//	if err != nil {
+		//		return status.Errorf(codes.Internal, "group error %s", err)
+		//	}
+		//}
+
+		room := NewRoom(id, name)
+
+		description := webrtc.SessionDescription{
+			Type: newSDPType(create.Description.Type),
+			SDP:  create.Description.Sdp,
+		}
+
+		answer, err := setup(peer, id, stream, description)
+		if err != nil {
+			return err
+		}
+
+		err = stream.Send(&pb.SignalReply{
+			Id: in.Id,
+			Payload: &pb.SignalReply_Create{
+				Create: &pb.CreateReply{
+					Description: &pb.SessionDescription{
+						Type: answer.Type.String(),
+						Sdp:  answer.SDP,
+					},
+				},
+			},
+		})
+
+		if err != nil {
+			log.Printf("error sending join response %s", err)
+			return status.Errorf(codes.Internal, "join error %s", err)
+		}
+
+		s.mux.Lock()
+		s.rooms[id] = room
+		s.mux.Unlock()
+
 	default:
 		return status.Error(codes.FailedPrecondition, "invalid message")
 	}
-
-	// @TODO Connect to room?
 
 	errChan := make(chan error)
 	go func() {

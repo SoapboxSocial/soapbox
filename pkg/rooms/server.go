@@ -156,8 +156,8 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 		})
 
 		if err != nil {
-			log.Printf("error sending join response %s", err)
-			return status.Errorf(codes.Internal, "join error %s", err)
+			log.Printf("error sending create response %s", err)
+			return status.Errorf(codes.Internal, "create error %s", err)
 		}
 
 		s.mux.Lock()

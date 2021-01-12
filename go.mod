@@ -22,13 +22,14 @@ require (
 	github.com/pion/srtp v1.5.2 // indirect
 	github.com/pion/webrtc/v3 v3.0.3
 	github.com/pkg/errors v0.9.1
+	github.com/prometheus/procfs v0.3.0 // indirect
 	github.com/segmentio/ksuid v1.0.3
 	github.com/sendgrid/rest v2.6.2+incompatible // indirect
 	github.com/sendgrid/sendgrid-go v3.7.2+incompatible
 	github.com/sideshow/apns2 v0.20.0
-	golang.org/x/sys v0.0.0-20210110051926-789bb1bd4061 // indirect
+	golang.org/x/sys v0.0.0-20210112091331-59c308dcf3cc // indirect
 	golang.org/x/text v0.3.5 // indirect
-	google.golang.org/genproto v0.0.0-20210108203827-ffc7fda8c3d7 // indirect
-	google.golang.org/grpc v1.34.0
+	google.golang.org/genproto v0.0.0-20210111234610-22ae2b108f89 // indirect
+	google.golang.org/grpc v1.34.1
 	google.golang.org/protobuf v1.25.0
 )

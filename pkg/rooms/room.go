@@ -39,7 +39,9 @@ func (r *Room) IsAdmin(id int) bool {
 }
 
 func (r *Room) Handle(user int, peer *sfu.Peer) error {
-	return nil
+	for {
+
+	}
 }
 
 func (r *Room) onMessage(from int, command *pb.Command) {

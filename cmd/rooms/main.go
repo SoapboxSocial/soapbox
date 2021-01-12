@@ -8,6 +8,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
 	"github.com/pion/ion-sfu/pkg/sfu"
+	iLog "github.com/pion/ion-log"
 	"google.golang.org/grpc"
 
 	"github.com/soapboxsocial/soapbox/pkg/groups"
@@ -32,6 +33,9 @@ func main() {
 					},
 				},
 			},
+		},
+		Log: iLog.Config{
+			Level: "debug",
 		},
 	}
 

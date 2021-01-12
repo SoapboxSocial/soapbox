@@ -202,8 +202,8 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 	for {
 		select {
 		case err := <-errChan:
-			// @TODO
-			log.Printf("fuck %v", err)
+			log.Printf("handle err %v", err)
+			_ = peer.Close()
 			return nil
 		default:
 			log.Printf("in")

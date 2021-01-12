@@ -285,7 +285,6 @@ func (s *Server) handle(peer *sfu.Peer, stream pb.SFU_SignalServer, in *pb.Signa
 			Candidate: payload.IceCandidate.Candidate,
 			SDPMid: &payload.IceCandidate.SdpMid,
 			SDPMLineIndex: &midLine,
-
 		}
 
 		err := peer.Trickle(candidate, int(payload.Target))

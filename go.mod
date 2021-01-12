@@ -16,6 +16,7 @@ require (
 	github.com/lib/pq v1.9.0
 	github.com/lucas-clemente/quic-go v0.19.3 // indirect
 	github.com/matryer/moq v0.1.3 // indirect
+	github.com/pion/ion-log v1.0.0
 	github.com/pion/ion-sfu v1.7.7
 	github.com/pion/quic v0.1.4 // indirect
 	github.com/pion/sdp/v2 v2.4.0 // indirect

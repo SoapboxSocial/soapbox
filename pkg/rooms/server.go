@@ -64,8 +64,6 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 		return err
 	}
 
-	log.Printf("%v", in)
-
 	if in == nil {
 		return nil
 	}
@@ -196,9 +194,6 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 		errChan <- err
 	}()
 
-	log.Printf("ok")
-
-
 	for {
 		select {
 		case err := <-errChan:
@@ -206,7 +201,6 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 			_ = peer.Close()
 			return nil
 		default:
-			log.Printf("in")
 			in, err := receive(peer, stream)
 			if err != nil {
 				return err
@@ -221,7 +215,6 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 }
 
 func (s *Server) handle(peer *sfu.Peer, stream pb.SFU_SignalServer, in *pb.SignalRequest) error {
-	log.Printf("%v", in)
 	switch in.Payload.(type) {
 	case *pb.SignalRequest_Description:
 		payload := in.GetDescription()

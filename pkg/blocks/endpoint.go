@@ -57,7 +57,29 @@ func (e *Endpoint) unblock(w http.ResponseWriter, r *http.Request) {
 }
 
 func (e *Endpoint) block(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
 
+	id, err := strconv.Atoi(r.Form.Get("id"))
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	userID, ok := auth.GetUserIDFromContext(r.Context())
+	if !ok {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	err = e.backend.BlockUser(userID, id)
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "failed to block")
+		return
+	}
 }
 
 func (e *Endpoint) blocks(w http.ResponseWriter, r *http.Request) {

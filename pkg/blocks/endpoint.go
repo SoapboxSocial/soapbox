@@ -7,10 +7,13 @@ import (
 )
 
 type Endpoint struct {
+	backend *Backend
 }
 
-func NewEndpoint() *Endpoint {
-	return &Endpoint{}
+func NewEndpoint(backend *Backend) *Endpoint {
+	return &Endpoint{
+		backend: backend,
+	}
 }
 
 func (e *Endpoint) Router() *mux.Router {

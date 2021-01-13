@@ -7,8 +7,8 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
-	"github.com/pion/ion-sfu/pkg/sfu"
 	iLog "github.com/pion/ion-log"
+	"github.com/pion/ion-sfu/pkg/sfu"
 	"google.golang.org/grpc"
 
 	"github.com/soapboxsocial/soapbox/pkg/groups"

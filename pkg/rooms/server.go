@@ -214,6 +214,10 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 }
 
 func (s *Server) handle(peer *sfu.Peer, stream pb.SFU_SignalServer, in *pb.SignalRequest) error {
+	if in == nil {
+		return status.Error(codes.Internal, "empty message") // @TODO
+	}
+
 	switch in.Payload.(type) {
 	case *pb.SignalRequest_Description:
 		payload := in.GetDescription()
@@ -282,8 +286,8 @@ func (s *Server) handle(peer *sfu.Peer, stream pb.SFU_SignalServer, in *pb.Signa
 
 		midLine := uint16(payload.IceCandidate.SdpMLineIndex)
 		candidate := webrtc.ICECandidateInit{
-			Candidate: payload.IceCandidate.Candidate,
-			SDPMid: &payload.IceCandidate.SdpMid,
+			Candidate:     payload.IceCandidate.Candidate,
+			SDPMid:        &payload.IceCandidate.SdpMid,
 			SDPMLineIndex: &midLine,
 		}
 

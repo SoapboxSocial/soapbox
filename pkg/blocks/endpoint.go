@@ -19,8 +19,9 @@ func NewEndpoint(backend *Backend) *Endpoint {
 func (e *Endpoint) Router() *mux.Router {
 	r := mux.NewRouter()
 
-	r.HandleFunc("/blocks", e.blocks).Methods("GET")
-	r.HandleFunc("/blocks/create", e.blockUser).Methods("POST")
+	r.HandleFunc("/", e.blocks).Methods("GET")
+	r.HandleFunc("/{id:[0-9]+}", e.blocks).Methods("DELETE")
+	r.HandleFunc("/create", e.blockUser).Methods("POST")
 
 	return r
 }

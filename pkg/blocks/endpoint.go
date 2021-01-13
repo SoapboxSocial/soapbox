@@ -20,13 +20,17 @@ func (e *Endpoint) Router() *mux.Router {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", e.blocks).Methods("GET")
-	r.HandleFunc("/{id:[0-9]+}", e.blocks).Methods("DELETE")
-	r.HandleFunc("/create", e.blockUser).Methods("POST")
+	r.HandleFunc("/{id:[0-9]+}", e.unblock).Methods("DELETE")
+	r.HandleFunc("/create", e.block).Methods("POST")
 
 	return r
 }
 
-func (e *Endpoint) blockUser(w http.ResponseWriter, r *http.Request) {
+func (e *Endpoint) unblock(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func (e *Endpoint) block(w http.ResponseWriter, r *http.Request) {
 
 }
 

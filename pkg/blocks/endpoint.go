@@ -80,6 +80,8 @@ func (e *Endpoint) block(w http.ResponseWriter, r *http.Request) {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "failed to block")
 		return
 	}
+
+	// @TODO DELETE ANY FOLLOW RELATION
 }
 
 func (e *Endpoint) blocks(w http.ResponseWriter, r *http.Request) {

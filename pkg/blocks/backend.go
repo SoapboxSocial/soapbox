@@ -8,6 +8,10 @@ type Backend struct {
 	db *sql.DB
 }
 
+func NewBackend(db *sql.DB) *Backend {
+	return &Backend{db: db}
+}
+
 func (b *Backend) BlockUser(user, block int) error {
 	stmt, err := b.db.Prepare("INSERT INTO blocks (user_id, blocked) VALUES ($1, $2);")
 	if err != nil {

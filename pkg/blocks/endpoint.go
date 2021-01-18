@@ -80,5 +80,5 @@ func (e *Endpoint) block(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// @TODO DELETE ANY FOLLOW RELATION
+	httputil.JsonSuccess(w)
 }

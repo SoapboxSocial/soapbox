@@ -21,6 +21,8 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
+const TEST_ACCOUNT_ID = 19
+
 var (
 	errRoomPrivate = errors.New("room is private")
 )
@@ -184,6 +186,10 @@ func onRoomCreation(event *pubsub.Event) ([]int, *notifications.PushNotification
 		return nil, nil, err
 	}
 
+	if creator == TEST_ACCOUNT_ID {
+		return nil, nil, nil
+	}
+
 	targets, err := followersBackend.GetAllFollowerIDsFor(creator)
 	if err != nil {
 		return nil, nil, err
@@ -214,6 +220,10 @@ func onGroupRoomCreation(event *pubsub.Event) ([]int, *notifications.PushNotific
 	creator, err := getCreatorId(event)
 	if err != nil {
 		return nil, nil, err
+	}
+
+	if creator == TEST_ACCOUNT_ID {
+		return nil, nil, nil
 	}
 
 	groupId, err := getId(event, "group")

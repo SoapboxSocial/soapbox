@@ -99,3 +99,12 @@ CREATE TABLE IF NOT EXISTS story_reactions (
 );
 
 CREATE UNIQUE INDEX idx_stories_react ON story_reactions (story_id, user_id);
+
+CREATE TABLE IF NOT EXISTS blocks (
+    user_id INT NOT NULL,
+    blocked INT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (blocked) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX idx_blocks ON blocks (user_id, blocked);

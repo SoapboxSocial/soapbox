@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
+	"github.com/soapboxsocial/soapbox/pkg/blocks"
 	"github.com/soapboxsocial/soapbox/pkg/groups"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/internal"
@@ -28,11 +29,12 @@ const MAX_PEERS = 16
 type Server struct {
 	mux sync.RWMutex
 
-	sfu    *sfu.SFU
-	sm     *sessions.SessionManager
-	ub     *users.UserBackend
-	groups *groups.Backend
-	queue  *pubsub.Queue
+	sfu     *sfu.SFU
+	sm      *sessions.SessionManager
+	ub      *users.UserBackend
+	groups  *groups.Backend
+	queue   *pubsub.Queue
+	blocked *blocks.Backend
 
 	currentRoom *CurrentRoomBackend
 
@@ -41,7 +43,15 @@ type Server struct {
 	nextID int
 }
 
-func NewServer(sfu *sfu.SFU, sm *sessions.SessionManager, ub *users.UserBackend, queue *pubsub.Queue, cr *CurrentRoomBackend, groups *groups.Backend) *Server {
+func NewServer(
+	sfu *sfu.SFU,
+	sm *sessions.SessionManager,
+	ub *users.UserBackend,
+	queue *pubsub.Queue,
+	cr *CurrentRoomBackend,
+	groups *groups.Backend,
+	blocked *blocks.Backend,
+) *Server {
 	return &Server{
 		mux:         sync.RWMutex{},
 		sfu:         sfu,
@@ -52,6 +62,7 @@ func NewServer(sfu *sfu.SFU, sm *sessions.SessionManager, ub *users.UserBackend,
 		rooms:       make(map[int]*Room),
 		nextID:      1,
 		groups:      groups,
+		blocked:     blocked,
 	}
 }
 
@@ -70,9 +81,19 @@ func (s *Server) ListRooms(ctx context.Context, _ *empty.Empty) (*pb.RoomList, e
 		return nil, err
 	}
 
+	// @TODO THIS SHOULD BE DONE BETTER.
+	blockedUsers, err := s.blocked.GetUsersBlockedBy(id)
+	if err != nil {
+		fmt.Printf("failed to get blocked users: %+v\n", err)
+	}
+
 	rooms := make([]*pb.RoomState, 0)
 	for _, r := range s.rooms {
 		if !s.canJoin(id, r) {
+			continue
+		}
+
+		if r.ContainsBlockedUser(blockedUsers) {
 			continue
 		}
 

@@ -82,9 +82,9 @@ func (s *Server) ListRooms(ctx context.Context, _ *empty.Empty) (*pb.RoomList, e
 	}
 
 	// @TODO THIS SHOULD BE DONE BETTER.
-	blockedUsers, err := s.blocked.GetUsersBlockedBy(id)
+	blockingUsers, err := s.blocked.GetUsersWhoBlocked(id)
 	if err != nil {
-		fmt.Printf("failed to get blocked users: %+v\n", err)
+		fmt.Printf("failed to get blocked users who blocked: %+v\n", err)
 	}
 
 	rooms := make([]*pb.RoomState, 0)
@@ -93,7 +93,7 @@ func (s *Server) ListRooms(ctx context.Context, _ *empty.Empty) (*pb.RoomList, e
 			continue
 		}
 
-		if r.ContainsBlockedUser(blockedUsers) {
+		if r.ContainsUsers(blockingUsers) {
 			continue
 		}
 
@@ -144,6 +144,16 @@ func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
 		}
 
 		if !s.canJoin(user.ID, r) {
+			return status.Errorf(codes.Internal, "user not invited")
+		}
+
+		// @TODO
+		blockingUsers, err := s.blocked.GetUsersWhoBlocked(user.ID)
+		if err != nil {
+			fmt.Printf("failed to get blocked users who blocked: %+v\n", err)
+		}
+
+		if r.ContainsUsers(blockingUsers) {
 			return status.Errorf(codes.Internal, "user not invited")
 		}
 

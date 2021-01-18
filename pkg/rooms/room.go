@@ -644,12 +644,12 @@ func (r *Room) ToProtoForPeer() *pb.RoomState {
 	return state
 }
 
-func (r *Room) ContainsBlockedUser(blocked []int) bool {
+func (r *Room) ContainsUsers(users []int) bool {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
 
 	return has(r.members, func(p *peer) bool {
-		for _, id := range blocked {
+		for _, id := range users {
 			if id == p.me.ID {
 				return true
 			}

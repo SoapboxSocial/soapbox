@@ -1,6 +1,7 @@
 package blocks
 
 import (
+	"context"
 	"database/sql"
 )
 
@@ -13,13 +14,36 @@ func NewBackend(db *sql.DB) *Backend {
 }
 
 func (b *Backend) BlockUser(user, block int) error {
-	stmt, err := b.db.Prepare("INSERT INTO blocks (user_id, blocked) VALUES ($1, $2);")
+	ctx := context.Background()
+	tx, err := b.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 
-	_, err = stmt.Exec(user, block)
+	_, err = tx.ExecContext(
+		ctx,
+		"INSERT INTO blocks (user_id, blocked) VALUES ($1, $2);",
+		user, block,
+	)
+
 	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	_, err = tx.ExecContext(
+		ctx,
+		"DELETE FROM followers WHERE (follower = $1 AND user_id = $2) OR (follower = $2 AND user_id = $1);",
+		user, block,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		_ = tx.Rollback()
 		return err
 	}
 

@@ -42,6 +42,7 @@ type Profile struct {
 	Following      int             `json:"following"`
 	FollowedBy     *bool           `json:"followed_by,omitempty"`
 	IsFollowing    *bool           `json:"is_following,omitempty"`
+	IsBlocked      *bool           `json:"is_blocked,omitempty"`
 	Image          string          `json:"image"`
 	CurrentRoom    *int            `json:"current_room,omitempty"`
 	LinkedAccounts []LinkedAccount `json:"linked_accounts"`
@@ -129,7 +130,8 @@ func (ub *UserBackend) ProfileByID(id, from int) (*Profile, error) {
        (SELECT COUNT(*) FROM followers WHERE user_id = id) AS followers,
        (SELECT COUNT(*) FROM followers WHERE follower = id) AS following,
        (SELECT COUNT(*) FROM followers WHERE follower = id AND user_id = $1) AS followed_by,
-       (SELECT COUNT(*) FROM followers WHERE follower = $1 AND user_id = id) AS is_following FROM users WHERE id = $2;`
+       (SELECT COUNT(*) FROM followers WHERE follower = $1 AND user_id = id) AS is_following,
+       (SELECT COUNT(*) FROM blocks WHERE user_id = $1 AND blocked = id) AS is_following FROM users WHERE id = $2;`
 
 	stmt, err := ub.db.Prepare(query)
 	if err != nil {
@@ -138,7 +140,7 @@ func (ub *UserBackend) ProfileByID(id, from int) (*Profile, error) {
 
 	profile := &Profile{}
 
-	var followedBy, isFollowing int
+	var followedBy, isFollowing, isBlocked int
 	err = stmt.QueryRow(from, id).Scan(
 		&profile.ID,
 		&profile.DisplayName,
@@ -149,6 +151,7 @@ func (ub *UserBackend) ProfileByID(id, from int) (*Profile, error) {
 		&profile.Following,
 		&followedBy,
 		&isFollowing,
+		&isBlocked,
 	)
 
 	if err != nil {
@@ -157,8 +160,10 @@ func (ub *UserBackend) ProfileByID(id, from int) (*Profile, error) {
 
 	following := isFollowing == 1
 	followed := followedBy == 1
+	blocked := isBlocked == 1
 	profile.IsFollowing = &following
 	profile.FollowedBy = &followed
+	profile.IsBlocked = &blocked
 
 	accounts, err := ub.LinkedAccounts(id)
 	if err == nil {

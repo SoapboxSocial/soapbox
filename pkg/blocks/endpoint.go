@@ -23,8 +23,7 @@ func NewEndpoint(backend *Backend) *Endpoint {
 func (e *Endpoint) Router() *mux.Router {
 	r := mux.NewRouter()
 
-	r.HandleFunc("/", e.blocks).Methods("GET")
-	r.HandleFunc("/{id:[0-9]+}", e.unblock).Methods("DELETE")
+	r.HandleFunc("/", e.unblock).Methods("DELETE")
 	r.HandleFunc("/create", e.block).Methods("POST")
 
 	return r
@@ -82,8 +81,4 @@ func (e *Endpoint) block(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// @TODO DELETE ANY FOLLOW RELATION
-}
-
-func (e *Endpoint) blocks(w http.ResponseWriter, r *http.Request) {
-
 }

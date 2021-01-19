@@ -9,6 +9,8 @@ import (
 	_ "github.com/lib/pq"
 	iLog "github.com/pion/ion-log"
 	"github.com/pion/ion-sfu/pkg/sfu"
+	sfu "github.com/pion/ion-sfu/pkg"
+	"github.com/soapboxsocial/soapbox/pkg/blocks"
 	"google.golang.org/grpc"
 
 	"github.com/soapboxsocial/soapbox/pkg/groups"
@@ -67,6 +69,7 @@ func main() {
 			pubsub.NewQueue(rdb),
 			rooms.NewCurrentRoomBackend(rdb),
 			groups.NewBackend(db),
+			blocks.NewBackend(db),
 		),
 	)
 

@@ -16,6 +16,7 @@ import (
 
 	"github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	usersapi "github.com/soapboxsocial/soapbox/pkg/api/users"
+	"github.com/soapboxsocial/soapbox/pkg/blocks"
 	"github.com/soapboxsocial/soapbox/pkg/devices"
 	"github.com/soapboxsocial/soapbox/pkg/followers"
 	"github.com/soapboxsocial/soapbox/pkg/groups"
@@ -116,6 +117,12 @@ func main() {
 	devicesRoutes := devicesEndpoint.Router()
 	devicesRoutes.Use(amw.Middleware)
 	mount(r, "/v1/devices", devicesRoutes)
+
+	blocksBackend := blocks.NewBackend(db)
+	blocksEndpoint := blocks.NewEndpoint(blocksBackend)
+	blocksRouter := blocksEndpoint.Router()
+	blocksRouter.Use(amw.Middleware)
+	mount(r, "/v1/blocks", blocksRouter)
 
 	// twitter oauth config
 	oauth := oauth1.NewConfig(

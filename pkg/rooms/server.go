@@ -66,6 +66,18 @@ func NewServer(
 	}
 }
 
+func (s *Server) GetRoom(ctx context.Context, in *pb.RoomQuery) (*pb.RoomResponse, error) {
+	s.mux.RLock()
+	defer s.mux.RUnlock()
+
+	r, ok := s.rooms[int(in.Id)]
+	if !ok {
+		return &pb.RoomResponse{Room: nil, Error: "not found"}, nil
+	}
+
+	return &pb.RoomResponse{Room: r.ToProtoForPeer(), Error: ""}, nil
+}
+
 // Deprecated: Remove
 func (s *Server) ListRooms(ctx context.Context, _ *empty.Empty) (*pb.RoomList, error) {
 	auth, err := authForContext(ctx)

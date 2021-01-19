@@ -14,7 +14,7 @@ type Endpoint struct {
 	usersBackend *users.UserBackend
 }
 
-func NewEndpoint(usersBackend *users.UserBackend) *Endpoint  {
+func NewEndpoint(usersBackend *users.UserBackend) *Endpoint {
 	return &Endpoint{
 		usersBackend: usersBackend,
 	}

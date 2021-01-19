@@ -5,6 +5,8 @@ import (
 	"log"
 	"net/http"
 
+	_ "github.com/lib/pq"
+
 	"github.com/gorilla/handlers"
 
 	"github.com/soapboxsocial/soapbox/pkg/metadata"

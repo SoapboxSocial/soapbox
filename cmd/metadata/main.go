@@ -24,10 +24,10 @@ func main() {
 	usersBackend := users.NewUserBackend(db)
 
 	conn, err := grpc.Dial("127.0.0.1:50051", grpc.WithInsecure())
-
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	defer conn.Close()
 
 	client := pb.NewRoomServiceClient(conn)

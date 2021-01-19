@@ -65,7 +65,19 @@ func (e *Endpoint) room(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = httputil.JsonEncode(w, resp)
+	if resp.Room == nil {
+		httputil.JsonError(w, http.StatusNotFound, httputil.ErrorCodeNotFound, "not found")
+		return
+	}
+
+	room := resp.Room
+
+	if room.Visibility == pb.Visibility_PRIVATE {
+		httputil.JsonError(w, http.StatusNotFound, httputil.ErrorCodeNotFound, "not found")
+		return
+	}
+
+	err = httputil.JsonEncode(w, room)
 	if err != nil {
 		log.Printf("failed to encode: %v", err)
 	}

@@ -47,5 +47,5 @@ func main() {
 	originsOk := handlers.AllowedOrigins([]string{"*"})
 	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS", "DELETE"})
 
-	log.Fatal(http.ListenAndServe(":8081", handlers.CORS(originsOk, headersOk, methodsOk)(router)))
+	log.Print(http.ListenAndServe(":8081", handlers.CORS(originsOk, headersOk, methodsOk)(router)))
 }

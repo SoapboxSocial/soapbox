@@ -38,6 +38,16 @@ func (r *Room) IsAdmin(id int) bool {
 	return false // @TODO
 }
 
+func (r *Room) ToProtoForPeer() *pb.RoomState {
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+
+	return &pb.RoomState{
+		Id: r.id,
+		Name: r.name,
+	}
+}
+
 func (r *Room) Handle(user int, peer *sfu.Peer) error {
 	for {
 

@@ -116,7 +116,7 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 			Id: in.Id,
 			Payload: &pb.SignalReply_Join{
 				Join: &pb.JoinReply{
-					//Room: r.ToProtoForPeer(),
+					Room: r.ToProtoForPeer(),
 					Description: &pb.SessionDescription{
 						Type: answer.Type.String(),
 						Sdp:  answer.SDP,

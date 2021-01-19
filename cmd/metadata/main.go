@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	_ "github.com/lib/pq"
-	"google.golang.org/grpc"
 
 	"github.com/gorilla/handlers"
 

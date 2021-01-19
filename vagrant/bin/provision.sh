@@ -24,10 +24,11 @@ sudo yum install -y redis
 rm -rf /etc/supervisord.conf
 sudo ln -s /vagrant/conf/supervisord.conf /etc/supervisord.conf
 sudo mkdir -p /etc/supervisor/conf.d/
-sudo ln -s /vagrant/conf/soapbox.conf /etc/supervisor/conf.d/soapbox.conf
-sudo ln -s /vagrant/conf/notifications.conf /etc/supervisor/conf.d/notifications.conf
-sudo ln -s /vagrant/conf/indexer.conf /etc/supervisor/conf.d/indexer.conf
-sudo ln -s /vagrant/conf/rooms.conf /etc/supervisor/conf.d/rooms.conf
+sudo ln -s /vagrant/conf/supervisord/soapbox.conf /etc/supervisor/conf.d/soapbox.conf
+sudo ln -s /vagrant/conf/supervisord/notifications.conf /etc/supervisor/conf.d/notifications.conf
+sudo ln -s /vagrant/conf/supervisord/indexer.conf /etc/supervisor/conf.d/indexer.conf
+sudo ln -s /vagrant/conf/supervisord/rooms.conf /etc/supervisor/conf.d/rooms.conf
+sudo ln -s /vagrant/conf/supervisord/metadata.conf /etc/supervisor/conf.d/metadata.conf
 
 echo 'export GOPATH="/home/vagrant/go"' >> ~/.bashrc
 echo 'export PATH="$PATH:${GOPATH//://bin:}/bin"' >> ~/.bashrc

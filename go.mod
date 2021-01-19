@@ -23,9 +23,10 @@ require (
 	github.com/sendgrid/rest v2.6.2+incompatible // indirect
 	github.com/sendgrid/sendgrid-go v3.7.2+incompatible
 	github.com/sideshow/apns2 v0.20.0
-	golang.org/x/sys v0.0.0-20210113181707-4bcb84eeeb78 // indirect
+	golang.org/x/net v0.0.0-20210119194325-5f4716e94777 // indirect
+	golang.org/x/sys v0.0.0-20210119212857-b64e53b001e4 // indirect
 	golang.org/x/text v0.3.5 // indirect
-	google.golang.org/genproto v0.0.0-20210114201628-6edceaf6022f // indirect
+	google.golang.org/genproto v0.0.0-20210119180700-e258113e47cc // indirect
 	google.golang.org/grpc v1.35.0
 	google.golang.org/protobuf v1.25.0
 )

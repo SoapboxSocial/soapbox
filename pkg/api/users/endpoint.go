@@ -95,6 +95,10 @@ func (u *UsersEndpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (u *UsersEndpoint) GetUsersByUsername(w http.ResponseWriter, r *http.Request) {
+
+}
+
 // @todo think about moving these 2 endpoints into a follower specific thing?
 func (u *UsersEndpoint) GetFollowersForUser(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)

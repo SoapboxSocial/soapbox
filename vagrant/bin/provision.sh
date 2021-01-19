@@ -28,6 +28,7 @@ sudo ln -s /vagrant/conf/supervisord/soapbox.conf /etc/supervisor/conf.d/soapbox
 sudo ln -s /vagrant/conf/supervisord/notifications.conf /etc/supervisor/conf.d/notifications.conf
 sudo ln -s /vagrant/conf/supervisord/indexer.conf /etc/supervisor/conf.d/indexer.conf
 sudo ln -s /vagrant/conf/supervisord/rooms.conf /etc/supervisor/conf.d/rooms.conf
+sudo ln -s /vagrant/conf/supervisord/metadata.conf /etc/supervisor/conf.d/metadata.conf
 
 echo 'export GOPATH="/home/vagrant/go"' >> ~/.bashrc
 echo 'export PATH="$PATH:${GOPATH//://bin:}/bin"' >> ~/.bashrc

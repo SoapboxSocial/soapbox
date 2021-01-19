@@ -64,6 +64,23 @@ func NewUserBackend(db *sql.DB) *UserBackend {
 	}
 }
 
+func (ub *UserBackend) GetUserByUsername(username string) (*User, error) {
+	stmt, err := ub.db.Prepare("SELECT id, display_name, image, bio FROM users WHERE username = $1;")
+	if err != nil {
+		return nil, err
+	}
+
+	user := &User{}
+	err = stmt.QueryRow(username).Scan(&user.ID, &user.DisplayName, &user.Image, &user.Bio)
+	if err != nil {
+		return nil, err
+	}
+
+	user.Username = username
+
+	return user, nil
+}
+
 func (ub *UserBackend) GetUserForSearchEngine(id int) (*SearchUser, error) {
 	query := `SELECT 
        id, display_name, username, image, bio,

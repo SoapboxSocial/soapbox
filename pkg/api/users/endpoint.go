@@ -169,10 +169,12 @@ func (u *UsersEndpoint) GetFollowedByForUser(w http.ResponseWriter, r *http.Requ
 	}
 }
 
-func (u *UsersEndpoint) GetMyFriends(w http.ResponseWriter, r *http.Request) {
-	id, ok := auth.GetUserIDFromContext(r.Context())
-	if !ok {
-		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+func (u *UsersEndpoint) GetFriends(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	id, err := strconv.Atoi(params["id"])
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 		return
 	}
 

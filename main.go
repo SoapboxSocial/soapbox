@@ -101,6 +101,7 @@ func main() {
 	mount(r, "/v1/stories", storiesRouter)
 
 	userRoutes.HandleFunc("/{id:[0-9]+}", usersEndpoints.GetUserByID).Methods("GET")
+	userRoutes.HandleFunc("/{username:[a-z0-9_]+}", usersEndpoints.GetUserByUsername).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/followers", usersEndpoints.GetFollowersForUser).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/following", usersEndpoints.GetFollowedByForUser).Methods("GET")
 	userRoutes.HandleFunc("/friends", usersEndpoints.GetMyFriends).Methods("GET")

@@ -71,7 +71,7 @@ func (ub *UserBackend) GetIDForUsername(username string) (int, error) {
 	}
 
 	var id int
-	err = stmt.QueryRow(username).Scan(id)
+	err = stmt.QueryRow(username).Scan(&id)
 	if err != nil {
 		return 0, err
 	}

@@ -60,7 +60,7 @@ func (u *UsersEndpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	u.handleUserRetrieval(id, w, r)
 }
 
-func (u *UsersEndpoint) GetUsersByUsername(w http.ResponseWriter, r *http.Request) {
+func (u *UsersEndpoint) GetUserByUsername(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	username := params["username"]

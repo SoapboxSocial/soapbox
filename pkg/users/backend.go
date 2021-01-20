@@ -64,6 +64,21 @@ func NewUserBackend(db *sql.DB) *UserBackend {
 	}
 }
 
+func (ub *UserBackend) GetIDForUsername(username string) (int, error) {
+	stmt, err := ub.db.Prepare("SELECT id FROM users WHERE username = $1;")
+	if err != nil {
+		return 0, err
+	}
+
+	var id int
+	err = stmt.QueryRow(username).Scan(id)
+	if err != nil {
+		return 0, err
+	}
+
+	return id, nil
+}
+
 func (ub *UserBackend) GetUserByUsername(username string) (*User, error) {
 	stmt, err := ub.db.Prepare("SELECT id, display_name, image, bio FROM users WHERE username = $1;")
 	if err != nil {

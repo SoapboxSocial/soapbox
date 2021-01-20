@@ -57,6 +57,29 @@ func (u *UsersEndpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	u.handleUserRetrieval(id, w, r)
+}
+
+func (u *UsersEndpoint) GetUserByUsername(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	username := params["username"]
+
+	id, err := u.ub.GetIDForUsername(username)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			httputil.JsonError(w, http.StatusNotFound, httputil.ErrorCodeUserNotFound, "user not found")
+			return
+		}
+
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	u.handleUserRetrieval(id, w, r)
+}
+
+func (u *UsersEndpoint) handleUserRetrieval(id int, w http.ResponseWriter, r *http.Request) {
 	caller, ok := auth.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
@@ -64,6 +87,8 @@ func (u *UsersEndpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var user *users.Profile
+	var err error
+
 	if caller == id {
 		user, err = u.ub.GetMyProfile(id)
 	} else {

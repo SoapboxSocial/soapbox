@@ -190,6 +190,7 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 			return err
 		}
 
+		// @TODO MAYBE CONTINUE?
 		if in == nil {
 			return nil
 		}

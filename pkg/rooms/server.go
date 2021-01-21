@@ -5,7 +5,6 @@ import (
 	"io"
 	"log"
 	"strings"
-	"sync"
 
 	"github.com/pion/ion-sfu/pkg/sfu"
 	"github.com/pion/webrtc/v3"
@@ -23,8 +22,6 @@ import (
 const MAX_PEERS = 16
 
 type Server struct {
-	mux sync.RWMutex
-
 	sfu    *sfu.SFU
 	sm     *sessions.SessionManager
 	ub     *users.UserBackend
@@ -33,7 +30,7 @@ type Server struct {
 
 	currentRoom *CurrentRoomBackend
 
-	rooms map[string]*Room
+	repository *RoomRepository
 }
 
 func NewServer(
@@ -43,6 +40,7 @@ func NewServer(
 	queue *pubsub.Queue,
 	currentRoom *CurrentRoomBackend,
 	groups *groups.Backend,
+	repository *RoomRepository,
 ) *Server {
 	return &Server{
 		sfu:         sfu,
@@ -51,7 +49,7 @@ func NewServer(
 		queue:       queue,
 		currentRoom: currentRoom,
 		groups:      groups,
-		rooms:       make(map[string]*Room),
+		repository:  repository,
 	}
 }
 
@@ -86,11 +84,8 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 			return status.Errorf(codes.Internal, "something went wrong")
 		}
 
-		s.mux.RLock()
-		r, ok := s.rooms[join.Room]
-		s.mux.RUnlock()
-
-		if !ok {
+		r, err := s.repository.Get(join.Room)
+		if err != nil {
 			return status.Errorf(codes.Internal, "join error room closed")
 		}
 
@@ -179,9 +174,7 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 			return status.Errorf(codes.Internal, "create error %s", err)
 		}
 
-		s.mux.Lock()
-		s.rooms[id] = room
-		s.mux.Unlock()
+		s.repository.Set(room)
 
 	default:
 		return status.Error(codes.FailedPrecondition, "invalid message")
@@ -282,8 +275,8 @@ func (s *Server) handle(peer *sfu.Peer, stream pb.SFU_SignalServer, in *pb.Signa
 
 		midLine := uint16(payload.IceCandidate.SdpMLineIndex)
 		candidate := webrtc.ICECandidateInit{
-			Candidate: payload.IceCandidate.Candidate,
-			SDPMid: &payload.IceCandidate.SdpMid,
+			Candidate:     payload.IceCandidate.Candidate,
+			SDPMid:        &payload.IceCandidate.SdpMid,
 			SDPMLineIndex: &midLine,
 		}
 

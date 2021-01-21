@@ -21,7 +21,6 @@ func main() {
 
 	usersBackend := users.NewUserBackend(db)
 
-
 	endpoint := metadata.NewEndpoint(usersBackend)
 	router := endpoint.Router()
 

@@ -43,7 +43,7 @@ func (r *Room) ToProtoForPeer() *pb.RoomState {
 	defer r.mux.RUnlock()
 
 	return &pb.RoomState{
-		Id: r.id,
+		Id:   r.id,
 		Name: r.name,
 	}
 }

@@ -4,9 +4,9 @@ import (
 	"log"
 	"sync"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/pion/ion-sfu/pkg/sfu"
 	"github.com/pion/webrtc/v3"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/soapboxsocial/soapbox/pkg/rooms/internal"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"

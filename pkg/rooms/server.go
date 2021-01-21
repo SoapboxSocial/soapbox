@@ -98,7 +98,7 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 		//}
 
 		description := webrtc.SessionDescription{
-			Type: newSDPType(join.Description.Type),
+			Type: webrtc.NewSDPType(strings.ToLower(join.Description.Type)),
 			SDP:  join.Description.Sdp,
 		}
 
@@ -147,7 +147,7 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 		room = NewRoom(id, name) // @TODO THE REST
 
 		description := webrtc.SessionDescription{
-			Type: newSDPType(create.Description.Type),
+			Type: webrtc.NewSDPType(strings.ToLower(create.Description.Type)),
 			SDP:  create.Description.Sdp,
 		}
 

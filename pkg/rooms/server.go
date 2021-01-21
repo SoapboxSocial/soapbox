@@ -187,12 +187,11 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 	for {
 		in, err := receive(peer, stream)
 		if err != nil {
-			return err
-		}
+			if err == io.EOF {
+				return nil
+			}
 
-		// @TODO MAYBE CONTINUE?
-		if in == nil {
-			return nil
+			return err
 		}
 
 		err = s.handle(peer, stream, in)
@@ -305,7 +304,7 @@ func receive(peer *sfu.Peer, stream pb.SFU_SignalServer) (*pb.SignalRequest, err
 		_ = peer.Close()
 
 		if err == io.EOF {
-			return nil, nil
+			return nil, err
 		}
 
 		errStatus, _ := status.FromError(err)

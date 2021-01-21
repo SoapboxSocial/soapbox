@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"net"
+	"net/http"
 
 	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
@@ -12,6 +13,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/soapboxsocial/soapbox/pkg/groups"
+	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
@@ -72,6 +74,16 @@ func main() {
 			repository,
 		),
 	)
+
+	endpoint := rooms.NewEndpoint(repository)
+	router := endpoint.Router()
+
+	go func() {
+		err := http.ListenAndServe(":8082", httputil.CORS(router))
+		if err != nil {
+			log.Print(err)
+		}
+	}()
 
 	err = s.Serve(lis)
 	if err != nil {

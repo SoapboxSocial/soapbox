@@ -36,3 +36,12 @@ func (r *Repository) Get(id string) (*Room, error) {
 
 	return room, nil
 }
+
+func (r *Repository) Map(f func(room *Room)) {
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+
+	for _, r := range r.rooms {
+		f(r)
+	}
+}

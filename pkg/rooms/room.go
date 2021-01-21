@@ -71,7 +71,14 @@ func (r *Room) Handle(user int, peer *sfu.Peer) error {
 	})
 
 	peer.OnICEConnectionStateChange = func(state webrtc.ICEConnectionState) {
-		// @TODO
+		if state != webrtc.ICEConnectionStateDisconnected {
+			return
+		}
+
+		r.notify(&pb.Event{
+			From: int64(user),
+			Payload: &pb.Event_Left_{},
+		})
 	}
 
 	return nil

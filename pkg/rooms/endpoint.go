@@ -25,7 +25,7 @@ func NewEndpoint(repository *Repository) *Endpoint {
 func (e *Endpoint) Router() *mux.Router {
 	r := mux.NewRouter()
 
-	r.HandleFunc("/rooms", e.rooms).Methods("GET")
+	r.HandleFunc("/v1/rooms", e.rooms).Methods("GET")
 	//r.HandleFunc("/rooms/{id:[0-9]+}", e.room).Methods("GET")
 
 	return r

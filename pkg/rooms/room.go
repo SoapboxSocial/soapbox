@@ -76,7 +76,7 @@ func (r *Room) Handle(user int, peer *sfu.Peer) error {
 		}
 
 		r.notify(&pb.Event{
-			From: int64(user),
+			From:    int64(user),
 			Payload: &pb.Event_Left_{},
 		})
 	}

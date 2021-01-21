@@ -34,6 +34,8 @@ func (e *Endpoint) Router() *mux.Router {
 func (e *Endpoint) rooms(w http.ResponseWriter, r *http.Request) {
 	rooms := make([]*RoomState, 0)
 
+	// @TODO ACCESS TOKEN AND ALL THAT
+
 	e.repository.Map(func(room *Room) {
 		rooms = append(rooms, &RoomState{
 			ID:   room.id,

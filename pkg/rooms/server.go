@@ -376,18 +376,6 @@ func setup(peer *sfu.Peer, room string, stream pb.SFU_SignalServer, description 
 		}
 	}
 
-	peer.OnICEConnectionStateChange = func(c webrtc.ICEConnectionState) {
-		err := stream.Send(&pb.SignalReply{
-			Payload: &pb.SignalReply_IceConnectionState{
-				IceConnectionState: c.String(),
-			},
-		})
-
-		if err != nil {
-			log.Printf("OnICEConnectionStateChange error %s", err)
-		}
-	}
-
 	answer, err := peer.Join(room, description)
 	if err != nil {
 		switch err {

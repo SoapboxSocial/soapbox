@@ -70,6 +70,10 @@ func (r *Room) Handle(user int, peer *sfu.Peer) error {
 		r.onMessage(user, m)
 	})
 
+	peer.OnICEConnectionStateChange = func(state webrtc.ICEConnectionState) {
+		// @TODO
+	}
+
 	return nil
 }
 

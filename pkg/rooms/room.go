@@ -1,9 +1,12 @@
 package rooms
 
 import (
+	"log"
 	"sync"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/pion/ion-sfu/pkg/sfu"
+	"github.com/pion/webrtc/v3"
 
 	"github.com/soapboxsocial/soapbox/pkg/rooms/internal"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
@@ -51,15 +54,24 @@ func (r *Room) ToProtoForPeer() *pb.RoomState {
 }
 
 func (r *Room) Handle(user int, peer *sfu.Peer) error {
+	var dc *webrtc.DataChannel
 
-	//r.session.AddDatachannelHandleFunc(peer.ID())
+	r.session.AddDatachannelHandleFunc(peer.ID(), dc, func(origin string, msg webrtc.DataChannelMessage, outputs map[string]*webrtc.DataChannel) {
+		var m *pb.Command
 
-	for {
+		err := proto.Unmarshal(msg.Data, m)
+		if err != nil {
+			log.Printf("error unmarshalling: %v", err)
+			return
+		}
 
-	}
+		r.onMessage(user, m, outputs)
+	})
+
+	return nil
 }
 
-func (r *Room) onMessage(from int, command *pb.Command) {
+func (r *Room) onMessage(from int, command *pb.Command, outputs map[string]*webrtc.DataChannel) {
 	switch command.Payload.(type) {
 	case *pb.Command_Mute_:
 		r.onMute(from)

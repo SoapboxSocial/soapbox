@@ -20,6 +20,8 @@ type Room struct {
 	adminInvites map[int]bool
 	kicked       map[int]bool
 	invited      map[int]bool
+
+	session sfu.Session
 }
 
 func NewRoom(id, name string) *Room {
@@ -49,6 +51,9 @@ func (r *Room) ToProtoForPeer() *pb.RoomState {
 }
 
 func (r *Room) Handle(user int, peer *sfu.Peer) error {
+
+	//r.session.AddDatachannelHandleFunc(peer.ID())
+
 	for {
 
 	}

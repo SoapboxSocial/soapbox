@@ -182,10 +182,16 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 
 	room.Handle(user.ID, peer)
 
+	// @TODO ADD ON DISCONNECT CALLBACK.
+
 	for {
 		in, err := receive(peer, stream)
 		if err != nil {
 			return err
+		}
+
+		if in == nil {
+			return nil
 		}
 
 		err = s.handle(peer, stream, in)

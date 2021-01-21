@@ -2,8 +2,6 @@ package rooms
 
 import (
 	"github.com/pion/ion-sfu/pkg/sfu"
-
-	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 )
 
 // @TODO ADD USER DATA
@@ -13,8 +11,8 @@ type Member struct {
 	peer *sfu.Peer
 }
 
-func (m *Member) Receive() (*pb.Command, error) {
-	return nil, nil
+func (m *Member) Close() {
+	_ = m.peer.Close()
 }
 
 func (m *Member) Notify(label string, data []byte) error {

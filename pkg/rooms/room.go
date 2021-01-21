@@ -219,7 +219,16 @@ func (r *Room) onInviteUser(from int, cmd *pb.Command_InviteUser) {
 }
 
 func (r *Room) onKickUser(from int, cmd *pb.Command_KickUser) {
+	if !r.IsAdmin(from) {
+		return
+	}
 
+	p, ok := r.members[int(cmd.Id)]
+	if !ok {
+		return
+	}
+
+	p.Close()
 }
 
 func (r *Room) onMuteUser(from int, cmd *pb.Command_MuteUser) {

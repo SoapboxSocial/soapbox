@@ -12,6 +12,8 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 )
 
+const CHANNEL = "soapbox"
+
 type Room struct {
 	mux sync.RWMutex
 
@@ -56,7 +58,7 @@ func (r *Room) ToProtoForPeer() *pb.RoomState {
 func (r *Room) Handle(user int, peer *sfu.Peer) error {
 	var dc *webrtc.DataChannel
 
-	r.session.AddDatachannelHandleFunc(peer.ID(), dc, func(origin string, msg webrtc.DataChannelMessage, outputs map[string]*webrtc.DataChannel) {
+	r.session.AddDatachannelHandleFunc(peer.ID(), dc, func(origin string, msg webrtc.DataChannelMessage) {
 		var m *pb.Command
 
 		err := proto.Unmarshal(msg.Data, m)
@@ -65,13 +67,13 @@ func (r *Room) Handle(user int, peer *sfu.Peer) error {
 			return
 		}
 
-		r.onMessage(user, m, outputs)
+		r.onMessage(user, m)
 	})
 
 	return nil
 }
 
-func (r *Room) onMessage(from int, command *pb.Command, outputs map[string]*webrtc.DataChannel) {
+func (r *Room) onMessage(from int, command *pb.Command) {
 	switch command.Payload.(type) {
 	case *pb.Command_Mute_:
 		r.onMute(from)
@@ -149,10 +151,13 @@ func (r *Room) onInviteAdmin(from int, cmd *pb.Command_InviteAdmin) {
 
 	r.adminInvites[int(cmd.Id)] = true
 
-	member.Notify(&pb.Event{
-		From:    int64(from),
-		Payload: &pb.Event_InvitedAdmin_{InvitedAdmin: &pb.Event_InvitedAdmin{}},
-	})
+	data, err := proto.Marshal(cmd)
+	if err != nil {
+		log.Printf("failed to marshal %v", err)
+		return
+	}
+
+	member.Notify(CHANNEL, data)
 }
 
 func (r *Room) onAcceptAdmin(from int) {
@@ -228,11 +233,17 @@ func (r *Room) notify(event *pb.Event) {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
 
+	data, err := proto.Marshal(event)
+	if err != nil {
+		log.Printf("failed to marshal: %v", err)
+		return
+	}
+
 	for id, member := range r.members {
 		if id == int(event.From) {
 			continue
 		}
 
-		member.Notify(event)
+		member.Notify(CHANNEL, data)
 	}
 }

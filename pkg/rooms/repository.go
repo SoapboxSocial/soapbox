@@ -13,7 +13,7 @@ type Repository struct {
 
 func NewRepository() *Repository {
 	return &Repository{
-		mux:         sync.RWMutex{},
+		mux:   sync.RWMutex{},
 		rooms: make(map[string]*Room),
 	}
 }

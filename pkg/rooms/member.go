@@ -17,6 +17,6 @@ func (m *Member) Receive() (*pb.Command, error) {
 	return nil, nil
 }
 
-func (m *Member) Notify(event *pb.Event) {
-
+func (m *Member) Notify(label string, data []byte) error {
+	return m.peer.GetDataChannel(label).Send(data)
 }

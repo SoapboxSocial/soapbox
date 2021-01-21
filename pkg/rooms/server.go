@@ -398,9 +398,7 @@ func setup(peer *sfu.Peer, room string, stream pb.SFU_SignalServer, description 
 }
 
 func newSDPType(raw string) webrtc.SDPType {
-	val := strings.ToLower(raw)
-
-	switch val {
+	switch strings.ToLower(raw) {
 	case "offer":
 		return webrtc.SDPTypeOffer
 	case "pranswer":

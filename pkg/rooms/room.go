@@ -55,20 +55,20 @@ func (r *Room) ToProtoForPeer() *pb.RoomState {
 	}
 }
 
-func (r *Room) Handle(user int, peer *sfu.Peer) error {
-	var dc *webrtc.DataChannel
-
-	r.session.AddDatachannelHandleFunc(peer.ID(), dc, func(origin string, msg webrtc.DataChannelMessage) {
-		var m *pb.Command
-
-		err := proto.Unmarshal(msg.Data, m)
-		if err != nil {
-			log.Printf("error unmarshalling: %v", err)
-			return
-		}
-
-		r.onMessage(user, m)
-	})
+func (r *Room) Handle(user int, peer *sfu.Peer) {
+	//var dc *webrtc.DataChannel
+	//
+	//r.session.AddDatachannelHandleFunc(peer.ID(), dc, func(origin string, msg webrtc.DataChannelMessage) {
+	//	var m *pb.Command
+	//
+	//	err := proto.Unmarshal(msg.Data, m)
+	//	if err != nil {
+	//		log.Printf("error unmarshalling: %v", err)
+	//		return
+	//	}
+	//
+	//	r.onMessage(user, m)
+	//})
 
 	peer.OnICEConnectionStateChange = func(state webrtc.ICEConnectionState) {
 		if state != webrtc.ICEConnectionStateDisconnected {
@@ -80,8 +80,6 @@ func (r *Room) Handle(user int, peer *sfu.Peer) error {
 			Payload: &pb.Event_Left_{},
 		})
 	}
-
-	return nil
 }
 
 func (r *Room) onMessage(from int, command *pb.Command) {

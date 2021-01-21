@@ -180,28 +180,17 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 		return status.Error(codes.FailedPrecondition, "invalid message")
 	}
 
-	errChan := make(chan error)
-	go func() {
-		err := room.Handle(user.ID, peer) // @TODO
-		errChan <- err
-	}()
+	room.Handle(user.ID, peer)
 
 	for {
-		select {
-		case err := <-errChan:
-			log.Printf("handle err %v", err)
-			_ = peer.Close()
-			return nil
-		default:
-			in, err := receive(peer, stream)
-			if err != nil {
-				return err
-			}
+		in, err := receive(peer, stream)
+		if err != nil {
+			return err
+		}
 
-			err = s.handle(peer, stream, in)
-			if err != nil {
-				return err
-			}
+		err = s.handle(peer, stream, in)
+		if err != nil {
+			return err
 		}
 	}
 }

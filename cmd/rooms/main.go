@@ -57,6 +57,8 @@ func main() {
 		return
 	}
 
+	repository := rooms.NewRepository()
+
 	s := grpc.NewServer()
 	pb.RegisterSFUServer(
 		s,
@@ -67,6 +69,7 @@ func main() {
 			pubsub.NewQueue(rdb),
 			rooms.NewCurrentRoomBackend(rdb),
 			groups.NewBackend(db),
+			repository,
 		),
 	)
 

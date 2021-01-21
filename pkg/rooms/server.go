@@ -30,7 +30,7 @@ type Server struct {
 
 	currentRoom *CurrentRoomBackend
 
-	repository *RoomRepository
+	repository *Repository
 }
 
 func NewServer(
@@ -40,7 +40,7 @@ func NewServer(
 	queue *pubsub.Queue,
 	currentRoom *CurrentRoomBackend,
 	groups *groups.Backend,
-	repository *RoomRepository,
+	repository *Repository,
 ) *Server {
 	return &Server{
 		sfu:         sfu,

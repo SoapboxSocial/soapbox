@@ -211,7 +211,7 @@ func (s *Server) handle(peer *sfu.Peer, stream pb.SFU_SignalServer, in *pb.Signa
 	case *pb.SignalRequest_Description:
 		payload := in.GetDescription()
 		sdp := webrtc.SessionDescription{
-			Type: newSDPType(payload.Type),
+			Type: webrtc.NewSDPType(strings.ToLower(payload.Type)),
 			SDP:  payload.Sdp,
 		}
 
@@ -395,21 +395,6 @@ func setup(peer *sfu.Peer, room string, stream pb.SFU_SignalServer, description 
 	}
 
 	return answer, nil
-}
-
-func newSDPType(raw string) webrtc.SDPType {
-	switch strings.ToLower(raw) {
-	case "offer":
-		return webrtc.SDPTypeOffer
-	case "pranswer":
-		return webrtc.SDPTypePranswer
-	case "answer":
-		return webrtc.SDPTypeAnswer
-	case "rollback":
-		return webrtc.SDPTypeRollback
-	default:
-		return webrtc.SDPType(webrtc.Unknown)
-	}
 }
 
 func (s *Server) userForSession(session string) (*users.User, error) {

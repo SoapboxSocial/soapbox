@@ -218,21 +218,21 @@ func (s *Server) handle(peer *sfu.Peer, stream pb.SFU_SignalServer, in *pb.Signa
 		if sdp.Type == webrtc.SDPTypeOffer {
 			answer, err := peer.Answer(sdp)
 			if err != nil {
-				switch err {
-				case sfu.ErrNoTransportEstablished:
-					fallthrough
-				case sfu.ErrOfferIgnored:
+
+				if err == sfu.ErrNoTransportEstablished || err == sfu.ErrOfferIgnored {
 					err = stream.Send(&pb.SignalReply{
 						Payload: &pb.SignalReply_Error{
 							Error: fmt.Errorf("negotiate answer error: %w", err).Error(),
 						},
 					})
+
 					if err != nil {
 						log.Printf("grpc send error %v\n", err)
 						return status.Errorf(codes.Internal, err.Error())
 					}
+
 					return nil
-				default:
+				} else {
 					return status.Errorf(codes.Unknown, fmt.Sprintf("negotiate error: %v", err))
 				}
 			}
@@ -261,6 +261,7 @@ func (s *Server) handle(peer *sfu.Peer, stream pb.SFU_SignalServer, in *pb.Signa
 							Error: fmt.Errorf("set remote description error: %w", err).Error(),
 						},
 					})
+
 					if err != nil {
 						log.Printf("grpc send error %v\n", err)
 						return status.Errorf(codes.Internal, err.Error())
@@ -378,20 +379,18 @@ func setup(peer *sfu.Peer, room string, stream pb.SFU_SignalServer, description 
 
 	answer, err := peer.Join(room, description)
 	if err != nil {
-		switch err {
-		case sfu.ErrTransportExists:
-			fallthrough
-		case sfu.ErrOfferIgnored:
+		if err == sfu.ErrTransportExists || err == sfu.ErrOfferIgnored {
 			err = stream.Send(&pb.SignalReply{
 				Payload: &pb.SignalReply_Error{
 					Error: fmt.Errorf("join error: %w", err).Error(),
 				},
 			})
+
 			if err != nil {
 				log.Printf("grpc send error %v ", err)
 				return nil, status.Errorf(codes.Internal, err.Error())
 			}
-		default:
+		} else {
 			return nil, status.Errorf(codes.Unknown, err.Error())
 		}
 	}

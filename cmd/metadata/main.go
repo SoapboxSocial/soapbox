@@ -7,8 +7,7 @@ import (
 
 	_ "github.com/lib/pq"
 
-	"github.com/gorilla/handlers"
-
+	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/metadata"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
@@ -24,17 +23,5 @@ func main() {
 	endpoint := metadata.NewEndpoint(usersBackend)
 	router := endpoint.Router()
 
-	headersOk := handlers.AllowedHeaders([]string{
-		"Content-Type",
-		"X-Requested-With",
-		"Accept",
-		"Accept-Language",
-		"Accept-Encoding",
-		"Content-Language",
-		"Origin",
-	})
-	originsOk := handlers.AllowedOrigins([]string{"*"})
-	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS", "DELETE"})
-
-	log.Print(http.ListenAndServe(":8081", handlers.CORS(originsOk, headersOk, methodsOk)(router)))
+	log.Print(http.ListenAndServe(":8081", httputil.CORS(router)))
 }

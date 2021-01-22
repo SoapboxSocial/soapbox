@@ -278,6 +278,9 @@ func (r *Room) notify(event *pb.Event) {
 			continue
 		}
 
-		member.Notify(CHANNEL, data)
+		err := member.Notify(CHANNEL, data)
+		if err != nil {
+			log.Printf("failed to notify: %v\n", err)
+		}
 	}
 }

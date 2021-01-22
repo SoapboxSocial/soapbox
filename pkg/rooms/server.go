@@ -194,6 +194,10 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 			return err
 		}
 
+		if in == nil {
+			return
+		}
+
 		err = s.handle(peer, stream, in)
 		if err != nil {
 			return err
@@ -213,7 +217,6 @@ func (s *Server) handle(peer *sfu.Peer, stream pb.SFU_SignalServer, in *pb.Signa
 		if sdp.Type == webrtc.SDPTypeOffer {
 			answer, err := peer.Answer(sdp)
 			if err != nil {
-
 				if err == sfu.ErrNoTransportEstablished || err == sfu.ErrOfferIgnored {
 					err = stream.Send(&pb.SignalReply{
 						Payload: &pb.SignalReply_Error{
@@ -304,7 +307,7 @@ func receive(peer *sfu.Peer, stream pb.SFU_SignalServer) (*pb.SignalRequest, err
 		_ = peer.Close()
 
 		if err == io.EOF {
-			return nil, err
+			return nil, nil
 		}
 
 		errStatus, _ := status.FromError(err)

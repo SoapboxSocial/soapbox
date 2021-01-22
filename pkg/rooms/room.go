@@ -20,7 +20,7 @@ type Room struct {
 	id   string
 	name string
 
-	members map[int]Member
+	members map[int]*Member
 
 	adminInvites map[int]bool
 	kicked       map[int]bool
@@ -32,7 +32,13 @@ type Room struct {
 }
 
 func NewRoom(id, name string, session *sfu.Session) *Room {
-	r := &Room{id: id, name: name, session: session, peerToMember: make(map[string]int)}
+	r := &Room{
+		id:           id,
+		name:         name,
+		session:      session,
+		peerToMember: make(map[string]int),
+		members:      make(map[int]*Member),
+	}
 
 	session.AddDatachannelHandler(CHANNEL, func(origin string, msg webrtc.DataChannelMessage) {
 		var m *pb.Command
@@ -82,11 +88,17 @@ func (r *Room) ToProtoForPeer() *pb.RoomState {
 func (r *Room) Handle(user int, peer *sfu.Peer) {
 	r.peerToMember[peer.ID()] = user
 
+	r.mux.Lock()
+	r.members[user] = &Member{id: user, peer: peer}
+	r.mux.Unlock()
+
 	peer.OnICEConnectionStateChange = func(state webrtc.ICEConnectionState) {
+		log.Printf("connection state changed %d", state)
+
 		switch state {
 		case webrtc.ICEConnectionStateConnected:
 			r.notify(&pb.Event{
-				From: int64(user),
+				From:    int64(user),
 				Payload: &pb.Event_Joined_{},
 			})
 		case webrtc.ICEConnectionStateDisconnected:

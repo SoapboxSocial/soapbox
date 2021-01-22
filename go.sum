@@ -326,6 +326,8 @@ github.com/pion/ion-sfu v1.7.9-0.20210121152627-bb17f1685006 h1:VILojC55TTJb2n45
 github.com/pion/ion-sfu v1.7.9-0.20210121152627-bb17f1685006/go.mod h1:3VcBm7RSsSzB09HH4g5ka63pVvx7UHI4vL2XNFt1jA8=
 github.com/pion/ion-sfu v1.7.9-0.20210121154020-4adfa537070d h1:7k3Qc3S0B4Ismtk+CwdWvqfKWL7QOKhkCL6oMsMhNUg=
 github.com/pion/ion-sfu v1.7.9-0.20210121154020-4adfa537070d/go.mod h1:3VcBm7RSsSzB09HH4g5ka63pVvx7UHI4vL2XNFt1jA8=
+github.com/pion/ion-sfu v1.7.9-0.20210122155749-7a865ad636a4 h1:2nFOEcsRPxRX9ixVmXW623VVDZlruOZZ4+Ub6ueTd/c=
+github.com/pion/ion-sfu v1.7.9-0.20210122155749-7a865ad636a4/go.mod h1:3VcBm7RSsSzB09HH4g5ka63pVvx7UHI4vL2XNFt1jA8=
 github.com/pion/logging v0.2.2 h1:M9+AIj/+pxNsDfAT64+MAVgJO0rsyLnoJKCqf//DoeY=
 github.com/pion/logging v0.2.2/go.mod h1:k0/tDVsRCX2Mb2ZEmTqNa7CWsQPc+YYCB7Q+5pahoms=
 github.com/pion/mdns v0.0.4 h1:O4vvVqr4DGX63vzmO6Fw9vpy3lfztVWHGCQfyw0ZLSY=

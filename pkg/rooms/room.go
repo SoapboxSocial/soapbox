@@ -26,11 +26,35 @@ type Room struct {
 	kicked       map[int]bool
 	invited      map[int]bool
 
-	session sfu.Session
+	peerToMember map[string]int
+
+	session *sfu.Session
 }
 
-func NewRoom(id, name string) *Room {
-	return &Room{id: id, name: name}
+func NewRoom(id, name string, session *sfu.Session) *Room {
+	r := &Room{id: id, name: name, session: session, peerToMember: make(map[string]int)}
+
+	session.AddDatachannelHandler(CHANNEL, func(origin string, msg webrtc.DataChannelMessage) {
+		var m *pb.Command
+
+		err := proto.Unmarshal(msg.Data, m)
+		if err != nil {
+			log.Printf("error unmarshalling: %v", err)
+			return
+		}
+
+		r.mux.RLock()
+		defer r.mux.RUnlock()
+
+		user, ok := r.peerToMember[origin]
+		if !ok {
+			return
+		}
+
+		r.onMessage(user, m)
+	})
+
+	return r
 }
 
 func (r *Room) ID() string {
@@ -56,29 +80,21 @@ func (r *Room) ToProtoForPeer() *pb.RoomState {
 }
 
 func (r *Room) Handle(user int, peer *sfu.Peer) {
-	//var dc *webrtc.DataChannel
-	//
-	//r.session.AddDatachannelHandleFunc(peer.ID(), dc, func(origin string, msg webrtc.DataChannelMessage) {
-	//	var m *pb.Command
-	//
-	//	err := proto.Unmarshal(msg.Data, m)
-	//	if err != nil {
-	//		log.Printf("error unmarshalling: %v", err)
-	//		return
-	//	}
-	//
-	//	r.onMessage(user, m)
-	//})
+	r.peerToMember[peer.ID()] = user
 
 	peer.OnICEConnectionStateChange = func(state webrtc.ICEConnectionState) {
-		if state != webrtc.ICEConnectionStateDisconnected {
-			return
+		switch state {
+		case webrtc.ICEConnectionStateConnected:
+			r.notify(&pb.Event{
+				From: int64(user),
+				Payload: &pb.Event_Joined_{},
+			})
+		case webrtc.ICEConnectionStateDisconnected:
+			r.notify(&pb.Event{
+				From:    int64(user),
+				Payload: &pb.Event_Left_{},
+			})
 		}
-
-		r.notify(&pb.Event{
-			From:    int64(user),
-			Payload: &pb.Event_Left_{},
-		})
 	}
 }
 

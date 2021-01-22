@@ -15,7 +15,7 @@ require (
 	github.com/lib/pq v1.9.0
 	github.com/pion/ice/v2 v2.0.15 // indirect
 	github.com/pion/ion-log v1.0.0
-	github.com/pion/ion-sfu v1.7.9-0.20210121154020-4adfa537070d
+	github.com/pion/ion-sfu v1.7.9-0.20210122155749-7a865ad636a4
 	github.com/pion/webrtc/v3 v3.0.4
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/procfs v0.3.0 // indirect

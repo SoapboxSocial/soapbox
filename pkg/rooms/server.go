@@ -144,7 +144,8 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 		//	}
 		//}
 
-		room = NewRoom(id, name) // @TODO THE REST
+		session, _ := s.sfu.GetSession(id)
+		room = NewRoom(id, name, session) // @TODO THE REST
 
 		description := webrtc.SessionDescription{
 			Type: webrtc.NewSDPType(strings.ToLower(create.Description.Type)),

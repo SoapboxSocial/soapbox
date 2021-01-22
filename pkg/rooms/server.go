@@ -195,7 +195,7 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 		}
 
 		if in == nil {
-			return
+			return nil
 		}
 
 		err = s.handle(peer, stream, in)

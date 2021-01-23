@@ -78,6 +78,7 @@ func (e *Endpoint) Router() *mux.Router {
 	r := mux.NewRouter()
 
 	r.Path("/start").Methods("POST").HandlerFunc(e.start)
+	r.Path("/start/apple").Methods("POST").HandlerFunc(e.loginWithApple)
 	r.Path("/pin").Methods("POST").HandlerFunc(e.submitPin)
 	r.Path("/register").Methods("POST").HandlerFunc(e.register)
 
@@ -126,6 +127,14 @@ func (e *Endpoint) start(w http.ResponseWriter, r *http.Request) {
 	err = json.NewEncoder(w).Encode(map[string]string{"token": token})
 	if err != nil {
 		log.Println("error writing response: " + err.Error())
+	}
+}
+
+func (e *Endpoint) loginWithApple(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
 	}
 }
 

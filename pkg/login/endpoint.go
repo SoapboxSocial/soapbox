@@ -1,15 +1,11 @@
 package login
 
 import (
-	"crypto/rand"
 	"database/sql"
 	"encoding/json"
-	"fmt"
-	"io"
 	"log"
 	"mime/multipart"
 	"net/http"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -18,6 +14,7 @@ import (
 
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/images"
+	"github.com/soapboxsocial/soapbox/pkg/login/internal"
 	"github.com/soapboxsocial/soapbox/pkg/mail"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
@@ -92,18 +89,18 @@ func (e *Endpoint) start(w http.ResponseWriter, r *http.Request) {
 	}
 
 	email := strings.ToLower(r.Form.Get("email"))
-	if !validateEmail(email) {
+	if !internal.ValidateEmail(email) {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidEmail, "invalid email")
 		return
 	}
 
-	token, err := generateToken()
+	token, err := internal.GenerateToken()
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}
 
-	pin, err := generatePin()
+	pin, err := internal.GeneratePin()
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
 		return
@@ -205,7 +202,7 @@ func (e *Endpoint) register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	username := strings.ToLower(r.Form.Get("username"))
-	if !validateUsername(username) {
+	if !internal.ValidateUsername(username) {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidUsername, "invalid parameter: username")
 		return
 	}
@@ -284,42 +281,3 @@ func (e *Endpoint) processProfilePicture(file multipart.File) (string, error) {
 
 	return name, nil
 }
-
-var emailRegex = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
-
-func validateEmail(email string) bool {
-	return len(email) < 254 && emailRegex.MatchString(email)
-}
-
-var usernameRegex = regexp.MustCompile("^([a-z0-9_]+)*$")
-
-func validateUsername(username string) bool {
-	return len(username) < 100 && len(username) > 2 && usernameRegex.MatchString(username)
-}
-
-func generateToken() (string, error) {
-	b := make([]byte, 16)
-	_, err := rand.Read(b)
-	if err != nil {
-		return "", err
-	}
-
-	return fmt.Sprintf("%x", b), nil
-}
-
-func generatePin() (string, error) {
-	max := 6
-	b := make([]byte, max)
-	n, err := io.ReadAtLeast(rand.Reader, b, max)
-	if n != max {
-		return "", err
-	}
-
-	for i := 0; i < len(b); i++ {
-		b[i] = table[int(b[i])%len(table)]
-	}
-
-	return string(b), nil
-}
-
-var table = []byte{'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'}

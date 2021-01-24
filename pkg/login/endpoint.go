@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"mime/multipart"
 	"net/http"
@@ -14,6 +15,7 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/Timothylock/go-signin-with-apple/apple"
+
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/images"
 	"github.com/soapboxsocial/soapbox/pkg/login/internal"
@@ -53,6 +55,8 @@ type Endpoint struct {
 	mail *mail.Service
 
 	queue *pubsub.Queue
+
+	secret string
 }
 
 func NewEndpoint(
@@ -62,14 +66,18 @@ func NewEndpoint(
 	mail *mail.Service,
 	ib *images.Backend,
 	queue *pubsub.Queue,
+	appleClient *apple.Client,
+	secret string,
 ) Endpoint {
 	return Endpoint{
-		users:    ub,
-		state:    state,
-		sessions: manager,
-		mail:     mail,
-		ib:       ib,
-		queue:    queue,
+		users:       ub,
+		state:       state,
+		sessions:    manager,
+		mail:        mail,
+		ib:          ib,
+		queue:       queue,
+		appleClient: appleClient,
+		secret:      secret,
 	}
 }
 
@@ -140,21 +148,17 @@ func (e *Endpoint) loginWithApple(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	email := strings.ToLower(r.Form.Get("email"))
-	if !internal.ValidateEmail(email) {
-		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidEmail, "invalid email")
+	jwt := r.Form.Get("token")
+	if jwt == "" {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid user id")
 		return
 	}
 
-	//userID := r.Form.Get("user_id")
-	//if userID == "" {
-	//	httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid user id")
-	//	return
-	//}
-
-	// @TODO
-
-	req := apple.AppValidationTokenRequest{}
+	req := apple.AppValidationTokenRequest{
+		ClientID:     "app.social.soapbox",
+		ClientSecret: e.secret,
+		Code:         jwt,
+	}
 
 	resp := &apple.ValidationResponse{}
 	err = e.appleClient.VerifyAppToken(context.Background(), req, resp)
@@ -169,8 +173,20 @@ func (e *Endpoint) loginWithApple(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	claim, err := apple.GetClaims(resp.IDToken)
+	if err != nil {
+		fmt.Println("failed to get claims: " + err.Error())
+		return
+	}
+
 	token, err := internal.GenerateToken()
 	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	email, ok := claim.GetString("email")
+	if !ok {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}

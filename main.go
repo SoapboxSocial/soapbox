@@ -2,10 +2,12 @@ package main
 
 import (
 	"database/sql"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
 
+	"github.com/Timothylock/go-signin-with-apple/apple"
 	"github.com/dghubble/oauth1"
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/go-redis/redis/v8"
@@ -78,7 +80,14 @@ func main() {
 
 	loginState := login.NewStateManager(rdb)
 
-	loginEndpoints := login.NewEndpoint(ub, loginState, s, ms, ib, queue)
+	appleClient := apple.New()
+
+	secret, err := ioutil.ReadFile("/conf/sign-in-key.p8")
+	if err != nil {
+		panic(err)
+	}
+
+	loginEndpoints := login.NewEndpoint(ub, loginState, s, ms, ib, queue, appleClient, string(secret))
 	loginRouter := loginEndpoints.Router()
 	mount(r, "/v1/login", loginRouter)
 

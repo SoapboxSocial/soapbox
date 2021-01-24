@@ -19,6 +19,7 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
 	"github.com/soapboxsocial/soapbox/pkg/users"
+	"github.com/Timothylock/go-signin-with-apple/apple"
 )
 
 // Contains the login handlers
@@ -43,6 +44,8 @@ type Endpoint struct {
 	state    *StateManager
 	users    *users.UserBackend
 	sessions *sessions.SessionManager
+
+	appleClient *apple.Client
 
 	ib *images.Backend
 
@@ -129,7 +132,6 @@ func (e *Endpoint) start(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// @TODO IS THIS SAVE? HOW DO WE PREVENT AN ATTACKER FROM JUST PASSING THE USER ID?
 func (e *Endpoint) loginWithApple(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
@@ -148,6 +150,9 @@ func (e *Endpoint) loginWithApple(w http.ResponseWriter, r *http.Request) {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid user id")
 		return
 	}
+
+	// @TODO
+	//e.appleClient.VerifyAppToken()
 
 	token, err := internal.GenerateToken()
 	if err != nil {

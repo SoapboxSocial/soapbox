@@ -12,8 +12,9 @@ const pinExpiration = 15 * time.Minute
 
 // State represents the user login state
 type State struct {
-	Email string
-	Pin   string
+	Email       string
+	AppleUserID string
+	Pin         string
 }
 
 // StateManager is responsible for handling the login state of a user
@@ -66,6 +67,26 @@ func (sm *StateManager) SetPinState(token, email, pin string) error {
 func (sm *StateManager) SetRegistrationState(token, email string) error {
 	state := &State{
 		Email: email,
+	}
+
+	data, err := json.Marshal(state)
+	if err != nil {
+		return err
+	}
+
+	_, err = sm.rdb.Set(sm.rdb.Context(), key(token), data, 0).Result()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// SetAppleRegistrationState starts the registration state for apple
+func (sm *StateManager) SetAppleRegistrationState(token, email, userID string) error {
+	state := &State{
+		Email:       email,
+		AppleUserID: userID,
 	}
 
 	data, err := json.Marshal(state)

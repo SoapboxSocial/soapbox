@@ -157,7 +157,7 @@ func (e *Endpoint) loginWithApple(w http.ResponseWriter, r *http.Request) {
 	user, err := e.users.FindByAppleID(userID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			//e.enterRegistrationState(w, token, state.email)
+			e.enterAppleRegistrationState(w, token, email, userID)
 			return
 		}
 
@@ -229,6 +229,18 @@ func (e *Endpoint) submitPin(w http.ResponseWriter, r *http.Request) {
 
 func (e *Endpoint) enterRegistrationState(w http.ResponseWriter, token, email string) {
 	err := e.state.SetRegistrationState(token, email)
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	err = httputil.JsonEncode(w, loginState{State: LoginStateRegister})
+	if err != nil {
+		log.Println("error writing response: " + err.Error())
+	}
+}
+func (e *Endpoint) enterAppleRegistrationState(w http.ResponseWriter, token, email, userID string) {
+	err := e.state.SetAppleRegistrationState(token, email, userID)
 	if err != nil {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
 		return

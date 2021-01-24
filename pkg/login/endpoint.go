@@ -203,7 +203,7 @@ func (e *Endpoint) register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	state, err := e.state.GetState(token)
-	if err != nil {
+	if err != nil || state.Pin != "" {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}

@@ -1,6 +1,7 @@
 package users
 
 import (
+	"context"
 	"database/sql"
 	"strings"
 )
@@ -282,6 +283,39 @@ func (ub *UserBackend) CreateUser(email, displayName, bio, image, username strin
 	var id int
 	err = stmt.QueryRow(displayName, strings.ToLower(username), email, bio, image).Scan(&id)
 	if err != nil {
+		return 0, err
+	}
+
+	return id, nil
+}
+
+func (ub *UserBackend) CreateUserWithAppleLogin(email, displayName, bio, image, username, appleID string) (int, error) {
+	ctx := context.Background()
+	tx, err := ub.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+
+	res := tx.QueryRow(
+		"INSERT INTO users (display_name, username, email, bio, image) VALUES ($1, $2, $3, $4, $5) RETURNING id;",
+		displayName, strings.ToLower(username), email, bio, image,
+	)
+
+	var id int
+	err = res.Scan(&id)
+	if err != nil {
+		_ = tx.Rollback()
+		return 0, err
+	}
+
+	_, err = tx.ExecContext(
+		ctx,
+		"INSERT INTO apple_authentication (user_id, apple_user) VALUES ($1, $2);",
+		id, appleID,
+	)
+
+	if err != nil {
+		_ = tx.Rollback()
 		return 0, err
 	}
 

@@ -129,6 +129,7 @@ func (e *Endpoint) start(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// @TODO IS THIS SAVE? HOW DO WE PREVENT AN ATTACKER FROM JUST PASSING THE USER ID?
 func (e *Endpoint) loginWithApple(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
@@ -295,8 +296,14 @@ func (e *Endpoint) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var lastID int
+	if state.AppleUserID != "" {
+		lastID, err = e.users.CreateUserWithAppleLogin(state.Email, name, "", image, username, state.AppleUserID)
+	} else {
+		lastID, err = e.users.CreateUser(state.Email, name, "", image, username)
+	}
+
 	// @TODO ALLOW BIO DURING ON-BOARDING
-	lastID, err := e.users.CreateUser(state.Email, name, "", image, username)
 	if err != nil {
 		_ = e.ib.Remove(image)
 

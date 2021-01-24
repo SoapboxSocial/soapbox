@@ -150,7 +150,7 @@ func (e *Endpoint) loginWithApple(w http.ResponseWriter, r *http.Request) {
 
 	jwt := r.Form.Get("token")
 	if jwt == "" {
-		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid user id")
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid token id")
 		return
 	}
 
@@ -163,13 +163,13 @@ func (e *Endpoint) loginWithApple(w http.ResponseWriter, r *http.Request) {
 	resp := &apple.ValidationResponse{}
 	err = e.appleClient.VerifyAppToken(context.Background(), req, resp)
 	if err != nil {
-		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid user id")
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "failed to validate")
 		return
 	}
 
 	userID, err := apple.GetUniqueID(resp.IDToken)
 	if err != nil {
-		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid user id")
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "failed to validate")
 		return
 	}
 

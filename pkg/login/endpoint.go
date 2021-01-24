@@ -42,12 +42,19 @@ type tokenState struct {
 	pin   string
 }
 
+type appleLoginState struct {
+	email string
+	user string
+}
+
 type Endpoint struct {
 	sync.Mutex
 
 	// @todo use redis
 	tokens        map[string]tokenState
 	registrations map[string]string
+
+	appleLogin map[string]appleLoginState
 
 	users    *users.UserBackend
 	sessions *sessions.SessionManager
@@ -132,6 +139,48 @@ func (e *Endpoint) loginWithApple(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
 		return
+	}
+
+	email := strings.ToLower(r.Form.Get("email"))
+	if !internal.ValidateEmail(email) {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidEmail, "invalid email")
+		return
+	}
+
+	userID := r.Form.Get("user_id")
+	if userID == "" {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid user id")
+		return
+	}
+
+	token, err := internal.GenerateToken()
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	user, err := e.users.FindByAppleID(userID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			//e.enterRegistrationState(w, token, state.email)
+			return
+		}
+
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToLogin, "")
+		return
+	}
+
+	err = e.sessions.NewSession(token, *user, expiration)
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToLogin, "")
+		return
+	}
+
+	expires := int(expiration.Seconds())
+	err = httputil.JsonEncode(w, loginState{State: LoginStateSuccess, User: user, ExpiresIn: &expires})
+	if err != nil {
+		log.Println("error writing response: " + err.Error())
+
 	}
 }
 

@@ -112,7 +112,8 @@ func TestLoginEndpoint_PinSubmission(t *testing.T) {
 	}
 
 	mock.ExpectPrepare("^SELECT (.+)").ExpectQuery().
-		WithArgs(email).WillReturnRows(mock.NewRows([]string{"id", "display_name", "username", "image", "bio", "email"}).FromCSVString("1,dean,dean,123.png,my bio,test@apple.com"))
+		WithArgs(email).
+		WillReturnRows(mock.NewRows([]string{"id", "display_name", "username", "image", "bio", "email"}).FromCSVString("1,dean,dean,123.png,my bio,test@apple.com"))
 
 	form := url.Values{}
 	form.Add("pin", pin)

@@ -76,7 +76,9 @@ func main() {
 	ib := images.NewImagesBackend("/cdn/images")
 	ms := mail.NewMailService(sendgrid.NewSendClient(sendgrid_api))
 
-	loginEndpoints := login.NewEndpoint(ub, s, ms, ib, queue)
+	loginState := login.NewStateManager(rdb)
+
+	loginEndpoints := login.NewEndpoint(ub, loginState, s, ms, ib, queue)
 	loginRouter := loginEndpoints.Router()
 	mount(r, "/v1/login", loginRouter)
 

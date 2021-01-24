@@ -246,6 +246,8 @@ func (e *Endpoint) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	e.state.RemoveState(token)
+
 	user := users.User{
 		ID:          lastID,
 		DisplayName: name,

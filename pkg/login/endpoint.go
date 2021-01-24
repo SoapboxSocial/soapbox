@@ -37,25 +37,10 @@ type loginState struct {
 	ExpiresIn *int        `json:"expires_in,omitempty"`
 }
 
-type tokenState struct {
-	email string
-	pin   string
-}
-
-type appleLoginState struct {
-	email string
-	user string
-}
-
 type Endpoint struct {
 	sync.Mutex
 
-	// @todo use redis
-	tokens        map[string]tokenState
-	registrations map[string]string
-
-	appleLogin map[string]appleLoginState
-
+	state    *StateManager
 	users    *users.UserBackend
 	sessions *sessions.SessionManager
 
@@ -66,15 +51,21 @@ type Endpoint struct {
 	queue *pubsub.Queue
 }
 
-func NewEndpoint(ub *users.UserBackend, manager *sessions.SessionManager, mail *mail.Service, ib *images.Backend, queue *pubsub.Queue) Endpoint {
+func NewEndpoint(
+	ub *users.UserBackend,
+	state *StateManager,
+	manager *sessions.SessionManager,
+	mail *mail.Service,
+	ib *images.Backend,
+	queue *pubsub.Queue,
+) Endpoint {
 	return Endpoint{
-		tokens:        make(map[string]tokenState),
-		registrations: make(map[string]string),
-		users:         ub,
-		sessions:      manager,
-		mail:          mail,
-		ib:            ib,
-		queue:         queue,
+		users:    ub,
+		state:    state,
+		sessions: manager,
+		mail:     mail,
+		ib:       ib,
+		queue:    queue,
 	}
 }
 
@@ -118,7 +109,11 @@ func (e *Endpoint) start(w http.ResponseWriter, r *http.Request) {
 		pin = "098316"
 	}
 
-	e.tokens[token] = tokenState{email: email, pin: pin}
+	err = e.state.SetPinState(token, email, pin)
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
 
 	if email != TestEmail {
 		err = e.mail.SendPinEmail(email, pin)
@@ -194,23 +189,23 @@ func (e *Endpoint) submitPin(w http.ResponseWriter, r *http.Request) {
 	token := r.Form.Get("token")
 	pin := r.Form.Get("pin")
 
-	state, ok := e.tokens[token]
-	if !ok {
+	state, err := e.state.GetState(token)
+	if err != nil {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}
 
-	if state.pin != pin {
+	if state.Pin != pin {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeIncorrectPin, "")
 		return
 	}
 
-	delete(e.tokens, token)
+	e.state.RemoveState(token)
 
-	user, err := e.users.FindByEmail(state.email)
+	user, err := e.users.FindByEmail(state.Email)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			e.enterRegistrationState(w, token, state.email)
+			e.enterRegistrationState(w, token, state.Email)
 			return
 		}
 
@@ -233,8 +228,13 @@ func (e *Endpoint) submitPin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (e *Endpoint) enterRegistrationState(w http.ResponseWriter, token, email string) {
-	e.registrations[token] = email
-	err := httputil.JsonEncode(w, loginState{State: LoginStateRegister})
+	err := e.state.SetRegistrationState(token, email)
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	err = httputil.JsonEncode(w, loginState{State: LoginStateRegister})
 	if err != nil {
 		log.Println("error writing response: " + err.Error())
 	}
@@ -253,8 +253,8 @@ func (e *Endpoint) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	email, ok := e.registrations[token]
-	if !ok {
+	state, err := e.state.GetState(token)
+	if err != nil || state.Pin != "" {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}
@@ -284,7 +284,7 @@ func (e *Endpoint) register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// @TODO ALLOW BIO DURING ON-BOARDING
-	lastID, err := e.users.CreateUser(email, name, "", image, username)
+	lastID, err := e.users.CreateUser(state.Email, name, "", image, username)
 	if err != nil {
 		_ = e.ib.Remove(image)
 
@@ -297,11 +297,13 @@ func (e *Endpoint) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	e.state.RemoveState(token)
+
 	user := users.User{
 		ID:          lastID,
 		DisplayName: name,
 		Username:    username,
-		Email:       &email,
+		Email:       &state.Email,
 		Image:       image,
 	}
 

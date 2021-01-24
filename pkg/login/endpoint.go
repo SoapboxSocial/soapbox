@@ -1,6 +1,7 @@
 package login
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"log"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/gorilla/mux"
 
+	"github.com/Timothylock/go-signin-with-apple/apple"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/images"
 	"github.com/soapboxsocial/soapbox/pkg/login/internal"
@@ -19,7 +21,6 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
 	"github.com/soapboxsocial/soapbox/pkg/users"
-	"github.com/Timothylock/go-signin-with-apple/apple"
 )
 
 // Contains the login handlers
@@ -145,14 +146,28 @@ func (e *Endpoint) loginWithApple(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := r.Form.Get("user_id")
-	if userID == "" {
+	//userID := r.Form.Get("user_id")
+	//if userID == "" {
+	//	httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid user id")
+	//	return
+	//}
+
+	// @TODO
+
+	req := apple.AppValidationTokenRequest{}
+
+	resp := &apple.ValidationResponse{}
+	err = e.appleClient.VerifyAppToken(context.Background(), req, resp)
+	if err != nil {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid user id")
 		return
 	}
 
-	// @TODO
-	//e.appleClient.VerifyAppToken()
+	userID, err := apple.GetUniqueID(resp.IDToken)
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid user id")
+		return
+	}
 
 	token, err := internal.GenerateToken()
 	if err != nil {

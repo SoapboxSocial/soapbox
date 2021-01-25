@@ -3,6 +3,7 @@ package login
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"log"
 	"mime/multipart"
 	"net/http"
@@ -149,6 +150,7 @@ func (e *Endpoint) loginWithApple(w http.ResponseWriter, r *http.Request) {
 
 	userInfo, err := e.signInWithApple.Validate(jwt)
 	if err != nil {
+		log.Printf("apple validation err: %v", err)
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "failed to validate")
 		return
 	}
@@ -245,7 +247,18 @@ func (e *Endpoint) enterRegistrationState(w http.ResponseWriter, token, email st
 	}
 }
 func (e *Endpoint) enterAppleRegistrationState(w http.ResponseWriter, token, email, userID string) {
-	err := e.state.SetAppleRegistrationState(token, email, userID)
+	_, err := e.users.FindByEmail(email)
+	if err == nil { // @TODO THIS MEANS THE USER IS ALREADY EXISTING
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid login method for user")
+		return
+	}
+
+	if !errors.Is(err, sql.ErrNoRows) {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	err = e.state.SetAppleRegistrationState(token, email, userID)
 	if err != nil {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
 		return

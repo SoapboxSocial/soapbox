@@ -2,7 +2,9 @@ package apple
 
 import (
 	"context"
-	"errors"
+	"fmt"
+	"log"
+	"strings"
 
 	"github.com/Timothylock/go-signin-with-apple/apple"
 )
@@ -41,27 +43,33 @@ func (s *SignInWithAppleAppValidation) Validate(jwt string) (*UserInfo, error) {
 		Code:         jwt,
 	}
 
-	resp := &apple.ValidationResponse{}
+	resp := apple.ValidationResponse{}
 
-	err := s.client.VerifyAppToken(context.Background(), req, resp)
+	err := s.client.VerifyAppToken(context.Background(), req, &resp)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("s.client.VerifyAppToken err: %v", err)
 	}
+
+	if resp.Error != "" {
+		return nil, fmt.Errorf("apple response err: %v", resp.Error)
+	}
+
+	log.Printf("%v", resp)
 
 	userID, err := apple.GetUniqueID(resp.IDToken)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("apple.GetUniqueID err: %v", err)
 	}
 
 	claim, err := apple.GetClaims(resp.IDToken)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("apple.GetClaims err: %v", err)
 	}
 
 	email, ok := claim.GetString("email")
 	if !ok {
-		return nil, errors.New("failed to recover email")
+		return nil, fmt.Errorf("claim.GetString err: %v", err)
 	}
 
-	return &UserInfo{Email: email, ID: userID}, nil
+	return &UserInfo{Email: strings.ToLower(email), ID: userID}, nil
 }

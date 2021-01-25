@@ -3,6 +3,7 @@ package login
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"log"
 	"mime/multipart"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/gorilla/mux"
 
+	"github.com/soapboxsocial/soapbox/pkg/apple"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/images"
 	"github.com/soapboxsocial/soapbox/pkg/login/internal"
@@ -35,6 +37,7 @@ type loginState struct {
 	State     string      `json:"state"`
 	User      *users.User `json:"user,omitempty"`
 	ExpiresIn *int        `json:"expires_in,omitempty"`
+	Token     *string     `json:"token,omitempty"`
 }
 
 type Endpoint struct {
@@ -49,6 +52,8 @@ type Endpoint struct {
 	mail *mail.Service
 
 	queue *pubsub.Queue
+
+	signInWithApple apple.SignInWithApple
 }
 
 func NewEndpoint(
@@ -58,14 +63,16 @@ func NewEndpoint(
 	mail *mail.Service,
 	ib *images.Backend,
 	queue *pubsub.Queue,
+	signInWithApple apple.SignInWithApple,
 ) Endpoint {
 	return Endpoint{
-		users:    ub,
-		state:    state,
-		sessions: manager,
-		mail:     mail,
-		ib:       ib,
-		queue:    queue,
+		users:           ub,
+		state:           state,
+		sessions:        manager,
+		mail:            mail,
+		ib:              ib,
+		queue:           queue,
+		signInWithApple: signInWithApple,
 	}
 }
 
@@ -73,6 +80,7 @@ func (e *Endpoint) Router() *mux.Router {
 	r := mux.NewRouter()
 
 	r.Path("/start").Methods("POST").HandlerFunc(e.start)
+	r.Path("/start/apple").Methods("POST").HandlerFunc(e.loginWithApple)
 	r.Path("/pin").Methods("POST").HandlerFunc(e.submitPin)
 	r.Path("/register").Methods("POST").HandlerFunc(e.register)
 
@@ -108,6 +116,17 @@ func (e *Endpoint) start(w http.ResponseWriter, r *http.Request) {
 		pin = "098316"
 	}
 
+	isApple, err := e.users.IsAppleIDAccount(email)
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	if isApple {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid authentication method")
+		return
+	}
+
 	err = e.state.SetPinState(token, email, pin)
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
@@ -125,6 +144,57 @@ func (e *Endpoint) start(w http.ResponseWriter, r *http.Request) {
 	err = json.NewEncoder(w).Encode(map[string]string{"token": token})
 	if err != nil {
 		log.Println("error writing response: " + err.Error())
+	}
+}
+
+func (e *Endpoint) loginWithApple(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	jwt := r.Form.Get("token")
+	if jwt == "" {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid token id")
+		return
+	}
+
+	userInfo, err := e.signInWithApple.Validate(jwt)
+	if err != nil {
+		log.Printf("apple validation err: %v", err)
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "failed to validate")
+		return
+	}
+
+	token, err := internal.GenerateToken()
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	user, err := e.users.FindByAppleID(userInfo.ID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			e.enterAppleRegistrationState(w, token, userInfo.Email, userInfo.ID)
+			return
+		}
+
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToLogin, "")
+		return
+	}
+
+	err = e.sessions.NewSession(token, *user, expiration)
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToLogin, "")
+		return
+	}
+
+	expires := int(expiration.Seconds())
+	err = httputil.JsonEncode(w, loginState{State: LoginStateSuccess, User: user, ExpiresIn: &expires, Token: &token})
+	if err != nil {
+		log.Println("error writing response: " + err.Error())
+
 	}
 }
 
@@ -188,6 +258,29 @@ func (e *Endpoint) enterRegistrationState(w http.ResponseWriter, token, email st
 		log.Println("error writing response: " + err.Error())
 	}
 }
+func (e *Endpoint) enterAppleRegistrationState(w http.ResponseWriter, token, email, userID string) {
+	_, err := e.users.FindByEmail(email)
+	if err == nil { // @TODO THIS MEANS THE USER IS ALREADY EXISTING
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid login method for user")
+		return
+	}
+
+	if !errors.Is(err, sql.ErrNoRows) {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	err = e.state.SetAppleRegistrationState(token, email, userID)
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	err = httputil.JsonEncode(w, loginState{State: LoginStateRegister, Token: &token})
+	if err != nil {
+		log.Println("error writing response: " + err.Error())
+	}
+}
 
 func (e *Endpoint) register(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(10 << 20)
@@ -232,8 +325,14 @@ func (e *Endpoint) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var lastID int
+	if state.AppleUserID != "" {
+		lastID, err = e.users.CreateUserWithAppleLogin(state.Email, name, "", image, username, state.AppleUserID)
+	} else {
+		lastID, err = e.users.CreateUser(state.Email, name, "", image, username)
+	}
+
 	// @TODO ALLOW BIO DURING ON-BOARDING
-	lastID, err := e.users.CreateUser(state.Email, name, "", image, username)
 	if err != nil {
 		_ = e.ib.Remove(image)
 

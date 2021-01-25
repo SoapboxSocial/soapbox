@@ -116,7 +116,16 @@ func (e *Endpoint) start(w http.ResponseWriter, r *http.Request) {
 		pin = "098316"
 	}
 
-	// @TODO CHECK THAT THIS ISN'T APPLE ACCOUNT
+	isApple, err := e.users.IsAppleIDAccount(email)
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	if isApple {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid authentication method")
+		return
+	}
 
 	err = e.state.SetPinState(token, email, pin)
 	if err != nil {

@@ -229,6 +229,21 @@ func (ub *UserBackend) NotificationUserFor(id int) (*NotificationUser, error) {
 	return profile, nil
 }
 
+func (ub *UserBackend) IsAppleIDAccount(email string) (bool, error) {
+	stmt, err := ub.db.Prepare("SELECT COUNT(*) FROM apple_authentication WHERE user_id = (SELECT id FROM users WHERE email = $1);")
+	if err != nil {
+		return false, err
+	}
+
+	var id int
+	err = stmt.QueryRow(email).Scan(&id)
+	if err != nil {
+		return false, err
+	}
+
+	return id == 1, nil
+}
+
 func (ub *UserBackend) FindByAppleID(id string) (*User, error) {
 	stmt, err := ub.db.Prepare("SELECT id, display_name, username, image, bio, email FROM users INNER JOIN apple_authentication ON users.id = apple_authentication.user_id WHERE apple_authentication.apple_user = $1;")
 	if err != nil {

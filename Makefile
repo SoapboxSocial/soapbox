@@ -6,3 +6,7 @@ protobuf:
  	  --go_out=plugins=grpc:. \
  	  --grpc-gateway_out=:. \
  	  room.proto
+
+mock:
+	mockgen -package=internal -destination=pkg/login/internal/signinwithapple_mock.go -source=pkg/apple/signinwithapple.go
+.PHONY: mock

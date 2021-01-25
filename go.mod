@@ -13,6 +13,7 @@ require (
 	github.com/dukex/mixpanel v0.0.0-20180925151559-f8d5594f958e
 	github.com/elastic/go-elasticsearch/v7 v7.9.0
 	github.com/go-redis/redis/v8 v8.3.3
+	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.4.3
 	github.com/gomodule/redigo v1.8.3 // indirect
 	github.com/gorilla/handlers v1.5.1
@@ -28,8 +29,10 @@ require (
 	github.com/tideland/golib v4.24.2+incompatible // indirect
 	github.com/tideland/gorest v2.15.5+incompatible // indirect
 	github.com/yuin/gopher-lua v0.0.0-20200816102855-ee81675732da // indirect
-	golang.org/x/sys v0.0.0-20201106081118-db71ae66460a // indirect
+	golang.org/x/mod v0.4.1 // indirect
+	golang.org/x/sys v0.0.0-20210124154548-22da62e12c0c // indirect
 	golang.org/x/text v0.3.4 // indirect
+	golang.org/x/tools v0.1.0 // indirect
 	google.golang.org/genproto v0.0.0-20201105153401-9d023cd09d72 // indirect
 	google.golang.org/grpc v1.33.1
 	google.golang.org/protobuf v1.25.0

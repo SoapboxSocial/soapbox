@@ -12,12 +12,14 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/go-redis/redis/v8"
+	"github.com/golang/mock/gomock"
 	"github.com/sendgrid/sendgrid-go"
 
 	"github.com/alicebob/miniredis"
 
 	"github.com/soapboxsocial/soapbox/pkg/images"
 	"github.com/soapboxsocial/soapbox/pkg/login"
+	"github.com/soapboxsocial/soapbox/pkg/login/internal"
 	"github.com/soapboxsocial/soapbox/pkg/mail"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
@@ -30,7 +32,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestLoginEndpoint_LoginWithTestAccount(t *testing.T) {
-	db, _, err := sqlmock.New()
+	db, mock, err := sqlmock.New()
 	if err != nil {
 		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 	}
@@ -45,6 +47,11 @@ func TestLoginEndpoint_LoginWithTestAccount(t *testing.T) {
 		Addr: mr.Addr(),
 	})
 
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	m := internal.NewMockSignInWithApple(ctrl)
+
 	endpoint := login.NewEndpoint(
 		users.NewUserBackend(db),
 		login.NewStateManager(rdb),
@@ -52,10 +59,15 @@ func TestLoginEndpoint_LoginWithTestAccount(t *testing.T) {
 		mail.NewMailService(&sendgrid.Client{}),
 		images.NewImagesBackend("/foo"),
 		pubsub.NewQueue(rdb),
+		m,
 	)
 
 	rr := httptest.NewRecorder()
 	handler := endpoint.Router()
+
+	mock.ExpectPrepare("^SELECT (.+)").ExpectQuery().
+		WithArgs(login.TestEmail).
+		WillReturnRows(mock.NewRows([]string{"count"}).FromCSVString("0"))
 
 	reader := strings.NewReader("email=" + login.TestEmail)
 
@@ -90,6 +102,11 @@ func TestLoginEndpoint_PinSubmission(t *testing.T) {
 
 	state := login.NewStateManager(rdb)
 
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	m := internal.NewMockSignInWithApple(ctrl)
+
 	endpoint := login.NewEndpoint(
 		users.NewUserBackend(db),
 		state,
@@ -97,6 +114,7 @@ func TestLoginEndpoint_PinSubmission(t *testing.T) {
 		mail.NewMailService(&sendgrid.Client{}),
 		images.NewImagesBackend("/foo"),
 		pubsub.NewQueue(rdb),
+		m,
 	)
 
 	rr := httptest.NewRecorder()

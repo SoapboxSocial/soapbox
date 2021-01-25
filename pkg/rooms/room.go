@@ -83,16 +83,23 @@ func (r *Room) ToProtoForPeer() *pb.RoomState {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
 
+	members := make([]*pb.RoomState_RoomMember, 0)
+
+	for _, member := range r.members {
+		members = append(members, member.ToProto())
+	}
+
 	return &pb.RoomState{
-		Id:   r.id,
-		Name: r.name,
+		Id:      r.id,
+		Name:    r.name,
+		Members: members,
 	}
 }
 
 func (r *Room) Handle(user int, peer *sfu.Peer) {
 	r.peerToMember[peer.ID()] = user
 
-	me := &Member{id: user, peer: peer}
+	me := NewMember(user, "Dean", "", peer)
 
 	r.mux.Lock()
 	r.members[user] = me
@@ -105,7 +112,7 @@ func (r *Room) Handle(user int, peer *sfu.Peer) {
 		case webrtc.ICEConnectionStateConnected:
 
 			r.notify(&pb.Event{
-				From:    int64(user),
+				From: int64(user),
 				Payload: &pb.Event_Joined_{
 					Joined: &pb.Event_Joined{User: me.ToProto()},
 				},
@@ -149,8 +156,15 @@ func (r *Room) onMessage(from int, command *pb.Command) {
 }
 
 func (r *Room) onMute(from int) {
+	r.mux.Lock()
+	defer r.mux.Unlock()
 
-	// @TODO MARK MUTED
+	member, ok := r.members[from]
+	if !ok {
+		return
+	}
+
+	member.Mute()
 
 	r.notify(&pb.Event{
 		From:    int64(from),
@@ -159,8 +173,15 @@ func (r *Room) onMute(from int) {
 }
 
 func (r *Room) onUnmute(from int) {
+	r.mux.Lock()
+	defer r.mux.Unlock()
 
-	// @TODO MARK UNMUTED
+	member, ok := r.members[from]
+	if !ok {
+		return
+	}
+
+	member.Unmute()
 
 	r.notify(&pb.Event{
 		From:    int64(from),

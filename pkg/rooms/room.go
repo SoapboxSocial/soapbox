@@ -92,8 +92,10 @@ func (r *Room) ToProtoForPeer() *pb.RoomState {
 func (r *Room) Handle(user int, peer *sfu.Peer) {
 	r.peerToMember[peer.ID()] = user
 
+	me := &Member{id: user, peer: peer}
+
 	r.mux.Lock()
-	r.members[user] = &Member{id: user, peer: peer}
+	r.members[user] = me
 	r.mux.Unlock()
 
 	peer.OnICEConnectionStateChange = func(state webrtc.ICEConnectionState) {
@@ -101,9 +103,12 @@ func (r *Room) Handle(user int, peer *sfu.Peer) {
 
 		switch state {
 		case webrtc.ICEConnectionStateConnected:
+
 			r.notify(&pb.Event{
 				From:    int64(user),
-				Payload: &pb.Event_Joined_{},
+				Payload: &pb.Event_Joined_{
+					Joined: &pb.Event_Joined{User: me.ToProto()},
+				},
 			})
 		case webrtc.ICEConnectionStateDisconnected:
 			r.notify(&pb.Event{

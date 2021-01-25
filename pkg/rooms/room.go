@@ -40,25 +40,26 @@ func NewRoom(id, name string, session *sfu.Session) *Room {
 		members:      make(map[int]*Member),
 	}
 
-	session.AddDatachannelHandler(CHANNEL, func(origin string, msg webrtc.DataChannelMessage) {
-		var m *pb.Command
-
-		err := proto.Unmarshal(msg.Data, m)
-		if err != nil {
-			log.Printf("error unmarshalling: %v", err)
-			return
-		}
-
-		r.mux.RLock()
-		defer r.mux.RUnlock()
-
-		user, ok := r.peerToMember[origin]
-		if !ok {
-			return
-		}
-
-		r.onMessage(user, m)
-	})
+	//session.
+	//session.AddDatachannelHandler(CHANNEL, func(origin string, msg webrtc.DataChannelMessage) {
+	//	var m *pb.Command
+	//
+	//	err := proto.Unmarshal(msg.Data, m)
+	//	if err != nil {
+	//		log.Printf("error unmarshalling: %v", err)
+	//		return
+	//	}
+	//
+	//	r.mux.RLock()
+	//	defer r.mux.RUnlock()
+	//
+	//	user, ok := r.peerToMember[origin]
+	//	if !ok {
+	//		return
+	//	}
+	//
+	//	r.onMessage(user, m)
+	//})
 
 	return r
 }
@@ -86,7 +87,7 @@ func (r *Room) ToProtoForPeer() *pb.RoomState {
 }
 
 func (r *Room) Handle(user int, peer *sfu.Peer) {
-	r.peerToMember[peer.ID()] = user
+	//r.peerToMember[peer.ID()] = user
 
 	r.mux.Lock()
 	r.members[user] = &Member{id: user, peer: peer}

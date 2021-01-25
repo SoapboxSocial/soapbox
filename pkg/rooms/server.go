@@ -397,7 +397,7 @@ func (s *Server) onRoomJoinedEvent(isNew bool, peer int, room *Room) {
 		return
 	}
 
-	if group != nil && group.GroupType != "public" {
+	if group != nil && group.GroupType == "private" {
 		return
 	}
 

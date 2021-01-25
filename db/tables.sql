@@ -10,6 +10,14 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE UNIQUE INDEX idx_email ON users (email);
 CREATE UNIQUE INDEX idx_username ON users (username);
 
+CREATE TABLE IF NOT EXISTS apple_authentication (
+    user_id INT NOT NULL,
+    apple_user TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX idx_apple_authentication ON apple_authentication (user_id);
+
 CREATE TABLE IF NOT EXISTS followers (
     follower INT NOT NULL,
     user_id INT NOT NULL,

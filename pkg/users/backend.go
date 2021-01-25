@@ -1,6 +1,7 @@
 package users
 
 import (
+	"context"
 	"database/sql"
 	"strings"
 )
@@ -228,6 +229,36 @@ func (ub *UserBackend) NotificationUserFor(id int) (*NotificationUser, error) {
 	return profile, nil
 }
 
+func (ub *UserBackend) IsAppleIDAccount(email string) (bool, error) {
+	stmt, err := ub.db.Prepare("SELECT COUNT(*) FROM apple_authentication WHERE user_id = (SELECT id FROM users WHERE email = $1);")
+	if err != nil {
+		return false, err
+	}
+
+	var id int
+	err = stmt.QueryRow(email).Scan(&id)
+	if err != nil {
+		return false, err
+	}
+
+	return id == 1, nil
+}
+
+func (ub *UserBackend) FindByAppleID(id string) (*User, error) {
+	stmt, err := ub.db.Prepare("SELECT id, display_name, username, image, bio, email FROM users INNER JOIN apple_authentication ON users.id = apple_authentication.user_id WHERE apple_authentication.apple_user = $1;")
+	if err != nil {
+		return nil, err
+	}
+
+	user := &User{}
+	err = stmt.QueryRow(id).Scan(&user.ID, &user.DisplayName, &user.Username, &user.Image, &user.Bio, &user.Email)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
 func (ub *UserBackend) FindByID(id int) (*User, error) {
 	stmt, err := ub.db.Prepare("SELECT id, display_name, username, image, bio, email FROM users WHERE id = $1;")
 	if err != nil {
@@ -267,6 +298,45 @@ func (ub *UserBackend) CreateUser(email, displayName, bio, image, username strin
 	var id int
 	err = stmt.QueryRow(displayName, strings.ToLower(username), email, bio, image).Scan(&id)
 	if err != nil {
+		return 0, err
+	}
+
+	return id, nil
+}
+
+func (ub *UserBackend) CreateUserWithAppleLogin(email, displayName, bio, image, username, appleID string) (int, error) {
+	ctx := context.Background()
+	tx, err := ub.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+
+	res := tx.QueryRow(
+		"INSERT INTO users (display_name, username, email, bio, image) VALUES ($1, $2, $3, $4, $5) RETURNING id;",
+		displayName, strings.ToLower(username), email, bio, image,
+	)
+
+	var id int
+	err = res.Scan(&id)
+	if err != nil {
+		_ = tx.Rollback()
+		return 0, err
+	}
+
+	_, err = tx.ExecContext(
+		ctx,
+		"INSERT INTO apple_authentication (user_id, apple_user) VALUES ($1, $2);",
+		id, appleID,
+	)
+
+	if err != nil {
+		_ = tx.Rollback()
+		return 0, err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		_ = tx.Rollback()
 		return 0, err
 	}
 

@@ -27,12 +27,17 @@ type SignInWithAppleAppValidation struct {
 	secret string
 }
 
-func NewSignInWithAppleAppValidation(client *apple.Client, id, secret string) *SignInWithAppleAppValidation {
+func NewSignInWithAppleAppValidation(client *apple.Client, teamID, clientID, keyID, key string) (*SignInWithAppleAppValidation, error) {
+	secret, err := apple.GenerateClientSecret(key, teamID, clientID, keyID)
+	if err != nil {
+		return nil, fmt.Errorf("apple.GenerateClientSecret err: %v", err)
+	}
+
 	return &SignInWithAppleAppValidation{
 		client: client,
-		id:     id,
+		id:     clientID,
 		secret: secret,
-	}
+	}, nil
 }
 
 // Validate validates a JWT token and returns UserInfo

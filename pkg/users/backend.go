@@ -319,6 +319,12 @@ func (ub *UserBackend) CreateUserWithAppleLogin(email, displayName, bio, image, 
 		return 0, err
 	}
 
+	err = tx.Commit()
+	if err != nil {
+		_ = tx.Rollback()
+		return 0, err
+	}
+
 	return id, nil
 }
 

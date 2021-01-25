@@ -86,7 +86,17 @@ func main() {
 		panic(err)
 	}
 
-	appleClient := apple.NewSignInWithAppleAppValidation(signinwithapple.New(), "app.social.soapbox", string(secret))
+	appleClient, err := apple.NewSignInWithAppleAppValidation(
+		signinwithapple.New(),
+		"Z9LC5GZ33U",
+		"app.social.soapbox",
+		"G9F2GMYU4Y",
+		string(secret),
+	)
+
+	if err != nil {
+		panic(err)
+	}
 
 	loginEndpoints := login.NewEndpoint(ub, loginState, s, ms, ib, queue, appleClient)
 	loginRouter := loginEndpoints.Router()

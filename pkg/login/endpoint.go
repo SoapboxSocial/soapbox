@@ -37,6 +37,7 @@ type loginState struct {
 	State     string      `json:"state"`
 	User      *users.User `json:"user,omitempty"`
 	ExpiresIn *int        `json:"expires_in,omitempty"`
+	Token     *string     `json:"token,omitempty"`
 }
 
 type Endpoint struct {
@@ -115,6 +116,8 @@ func (e *Endpoint) start(w http.ResponseWriter, r *http.Request) {
 		pin = "098316"
 	}
 
+	// @TODO CHECK THAT THIS ISN'T APPLE ACCOUNT
+
 	err = e.state.SetPinState(token, email, pin)
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
@@ -179,7 +182,7 @@ func (e *Endpoint) loginWithApple(w http.ResponseWriter, r *http.Request) {
 	}
 
 	expires := int(expiration.Seconds())
-	err = httputil.JsonEncode(w, loginState{State: LoginStateSuccess, User: user, ExpiresIn: &expires})
+	err = httputil.JsonEncode(w, loginState{State: LoginStateSuccess, User: user, ExpiresIn: &expires, Token: &token})
 	if err != nil {
 		log.Println("error writing response: " + err.Error())
 
@@ -264,7 +267,7 @@ func (e *Endpoint) enterAppleRegistrationState(w http.ResponseWriter, token, ema
 		return
 	}
 
-	err = httputil.JsonEncode(w, loginState{State: LoginStateRegister})
+	err = httputil.JsonEncode(w, loginState{State: LoginStateRegister, Token: &token})
 	if err != nil {
 		log.Println("error writing response: " + err.Error())
 	}

@@ -19,7 +19,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/lib/pq v1.9.0
 	github.com/pion/ion-log v1.0.0
-	github.com/pion/ion-sfu v1.7.9-0.20210122155749-7a865ad636a4
+	github.com/pion/ion-sfu v1.8.1
 	github.com/pion/webrtc/v3 v3.0.4
 	github.com/pkg/errors v0.9.1
 	github.com/segmentio/ksuid v1.0.3

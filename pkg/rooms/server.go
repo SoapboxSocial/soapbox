@@ -422,7 +422,7 @@ func (s *Server) canJoin(peer int, room *Room) bool {
 		return room.CanJoin(peer)
 	}
 
-	if group.GroupType == "public" {
+	if group.GroupType != "private" {
 		return true
 	}
 

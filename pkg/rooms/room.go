@@ -297,6 +297,9 @@ func (r *Room) notify(event *pb.Event) {
 		err := member.Notify(CHANNEL, data)
 		if err != nil {
 			log.Printf("failed to notify: %v\n", err)
+			continue
 		}
+
+		log.Printf("notified %d", id)
 	}
 }

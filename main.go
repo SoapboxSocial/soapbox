@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Timothylock/go-signin-with-apple/apple"
+	signinwithapple "github.com/Timothylock/go-signin-with-apple/apple"
 	"github.com/dghubble/oauth1"
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/go-redis/redis/v8"
@@ -18,6 +18,7 @@ import (
 
 	"github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	usersapi "github.com/soapboxsocial/soapbox/pkg/api/users"
+	"github.com/soapboxsocial/soapbox/pkg/apple"
 	"github.com/soapboxsocial/soapbox/pkg/blocks"
 	"github.com/soapboxsocial/soapbox/pkg/devices"
 	"github.com/soapboxsocial/soapbox/pkg/followers"
@@ -80,14 +81,14 @@ func main() {
 
 	loginState := login.NewStateManager(rdb)
 
-	appleClient := apple.New()
-
 	secret, err := ioutil.ReadFile("/conf/sign-in-key.p8")
 	if err != nil {
 		panic(err)
 	}
 
-	loginEndpoints := login.NewEndpoint(ub, loginState, s, ms, ib, queue, appleClient, string(secret))
+	appleClient := apple.NewSignInWithAppleAppValidation(signinwithapple.New(), "app.social.soapbox", string(secret))
+
+	loginEndpoints := login.NewEndpoint(ub, loginState, s, ms, ib, queue, appleClient)
 	loginRouter := loginEndpoints.Router()
 	mount(r, "/v1/login", loginRouter)
 

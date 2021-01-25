@@ -1,10 +1,8 @@
 package login
 
 import (
-	"context"
 	"database/sql"
 	"encoding/json"
-	"fmt"
 	"log"
 	"mime/multipart"
 	"net/http"
@@ -14,8 +12,7 @@ import (
 
 	"github.com/gorilla/mux"
 
-	"github.com/Timothylock/go-signin-with-apple/apple"
-
+	"github.com/soapboxsocial/soapbox/pkg/apple"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/images"
 	"github.com/soapboxsocial/soapbox/pkg/login/internal"
@@ -48,15 +45,13 @@ type Endpoint struct {
 	users    *users.UserBackend
 	sessions *sessions.SessionManager
 
-	appleClient *apple.Client
-
 	ib *images.Backend
 
 	mail *mail.Service
 
 	queue *pubsub.Queue
 
-	secret string
+	signInWithApple apple.SignInWithApple
 }
 
 func NewEndpoint(
@@ -66,18 +61,16 @@ func NewEndpoint(
 	mail *mail.Service,
 	ib *images.Backend,
 	queue *pubsub.Queue,
-	appleClient *apple.Client,
-	secret string,
+	signInWithApple apple.SignInWithApple,
 ) Endpoint {
 	return Endpoint{
-		users:       ub,
-		state:       state,
-		sessions:    manager,
-		mail:        mail,
-		ib:          ib,
-		queue:       queue,
-		appleClient: appleClient,
-		secret:      secret,
+		users:           ub,
+		state:           state,
+		sessions:        manager,
+		mail:            mail,
+		ib:              ib,
+		queue:           queue,
+		signInWithApple: signInWithApple,
 	}
 }
 
@@ -154,28 +147,9 @@ func (e *Endpoint) loginWithApple(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	req := apple.AppValidationTokenRequest{
-		ClientID:     "app.social.soapbox",
-		ClientSecret: e.secret,
-		Code:         jwt,
-	}
-
-	resp := &apple.ValidationResponse{}
-	err = e.appleClient.VerifyAppToken(context.Background(), req, resp)
+	userInfo, err := e.signInWithApple.Validate(jwt)
 	if err != nil {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "failed to validate")
-		return
-	}
-
-	userID, err := apple.GetUniqueID(resp.IDToken)
-	if err != nil {
-		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "failed to validate")
-		return
-	}
-
-	claim, err := apple.GetClaims(resp.IDToken)
-	if err != nil {
-		fmt.Println("failed to get claims: " + err.Error())
 		return
 	}
 
@@ -185,16 +159,10 @@ func (e *Endpoint) loginWithApple(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	email, ok := claim.GetString("email")
-	if !ok {
-		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
-		return
-	}
-
-	user, err := e.users.FindByAppleID(userID)
+	user, err := e.users.FindByAppleID(userInfo.ID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			e.enterAppleRegistrationState(w, token, email, userID)
+			e.enterAppleRegistrationState(w, token, userInfo.Email, userInfo.ID)
 			return
 		}
 

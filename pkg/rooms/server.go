@@ -190,6 +190,8 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 	for {
 		in, err := receive(peer, stream)
 		if err != nil {
+			// @TODO close the peer
+
 			if err == io.EOF {
 				return nil
 			}

@@ -43,8 +43,7 @@ func NewRoom(id, name string, session *sfu.Session) *Room {
 
 	dc := sfu.NewDataChannel(CHANNEL)
 	dc.OnMessage(func(ctx context.Context, args sfu.ProcessArgs) {
-		var m *pb.Command
-
+		m := &pb.Command{}
 		err := proto.Unmarshal(args.Message.Data, m)
 		if err != nil {
 			log.Printf("error unmarshalling: %v", err)
@@ -144,11 +143,12 @@ func (r *Room) Handle(user int, peer *sfu.Peer) {
 }
 
 func (r *Room) onMessage(from int, command *pb.Command) {
+
+	log.Print(command)
+
 	switch command.Payload.(type) {
-	case *pb.Command_Mute_:
-		r.onMute(from)
-	case *pb.Command_Unmute_:
-		r.onUnmute(from)
+	case *pb.Command_MuteUpdate_:
+		r.onMuteUpdate(from, command.GetMuteUpdate())
 	case *pb.Command_Reaction_:
 		r.onReaction(from, command.GetReaction())
 	case *pb.Command_LinkShare_:
@@ -172,37 +172,22 @@ func (r *Room) onMessage(from int, command *pb.Command) {
 	}
 }
 
-func (r *Room) onMute(from int) {
-	r.mux.Lock()
-	defer r.mux.Unlock()
-
-	member, ok := r.members[from]
-	if !ok {
+func (r *Room) onMuteUpdate(from int, cmd *pb.Command_MuteUpdate) {
+	member := r.member(from)
+	if member == nil {
+		log.Printf("member %d not found", from)
 		return
 	}
 
-	member.Mute()
-
-	r.notify(&pb.Event{
-		From:    int64(from),
-		Payload: &pb.Event_Muted_{Muted: &pb.Event_Muted{}},
-	})
-}
-
-func (r *Room) onUnmute(from int) {
-	r.mux.Lock()
-	defer r.mux.Unlock()
-
-	member, ok := r.members[from]
-	if !ok {
-		return
+	if cmd.Muted {
+		member.Mute()
+	} else {
+		member.Unmute()
 	}
 
-	member.Unmute()
-
 	r.notify(&pb.Event{
 		From:    int64(from),
-		Payload: &pb.Event_Unmuted_{Unmuted: &pb.Event_Unmuted{}},
+		Payload: &pb.Event_MuteUpdated_{MuteUpdated: &pb.Event_MuteUpdated{IsMuted: cmd.Muted}},
 	})
 }
 
@@ -220,6 +205,7 @@ func (r *Room) onLinkShare(from int, cmd *pb.Command_LinkShare) {
 	})
 }
 
+// @TODO
 func (r *Room) onInviteAdmin(from int, cmd *pb.Command_InviteAdmin) {
 	r.mux.Lock()
 	defer r.mux.Unlock()
@@ -275,8 +261,9 @@ func (r *Room) onRemoveAdmin(from int, cmd *pb.Command_RemoveAdmin) {
 		return
 	}
 
-	member, ok := r.members[int(cmd.Id)]
-	if !ok {
+	member := r.member(from)
+	if member == nil {
+		log.Printf("member %d not found", from)
 		return
 	}
 
@@ -332,20 +319,36 @@ func (r *Room) onRecordScreen(from int) {
 	})
 }
 
-func (r *Room) notify(event *pb.Event) {
+func (r *Room) member(id int) *Member {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
 
+	member, ok := r.members[id]
+	if !ok {
+		return nil
+	}
+
+	return member
+}
+
+func (r *Room) notify(event *pb.Event) {
 	data, err := proto.Marshal(event)
 	if err != nil {
 		log.Printf("failed to marshal: %v", err)
 		return
 	}
 
+	log.Printf("%v", r.members)
+
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+
 	for id, member := range r.members {
 		if id == int(event.From) {
 			continue
 		}
+
+		log.Printf("notify %d", id)
 
 		err := member.Notify(CHANNEL, data)
 		if err != nil {

@@ -33,14 +33,14 @@ func NewMember(id int, name, image string, peer *sfu.Peer) *Member {
 
 func (m *Member) Mute() {
 	m.mux.Lock()
-	defer m.mux.RUnlock()
+	defer m.mux.Unlock()
 
 	m.muted = true
 }
 
 func (m *Member) Unmute() {
 	m.mux.Lock()
-	defer m.mux.RUnlock()
+	defer m.mux.Unlock()
 
 	m.muted = false
 }

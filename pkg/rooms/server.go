@@ -147,7 +147,7 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 		//}
 
 		session, _ := s.sfu.GetSession(id)
-		room = NewRoom(id, name, session) // @TODO THE REST
+		room = NewRoom(id, name, session) // @TODO THE REST, ENSURE USER IS MARKED ADMIN
 
 		room.OnDisconnected(func(room string, id int) {
 			r, err := s.repository.Get(room)

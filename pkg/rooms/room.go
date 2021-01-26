@@ -341,7 +341,7 @@ func (r *Room) onKickUser(from int, cmd *pb.Command_KickUser) {
 		return
 	}
 
-	p.Close()
+	_ = p.Close()
 }
 
 func (r *Room) onMuteUser(from int, cmd *pb.Command_MuteUser) {

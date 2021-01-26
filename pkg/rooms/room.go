@@ -72,7 +72,9 @@ func (r *Room) ID() string {
 }
 
 func (r *Room) PeerCount() int {
-	return 0
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+	return len(r.members)
 }
 
 func (r *Room) IsAdmin(id int) bool {
@@ -143,6 +145,8 @@ func (r *Room) Handle(user *users.User, peer *sfu.Peer) {
 }
 
 func (r *Room) onDisconnected(id int64) {
+	log.Printf("disconnected %d", id)
+
 	r.mux.RLock()
 	peer, ok := r.members[int(id)]
 	r.mux.RUnlock()
@@ -171,9 +175,6 @@ func (r *Room) onDisconnected(id int64) {
 }
 
 func (r *Room) onMessage(from int, command *pb.Command) {
-
-	log.Print(command)
-
 	switch command.Payload.(type) {
 	case *pb.Command_MuteUpdate_:
 		r.onMuteUpdate(from, command.GetMuteUpdate())
@@ -365,8 +366,6 @@ func (r *Room) notify(event *pb.Event) {
 		log.Printf("failed to marshal: %v", err)
 		return
 	}
-
-	log.Printf("%v", r.members)
 
 	r.mux.RLock()
 	defer r.mux.RUnlock()

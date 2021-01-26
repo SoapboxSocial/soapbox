@@ -76,7 +76,15 @@ func (r *Room) PeerCount() int {
 }
 
 func (r *Room) IsAdmin(id int) bool {
-	return false // @TODO
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+
+	member, ok := r.members[id]
+	if !ok {
+		return false
+	}
+
+	return member.Role() == pb.RoomState_RoomMember_ADMIN
 }
 
 func (r *Room) ToProtoForPeer() *pb.RoomState {

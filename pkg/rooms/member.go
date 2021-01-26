@@ -8,8 +8,6 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 )
 
-// @TODO ADD USER DATA
-
 type Member struct {
 	mux sync.RWMutex
 
@@ -45,6 +43,13 @@ func (m *Member) Unmute() {
 	defer m.mux.RUnlock()
 
 	m.muted = false
+}
+
+func (m *Member) SetRole(role pb.RoomState_RoomMember_Role) {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+
+	m.role = role
 }
 
 func (m *Member) Close() {

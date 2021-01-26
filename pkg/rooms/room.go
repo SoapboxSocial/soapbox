@@ -2,6 +2,7 @@ package rooms
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"sync"
 
@@ -135,7 +136,13 @@ func (r *Room) Handle(user *users.User, peer *sfu.Peer) {
 				},
 			})
 
-			peer.GetDataChannel(CHANNEL).OnClose(func() {
+			dc := peer.GetDataChannel(CHANNEL)
+			if dc == nil {
+				fmt.Println("data channel not found")
+				return
+			}
+
+			dc.OnClose(func() {
 				r.onDisconnected(int64(user.ID))
 			})
 		case webrtc.ICEConnectionStateDisconnected:

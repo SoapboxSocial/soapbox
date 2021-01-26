@@ -87,6 +87,15 @@ func (r *Room) IsAdmin(id int) bool {
 	return member.Role() == pb.RoomState_RoomMember_ADMIN
 }
 
+func (r *Room) MapMembers(f func(member *Member)) {
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+
+	for _, member := range r.members {
+		f(member)
+	}
+}
+
 func (r *Room) ToProtoForPeer() *pb.RoomState {
 	r.mux.RLock()
 	defer r.mux.RUnlock()

@@ -37,6 +37,12 @@ func (e *Endpoint) rooms(w http.ResponseWriter, r *http.Request) {
 	// @TODO ACCESS TOKEN AND ALL THAT
 
 	e.repository.Map(func(room *Room) {
+
+		//members := make([])
+		//room.MapMembers(func(member *Member) {
+		//
+		//})
+
 		rooms = append(rooms, &RoomState{
 			ID:   room.id,
 			Name: room.name,

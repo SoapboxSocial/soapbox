@@ -245,12 +245,12 @@ func (r *Room) onAcceptAdmin(from int) {
 
 	delete(r.adminInvites, from)
 
-	_, ok := r.members[from]
+	member, ok := r.members[from]
 	if !ok {
 		return
 	}
 
-	// @TODO MARK ADMIN
+	member.SetRole(pb.RoomState_RoomMember_ADMIN)
 
 	r.notify(&pb.Event{
 		From:    int64(from),
@@ -266,7 +266,17 @@ func (r *Room) onRemoveAdmin(from int, cmd *pb.Command_RemoveAdmin) {
 		return
 	}
 
-	// @TODO
+	member, ok := r.members[int(cmd.Id)]
+	if !ok {
+		return
+	}
+
+	member.SetRole(pb.RoomState_RoomMember_ADMIN)
+
+	r.notify(&pb.Event{
+		From:    int64(from),
+		Payload: &pb.Event_RemovedAdmin_{RemovedAdmin: &pb.Event_RemovedAdmin{Id: cmd.Id}},
+	})
 }
 
 func (r *Room) onRenameRoom(from int, cmd *pb.Command_RenameRoom) {

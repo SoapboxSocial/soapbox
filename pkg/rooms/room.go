@@ -162,7 +162,7 @@ func (r *Room) onDisconnected(id int64) {
 	}
 
 	r.mux.Lock()
-	delete(r.members, id)
+	delete(r.members, int(id))
 	r.mux.Unlock()
 
 	// @TODO NEW ADMIN

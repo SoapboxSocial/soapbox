@@ -68,11 +68,13 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 	session, err := internal.SessionID(stream.Context())
 	if err != nil {
 		_ = peer.Close()
+		// @TODO RETURN?
 	}
 
 	user, err := s.userForSession(session)
 	if err != nil {
 		_ = peer.Close()
+		// @TODO RETURN?
 	}
 
 	var room *Room
@@ -181,7 +183,7 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 		return status.Error(codes.FailedPrecondition, "invalid message")
 	}
 
-	room.Handle(user.ID, peer)
+	room.Handle(user, peer)
 
 	// @TODO ADD ON DISCONNECT CALLBACK.
 

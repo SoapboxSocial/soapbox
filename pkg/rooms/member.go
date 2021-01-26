@@ -52,8 +52,8 @@ func (m *Member) SetRole(role pb.RoomState_RoomMember_Role) {
 	m.role = role
 }
 
-func (m *Member) Close() {
-	_ = m.peer.Close()
+func (m *Member) Close() error {
+	return m.peer.Close()
 }
 
 func (m *Member) Notify(label string, data []byte) error {

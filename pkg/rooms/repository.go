@@ -37,6 +37,13 @@ func (r *Repository) Get(id string) (*Room, error) {
 	return room, nil
 }
 
+func (r *Repository) Remove(id string) {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+
+	delete(r.rooms, id)
+}
+
 func (r *Repository) Map(f func(room *Room)) {
 	r.mux.RLock()
 	defer r.mux.RUnlock()

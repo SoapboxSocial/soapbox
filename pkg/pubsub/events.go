@@ -95,7 +95,7 @@ func NewRoomInviteEvent(name string, room, creator, target int) Event {
 	}
 }
 
-func NewRoomLeftEvent(room, user int) Event {
+func NewRoomLeftEvent(room string, user int) Event {
 	return Event{
 		Type:   EventTypeRoomLeft,
 		Params: map[string]interface{}{"id": room, "creator": user},

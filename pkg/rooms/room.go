@@ -31,6 +31,8 @@ type Room struct {
 
 	peerToMember map[string]int
 
+	onDisconnectedHandlerFunc func(room string, id int)
+
 	session *sfu.Session
 }
 
@@ -97,6 +99,13 @@ func (r *Room) MapMembers(f func(member *Member)) {
 	for _, member := range r.members {
 		f(member)
 	}
+}
+
+func (r *Room) OnDisconnected(f func(room string, id int)) {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+
+	r.onDisconnectedHandlerFunc = f
 }
 
 func (r *Room) ToProtoForPeer() *pb.RoomState {
@@ -178,7 +187,7 @@ func (r *Room) onDisconnected(id int64) {
 
 	// @TODO NEW ADMIN
 
-	// @TODO handle callback
+	r.onDisconnectedHandlerFunc(r.id, int(id))
 }
 
 func (r *Room) onMessage(from int, command *pb.Command) {

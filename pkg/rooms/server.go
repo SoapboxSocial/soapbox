@@ -149,6 +149,31 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 		session, _ := s.sfu.GetSession(id)
 		room = NewRoom(id, name, session) // @TODO THE REST
 
+		room.OnDisconnected(func(room string, id int) {
+			r, err := s.repository.Get(room)
+			if err != nil {
+				fmt.Printf("failed to get room %v\n", err)
+				return
+			}
+
+			go func() {
+				s.currentRoom.RemoveCurrentRoomForUser(id)
+
+				err := s.queue.Publish(pubsub.RoomTopic, pubsub.NewRoomLeftEvent(room, id))
+				if err != nil {
+					log.Printf("queue.Publish err: %v\n", err)
+				}
+			}()
+
+			if r.PeerCount() > 0 {
+				return
+			}
+
+			s.repository.Remove(room)
+
+			log.Printf("room \"%s\" was closed", room)
+		})
+
 		description := webrtc.SessionDescription{
 			Type: webrtc.NewSDPType(strings.ToLower(create.Description.Type)),
 			SDP:  create.Description.Sdp,
@@ -328,6 +353,8 @@ func receive(peer *sfu.Peer, stream pb.SFU_SignalServer) (*pb.SignalRequest, err
 }
 
 // setup properly sets up a peer to communicate with the SFU.
+// @TODO, here we should ideally pass the room member. this has a signalling transport property.
+// when webrtc is fully connected it will switch signalling from GRPC to webrtc.
 func setup(peer *sfu.Peer, room string, stream pb.SFU_SignalServer, description webrtc.SessionDescription) (*webrtc.SessionDescription, error) {
 
 	// Notify user of new ice candidate

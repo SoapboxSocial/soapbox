@@ -365,14 +365,12 @@ func setup(peer *sfu.Peer, room string, conn signal.Transport, description webrt
 
 	// Notify user of new offer
 	peer.OnOffer = func(o *webrtc.SessionDescription) {
-		description := &pb.SessionDescription{
-			Type: o.Type.String(),
-			Sdp:  o.SDP,
-		}
-
 		err := conn.Write(&pb.SignalReply{
 			Payload: &pb.SignalReply_Description{
-				Description: description,
+				Description: &pb.SessionDescription{
+					Type: o.Type.String(),
+					Sdp:  o.SDP,
+				},
 			},
 		})
 

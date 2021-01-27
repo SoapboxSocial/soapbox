@@ -121,6 +121,11 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		if answer == nil {
+			log.Printf("answer is nil")
+			return
+		}
+
 		err = conn.Write(&pb.SignalReply{
 			Id: in.Id,
 			Payload: &pb.SignalReply_Join{
@@ -193,6 +198,11 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 		answer, err := peer.Join(id, description)
 		if err != nil && (err != sfu.ErrTransportExists && err != sfu.ErrOfferIgnored) {
 			log.Printf("create err: %v", err)
+			return
+		}
+
+		if answer == nil {
+			log.Printf("answer is nil")
 			return
 		}
 

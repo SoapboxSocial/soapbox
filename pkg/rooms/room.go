@@ -290,7 +290,10 @@ func (r *Room) onInviteAdmin(from int, cmd *pb.Command_InviteAdmin) {
 		return
 	}
 
-	member.Notify(CHANNEL, data)
+	err = member.Notify(CHANNEL, data)
+	if err != nil {
+		log.Printf("failed to notify %v", err)
+	}
 }
 
 func (r *Room) onAcceptAdmin(from int) {
@@ -392,7 +395,10 @@ func (r *Room) onMuteUser(from int, cmd *pb.Command_MuteUser) {
 		return
 	}
 
-	member.Notify(CHANNEL, data)
+	err = member.Notify(CHANNEL, data)
+	if err != nil {
+		log.Printf("failed to notify %v", err)
+	}
 }
 
 func (r *Room) onRecordScreen(from int) {

@@ -61,7 +61,7 @@ func NewServer(
 	}
 }
 
-func (s *Server) SignalV2(w http.ResponseWriter, r *http.Request) {
+func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
@@ -322,7 +322,7 @@ func receive(peer *sfu.Peer, conn signal.Transport) (*pb.SignalRequest, error) {
 			return nil, nil
 		}
 
-		log.Printf("signal error %v %v", err)
+		log.Printf("signal error %v", err)
 		return nil, err
 	}
 

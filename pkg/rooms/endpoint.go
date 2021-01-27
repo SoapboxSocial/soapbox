@@ -30,7 +30,7 @@ func (e *Endpoint) Router() *mux.Router {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/v1/rooms", e.rooms).Methods("GET")
-	r.HandleFunc("/v1/signal", e.server.SignalV2).Methods("GET")
+	r.HandleFunc("/v1/signal", e.server.Signal).Methods("GET")
 
 	return r
 }

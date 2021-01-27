@@ -43,7 +43,7 @@ func (e *Endpoint) Router() *mux.Router {
 }
 
 func (e *Endpoint) rooms(w http.ResponseWriter, r *http.Request) {
-	rooms := make([]*RoomState, 0)
+	rooms := make([]RoomState, 0)
 
 	e.repository.Map(func(room *Room) {
 
@@ -56,7 +56,7 @@ func (e *Endpoint) rooms(w http.ResponseWriter, r *http.Request) {
 			})
 		})
 
-		rooms = append(rooms, &RoomState{
+		rooms = append(rooms, RoomState{
 			ID:      room.id,
 			Name:    room.name,
 			Members: members,

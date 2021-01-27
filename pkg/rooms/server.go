@@ -235,7 +235,7 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 
 	room.Handle(user, peer)
 
-	// @TODO ADD ON DISCONNECT CALLBACK.
+	// @TODO: HANDLE IF SIGNAL CLIENT DISCONNECTS
 
 	for {
 		in, err := receive(peer, conn)

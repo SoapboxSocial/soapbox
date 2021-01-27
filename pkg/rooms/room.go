@@ -252,19 +252,21 @@ func (r *Room) onLinkShare(from int, cmd *pb.Command_LinkShare) {
 
 // @TODO
 func (r *Room) onInviteAdmin(from int, cmd *pb.Command_InviteAdmin) {
-	r.mux.Lock()
-	defer r.mux.Unlock()
-
 	if !r.IsAdmin(from) {
 		return
 	}
 
+	r.mux.RLock()
 	member, ok := r.members[int(cmd.Id)]
+	r.mux.RUnlock()
+
 	if !ok {
 		return
 	}
 
+	r.mux.Lock()
 	r.adminInvites[int(cmd.Id)] = true
+	r.mux.Unlock()
 
 	data, err := proto.Marshal(cmd)
 	if err != nil {

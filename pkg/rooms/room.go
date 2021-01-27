@@ -96,6 +96,17 @@ func (r *Room) Visibility() pb.Visibility {
 	return r.visibility
 }
 
+func (r *Room) CanJoin(id int) bool {
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+
+	if r.visibility == pb.Visibility_PRIVATE {
+		return r.invited[id]
+	}
+
+	return !r.kicked[id]
+}
+
 func (r *Room) isAdmin(id int) bool {
 	member := r.member(id)
 	if member == nil {

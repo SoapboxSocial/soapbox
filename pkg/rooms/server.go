@@ -1,6 +1,7 @@
 package rooms
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"github.com/pion/ion-sfu/pkg/sfu"
 	"github.com/pion/webrtc/v3"
 
+	auth "github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	"github.com/soapboxsocial/soapbox/pkg/groups"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/internal"
@@ -67,13 +69,7 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 
 	conn := signal.NewWebSocketTransport(c)
 
-	session, err := internal.SessionID(r)
-	if err != nil {
-		_ = conn.Close()
-		return
-	}
-
-	user, err := s.userForSession(session)
+	user, err := s.userForSession(r)
 	if err != nil {
 		_ = conn.Close()
 		return
@@ -263,13 +259,13 @@ func (s *Server) getGroup(peer, id int) (*groups.Group, error) {
 	return s.groups.FindById(id)
 }
 
-func (s *Server) userForSession(session string) (*users.User, error) {
-	id, err := s.sm.GetUserIDForSession(session)
-	if err != nil {
-		return nil, err
+func (s *Server) userForSession(r *http.Request) (*users.User, error) {
+	userID, ok := auth.GetUserIDFromContext(r.Context())
+	if !ok {
+		return nil, errors.New("not authenticated")
 	}
 
-	u, err := s.ub.FindByID(id)
+	u, err := s.ub.FindByID(userID)
 	if err != nil {
 		return nil, err
 	}

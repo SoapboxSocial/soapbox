@@ -10,6 +10,7 @@ import (
 	iLog "github.com/pion/ion-log"
 	"github.com/pion/ion-sfu/pkg/sfu"
 
+	"github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	"github.com/soapboxsocial/soapbox/pkg/groups"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
@@ -50,10 +51,11 @@ func main() {
 	}
 
 	repository := rooms.NewRepository()
+	sm := sessions.NewSessionManager(rdb)
 
 	server := rooms.NewServer(
 		sfu.NewSFU(config),
-		sessions.NewSessionManager(rdb),
+		sm,
 		users.NewUserBackend(db),
 		pubsub.NewQueue(rdb),
 		rooms.NewCurrentRoomBackend(rdb),
@@ -63,6 +65,9 @@ func main() {
 
 	endpoint := rooms.NewEndpoint(repository, server)
 	router := endpoint.Router()
+
+	amw := middleware.NewAuthenticationMiddleware(sm)
+	router.Use(amw.Middleware)
 
 	err = http.ListenAndServe(":8082", httputil.CORS(router))
 	if err != nil {

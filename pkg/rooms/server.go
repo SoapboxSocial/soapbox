@@ -2,7 +2,6 @@ package rooms
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -68,33 +67,24 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 
 	conn := signal.NewWebSocketTransport(c)
 
-	peer := sfu.NewPeer(s.sfu)
-
-	in, err := receive(peer, conn)
-	if err != nil {
-		log.Printf("receive err: %v", err)
-		_ = conn.Close()
-		_ = peer.Close()
-		return
-	}
-
-	if in == nil {
-		_ = conn.Close()
-		_ = peer.Close()
-		return
-	}
-
 	session, err := internal.SessionID(r)
 	if err != nil {
 		_ = conn.Close()
-		_ = peer.Close()
 		return
 	}
 
 	user, err := s.userForSession(session)
 	if err != nil {
 		_ = conn.Close()
-		_ = peer.Close()
+		return
+	}
+
+	peer := sfu.NewPeer(s.sfu)
+	me := NewMember(user.ID, user.DisplayName, user.Image, peer, conn)
+
+	in, err := me.ReceiveMsg()
+	if err != nil {
+		log.Printf("receive err: %v", err)
 		return
 	}
 
@@ -125,9 +115,9 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 			SDP:  join.Description.Sdp,
 		}
 
-		answer, err := setup(peer, join.Room, conn, description)
-		if err != nil {
-			log.Printf("setup err: %v", err)
+		answer, err := peer.Join(join.Room, description)
+		if err != nil && (err != sfu.ErrTransportExists && err != sfu.ErrOfferIgnored) {
+			log.Printf("join err: %v", err)
 			return
 		}
 
@@ -200,8 +190,9 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 			SDP:  create.Description.Sdp,
 		}
 
-		answer, err := setup(peer, id, conn, description)
-		if err != nil {
+		answer, err := peer.Join(id, description)
+		if err != nil && (err != sfu.ErrTransportExists && err != sfu.ErrOfferIgnored) {
+			log.Printf("create err: %v", err)
 			return
 		}
 
@@ -230,161 +221,8 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	room.Handle(user, peer)
-
-	// @TODO: HANDLE IF SIGNAL CLIENT DISCONNECTS
-
-	for {
-		in, err := receive(peer, conn)
-		if err != nil {
-			return
-		}
-
-		if in == nil {
-			return
-		}
-
-		err = s.handle(peer, conn, in)
-		if err != nil {
-			return
-		}
-	}
-}
-
-func (s *Server) handle(peer *sfu.Peer, conn signal.Transport, in *pb.SignalRequest) error {
-	switch in.Payload.(type) {
-	case *pb.SignalRequest_Description:
-		payload := in.GetDescription()
-		sdp := webrtc.SessionDescription{
-			Type: webrtc.NewSDPType(strings.ToLower(payload.Type)),
-			SDP:  payload.Sdp,
-		}
-
-		if sdp.Type == webrtc.SDPTypeOffer {
-			answer, err := peer.Answer(sdp)
-			if err != nil {
-				if err == sfu.ErrNoTransportEstablished || err == sfu.ErrOfferIgnored {
-					return nil
-				}
-
-				return fmt.Errorf("negotatie err: %v", err)
-			}
-
-			err = conn.Write(&pb.SignalReply{
-				Id: in.Id,
-				Payload: &pb.SignalReply_Description{
-					Description: &pb.SessionDescription{
-						Type: answer.Type.String(),
-						Sdp:  answer.SDP,
-					},
-				},
-			})
-
-			if err != nil {
-				log.Printf("conn.Write failed: %v", err)
-				return err
-			}
-
-		} else if sdp.Type == webrtc.SDPTypeAnswer {
-			err := peer.SetRemoteDescription(sdp)
-			if err != nil && err != sfu.ErrNoTransportEstablished {
-				return err
-			}
-		}
-	case *pb.SignalRequest_Trickle:
-		payload := in.GetTrickle()
-
-		midLine := uint16(payload.IceCandidate.SdpMLineIndex)
-		candidate := webrtc.ICECandidateInit{
-			Candidate:     payload.IceCandidate.Candidate,
-			SDPMid:        &payload.IceCandidate.SdpMid,
-			SDPMLineIndex: &midLine,
-		}
-
-		err := peer.Trickle(candidate, int(payload.Target))
-		if err != nil && err != sfu.ErrNoTransportEstablished {
-			return fmt.Errorf("negotatie err: %v", err)
-		}
-	}
-
-	return nil
-}
-
-func receive(peer *sfu.Peer, conn signal.Transport) (*pb.SignalRequest, error) {
-	msg, err := conn.ReadMsg()
-	if err != nil {
-		_ = peer.Close()
-
-		if err == io.EOF {
-			return nil, nil
-		}
-
-		log.Printf("signal error %v", err)
-		return nil, err
-	}
-
-	return msg, nil
-}
-
-// setup properly sets up a peer to communicate with the SFU.
-// @TODO, here we should ideally pass the room member. this has a signalling transport property.
-// when webrtc is fully connected it will switch signalling from GRPC to webrtc.
-func setup(peer *sfu.Peer, room string, conn signal.Transport, description webrtc.SessionDescription) (*webrtc.SessionDescription, error) {
-
-	// Notify user of new ice candidate
-	peer.OnIceCandidate = func(candidate *webrtc.ICECandidateInit, target int) {
-		candidateProto := &pb.ICECandidate{
-			Candidate: candidate.Candidate,
-		}
-
-		if candidate.SDPMid != nil {
-			candidateProto.SdpMid = *candidate.SDPMid
-		}
-
-		if candidate.SDPMLineIndex != nil {
-			candidateProto.SdpMLineIndex = int64(*candidate.SDPMLineIndex)
-		}
-
-		if candidate.UsernameFragment != nil {
-			candidateProto.UsernameFragment = *candidate.UsernameFragment
-		}
-
-		err := conn.Write(&pb.SignalReply{
-			Payload: &pb.SignalReply_Trickle{
-				Trickle: &pb.Trickle{
-					IceCandidate: candidateProto,
-					Target:       pb.Trickle_Target(target),
-				},
-			},
-		})
-
-		if err != nil {
-			log.Printf("OnIceCandidate send error %v ", err)
-		}
-	}
-
-	// Notify user of new offer
-	peer.OnOffer = func(o *webrtc.SessionDescription) {
-		err := conn.Write(&pb.SignalReply{
-			Payload: &pb.SignalReply_Description{
-				Description: &pb.SessionDescription{
-					Type: o.Type.String(),
-					Sdp:  o.SDP,
-				},
-			},
-		})
-
-		if err != nil {
-			log.Printf("negotiation error %s", err)
-		}
-	}
-
-	answer, err := peer.Join(room, description)
-	if err != nil && (err != sfu.ErrTransportExists && err != sfu.ErrOfferIgnored) {
-		return nil, err
-	}
-
-	return answer, nil
+	// @TODO ONCE WE SWITCH THE TRANSPORT WE WILL BE ABLE TO RELEASE HERE
+	room.Handle(me)
 }
 
 func (s *Server) userForSession(session string) (*users.User, error) {

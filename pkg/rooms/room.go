@@ -12,7 +12,6 @@ import (
 
 	"github.com/soapboxsocial/soapbox/pkg/rooms/internal"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
-	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
 const CHANNEL = "soapbox"
@@ -134,10 +133,9 @@ func (r *Room) ToProtoForPeer() *pb.RoomState {
 	}
 }
 
-func (r *Room) Handle(user *users.User, peer *sfu.Peer) {
-	r.peerToMember[peer.ID()] = user.ID
-
-	me := NewMember(user.ID, user.DisplayName, user.Image, peer)
+func (r *Room) Handle(me *Member) {
+	// @TODO SAFETY
+	r.peerToMember[me.peer.ID()] = me.id
 
 	// @TODO ENSURE ROOM IS NEVER DISPLAYED BEFORE THIS, COULD CAUSE RACE
 	if r.PeerCount() == 0 {
@@ -145,32 +143,38 @@ func (r *Room) Handle(user *users.User, peer *sfu.Peer) {
 	}
 
 	r.mux.Lock()
-	r.members[user.ID] = me
+	r.members[me.id] = me
 	r.mux.Unlock()
-	peer.OnICEConnectionStateChange = func(state webrtc.ICEConnectionState) {
+
+	me.peer.OnICEConnectionStateChange = func(state webrtc.ICEConnectionState) {
 		log.Printf("connection state changed %d", state)
 
 		switch state {
 		case webrtc.ICEConnectionStateConnected:
 			r.notify(&pb.Event{
-				From: int64(user.ID),
+				From: int64(me.id),
 				Payload: &pb.Event_Joined_{
 					Joined: &pb.Event_Joined{User: me.ToProto()},
 				},
 			})
 
-			dc := peer.GetDataChannel(CHANNEL)
+			dc := me.peer.GetDataChannel(CHANNEL)
 			if dc == nil {
 				fmt.Println("data channel not found")
 				return
 			}
 
 			dc.OnClose(func() {
-				r.onDisconnected(int64(user.ID))
+				r.onDisconnected(int64(me.id))
 			})
-		case webrtc.ICEConnectionStateDisconnected:
-			r.onDisconnected(int64(user.ID))
+		case webrtc.ICEConnectionStateClosed, webrtc.ICEConnectionStateFailed:
+			r.onDisconnected(int64(me.id))
 		}
+	}
+
+	err := me.RunSignal()
+	if err != nil {
+		log.Printf("me.Signal err: %v", err)
 	}
 }
 

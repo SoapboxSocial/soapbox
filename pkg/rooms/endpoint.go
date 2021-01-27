@@ -10,8 +10,15 @@ import (
 )
 
 type RoomState struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID      string       `json:"id"`
+	Name    string       `json:"name"`
+	Members []RoomMember `json:"members"`
+}
+
+type RoomMember struct {
+	ID          int    `json:"id"`
+	DisplayName string `json:"display_name"`
+	Image       string `json:"image"`
 }
 
 type Endpoint struct {
@@ -38,14 +45,16 @@ func (e *Endpoint) Router() *mux.Router {
 func (e *Endpoint) rooms(w http.ResponseWriter, r *http.Request) {
 	rooms := make([]*RoomState, 0)
 
-	// @TODO ACCESS TOKEN AND ALL THAT
-
 	e.repository.Map(func(room *Room) {
 
-		//members := make([]*pb.RoomState_RoomMember, 0)
-		//room.MapMembers(func(member *Member) {
-		//	members = append(members, member.ToProto())
-		//})
+		members := make([]RoomMember, 0)
+		room.MapMembers(func(member *Member) {
+			members = append(members, RoomMember{
+				ID:          member.id,
+				DisplayName: member.name,
+				Image:       member.image,
+			})
+		})
 
 		rooms = append(rooms, &RoomState{
 			ID:   room.id,

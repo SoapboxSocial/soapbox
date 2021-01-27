@@ -1,8 +1,8 @@
 package signal
 
 import (
-	"github.com/golang/protobuf/proto"
 	"github.com/gorilla/websocket"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 )

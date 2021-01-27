@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"strings"
 
+	"github.com/gorilla/websocket"
 	"github.com/pion/ion-sfu/pkg/sfu"
 	"github.com/pion/webrtc/v3"
 	"google.golang.org/grpc/codes"
@@ -15,11 +17,17 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/internal"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
+	"github.com/soapboxsocial/soapbox/pkg/rooms/signal"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
 const MAX_PEERS = 16
+
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
 
 type Server struct {
 	sfu    *sfu.SFU
@@ -53,28 +61,43 @@ func NewServer(
 	}
 }
 
-func (s *Server) Signal(stream pb.SFU_SignalServer) error {
+func (s *Server) SignalV2(w http.ResponseWriter, r *http.Request) {
+	c, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	conn := signal.NewWebSocketTransport(c)
+
 	peer := sfu.NewPeer(s.sfu)
 
-	in, err := receive(peer, stream)
+	in, err := receive(peer, conn)
 	if err != nil {
-		return err
+		log.Printf("receive err: %v", err)
+		_ = conn.Close()
+		_ = peer.Close()
+		return
 	}
 
 	if in == nil {
-		return nil
+		_ = conn.Close()
+		_ = peer.Close()
+		return
 	}
 
-	session, err := internal.SessionID(stream.Context())
+	session, err := internal.SessionID(r)
 	if err != nil {
+		_ = conn.Close()
 		_ = peer.Close()
-		// @TODO RETURN?
+		return
 	}
 
 	user, err := s.userForSession(session)
 	if err != nil {
+		_ = conn.Close()
 		_ = peer.Close()
-		// @TODO RETURN?
+		return
 	}
 
 	var room *Room
@@ -83,16 +106,16 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 	case *pb.SignalRequest_Join:
 		join := in.GetJoin()
 		if join == nil {
-			return status.Errorf(codes.Internal, "something went wrong")
+			return
 		}
 
 		r, err := s.repository.Get(join.Room)
 		if err != nil {
-			return status.Errorf(codes.Internal, "join error room closed")
+			return
 		}
 
 		if r.PeerCount() >= MAX_PEERS {
-			return status.Errorf(codes.Internal, "join error room full")
+			return
 		}
 
 		//if !s.canJoin(user.ID, r) {
@@ -104,12 +127,13 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 			SDP:  join.Description.Sdp,
 		}
 
-		answer, err := setup(peer, join.Room, stream, description)
+		answer, err := setup(peer, join.Room, conn, description)
 		if err != nil {
-			return err
+			log.Printf("setup err: %v", err)
+			return
 		}
 
-		err = stream.Send(&pb.SignalReply{
+		err = conn.Write(&pb.SignalReply{
 			Id: in.Id,
 			Payload: &pb.SignalReply_Join{
 				Join: &pb.JoinReply{
@@ -124,14 +148,14 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 
 		if err != nil {
 			log.Printf("error sending join response %s", err)
-			return status.Errorf(codes.Internal, "join error %s", err)
+			return
 		}
 
 		room = r
 	case *pb.SignalRequest_Create:
 		create := in.GetCreate()
 		if create == nil {
-			return status.Errorf(codes.Internal, "something went wrong")
+			return
 		}
 
 		id := internal.GenerateRoomID()
@@ -179,12 +203,12 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 			SDP:  create.Description.Sdp,
 		}
 
-		answer, err := setup(peer, id, stream, description)
+		answer, err := setup(peer, id, conn, description)
 		if err != nil {
-			return err
+			return
 		}
 
-		err = stream.Send(&pb.SignalReply{
+		err = conn.Write(&pb.SignalReply{
 			Id: in.Id,
 			Payload: &pb.SignalReply_Create{
 				Create: &pb.CreateReply{
@@ -199,13 +223,13 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 
 		if err != nil {
 			log.Printf("error sending create response %s", err)
-			return status.Errorf(codes.Internal, "create error %s", err)
+			return
 		}
 
 		s.repository.Set(room)
 
 	default:
-		return status.Error(codes.FailedPrecondition, "invalid message")
+		return
 	}
 
 	room.Handle(user, peer)
@@ -213,29 +237,23 @@ func (s *Server) Signal(stream pb.SFU_SignalServer) error {
 	// @TODO ADD ON DISCONNECT CALLBACK.
 
 	for {
-		in, err := receive(peer, stream)
+		in, err := receive(peer, conn)
 		if err != nil {
-			// @TODO close the peer
-
-			if err == io.EOF {
-				return nil
-			}
-
-			return err
+			return
 		}
 
 		if in == nil {
-			return nil
+			return
 		}
 
-		err = s.handle(peer, stream, in)
+		err = s.handle(peer, conn, in)
 		if err != nil {
-			return err
+			return
 		}
 	}
 }
 
-func (s *Server) handle(peer *sfu.Peer, stream pb.SFU_SignalServer, in *pb.SignalRequest) error {
+func (s *Server) handle(peer *sfu.Peer, conn signal.Transport, in *pb.SignalRequest) error {
 	switch in.Payload.(type) {
 	case *pb.SignalRequest_Description:
 		payload := in.GetDescription()
@@ -254,7 +272,7 @@ func (s *Server) handle(peer *sfu.Peer, stream pb.SFU_SignalServer, in *pb.Signa
 				return status.Errorf(codes.Unknown, fmt.Sprintf("negotiate error: %v", err))
 			}
 
-			err = stream.Send(&pb.SignalReply{
+			err = conn.Write(&pb.SignalReply{
 				Id: in.Id,
 				Payload: &pb.SignalReply_Description{
 					Description: &pb.SessionDescription{
@@ -265,7 +283,8 @@ func (s *Server) handle(peer *sfu.Peer, stream pb.SFU_SignalServer, in *pb.Signa
 			})
 
 			if err != nil {
-				return status.Errorf(codes.Internal, fmt.Sprintf("negotiate error: %v", err))
+				log.Printf("conn.Write failed: %v", err)
+				return err
 			}
 
 		} else if sdp.Type == webrtc.SDPTypeAnswer {
@@ -293,8 +312,8 @@ func (s *Server) handle(peer *sfu.Peer, stream pb.SFU_SignalServer, in *pb.Signa
 	return nil
 }
 
-func receive(peer *sfu.Peer, stream pb.SFU_SignalServer) (*pb.SignalRequest, error) {
-	in, err := stream.Recv()
+func receive(peer *sfu.Peer, conn signal.Transport) (*pb.SignalRequest, error) {
+	msg, err := conn.ReadMsg()
 	if err != nil {
 		_ = peer.Close()
 
@@ -302,22 +321,17 @@ func receive(peer *sfu.Peer, stream pb.SFU_SignalServer) (*pb.SignalRequest, err
 			return nil, nil
 		}
 
-		errStatus, _ := status.FromError(err)
-		if errStatus.Code() == codes.Canceled {
-			return nil, nil
-		}
-
-		log.Printf("signal error %v %v", errStatus.Message(), errStatus.Code())
+		log.Printf("signal error %v %v", err)
 		return nil, err
 	}
 
-	return in, nil
+	return msg, nil
 }
 
 // setup properly sets up a peer to communicate with the SFU.
 // @TODO, here we should ideally pass the room member. this has a signalling transport property.
 // when webrtc is fully connected it will switch signalling from GRPC to webrtc.
-func setup(peer *sfu.Peer, room string, stream pb.SFU_SignalServer, description webrtc.SessionDescription) (*webrtc.SessionDescription, error) {
+func setup(peer *sfu.Peer, room string, conn signal.Transport, description webrtc.SessionDescription) (*webrtc.SessionDescription, error) {
 
 	// Notify user of new ice candidate
 	peer.OnIceCandidate = func(candidate *webrtc.ICECandidateInit, target int) {
@@ -337,7 +351,7 @@ func setup(peer *sfu.Peer, room string, stream pb.SFU_SignalServer, description 
 			candidateProto.UsernameFragment = *candidate.UsernameFragment
 		}
 
-		err := stream.Send(&pb.SignalReply{
+		err := conn.Write(&pb.SignalReply{
 			Payload: &pb.SignalReply_Trickle{
 				Trickle: &pb.Trickle{
 					IceCandidate: candidateProto,
@@ -345,6 +359,7 @@ func setup(peer *sfu.Peer, room string, stream pb.SFU_SignalServer, description 
 				},
 			},
 		})
+
 		if err != nil {
 			log.Printf("OnIceCandidate send error %v ", err)
 		}
@@ -357,7 +372,7 @@ func setup(peer *sfu.Peer, room string, stream pb.SFU_SignalServer, description 
 			Sdp:  o.SDP,
 		}
 
-		err := stream.Send(&pb.SignalReply{
+		err := conn.Write(&pb.SignalReply{
 			Payload: &pb.SignalReply_Description{
 				Description: description,
 			},

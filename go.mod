@@ -17,6 +17,7 @@ require (
 	github.com/gomodule/redigo v1.8.3 // indirect
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
+	github.com/gorilla/websocket v1.4.2
 	github.com/lib/pq v1.9.0
 	github.com/pion/ion-log v1.0.0
 	github.com/pion/ion-sfu v1.8.1

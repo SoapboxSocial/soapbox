@@ -10,6 +10,7 @@ import (
 	"github.com/pion/webrtc/v3"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/soapboxsocial/soapbox/pkg/groups"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/internal"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 )
@@ -22,6 +23,7 @@ type Room struct {
 	id         string
 	name       string
 	visibility pb.Visibility
+	group      *groups.Group
 
 	members map[int]*Member
 
@@ -37,11 +39,12 @@ type Room struct {
 	session *sfu.Session
 }
 
-func NewRoom(id, name string, owner int, visibility pb.Visibility, session *sfu.Session) *Room {
+func NewRoom(id, name string, group *groups.Group, owner int, visibility pb.Visibility, session *sfu.Session) *Room {
 	r := &Room{
 		id:           id,
 		name:         name,
 		visibility:   visibility,
+		group:        group,
 		members:      make(map[int]*Member),
 		adminInvites: make(map[int]bool),
 		kicked:       make(map[int]bool),

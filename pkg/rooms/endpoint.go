@@ -6,15 +6,17 @@ import (
 
 	"github.com/gorilla/mux"
 
+	"github.com/soapboxsocial/soapbox/pkg/groups"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 )
 
 type RoomState struct {
-	ID         string       `json:"id"`
-	Name       string       `json:"name"`
-	Visibility string       `json:"visibility"`
-	Members    []RoomMember `json:"members"`
+	ID         string        `json:"id"`
+	Name       string        `json:"name"`
+	Visibility string        `json:"visibility"`
+	Group      *groups.Group `json:"group,omitempty"`
+	Members    []RoomMember  `json:"members"`
 }
 
 type RoomMember struct {
@@ -71,6 +73,7 @@ func (e *Endpoint) rooms(w http.ResponseWriter, r *http.Request) {
 			Name:       room.name,
 			Visibility: visibility,
 			Members:    members,
+			Group:      room.group,
 		})
 	})
 

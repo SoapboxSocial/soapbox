@@ -154,16 +154,23 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 		id := internal.GenerateRoomID()
 		name := internal.TrimRoomNameToLimit(create.Name)
 
-		//var group *groups.Group
-		//if create.GetGroup() != 0 {
-		//	group, err = s.getGroup(user.ID, int(create.GetGroup()))
-		//	if err != nil {
-		//		fmt.Printf("group err: %v", err)
-		//	}
-		//}
+		var group *groups.Group
+		if create.Visibility != pb.Visibility_PRIVATE && create.GetGroup() != 0 {
+			group, err = s.getGroup(user.ID, int(create.GetGroup()))
+			if err != nil {
+				fmt.Printf("group err: %v", err)
+			}
+		}
 
 		session, _ := s.sfu.GetSession(id)
-		room = NewRoom(id, name, me.id, create.Visibility, session) // @TODO THE REST, ENSURE USER IS MARKED ADMIN
+		room = NewRoom(
+			id,
+			name,
+			group,
+			me.id,
+			create.Visibility,
+			session,
+		) // @TODO THE REST, ENSURE USER IS MARKED ADMIN
 
 		room.OnDisconnected(func(room string, id int) {
 			r, err := s.repository.Get(room)
@@ -245,6 +252,15 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 
 	// @TODO ONCE WE SWITCH THE TRANSPORT WE WILL BE ABLE TO RELEASE HERE
 	room.Handle(me)
+}
+
+func (s *Server) getGroup(peer, id int) (*groups.Group, error) {
+	isMember, err := s.groups.IsGroupMember(peer, id)
+	if err != nil || !isMember {
+		return nil, fmt.Errorf("user %d is not member of group %d", peer, id)
+	}
+
+	return s.groups.FindById(id)
 }
 
 func (s *Server) userForSession(session string) (*users.User, error) {

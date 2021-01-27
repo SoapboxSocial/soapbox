@@ -360,6 +360,10 @@ func (r *Room) onKickUser(from int, cmd *pb.Command_KickUser) {
 		return
 	}
 
+	r.mux.Lock()
+	r.kicked[int(cmd.Id)] = true
+	r.mux.Unlock()
+
 	_ = p.Close()
 }
 

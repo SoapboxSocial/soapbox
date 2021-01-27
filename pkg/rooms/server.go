@@ -233,7 +233,7 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	room.Handle(user, peer)
+	room.Handle(user, conn, peer)
 
 	// @TODO: HANDLE IF SIGNAL CLIENT DISCONNECTS
 

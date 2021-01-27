@@ -6,6 +6,7 @@ import (
 	"github.com/pion/ion-sfu/pkg/sfu"
 
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
+	"github.com/soapboxsocial/soapbox/pkg/rooms/signal"
 )
 
 type Member struct {
@@ -17,17 +18,19 @@ type Member struct {
 	muted bool
 	role  pb.RoomState_RoomMember_Role
 
-	peer *sfu.Peer
+	peer   *sfu.Peer
+	signal signal.Transport
 }
 
-func NewMember(id int, name, image string, peer *sfu.Peer) *Member {
+func NewMember(id int, name, image string, signal signal.Transport, peer *sfu.Peer) *Member {
 	return &Member{
-		id:    id,
-		name:  name,
-		image: image,
-		muted: true,
-		peer:  peer,
-		role:  pb.RoomState_RoomMember_REGULAR,
+		id:     id,
+		name:   name,
+		image:  image,
+		muted:  true,
+		peer:   peer,
+		role:   pb.RoomState_RoomMember_REGULAR,
+		signal: signal,
 	}
 }
 
@@ -53,6 +56,7 @@ func (m *Member) SetRole(role pb.RoomState_RoomMember_Role) {
 }
 
 func (m *Member) Close() error {
+	_ = m.signal.Close() // @TODO
 	return m.peer.Close()
 }
 

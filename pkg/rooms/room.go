@@ -12,6 +12,7 @@ import (
 
 	"github.com/soapboxsocial/soapbox/pkg/rooms/internal"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
+	"github.com/soapboxsocial/soapbox/pkg/rooms/signal"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
@@ -134,7 +135,7 @@ func (r *Room) ToProtoForPeer() *pb.RoomState {
 	}
 }
 
-func (r *Room) Handle(user *users.User, peer *sfu.Peer) {
+func (r *Room) Handle(user *users.User, conn signal.Transport, peer *sfu.Peer) {
 	r.peerToMember[peer.ID()] = user.ID
 
 	me := NewMember(user.ID, user.DisplayName, user.Image, peer)

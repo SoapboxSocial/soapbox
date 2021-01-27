@@ -160,11 +160,10 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 		name := internal.TrimRoomNameToLimit(create.Name)
 
 		//var group *groups.Group
-		// @TODO
-		//if payload.Create.GetGroup() != 0 {
-		//	group, err = s.getGroup(user.ID, int(payload.Create.GetGroup()))
+		//if create.GetGroup() != 0 {
+		//	group, err = s.getGroup(user.ID, int(create.GetGroup()))
 		//	if err != nil {
-		//		return status.Errorf(codes.Internal, "group error %s", err)
+		//		fmt.Printf("group err: %v", err)
 		//	}
 		//}
 

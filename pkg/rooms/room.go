@@ -152,10 +152,21 @@ func (r *Room) ToProto() *pb.RoomState {
 		members = append(members, member.ToProto())
 	}
 
+	var group *pb.RoomState_Group
+	if r.group != nil {
+		group = &pb.RoomState_Group{
+			Id: int64(r.group.ID),
+			Name: r.group.Name,
+			Image: r.group.Image,
+		}
+	}
+
 	return &pb.RoomState{
 		Id:      r.id,
 		Name:    r.name,
 		Members: members,
+		Visibility: r.visibility,
+		Group: group,
 	}
 }
 

@@ -355,8 +355,8 @@ func (r *Room) onKickUser(from int, cmd *pb.Command_KickUser) {
 		return
 	}
 
-	p, ok := r.members[int(cmd.Id)]
-	if !ok {
+	p := r.member(int(cmd.Id))
+	if p == nil {
 		return
 	}
 

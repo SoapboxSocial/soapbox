@@ -163,7 +163,7 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 		//}
 
 		session, _ := s.sfu.GetSession(id)
-		room = NewRoom(id, name, create.Visibility, session) // @TODO THE REST, ENSURE USER IS MARKED ADMIN
+		room = NewRoom(id, name, me.id, create.Visibility, session) // @TODO THE REST, ENSURE USER IS MARKED ADMIN
 
 		room.OnDisconnected(func(room string, id int) {
 			r, err := s.repository.Get(room)
@@ -188,6 +188,18 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 			s.repository.Remove(room)
 
 			log.Printf("room \"%s\" was closed", room)
+		})
+
+		room.OnInvite(func(room string, from, to int) {
+			r, err := s.repository.Get(room)
+			if err != nil {
+				return
+			}
+
+			err = s.queue.Publish(pubsub.RoomTopic, pubsub.NewRoomInviteEvent(r.name, r.id, from, to))
+			if err != nil {
+				log.Printf("queue.Publish err: %v\n", err)
+			}
 		})
 
 		description := webrtc.SessionDescription{

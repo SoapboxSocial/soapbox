@@ -87,6 +87,9 @@ func (m *Member) ReceiveMsg() (*pb.SignalRequest, error) {
 
 func (m *Member) RunSignal() error {
 	for {
+
+		// @TODO probably close through a channel
+
 		in, err := m.ReceiveMsg()
 		if err != nil {
 			return err

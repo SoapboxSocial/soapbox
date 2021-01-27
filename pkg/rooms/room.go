@@ -32,11 +32,12 @@ type Room struct {
 	peerToMember map[string]int
 
 	onDisconnectedHandlerFunc func(room string, id int)
+	onInviteHandlerFunc       func(room string, from, to int)
 
 	session *sfu.Session
 }
 
-func NewRoom(id, name string, visibility pb.Visibility, session *sfu.Session) *Room {
+func NewRoom(id, name string, owner int, visibility pb.Visibility, session *sfu.Session) *Room {
 	r := &Room{
 		id:           id,
 		name:         name,
@@ -48,6 +49,8 @@ func NewRoom(id, name string, visibility pb.Visibility, session *sfu.Session) *R
 		peerToMember: make(map[string]int),
 		session:      session,
 	}
+
+	r.invited[owner] = true
 
 	dc := sfu.NewDataChannel(CHANNEL)
 	dc.OnMessage(func(ctx context.Context, args sfu.ProcessArgs) {
@@ -84,6 +87,12 @@ func (r *Room) PeerCount() int {
 	return len(r.members)
 }
 
+func (r *Room) Visibility() pb.Visibility {
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+	return r.visibility
+}
+
 func (r *Room) isAdmin(id int) bool {
 	member := r.member(id)
 	if member == nil {
@@ -100,6 +109,13 @@ func (r *Room) isInvitedToBeAdmin(id int) bool {
 	return r.adminInvites[id]
 }
 
+func (r *Room) isInvited(id int) bool {
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+
+	return r.invited[id]
+}
+
 func (r *Room) MapMembers(f func(member *Member)) {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
@@ -114,6 +130,13 @@ func (r *Room) OnDisconnected(f func(room string, id int)) {
 	defer r.mux.Unlock()
 
 	r.onDisconnectedHandlerFunc = f
+}
+
+func (r *Room) OnInvite(f func(room string, from, to int)) {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+
+	r.onInviteHandlerFunc = f
 }
 
 func (r *Room) ToProto() *pb.RoomState {
@@ -138,7 +161,7 @@ func (r *Room) Handle(me *Member) {
 	r.peerToMember[me.peer.ID()] = me.id
 
 	// @TODO ENSURE ROOM IS NEVER DISPLAYED BEFORE THIS, COULD CAUSE RACE
-	if r.PeerCount() == 0 {
+	if r.PeerCount() == 0 && r.isInvited(me.id) {
 		me.SetRole(pb.RoomState_RoomMember_ADMIN)
 	}
 
@@ -353,10 +376,17 @@ func (r *Room) onRenameRoom(from int, cmd *pb.Command_RenameRoom) {
 }
 
 func (r *Room) onInviteUser(from int, cmd *pb.Command_InviteUser) {
+	if r.Visibility() == pb.Visibility_PRIVATE && !r.isAdmin(from) {
+		return
+	}
 
+	r.mux.Lock()
+	r.invited[from] = true
+	r.mux.Unlock()
+
+	r.onInviteHandlerFunc(r.id, from, int(cmd.Id))
 }
 
-// @TODO
 func (r *Room) onKickUser(from int, cmd *pb.Command_KickUser) {
 	if !r.isAdmin(from) {
 		return

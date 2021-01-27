@@ -88,7 +88,7 @@ func NewStoryReactionEvent(user int) Event {
 	}
 }
 
-func NewRoomInviteEvent(name string, room, creator, target int) Event {
+func NewRoomInviteEvent(name, room string, creator, target int) Event {
 	return Event{
 		Type:   EventTypeRoomInvite,
 		Params: map[string]interface{}{"name": name, "room": room, "from": creator, "id": target},

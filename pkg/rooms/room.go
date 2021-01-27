@@ -167,7 +167,7 @@ func (r *Room) Handle(me *Member) {
 			dc.OnClose(func() {
 				r.onDisconnected(int64(me.id))
 			})
-		case webrtc.ICEConnectionStateDisconnected:
+		case webrtc.ICEConnectionStateClosed, webrtc.ICEConnectionStateFailed:
 			r.onDisconnected(int64(me.id))
 		}
 	}

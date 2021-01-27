@@ -7,9 +7,15 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 )
 
+// Transport is used for signalling communication
 type Transport interface {
+	// ReadMsg returns the message sent by a client
 	ReadMsg() (*pb.SignalRequest, error)
+
+	// Write sends a message to the client
 	Write(msg *pb.SignalReply) error
+
+	// Close closes the signalling transport
 	Close() error
 }
 

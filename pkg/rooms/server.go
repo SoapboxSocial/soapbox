@@ -226,6 +226,7 @@ func (s *Server) SignalV2(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// @TODO ensure room isn't shown when peer is not yet connected.
 		s.repository.Set(room)
 
 	default:

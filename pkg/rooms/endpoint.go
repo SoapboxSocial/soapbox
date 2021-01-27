@@ -57,8 +57,9 @@ func (e *Endpoint) rooms(w http.ResponseWriter, r *http.Request) {
 		})
 
 		rooms = append(rooms, &RoomState{
-			ID:   room.id,
-			Name: room.name,
+			ID:      room.id,
+			Name:    room.name,
+			Members: members,
 		})
 	})
 

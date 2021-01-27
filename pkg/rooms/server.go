@@ -130,7 +130,7 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 			Id: in.Id,
 			Payload: &pb.SignalReply_Join{
 				Join: &pb.JoinReply{
-					Room: r.ToProtoForPeer(),
+					Room: r.ToProto(),
 					Description: &pb.SessionDescription{
 						Type: answer.Type.String(),
 						Sdp:  answer.SDP,

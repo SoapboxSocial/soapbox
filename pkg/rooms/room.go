@@ -116,7 +116,7 @@ func (r *Room) OnDisconnected(f func(room string, id int)) {
 	r.onDisconnectedHandlerFunc = f
 }
 
-func (r *Room) ToProtoForPeer() *pb.RoomState {
+func (r *Room) ToProto() *pb.RoomState {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
 

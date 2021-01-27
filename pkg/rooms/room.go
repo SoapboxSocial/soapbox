@@ -406,7 +406,7 @@ func (r *Room) onInviteUser(from int, cmd *pb.Command_InviteUser) {
 	}
 
 	r.mux.Lock()
-	r.invited[from] = true
+	r.invited[int(cmd.Id)] = true
 	r.mux.Unlock()
 
 	r.onInviteHandlerFunc(r.id, from, int(cmd.Id))

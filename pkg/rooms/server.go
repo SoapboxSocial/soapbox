@@ -205,6 +205,8 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 			}
 		})
 
+		// @todo after this we can invite a set of users if private.
+
 		description := webrtc.SessionDescription{
 			Type: webrtc.NewSDPType(strings.ToLower(create.Description.Type)),
 			SDP:  create.Description.Sdp,
@@ -248,6 +250,24 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 
 	// @TODO ONCE WE SWITCH THE TRANSPORT WE WILL BE ABLE TO RELEASE HERE
 	room.Handle(me)
+}
+
+func (s *Server) canJoin(peer int, room *Room) bool {
+	group := room.group // @TODO MAKE READABLE
+	if group == nil {
+		return room.CanJoin(peer)
+	}
+
+	if group.GroupType != "private" {
+		return true
+	}
+
+	isMember, err := s.groups.IsGroupMember(peer, group.ID)
+	if err != nil {
+		return false
+	}
+
+	return isMember
 }
 
 func (s *Server) getGroup(peer, id int) (*groups.Group, error) {

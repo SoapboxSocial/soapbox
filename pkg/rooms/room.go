@@ -85,13 +85,20 @@ func (r *Room) PeerCount() int {
 	return len(r.members)
 }
 
-func (r *Room) IsAdmin(id int) bool {
+func (r *Room) isAdmin(id int) bool {
 	member := r.member(id)
 	if member == nil {
 		return false
 	}
 
 	return member.Role() == pb.RoomState_RoomMember_ADMIN
+}
+
+func (r *Room) isInvitedToBeAdmin(id int) bool {
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+
+	return r.adminInvites[id]
 }
 
 func (r *Room) MapMembers(f func(member *Member)) {
@@ -254,9 +261,8 @@ func (r *Room) onLinkShare(from int, cmd *pb.Command_LinkShare) {
 	})
 }
 
-// @TODO
 func (r *Room) onInviteAdmin(from int, cmd *pb.Command_InviteAdmin) {
-	if !r.IsAdmin(from) {
+	if !r.isAdmin(from) {
 		return
 	}
 
@@ -269,8 +275,12 @@ func (r *Room) onInviteAdmin(from int, cmd *pb.Command_InviteAdmin) {
 	r.adminInvites[int(cmd.Id)] = true
 	r.mux.Unlock()
 
-	// @TODO should be event
-	data, err := proto.Marshal(cmd)
+	event := &pb.Event{
+		From:    int64(from),
+		Payload: &pb.Event_InvitedAdmin_{InvitedAdmin: &pb.Event_InvitedAdmin{Id: cmd.Id}},
+	}
+
+	data, err := proto.Marshal(event)
 	if err != nil {
 		log.Printf("failed to marshal %v", err)
 		return
@@ -280,14 +290,13 @@ func (r *Room) onInviteAdmin(from int, cmd *pb.Command_InviteAdmin) {
 }
 
 func (r *Room) onAcceptAdmin(from int) {
-	r.mux.Lock()
-	defer r.mux.Unlock()
-
-	if !r.adminInvites[from] {
+	if !r.isInvitedToBeAdmin(from) {
 		return
 	}
 
+	r.mux.Lock()
 	delete(r.adminInvites, from)
+	r.mux.Unlock()
 
 	member := r.member(from)
 	if member == nil {
@@ -303,10 +312,7 @@ func (r *Room) onAcceptAdmin(from int) {
 }
 
 func (r *Room) onRemoveAdmin(from int, cmd *pb.Command_RemoveAdmin) {
-	r.mux.Lock()
-	defer r.mux.Unlock()
-
-	if !r.IsAdmin(from) {
+	if !r.isAdmin(from) {
 		return
 	}
 
@@ -325,7 +331,7 @@ func (r *Room) onRemoveAdmin(from int, cmd *pb.Command_RemoveAdmin) {
 }
 
 func (r *Room) onRenameRoom(from int, cmd *pb.Command_RenameRoom) {
-	if !r.IsAdmin(from) {
+	if !r.isAdmin(from) {
 		return
 	}
 
@@ -343,8 +349,9 @@ func (r *Room) onInviteUser(from int, cmd *pb.Command_InviteUser) {
 
 }
 
+// @TODO
 func (r *Room) onKickUser(from int, cmd *pb.Command_KickUser) {
-	if !r.IsAdmin(from) {
+	if !r.isAdmin(from) {
 		return
 	}
 
@@ -357,7 +364,27 @@ func (r *Room) onKickUser(from int, cmd *pb.Command_KickUser) {
 }
 
 func (r *Room) onMuteUser(from int, cmd *pb.Command_MuteUser) {
+	if !r.isAdmin(from) {
+		return
+	}
 
+	member := r.member(int(cmd.Id))
+	if member == nil {
+		return
+	}
+
+	event := &pb.Event{
+		From:    int64(from),
+		Payload: &pb.Event_MutedByAdmin_{MutedByAdmin: &pb.Event_MutedByAdmin{Id: cmd.Id}},
+	}
+
+	data, err := proto.Marshal(event)
+	if err != nil {
+		log.Printf("failed to marshal %v", err)
+		return
+	}
+
+	member.Notify(CHANNEL, data)
 }
 
 func (r *Room) onRecordScreen(from int) {

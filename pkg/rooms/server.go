@@ -102,9 +102,9 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		//if !s.canJoin(user.ID, r) {
-		//	return status.Errorf(codes.Internal, "user not invited")
-		//}
+		if !s.canJoin(user.ID, r) {
+			return
+		}
 
 		description := webrtc.SessionDescription{
 			Type: webrtc.NewSDPType(strings.ToLower(join.Description.Type)),

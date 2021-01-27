@@ -20,8 +20,9 @@ const CHANNEL = "soapbox"
 type Room struct {
 	mux sync.RWMutex
 
-	id   string
-	name string
+	id         string
+	name       string
+	visibility pb.Visibility
 
 	members map[int]*Member
 
@@ -36,10 +37,11 @@ type Room struct {
 	session *sfu.Session
 }
 
-func NewRoom(id, name string, session *sfu.Session) *Room {
+func NewRoom(id, name string, visibility pb.Visibility, session *sfu.Session) *Room {
 	r := &Room{
 		id:           id,
 		name:         name,
+		visibility: visibility,
 		session:      session,
 		peerToMember: make(map[string]int),
 		members:      make(map[int]*Member),

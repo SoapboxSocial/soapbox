@@ -7,11 +7,13 @@ import (
 	"github.com/gorilla/mux"
 
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
+	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 )
 
 type RoomState struct {
 	ID      string       `json:"id"`
 	Name    string       `json:"name"`
+	Visibility    string       `json:"visibility"`
 	Members []RoomMember `json:"members"`
 }
 
@@ -56,9 +58,15 @@ func (e *Endpoint) rooms(w http.ResponseWriter, r *http.Request) {
 			})
 		})
 
+		visibility := "public"
+		if room.visibility == pb.Visibility_PRIVATE {
+			visibility = "private"
+		}
+
 		rooms = append(rooms, RoomState{
 			ID:      room.id,
 			Name:    room.name,
+			Visibility: visibility,
 			Members: members,
 		})
 	})

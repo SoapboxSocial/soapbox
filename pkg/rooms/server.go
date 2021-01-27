@@ -171,7 +171,7 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 		//}
 
 		session, _ := s.sfu.GetSession(id)
-		room = NewRoom(id, name, session) // @TODO THE REST, ENSURE USER IS MARKED ADMIN
+		room = NewRoom(id, name, create.Visibility, session) // @TODO THE REST, ENSURE USER IS MARKED ADMIN
 
 		room.OnDisconnected(func(room string, id int) {
 			r, err := s.repository.Get(room)

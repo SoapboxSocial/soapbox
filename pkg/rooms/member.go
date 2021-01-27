@@ -22,6 +22,7 @@ type Member struct {
 	muted bool
 	role  pb.RoomState_RoomMember_Role
 
+	// @TODO MIGHT MAKE SENSE TO MOVE THIS INTO A CLASS THAT MANAGES CONNECTION STUFF SIMILAR TO HOW IT WORKS ON CLIENT.
 	peer   *sfu.Peer
 	signal signal.Transport
 }

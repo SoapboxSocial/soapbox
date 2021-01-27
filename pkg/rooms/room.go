@@ -41,7 +41,7 @@ func NewRoom(id, name string, visibility pb.Visibility, session *sfu.Session) *R
 	r := &Room{
 		id:           id,
 		name:         name,
-		visibility: visibility,
+		visibility:   visibility,
 		session:      session,
 		peerToMember: make(map[string]int),
 		members:      make(map[int]*Member),

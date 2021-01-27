@@ -150,6 +150,7 @@ func (m *Member) RunSignal() error {
 }
 
 func (m *Member) Close() error {
+	m.signal.Close()
 	return m.peer.Close()
 }
 

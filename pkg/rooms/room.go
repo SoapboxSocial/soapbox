@@ -42,9 +42,12 @@ func NewRoom(id, name string, visibility pb.Visibility, session *sfu.Session) *R
 		id:           id,
 		name:         name,
 		visibility:   visibility,
-		session:      session,
-		peerToMember: make(map[string]int),
 		members:      make(map[int]*Member),
+		adminInvites: make(map[int]bool),
+		kicked:       make(map[int]bool),
+		invited:      make(map[int]bool),
+		peerToMember: make(map[string]int),
+		session:      session,
 	}
 
 	dc := sfu.NewDataChannel(CHANNEL)
@@ -57,9 +60,9 @@ func NewRoom(id, name string, visibility pb.Visibility, session *sfu.Session) *R
 		}
 
 		r.mux.RLock()
-		defer r.mux.RUnlock()
-
 		user, ok := r.peerToMember[args.Peer.ID()]
+		r.mux.RUnlock()
+
 		if !ok {
 			return
 		}
@@ -83,11 +86,8 @@ func (r *Room) PeerCount() int {
 }
 
 func (r *Room) IsAdmin(id int) bool {
-	r.mux.RLock()
-	defer r.mux.RUnlock()
-
-	member, ok := r.members[id]
-	if !ok {
+	member := r.member(id)
+	if member == nil {
 		return false
 	}
 
@@ -132,6 +132,11 @@ func (r *Room) Handle(user *users.User, peer *sfu.Peer) {
 
 	me := NewMember(user.ID, user.DisplayName, user.Image, peer)
 
+	// @TODO ENSURE ROOM IS NEVER DISPLAYED BEFORE THIS, COULD CAUSE RACE
+	if r.PeerCount() == 0 {
+		me.SetRole(pb.RoomState_RoomMember_ADMIN)
+	}
+
 	r.mux.Lock()
 	r.members[user.ID] = me
 	r.mux.Unlock()
@@ -165,11 +170,8 @@ func (r *Room) Handle(user *users.User, peer *sfu.Peer) {
 func (r *Room) onDisconnected(id int64) {
 	log.Printf("disconnected %d", id)
 
-	r.mux.RLock()
-	peer, ok := r.members[int(id)]
-	r.mux.RUnlock()
-
-	if !ok {
+	peer := r.member(int(id))
+	if peer == nil {
 		return
 	}
 
@@ -258,11 +260,8 @@ func (r *Room) onInviteAdmin(from int, cmd *pb.Command_InviteAdmin) {
 		return
 	}
 
-	r.mux.RLock()
-	member, ok := r.members[int(cmd.Id)]
-	r.mux.RUnlock()
-
-	if !ok {
+	member := r.member(int(cmd.Id))
+	if member == nil {
 		return
 	}
 
@@ -270,6 +269,7 @@ func (r *Room) onInviteAdmin(from int, cmd *pb.Command_InviteAdmin) {
 	r.adminInvites[int(cmd.Id)] = true
 	r.mux.Unlock()
 
+	// @TODO should be event
 	data, err := proto.Marshal(cmd)
 	if err != nil {
 		log.Printf("failed to marshal %v", err)
@@ -289,8 +289,8 @@ func (r *Room) onAcceptAdmin(from int) {
 
 	delete(r.adminInvites, from)
 
-	member, ok := r.members[from]
-	if !ok {
+	member := r.member(from)
+	if member == nil {
 		return
 	}
 
@@ -325,14 +325,13 @@ func (r *Room) onRemoveAdmin(from int, cmd *pb.Command_RemoveAdmin) {
 }
 
 func (r *Room) onRenameRoom(from int, cmd *pb.Command_RenameRoom) {
-	r.mux.Lock()
-	defer r.mux.Unlock()
-
 	if !r.IsAdmin(from) {
 		return
 	}
 
+	r.mux.Lock()
 	r.name = internal.TrimRoomNameToLimit(cmd.Name)
+	r.mux.Unlock()
 
 	r.notify(&pb.Event{
 		From:    int64(from),

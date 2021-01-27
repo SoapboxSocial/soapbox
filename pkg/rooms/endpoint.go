@@ -11,10 +11,10 @@ import (
 )
 
 type RoomState struct {
-	ID      string       `json:"id"`
-	Name    string       `json:"name"`
-	Visibility    string       `json:"visibility"`
-	Members []RoomMember `json:"members"`
+	ID         string       `json:"id"`
+	Name       string       `json:"name"`
+	Visibility string       `json:"visibility"`
+	Members    []RoomMember `json:"members"`
 }
 
 type RoomMember struct {
@@ -48,6 +48,9 @@ func (e *Endpoint) rooms(w http.ResponseWriter, r *http.Request) {
 	rooms := make([]RoomState, 0)
 
 	e.repository.Map(func(room *Room) {
+		if room.PeerCount() == 0 {
+			return
+		}
 
 		members := make([]RoomMember, 0)
 		room.MapMembers(func(member *Member) {
@@ -64,10 +67,10 @@ func (e *Endpoint) rooms(w http.ResponseWriter, r *http.Request) {
 		}
 
 		rooms = append(rooms, RoomState{
-			ID:      room.id,
-			Name:    room.name,
+			ID:         room.id,
+			Name:       room.name,
 			Visibility: visibility,
-			Members: members,
+			Members:    members,
 		})
 	})
 

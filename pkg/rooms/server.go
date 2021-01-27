@@ -248,21 +248,10 @@ func (s *Server) handle(peer *sfu.Peer, stream pb.SFU_SignalServer, in *pb.Signa
 			answer, err := peer.Answer(sdp)
 			if err != nil {
 				if err == sfu.ErrNoTransportEstablished || err == sfu.ErrOfferIgnored {
-					err = stream.Send(&pb.SignalReply{
-						Payload: &pb.SignalReply_Error{
-							Error: fmt.Errorf("negotiate answer error: %w", err).Error(),
-						},
-					})
-
-					if err != nil {
-						log.Printf("grpc send error %v\n", err)
-						return status.Errorf(codes.Internal, err.Error())
-					}
-
 					return nil
-				} else {
-					return status.Errorf(codes.Unknown, fmt.Sprintf("negotiate error: %v", err))
 				}
+
+				return status.Errorf(codes.Unknown, fmt.Sprintf("negotiate error: %v", err))
 			}
 
 			err = stream.Send(&pb.SignalReply{
@@ -281,21 +270,8 @@ func (s *Server) handle(peer *sfu.Peer, stream pb.SFU_SignalServer, in *pb.Signa
 
 		} else if sdp.Type == webrtc.SDPTypeAnswer {
 			err := peer.SetRemoteDescription(sdp)
-			if err != nil {
-				if err == sfu.ErrNoTransportEstablished {
-					err = stream.Send(&pb.SignalReply{
-						Payload: &pb.SignalReply_Error{
-							Error: fmt.Errorf("set remote description error: %w", err).Error(),
-						},
-					})
-
-					if err != nil {
-						log.Printf("grpc send error %v\n", err)
-						return status.Errorf(codes.Internal, err.Error())
-					}
-				} else {
-					return status.Errorf(codes.Unknown, err.Error())
-				}
+			if err != nil && err != sfu.ErrNoTransportEstablished {
+				return status.Errorf(codes.Unknown, err.Error())
 			}
 		}
 	case *pb.SignalRequest_Trickle:
@@ -309,22 +285,8 @@ func (s *Server) handle(peer *sfu.Peer, stream pb.SFU_SignalServer, in *pb.Signa
 		}
 
 		err := peer.Trickle(candidate, int(payload.Target))
-		if err != nil {
-			if err == sfu.ErrNoTransportEstablished {
-				log.Print("peer hasn't joined")
-				err = stream.Send(&pb.SignalReply{
-					Payload: &pb.SignalReply_Error{
-						Error: fmt.Errorf("trickle error:  %w", err).Error(),
-					},
-				})
-
-				if err != nil {
-					log.Printf("grpc send error %v\n", err)
-					return status.Errorf(codes.Internal, err.Error())
-				}
-			} else {
-				return status.Errorf(codes.Unknown, fmt.Sprintf("negotiate error: %v", err))
-			}
+		if err != nil && err != sfu.ErrNoTransportEstablished {
+			return status.Errorf(codes.Unknown, fmt.Sprintf("negotiate error: %v", err))
 		}
 	}
 
@@ -407,21 +369,8 @@ func setup(peer *sfu.Peer, room string, stream pb.SFU_SignalServer, description 
 	}
 
 	answer, err := peer.Join(room, description)
-	if err != nil {
-		if err == sfu.ErrTransportExists || err == sfu.ErrOfferIgnored {
-			err = stream.Send(&pb.SignalReply{
-				Payload: &pb.SignalReply_Error{
-					Error: fmt.Errorf("join error: %w", err).Error(),
-				},
-			})
-
-			if err != nil {
-				log.Printf("grpc send error %v ", err)
-				return nil, status.Errorf(codes.Internal, err.Error())
-			}
-		} else {
-			return nil, status.Errorf(codes.Unknown, err.Error())
-		}
+	if err != nil && (err != sfu.ErrTransportExists && err != sfu.ErrOfferIgnored) {
+		return nil, status.Errorf(codes.Unknown, err.Error())
 	}
 
 	return answer, nil

@@ -10,8 +10,6 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/pion/ion-sfu/pkg/sfu"
 	"github.com/pion/webrtc/v3"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 
 	"github.com/soapboxsocial/soapbox/pkg/groups"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
@@ -270,7 +268,7 @@ func (s *Server) handle(peer *sfu.Peer, conn signal.Transport, in *pb.SignalRequ
 					return nil
 				}
 
-				return status.Errorf(codes.Unknown, fmt.Sprintf("negotiate error: %v", err))
+				return fmt.Errorf("negotatie err: %v", err)
 			}
 
 			err = conn.Write(&pb.SignalReply{
@@ -291,7 +289,7 @@ func (s *Server) handle(peer *sfu.Peer, conn signal.Transport, in *pb.SignalRequ
 		} else if sdp.Type == webrtc.SDPTypeAnswer {
 			err := peer.SetRemoteDescription(sdp)
 			if err != nil && err != sfu.ErrNoTransportEstablished {
-				return status.Errorf(codes.Unknown, err.Error())
+				return err
 			}
 		}
 	case *pb.SignalRequest_Trickle:
@@ -306,7 +304,7 @@ func (s *Server) handle(peer *sfu.Peer, conn signal.Transport, in *pb.SignalRequ
 
 		err := peer.Trickle(candidate, int(payload.Target))
 		if err != nil && err != sfu.ErrNoTransportEstablished {
-			return status.Errorf(codes.Unknown, fmt.Sprintf("negotiate error: %v", err))
+			return fmt.Errorf("negotatie err: %v", err)
 		}
 	}
 
@@ -386,7 +384,7 @@ func setup(peer *sfu.Peer, room string, conn signal.Transport, description webrt
 
 	answer, err := peer.Join(room, description)
 	if err != nil && (err != sfu.ErrTransportExists && err != sfu.ErrOfferIgnored) {
-		return nil, status.Errorf(codes.Unknown, err.Error())
+		return nil, err
 	}
 
 	return answer, nil

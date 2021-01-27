@@ -30,7 +30,6 @@ require (
 	github.com/tideland/golib v4.24.2+incompatible // indirect
 	github.com/tideland/gorest v2.15.5+incompatible // indirect
 	github.com/yuin/gopher-lua v0.0.0-20200816102855-ee81675732da // indirect
-	google.golang.org/grpc v1.35.0
 	google.golang.org/protobuf v1.25.0
 )
 

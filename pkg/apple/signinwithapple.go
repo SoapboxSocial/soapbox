@@ -3,7 +3,6 @@ package apple
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/Timothylock/go-signin-with-apple/apple"
@@ -58,8 +57,6 @@ func (s *SignInWithAppleAppValidation) Validate(jwt string) (*UserInfo, error) {
 	if resp.Error != "" {
 		return nil, fmt.Errorf("apple response err: %v", resp.Error)
 	}
-
-	log.Printf("%v", resp)
 
 	userID, err := apple.GetUniqueID(resp.IDToken)
 	if err != nil {

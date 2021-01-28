@@ -7,7 +7,11 @@
 package pb
 
 import (
+	context "context"
 	proto "github.com/golang/protobuf/proto"
+	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -624,6 +628,108 @@ func (x *RoomState) GetGroup() *RoomState_Group {
 	return nil
 }
 
+type RoomQuery struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+}
+
+func (x *RoomQuery) Reset() {
+	*x = RoomQuery{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_room_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *RoomQuery) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RoomQuery) ProtoMessage() {}
+
+func (x *RoomQuery) ProtoReflect() protoreflect.Message {
+	mi := &file_room_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RoomQuery.ProtoReflect.Descriptor instead.
+func (*RoomQuery) Descriptor() ([]byte, []int) {
+	return file_room_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *RoomQuery) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+type RoomResponse struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Room  *RoomState `protobuf:"bytes,1,opt,name=room,proto3" json:"room,omitempty"`
+	Error string     `protobuf:"bytes,2,opt,name=error,proto3" json:"error,omitempty"`
+}
+
+func (x *RoomResponse) Reset() {
+	*x = RoomResponse{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_room_proto_msgTypes[4]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *RoomResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RoomResponse) ProtoMessage() {}
+
+func (x *RoomResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_room_proto_msgTypes[4]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RoomResponse.ProtoReflect.Descriptor instead.
+func (*RoomResponse) Descriptor() ([]byte, []int) {
+	return file_room_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *RoomResponse) GetRoom() *RoomState {
+	if x != nil {
+		return x.Room
+	}
+	return nil
+}
+
+func (x *RoomResponse) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
 type Command_MuteUpdate struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -635,7 +741,7 @@ type Command_MuteUpdate struct {
 func (x *Command_MuteUpdate) Reset() {
 	*x = Command_MuteUpdate{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_room_proto_msgTypes[3]
+		mi := &file_room_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -648,7 +754,7 @@ func (x *Command_MuteUpdate) String() string {
 func (*Command_MuteUpdate) ProtoMessage() {}
 
 func (x *Command_MuteUpdate) ProtoReflect() protoreflect.Message {
-	mi := &file_room_proto_msgTypes[3]
+	mi := &file_room_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -682,7 +788,7 @@ type Command_Reaction struct {
 func (x *Command_Reaction) Reset() {
 	*x = Command_Reaction{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_room_proto_msgTypes[4]
+		mi := &file_room_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -695,7 +801,7 @@ func (x *Command_Reaction) String() string {
 func (*Command_Reaction) ProtoMessage() {}
 
 func (x *Command_Reaction) ProtoReflect() protoreflect.Message {
-	mi := &file_room_proto_msgTypes[4]
+	mi := &file_room_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -729,7 +835,7 @@ type Command_LinkShare struct {
 func (x *Command_LinkShare) Reset() {
 	*x = Command_LinkShare{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_room_proto_msgTypes[5]
+		mi := &file_room_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -742,7 +848,7 @@ func (x *Command_LinkShare) String() string {
 func (*Command_LinkShare) ProtoMessage() {}
 
 func (x *Command_LinkShare) ProtoReflect() protoreflect.Message {
-	mi := &file_room_proto_msgTypes[5]
+	mi := &file_room_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -776,7 +882,7 @@ type Command_InviteAdmin struct {
 func (x *Command_InviteAdmin) Reset() {
 	*x = Command_InviteAdmin{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_room_proto_msgTypes[6]
+		mi := &file_room_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -789,7 +895,7 @@ func (x *Command_InviteAdmin) String() string {
 func (*Command_InviteAdmin) ProtoMessage() {}
 
 func (x *Command_InviteAdmin) ProtoReflect() protoreflect.Message {
-	mi := &file_room_proto_msgTypes[6]
+	mi := &file_room_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -821,7 +927,7 @@ type Command_AcceptAdmin struct {
 func (x *Command_AcceptAdmin) Reset() {
 	*x = Command_AcceptAdmin{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_room_proto_msgTypes[7]
+		mi := &file_room_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -834,7 +940,7 @@ func (x *Command_AcceptAdmin) String() string {
 func (*Command_AcceptAdmin) ProtoMessage() {}
 
 func (x *Command_AcceptAdmin) ProtoReflect() protoreflect.Message {
-	mi := &file_room_proto_msgTypes[7]
+	mi := &file_room_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -861,7 +967,7 @@ type Command_RemoveAdmin struct {
 func (x *Command_RemoveAdmin) Reset() {
 	*x = Command_RemoveAdmin{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_room_proto_msgTypes[8]
+		mi := &file_room_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -874,7 +980,7 @@ func (x *Command_RemoveAdmin) String() string {
 func (*Command_RemoveAdmin) ProtoMessage() {}
 
 func (x *Command_RemoveAdmin) ProtoReflect() protoreflect.Message {
-	mi := &file_room_proto_msgTypes[8]
+	mi := &file_room_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -908,7 +1014,7 @@ type Command_RenameRoom struct {
 func (x *Command_RenameRoom) Reset() {
 	*x = Command_RenameRoom{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_room_proto_msgTypes[9]
+		mi := &file_room_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -921,7 +1027,7 @@ func (x *Command_RenameRoom) String() string {
 func (*Command_RenameRoom) ProtoMessage() {}
 
 func (x *Command_RenameRoom) ProtoReflect() protoreflect.Message {
-	mi := &file_room_proto_msgTypes[9]
+	mi := &file_room_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -955,7 +1061,7 @@ type Command_InviteUser struct {
 func (x *Command_InviteUser) Reset() {
 	*x = Command_InviteUser{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_room_proto_msgTypes[10]
+		mi := &file_room_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -968,7 +1074,7 @@ func (x *Command_InviteUser) String() string {
 func (*Command_InviteUser) ProtoMessage() {}
 
 func (x *Command_InviteUser) ProtoReflect() protoreflect.Message {
-	mi := &file_room_proto_msgTypes[10]
+	mi := &file_room_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1002,7 +1108,7 @@ type Command_KickUser struct {
 func (x *Command_KickUser) Reset() {
 	*x = Command_KickUser{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_room_proto_msgTypes[11]
+		mi := &file_room_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1015,7 +1121,7 @@ func (x *Command_KickUser) String() string {
 func (*Command_KickUser) ProtoMessage() {}
 
 func (x *Command_KickUser) ProtoReflect() protoreflect.Message {
-	mi := &file_room_proto_msgTypes[11]
+	mi := &file_room_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1049,7 +1155,7 @@ type Command_MuteUser struct {
 func (x *Command_MuteUser) Reset() {
 	*x = Command_MuteUser{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_room_proto_msgTypes[12]
+		mi := &file_room_proto_msgTypes[14]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1062,7 +1168,7 @@ func (x *Command_MuteUser) String() string {
 func (*Command_MuteUser) ProtoMessage() {}
 
 func (x *Command_MuteUser) ProtoReflect() protoreflect.Message {
-	mi := &file_room_proto_msgTypes[12]
+	mi := &file_room_proto_msgTypes[14]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1094,7 +1200,7 @@ type Command_RecordScreen struct {
 func (x *Command_RecordScreen) Reset() {
 	*x = Command_RecordScreen{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_room_proto_msgTypes[13]
+		mi := &file_room_proto_msgTypes[15]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1107,7 +1213,7 @@ func (x *Command_RecordScreen) String() string {
 func (*Command_RecordScreen) ProtoMessage() {}
 
 func (x *Command_RecordScreen) ProtoReflect() protoreflect.Message {
-	mi := &file_room_proto_msgTypes[13]
+	mi := &file_room_proto_msgTypes[15]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1134,7 +1240,7 @@ type Event_Joined struct {
 func (x *Event_Joined) Reset() {
 	*x = Event_Joined{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_room_proto_msgTypes[14]
+		mi := &file_room_proto_msgTypes[16]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1147,7 +1253,7 @@ func (x *Event_Joined) String() string {
 func (*Event_Joined) ProtoMessage() {}
 
 func (x *Event_Joined) ProtoReflect() protoreflect.Message {
-	mi := &file_room_proto_msgTypes[14]
+	mi := &file_room_proto_msgTypes[16]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1181,7 +1287,7 @@ type Event_Left struct {
 func (x *Event_Left) Reset() {
 	*x = Event_Left{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_room_proto_msgTypes[15]
+		mi := &file_room_proto_msgTypes[17]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1194,7 +1300,7 @@ func (x *Event_Left) String() string {
 func (*Event_Left) ProtoMessage() {}
 
 func (x *Event_Left) ProtoReflect() protoreflect.Message {
-	mi := &file_room_proto_msgTypes[15]
+	mi := &file_room_proto_msgTypes[17]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1228,7 +1334,7 @@ type Event_MuteUpdated struct {
 func (x *Event_MuteUpdated) Reset() {
 	*x = Event_MuteUpdated{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_room_proto_msgTypes[16]
+		mi := &file_room_proto_msgTypes[18]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1241,7 +1347,7 @@ func (x *Event_MuteUpdated) String() string {
 func (*Event_MuteUpdated) ProtoMessage() {}
 
 func (x *Event_MuteUpdated) ProtoReflect() protoreflect.Message {
-	mi := &file_room_proto_msgTypes[16]
+	mi := &file_room_proto_msgTypes[18]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1275,7 +1381,7 @@ type Event_Reacted struct {
 func (x *Event_Reacted) Reset() {
 	*x = Event_Reacted{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_room_proto_msgTypes[17]
+		mi := &file_room_proto_msgTypes[19]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1288,7 +1394,7 @@ func (x *Event_Reacted) String() string {
 func (*Event_Reacted) ProtoMessage() {}
 
 func (x *Event_Reacted) ProtoReflect() protoreflect.Message {
-	mi := &file_room_proto_msgTypes[17]
+	mi := &file_room_proto_msgTypes[19]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1322,7 +1428,7 @@ type Event_LinkShared struct {
 func (x *Event_LinkShared) Reset() {
 	*x = Event_LinkShared{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_room_proto_msgTypes[18]
+		mi := &file_room_proto_msgTypes[20]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1335,7 +1441,7 @@ func (x *Event_LinkShared) String() string {
 func (*Event_LinkShared) ProtoMessage() {}
 
 func (x *Event_LinkShared) ProtoReflect() protoreflect.Message {
-	mi := &file_room_proto_msgTypes[18]
+	mi := &file_room_proto_msgTypes[20]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1369,7 +1475,7 @@ type Event_InvitedAdmin struct {
 func (x *Event_InvitedAdmin) Reset() {
 	*x = Event_InvitedAdmin{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_room_proto_msgTypes[19]
+		mi := &file_room_proto_msgTypes[21]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1382,7 +1488,7 @@ func (x *Event_InvitedAdmin) String() string {
 func (*Event_InvitedAdmin) ProtoMessage() {}
 
 func (x *Event_InvitedAdmin) ProtoReflect() protoreflect.Message {
-	mi := &file_room_proto_msgTypes[19]
+	mi := &file_room_proto_msgTypes[21]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1416,7 +1522,7 @@ type Event_AddedAdmin struct {
 func (x *Event_AddedAdmin) Reset() {
 	*x = Event_AddedAdmin{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_room_proto_msgTypes[20]
+		mi := &file_room_proto_msgTypes[22]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1429,7 +1535,7 @@ func (x *Event_AddedAdmin) String() string {
 func (*Event_AddedAdmin) ProtoMessage() {}
 
 func (x *Event_AddedAdmin) ProtoReflect() protoreflect.Message {
-	mi := &file_room_proto_msgTypes[20]
+	mi := &file_room_proto_msgTypes[22]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1463,7 +1569,7 @@ type Event_RemovedAdmin struct {
 func (x *Event_RemovedAdmin) Reset() {
 	*x = Event_RemovedAdmin{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_room_proto_msgTypes[21]
+		mi := &file_room_proto_msgTypes[23]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1476,7 +1582,7 @@ func (x *Event_RemovedAdmin) String() string {
 func (*Event_RemovedAdmin) ProtoMessage() {}
 
 func (x *Event_RemovedAdmin) ProtoReflect() protoreflect.Message {
-	mi := &file_room_proto_msgTypes[21]
+	mi := &file_room_proto_msgTypes[23]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1510,7 +1616,7 @@ type Event_RenamedRoom struct {
 func (x *Event_RenamedRoom) Reset() {
 	*x = Event_RenamedRoom{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_room_proto_msgTypes[22]
+		mi := &file_room_proto_msgTypes[24]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1523,7 +1629,7 @@ func (x *Event_RenamedRoom) String() string {
 func (*Event_RenamedRoom) ProtoMessage() {}
 
 func (x *Event_RenamedRoom) ProtoReflect() protoreflect.Message {
-	mi := &file_room_proto_msgTypes[22]
+	mi := &file_room_proto_msgTypes[24]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1557,7 +1663,7 @@ type Event_RecordedScreen struct {
 func (x *Event_RecordedScreen) Reset() {
 	*x = Event_RecordedScreen{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_room_proto_msgTypes[23]
+		mi := &file_room_proto_msgTypes[25]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1570,7 +1676,7 @@ func (x *Event_RecordedScreen) String() string {
 func (*Event_RecordedScreen) ProtoMessage() {}
 
 func (x *Event_RecordedScreen) ProtoReflect() protoreflect.Message {
-	mi := &file_room_proto_msgTypes[23]
+	mi := &file_room_proto_msgTypes[25]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1604,7 +1710,7 @@ type Event_MutedByAdmin struct {
 func (x *Event_MutedByAdmin) Reset() {
 	*x = Event_MutedByAdmin{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_room_proto_msgTypes[24]
+		mi := &file_room_proto_msgTypes[26]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1617,7 +1723,7 @@ func (x *Event_MutedByAdmin) String() string {
 func (*Event_MutedByAdmin) ProtoMessage() {}
 
 func (x *Event_MutedByAdmin) ProtoReflect() protoreflect.Message {
-	mi := &file_room_proto_msgTypes[24]
+	mi := &file_room_proto_msgTypes[26]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1656,7 +1762,7 @@ type RoomState_RoomMember struct {
 func (x *RoomState_RoomMember) Reset() {
 	*x = RoomState_RoomMember{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_room_proto_msgTypes[25]
+		mi := &file_room_proto_msgTypes[27]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1669,7 +1775,7 @@ func (x *RoomState_RoomMember) String() string {
 func (*RoomState_RoomMember) ProtoMessage() {}
 
 func (x *RoomState_RoomMember) ProtoReflect() protoreflect.Message {
-	mi := &file_room_proto_msgTypes[25]
+	mi := &file_room_proto_msgTypes[27]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1740,7 +1846,7 @@ type RoomState_Group struct {
 func (x *RoomState_Group) Reset() {
 	*x = RoomState_Group{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_room_proto_msgTypes[26]
+		mi := &file_room_proto_msgTypes[28]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1753,7 +1859,7 @@ func (x *RoomState_Group) String() string {
 func (*RoomState_Group) ProtoMessage() {}
 
 func (x *RoomState_Group) ProtoReflect() protoreflect.Message {
-	mi := &file_room_proto_msgTypes[26]
+	mi := &file_room_proto_msgTypes[28]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1945,10 +2051,20 @@ var file_room_proto_rawDesc = []byte{
 	0x28, 0x03, 0x52, 0x02, 0x69, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02,
 	0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x14, 0x0a, 0x05, 0x69, 0x6d,
 	0x61, 0x67, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x69, 0x6d, 0x61, 0x67, 0x65,
-	0x2a, 0x25, 0x0a, 0x0a, 0x56, 0x69, 0x73, 0x69, 0x62, 0x69, 0x6c, 0x69, 0x74, 0x79, 0x12, 0x0a,
-	0x0a, 0x06, 0x50, 0x55, 0x42, 0x4c, 0x49, 0x43, 0x10, 0x00, 0x12, 0x0b, 0x0a, 0x07, 0x50, 0x52,
-	0x49, 0x56, 0x41, 0x54, 0x45, 0x10, 0x01, 0x42, 0x0e, 0x5a, 0x0c, 0x70, 0x6b, 0x67, 0x2f, 0x72,
-	0x6f, 0x6f, 0x6d, 0x73, 0x2f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x22, 0x1b, 0x0a, 0x09, 0x52, 0x6f, 0x6f, 0x6d, 0x51, 0x75, 0x65, 0x72, 0x79, 0x12, 0x0e, 0x0a,
+	0x02, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x02, 0x69, 0x64, 0x22, 0x44, 0x0a,
+	0x0c, 0x52, 0x6f, 0x6f, 0x6d, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x12, 0x1e, 0x0a,
+	0x04, 0x72, 0x6f, 0x6f, 0x6d, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x0a, 0x2e, 0x52, 0x6f,
+	0x6f, 0x6d, 0x53, 0x74, 0x61, 0x74, 0x65, 0x52, 0x04, 0x72, 0x6f, 0x6f, 0x6d, 0x12, 0x14, 0x0a,
+	0x05, 0x65, 0x72, 0x72, 0x6f, 0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x65, 0x72,
+	0x72, 0x6f, 0x72, 0x2a, 0x25, 0x0a, 0x0a, 0x56, 0x69, 0x73, 0x69, 0x62, 0x69, 0x6c, 0x69, 0x74,
+	0x79, 0x12, 0x0a, 0x0a, 0x06, 0x50, 0x55, 0x42, 0x4c, 0x49, 0x43, 0x10, 0x00, 0x12, 0x0b, 0x0a,
+	0x07, 0x50, 0x52, 0x49, 0x56, 0x41, 0x54, 0x45, 0x10, 0x01, 0x32, 0x33, 0x0a, 0x0b, 0x52, 0x6f,
+	0x6f, 0x6d, 0x53, 0x65, 0x72, 0x76, 0x69, 0x63, 0x65, 0x12, 0x24, 0x0a, 0x07, 0x47, 0x65, 0x74,
+	0x52, 0x6f, 0x6f, 0x6d, 0x12, 0x0a, 0x2e, 0x52, 0x6f, 0x6f, 0x6d, 0x51, 0x75, 0x65, 0x72, 0x79,
+	0x1a, 0x0d, 0x2e, 0x52, 0x6f, 0x6f, 0x6d, 0x52, 0x65, 0x73, 0x70, 0x6f, 0x6e, 0x73, 0x65, 0x42,
+	0x0e, 0x5a, 0x0c, 0x70, 0x6b, 0x67, 0x2f, 0x72, 0x6f, 0x6f, 0x6d, 0x73, 0x2f, 0x70, 0x62, 0x62,
+	0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1964,71 +2080,76 @@ func file_room_proto_rawDescGZIP() []byte {
 }
 
 var file_room_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_room_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
+var file_room_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
 var file_room_proto_goTypes = []interface{}{
 	(Visibility)(0),                // 0: Visibility
 	(RoomState_RoomMember_Role)(0), // 1: RoomState.RoomMember.Role
 	(*Command)(nil),                // 2: Command
 	(*Event)(nil),                  // 3: Event
 	(*RoomState)(nil),              // 4: RoomState
-	(*Command_MuteUpdate)(nil),     // 5: Command.MuteUpdate
-	(*Command_Reaction)(nil),       // 6: Command.Reaction
-	(*Command_LinkShare)(nil),      // 7: Command.LinkShare
-	(*Command_InviteAdmin)(nil),    // 8: Command.InviteAdmin
-	(*Command_AcceptAdmin)(nil),    // 9: Command.AcceptAdmin
-	(*Command_RemoveAdmin)(nil),    // 10: Command.RemoveAdmin
-	(*Command_RenameRoom)(nil),     // 11: Command.RenameRoom
-	(*Command_InviteUser)(nil),     // 12: Command.InviteUser
-	(*Command_KickUser)(nil),       // 13: Command.KickUser
-	(*Command_MuteUser)(nil),       // 14: Command.MuteUser
-	(*Command_RecordScreen)(nil),   // 15: Command.RecordScreen
-	(*Event_Joined)(nil),           // 16: Event.Joined
-	(*Event_Left)(nil),             // 17: Event.Left
-	(*Event_MuteUpdated)(nil),      // 18: Event.MuteUpdated
-	(*Event_Reacted)(nil),          // 19: Event.Reacted
-	(*Event_LinkShared)(nil),       // 20: Event.LinkShared
-	(*Event_InvitedAdmin)(nil),     // 21: Event.InvitedAdmin
-	(*Event_AddedAdmin)(nil),       // 22: Event.AddedAdmin
-	(*Event_RemovedAdmin)(nil),     // 23: Event.RemovedAdmin
-	(*Event_RenamedRoom)(nil),      // 24: Event.RenamedRoom
-	(*Event_RecordedScreen)(nil),   // 25: Event.RecordedScreen
-	(*Event_MutedByAdmin)(nil),     // 26: Event.MutedByAdmin
-	(*RoomState_RoomMember)(nil),   // 27: RoomState.RoomMember
-	(*RoomState_Group)(nil),        // 28: RoomState.Group
+	(*RoomQuery)(nil),              // 5: RoomQuery
+	(*RoomResponse)(nil),           // 6: RoomResponse
+	(*Command_MuteUpdate)(nil),     // 7: Command.MuteUpdate
+	(*Command_Reaction)(nil),       // 8: Command.Reaction
+	(*Command_LinkShare)(nil),      // 9: Command.LinkShare
+	(*Command_InviteAdmin)(nil),    // 10: Command.InviteAdmin
+	(*Command_AcceptAdmin)(nil),    // 11: Command.AcceptAdmin
+	(*Command_RemoveAdmin)(nil),    // 12: Command.RemoveAdmin
+	(*Command_RenameRoom)(nil),     // 13: Command.RenameRoom
+	(*Command_InviteUser)(nil),     // 14: Command.InviteUser
+	(*Command_KickUser)(nil),       // 15: Command.KickUser
+	(*Command_MuteUser)(nil),       // 16: Command.MuteUser
+	(*Command_RecordScreen)(nil),   // 17: Command.RecordScreen
+	(*Event_Joined)(nil),           // 18: Event.Joined
+	(*Event_Left)(nil),             // 19: Event.Left
+	(*Event_MuteUpdated)(nil),      // 20: Event.MuteUpdated
+	(*Event_Reacted)(nil),          // 21: Event.Reacted
+	(*Event_LinkShared)(nil),       // 22: Event.LinkShared
+	(*Event_InvitedAdmin)(nil),     // 23: Event.InvitedAdmin
+	(*Event_AddedAdmin)(nil),       // 24: Event.AddedAdmin
+	(*Event_RemovedAdmin)(nil),     // 25: Event.RemovedAdmin
+	(*Event_RenamedRoom)(nil),      // 26: Event.RenamedRoom
+	(*Event_RecordedScreen)(nil),   // 27: Event.RecordedScreen
+	(*Event_MutedByAdmin)(nil),     // 28: Event.MutedByAdmin
+	(*RoomState_RoomMember)(nil),   // 29: RoomState.RoomMember
+	(*RoomState_Group)(nil),        // 30: RoomState.Group
 }
 var file_room_proto_depIdxs = []int32{
-	5,  // 0: Command.muteUpdate:type_name -> Command.MuteUpdate
-	6,  // 1: Command.reaction:type_name -> Command.Reaction
-	7,  // 2: Command.linkShare:type_name -> Command.LinkShare
-	8,  // 3: Command.inviteAdmin:type_name -> Command.InviteAdmin
-	9,  // 4: Command.acceptAdmin:type_name -> Command.AcceptAdmin
-	10, // 5: Command.removeAdmin:type_name -> Command.RemoveAdmin
-	11, // 6: Command.renameRoom:type_name -> Command.RenameRoom
-	12, // 7: Command.inviteUser:type_name -> Command.InviteUser
-	13, // 8: Command.kickUser:type_name -> Command.KickUser
-	14, // 9: Command.muteUser:type_name -> Command.MuteUser
-	15, // 10: Command.recordScreen:type_name -> Command.RecordScreen
-	16, // 11: Event.joined:type_name -> Event.Joined
-	17, // 12: Event.left:type_name -> Event.Left
-	18, // 13: Event.muteUpdated:type_name -> Event.MuteUpdated
-	19, // 14: Event.reacted:type_name -> Event.Reacted
-	20, // 15: Event.linkShared:type_name -> Event.LinkShared
-	21, // 16: Event.invitedAdmin:type_name -> Event.InvitedAdmin
-	22, // 17: Event.addedAdmin:type_name -> Event.AddedAdmin
-	23, // 18: Event.removedAdmin:type_name -> Event.RemovedAdmin
-	24, // 19: Event.renamedRoom:type_name -> Event.RenamedRoom
-	25, // 20: Event.recordedScreen:type_name -> Event.RecordedScreen
-	26, // 21: Event.mutedByAdmin:type_name -> Event.MutedByAdmin
-	27, // 22: RoomState.members:type_name -> RoomState.RoomMember
+	7,  // 0: Command.muteUpdate:type_name -> Command.MuteUpdate
+	8,  // 1: Command.reaction:type_name -> Command.Reaction
+	9,  // 2: Command.linkShare:type_name -> Command.LinkShare
+	10, // 3: Command.inviteAdmin:type_name -> Command.InviteAdmin
+	11, // 4: Command.acceptAdmin:type_name -> Command.AcceptAdmin
+	12, // 5: Command.removeAdmin:type_name -> Command.RemoveAdmin
+	13, // 6: Command.renameRoom:type_name -> Command.RenameRoom
+	14, // 7: Command.inviteUser:type_name -> Command.InviteUser
+	15, // 8: Command.kickUser:type_name -> Command.KickUser
+	16, // 9: Command.muteUser:type_name -> Command.MuteUser
+	17, // 10: Command.recordScreen:type_name -> Command.RecordScreen
+	18, // 11: Event.joined:type_name -> Event.Joined
+	19, // 12: Event.left:type_name -> Event.Left
+	20, // 13: Event.muteUpdated:type_name -> Event.MuteUpdated
+	21, // 14: Event.reacted:type_name -> Event.Reacted
+	22, // 15: Event.linkShared:type_name -> Event.LinkShared
+	23, // 16: Event.invitedAdmin:type_name -> Event.InvitedAdmin
+	24, // 17: Event.addedAdmin:type_name -> Event.AddedAdmin
+	25, // 18: Event.removedAdmin:type_name -> Event.RemovedAdmin
+	26, // 19: Event.renamedRoom:type_name -> Event.RenamedRoom
+	27, // 20: Event.recordedScreen:type_name -> Event.RecordedScreen
+	28, // 21: Event.mutedByAdmin:type_name -> Event.MutedByAdmin
+	29, // 22: RoomState.members:type_name -> RoomState.RoomMember
 	0,  // 23: RoomState.visibility:type_name -> Visibility
-	28, // 24: RoomState.group:type_name -> RoomState.Group
-	27, // 25: Event.Joined.user:type_name -> RoomState.RoomMember
-	1,  // 26: RoomState.RoomMember.role:type_name -> RoomState.RoomMember.Role
-	27, // [27:27] is the sub-list for method output_type
-	27, // [27:27] is the sub-list for method input_type
-	27, // [27:27] is the sub-list for extension type_name
-	27, // [27:27] is the sub-list for extension extendee
-	0,  // [0:27] is the sub-list for field type_name
+	30, // 24: RoomState.group:type_name -> RoomState.Group
+	4,  // 25: RoomResponse.room:type_name -> RoomState
+	29, // 26: Event.Joined.user:type_name -> RoomState.RoomMember
+	1,  // 27: RoomState.RoomMember.role:type_name -> RoomState.RoomMember.Role
+	5,  // 28: RoomService.GetRoom:input_type -> RoomQuery
+	6,  // 29: RoomService.GetRoom:output_type -> RoomResponse
+	29, // [29:30] is the sub-list for method output_type
+	28, // [28:29] is the sub-list for method input_type
+	28, // [28:28] is the sub-list for extension type_name
+	28, // [28:28] is the sub-list for extension extendee
+	0,  // [0:28] is the sub-list for field type_name
 }
 
 func init() { file_room_proto_init() }
@@ -2074,7 +2195,7 @@ func file_room_proto_init() {
 			}
 		}
 		file_room_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Command_MuteUpdate); i {
+			switch v := v.(*RoomQuery); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2086,7 +2207,7 @@ func file_room_proto_init() {
 			}
 		}
 		file_room_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Command_Reaction); i {
+			switch v := v.(*RoomResponse); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2098,7 +2219,7 @@ func file_room_proto_init() {
 			}
 		}
 		file_room_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Command_LinkShare); i {
+			switch v := v.(*Command_MuteUpdate); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2110,7 +2231,7 @@ func file_room_proto_init() {
 			}
 		}
 		file_room_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Command_InviteAdmin); i {
+			switch v := v.(*Command_Reaction); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2122,7 +2243,7 @@ func file_room_proto_init() {
 			}
 		}
 		file_room_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Command_AcceptAdmin); i {
+			switch v := v.(*Command_LinkShare); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2134,7 +2255,7 @@ func file_room_proto_init() {
 			}
 		}
 		file_room_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Command_RemoveAdmin); i {
+			switch v := v.(*Command_InviteAdmin); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2146,7 +2267,7 @@ func file_room_proto_init() {
 			}
 		}
 		file_room_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Command_RenameRoom); i {
+			switch v := v.(*Command_AcceptAdmin); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2158,7 +2279,7 @@ func file_room_proto_init() {
 			}
 		}
 		file_room_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Command_InviteUser); i {
+			switch v := v.(*Command_RemoveAdmin); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2170,7 +2291,7 @@ func file_room_proto_init() {
 			}
 		}
 		file_room_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Command_KickUser); i {
+			switch v := v.(*Command_RenameRoom); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2182,7 +2303,7 @@ func file_room_proto_init() {
 			}
 		}
 		file_room_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Command_MuteUser); i {
+			switch v := v.(*Command_InviteUser); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2194,7 +2315,7 @@ func file_room_proto_init() {
 			}
 		}
 		file_room_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Command_RecordScreen); i {
+			switch v := v.(*Command_KickUser); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2206,7 +2327,7 @@ func file_room_proto_init() {
 			}
 		}
 		file_room_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Event_Joined); i {
+			switch v := v.(*Command_MuteUser); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2218,7 +2339,7 @@ func file_room_proto_init() {
 			}
 		}
 		file_room_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Event_Left); i {
+			switch v := v.(*Command_RecordScreen); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2230,7 +2351,7 @@ func file_room_proto_init() {
 			}
 		}
 		file_room_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Event_MuteUpdated); i {
+			switch v := v.(*Event_Joined); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2242,7 +2363,7 @@ func file_room_proto_init() {
 			}
 		}
 		file_room_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Event_Reacted); i {
+			switch v := v.(*Event_Left); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2254,7 +2375,7 @@ func file_room_proto_init() {
 			}
 		}
 		file_room_proto_msgTypes[18].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Event_LinkShared); i {
+			switch v := v.(*Event_MuteUpdated); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2266,7 +2387,7 @@ func file_room_proto_init() {
 			}
 		}
 		file_room_proto_msgTypes[19].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Event_InvitedAdmin); i {
+			switch v := v.(*Event_Reacted); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2278,7 +2399,7 @@ func file_room_proto_init() {
 			}
 		}
 		file_room_proto_msgTypes[20].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Event_AddedAdmin); i {
+			switch v := v.(*Event_LinkShared); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2290,7 +2411,7 @@ func file_room_proto_init() {
 			}
 		}
 		file_room_proto_msgTypes[21].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Event_RemovedAdmin); i {
+			switch v := v.(*Event_InvitedAdmin); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2302,7 +2423,7 @@ func file_room_proto_init() {
 			}
 		}
 		file_room_proto_msgTypes[22].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Event_RenamedRoom); i {
+			switch v := v.(*Event_AddedAdmin); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2314,7 +2435,7 @@ func file_room_proto_init() {
 			}
 		}
 		file_room_proto_msgTypes[23].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Event_RecordedScreen); i {
+			switch v := v.(*Event_RemovedAdmin); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2326,7 +2447,7 @@ func file_room_proto_init() {
 			}
 		}
 		file_room_proto_msgTypes[24].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Event_MutedByAdmin); i {
+			switch v := v.(*Event_RenamedRoom); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2338,7 +2459,7 @@ func file_room_proto_init() {
 			}
 		}
 		file_room_proto_msgTypes[25].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*RoomState_RoomMember); i {
+			switch v := v.(*Event_RecordedScreen); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -2350,6 +2471,30 @@ func file_room_proto_init() {
 			}
 		}
 		file_room_proto_msgTypes[26].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Event_MutedByAdmin); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_room_proto_msgTypes[27].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*RoomState_RoomMember); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_room_proto_msgTypes[28].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*RoomState_Group); i {
 			case 0:
 				return &v.state
@@ -2394,9 +2539,9 @@ func file_room_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_room_proto_rawDesc,
 			NumEnums:      2,
-			NumMessages:   27,
+			NumMessages:   29,
 			NumExtensions: 0,
-			NumServices:   0,
+			NumServices:   1,
 		},
 		GoTypes:           file_room_proto_goTypes,
 		DependencyIndexes: file_room_proto_depIdxs,
@@ -2407,4 +2552,84 @@ func file_room_proto_init() {
 	file_room_proto_rawDesc = nil
 	file_room_proto_goTypes = nil
 	file_room_proto_depIdxs = nil
+}
+
+// Reference imports to suppress errors if they are not otherwise used.
+var _ context.Context
+var _ grpc.ClientConnInterface
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion6
+
+// RoomServiceClient is the client API for RoomService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type RoomServiceClient interface {
+	GetRoom(ctx context.Context, in *RoomQuery, opts ...grpc.CallOption) (*RoomResponse, error)
+}
+
+type roomServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewRoomServiceClient(cc grpc.ClientConnInterface) RoomServiceClient {
+	return &roomServiceClient{cc}
+}
+
+func (c *roomServiceClient) GetRoom(ctx context.Context, in *RoomQuery, opts ...grpc.CallOption) (*RoomResponse, error) {
+	out := new(RoomResponse)
+	err := c.cc.Invoke(ctx, "/RoomService/GetRoom", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// RoomServiceServer is the server API for RoomService service.
+type RoomServiceServer interface {
+	GetRoom(context.Context, *RoomQuery) (*RoomResponse, error)
+}
+
+// UnimplementedRoomServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedRoomServiceServer struct {
+}
+
+func (*UnimplementedRoomServiceServer) GetRoom(context.Context, *RoomQuery) (*RoomResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetRoom not implemented")
+}
+
+func RegisterRoomServiceServer(s *grpc.Server, srv RoomServiceServer) {
+	s.RegisterService(&_RoomService_serviceDesc, srv)
+}
+
+func _RoomService_GetRoom_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RoomQuery)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RoomServiceServer).GetRoom(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/RoomService/GetRoom",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RoomServiceServer).GetRoom(ctx, req.(*RoomQuery))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _RoomService_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "RoomService",
+	HandlerType: (*RoomServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetRoom",
+			Handler:    _RoomService_GetRoom_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "room.proto",
 }

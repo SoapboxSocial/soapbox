@@ -6,9 +6,11 @@ import (
 	"net/http"
 
 	_ "github.com/lib/pq"
+	"google.golang.org/grpc"
 
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/metadata"
+	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
@@ -20,7 +22,16 @@ func main() {
 
 	usersBackend := users.NewUserBackend(db)
 
-	endpoint := metadata.NewEndpoint(usersBackend)
+	conn, err := grpc.Dial("127.0.0.1:50052", grpc.WithInsecure())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer conn.Close()
+
+	client := pb.NewRoomServiceClient(conn)
+	endpoint := metadata.NewEndpoint(usersBackend, client)
+
 	router := endpoint.Router()
 
 	log.Print(http.ListenAndServe(":8081", httputil.CORS(router)))

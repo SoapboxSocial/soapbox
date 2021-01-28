@@ -18,5 +18,5 @@ func TrimRoomNameToLimit(input string) string {
 
 // GenerateRoomID generates a random alpha-numeric room ID.
 func GenerateRoomID() string {
-	return ksuid.New().String()
+	return strings.ToLower(ksuid.New().String())
 }

@@ -166,18 +166,18 @@ func (r *Room) ToProto() *pb.RoomState {
 	var group *pb.RoomState_Group
 	if r.group != nil {
 		group = &pb.RoomState_Group{
-			Id: int64(r.group.ID),
-			Name: r.group.Name,
+			Id:    int64(r.group.ID),
+			Name:  r.group.Name,
 			Image: r.group.Image,
 		}
 	}
 
 	return &pb.RoomState{
-		Id:      r.id,
-		Name:    r.name,
-		Members: members,
+		Id:         r.id,
+		Name:       r.name,
+		Members:    members,
 		Visibility: r.visibility,
-		Group: group,
+		Group:      group,
 	}
 }
 

@@ -3,18 +3,22 @@ package main
 import (
 	"database/sql"
 	"log"
+	"net"
 	"net/http"
 
 	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
 	iLog "github.com/pion/ion-log"
 	"github.com/pion/ion-sfu/pkg/sfu"
+	"google.golang.org/grpc"
 
 	"github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	"github.com/soapboxsocial/soapbox/pkg/groups"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
+	roomGRPC "github.com/soapboxsocial/soapbox/pkg/rooms/grpc"
+	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
@@ -52,6 +56,26 @@ func main() {
 
 	repository := rooms.NewRepository()
 	sm := sessions.NewSessionManager(rdb)
+
+	addr := "127.0.0.1:50052"
+	lis, err := net.Listen("tcp", addr)
+	if err != nil {
+		log.Panicf("failed to listen: %v", err)
+		return
+	}
+
+	s := grpc.NewServer()
+	pb.RegisterRoomServiceServer(
+		s,
+		roomGRPC.NewService(repository),
+	)
+
+	go func() {
+		err = s.Serve(lis)
+		if err != nil {
+			log.Panicf("failed to serve: %v", err)
+		}
+	}()
 
 	server := rooms.NewServer(
 		sfu.NewSFU(config),

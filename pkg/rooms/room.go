@@ -576,7 +576,7 @@ func (r *Room) onVisibilityUpdate(from int, cmd *pb.Command_VisibilityUpdate) {
 	r.mux.Lock()
 	r.visibility = cmd.Visibility
 
-	for i, _ := range r.members {
+	for i := range r.members {
 		r.invited[i] = true
 	}
 

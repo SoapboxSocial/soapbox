@@ -299,9 +299,42 @@ func (r *Room) onDisconnected(id int64) {
 	delete(r.members, int(id))
 	r.mux.Unlock()
 
-	// @TODO NEW ADMIN
+	r.electRandomAdmin(id)
 
 	r.onDisconnectedHandlerFunc(r.id, int(id))
+}
+
+func (r *Room) electRandomAdmin(previous int64) {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+
+	hasAdmin := has(r.members, func(me *Member) bool {
+		return me.Role() == pb.RoomState_RoomMember_ADMIN
+	})
+
+	if hasAdmin {
+		return
+	}
+
+	for k := range r.members {
+		r.members[k].SetRole(pb.RoomState_RoomMember_ADMIN)
+
+		go r.notify(&pb.Event{
+			From:    previous,
+			Payload: &pb.Event_AddedAdmin_{AddedAdmin: &pb.Event_AddedAdmin{Id: int64(k)}},
+		})
+		break
+	}
+}
+
+func has(members map[int]*Member, fn func(*Member) bool) bool {
+	for _, member := range members {
+		if fn(member) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (r *Room) onMessage(from int, command *pb.Command) {

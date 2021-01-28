@@ -24,6 +24,12 @@ const (
 	closed
 )
 
+type (
+	JoinHandlerFunc         func(room *Room, me *Member, isNew bool)
+	InviteHandlerFunc       func(room string, from, to int)
+	DisconnectedHandlerFunc func(room string, id int)
+)
+
 type Room struct {
 	mux sync.RWMutex
 
@@ -42,8 +48,9 @@ type Room struct {
 
 	peerToMember map[string]int
 
-	onDisconnectedHandlerFunc func(room string, id int)
-	onInviteHandlerFunc       func(room string, from, to int)
+	onDisconnectedHandlerFunc DisconnectedHandlerFunc
+	onInviteHandlerFunc       InviteHandlerFunc
+	onJoinHandlerFunc         JoinHandlerFunc
 
 	session *sfu.Session
 }
@@ -98,6 +105,18 @@ func (r *Room) PeerCount() int {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
 	return len(r.members)
+}
+
+func (r *Room) Group() *groups.Group {
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+	return r.group
+}
+
+func (r *Room) Name() string {
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+	return r.name
 }
 
 func (r *Room) ConnectionState() RoomConnectionState {
@@ -162,18 +181,25 @@ func (r *Room) MapMembers(f func(member *Member)) {
 	}
 }
 
-func (r *Room) OnDisconnected(f func(room string, id int)) {
+func (r *Room) OnDisconnected(f DisconnectedHandlerFunc) {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 
 	r.onDisconnectedHandlerFunc = f
 }
 
-func (r *Room) OnInvite(f func(room string, from, to int)) {
+func (r *Room) OnInvite(f InviteHandlerFunc) {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 
 	r.onInviteHandlerFunc = f
+}
+
+func (r *Room) OnJoin(f JoinHandlerFunc) {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+
+	r.onJoinHandlerFunc = f
 }
 
 func (r *Room) ToProto() *pb.RoomState {
@@ -208,8 +234,8 @@ func (r *Room) Handle(me *Member) {
 	// @TODO SAFETY
 	r.peerToMember[me.peer.ID()] = me.id
 
-	// @TODO ENSURE ROOM IS NEVER DISPLAYED BEFORE THIS, COULD CAUSE RACE
-	if r.ConnectionState() == closed {
+	isNew := r.ConnectionState() == closed
+	if isNew {
 		me.SetRole(pb.RoomState_RoomMember_ADMIN)
 	}
 
@@ -222,6 +248,7 @@ func (r *Room) Handle(me *Member) {
 
 		switch state {
 		case webrtc.ICEConnectionStateConnected:
+			r.onJoinHandlerFunc(r, me, isNew)
 			r.SetConnectionState(open)
 
 			r.notify(&pb.Event{

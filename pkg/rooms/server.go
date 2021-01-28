@@ -166,44 +166,9 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 			me.id,
 			create.Visibility,
 			session,
-		) // @TODO THE REST, ENSURE USER IS MARKED ADMIN
+		)
 
-		room.OnDisconnected(func(room string, id int) {
-			r, err := s.repository.Get(room)
-			if err != nil {
-				fmt.Printf("failed to get room %v\n", err)
-				return
-			}
-
-			go func() {
-				s.currentRoom.RemoveCurrentRoomForUser(id)
-
-				err := s.queue.Publish(pubsub.RoomTopic, pubsub.NewRoomLeftEvent(room, id))
-				if err != nil {
-					log.Printf("queue.Publish err: %v\n", err)
-				}
-			}()
-
-			if r.PeerCount() > 0 {
-				return
-			}
-
-			s.repository.Remove(room)
-
-			log.Printf("room \"%s\" was closed", room)
-		})
-
-		room.OnInvite(func(room string, from, to int) {
-			r, err := s.repository.Get(room)
-			if err != nil {
-				return
-			}
-
-			err = s.queue.Publish(pubsub.RoomTopic, pubsub.NewRoomInviteEvent(r.name, r.id, from, to))
-			if err != nil {
-				log.Printf("queue.Publish err: %v\n", err)
-			}
-		})
+		s.setup(room)
 
 		// @todo after this we can invite a set of users if private.
 
@@ -250,6 +215,83 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 
 	// @TODO ONCE WE SWITCH THE TRANSPORT WE WILL BE ABLE TO RELEASE HERE
 	room.Handle(me)
+}
+
+func (s *Server) setup(room *Room) {
+	room.OnDisconnected(func(room string, id int) {
+		r, err := s.repository.Get(room)
+		if err != nil {
+			fmt.Printf("failed to get room %v\n", err)
+			return
+		}
+
+		go func() {
+			s.currentRoom.RemoveCurrentRoomForUser(id)
+
+			err := s.queue.Publish(pubsub.RoomTopic, pubsub.NewRoomLeftEvent(room, id))
+			if err != nil {
+				log.Printf("queue.Publish err: %v\n", err)
+			}
+		}()
+
+		if r.PeerCount() > 0 {
+			return
+		}
+
+		s.repository.Remove(room)
+
+		log.Printf("room \"%s\" was closed", room)
+	})
+
+	room.OnInvite(func(room string, from, to int) {
+		r, err := s.repository.Get(room)
+		if err != nil {
+			return
+		}
+
+		err = s.queue.Publish(pubsub.RoomTopic, pubsub.NewRoomInviteEvent(r.Name(), r.id, from, to))
+		if err != nil {
+			log.Printf("queue.Publish err: %v\n", err)
+		}
+	})
+
+	room.OnJoin(func(room *Room, me *Member, isNew bool) {
+		visibility := pubsub.Public
+		if room.Visibility() == pb.Visibility_PRIVATE {
+			visibility = pubsub.Private
+		}
+
+		var event pubsub.Event
+		group := room.Group()
+
+		if isNew {
+			if group == nil {
+				event = pubsub.NewRoomCreationEvent(room.Name(), room.id, me.id, visibility)
+			} else {
+				event = pubsub.NewRoomCreationEventWithGroup(room.Name(), room.id, me.id, group.ID, visibility)
+			}
+		} else {
+			event = pubsub.NewRoomJoinEvent(room.Name(), room.id, me.id, visibility)
+		}
+
+		err := s.queue.Publish(pubsub.RoomTopic, event)
+		if err != nil {
+			log.Printf("queue.Publish err: %v\n", err)
+		}
+
+		if visibility == pubsub.Private {
+			return
+		}
+
+		if group != nil && group.GroupType == "private" {
+			return
+		}
+
+		err = s.currentRoom.SetCurrentRoomForUser(me.id, room.id)
+		if err != nil {
+			log.Printf("failed to set current room err: %v", err)
+		}
+	})
 }
 
 func (s *Server) canJoin(peer int, room *Room) bool {

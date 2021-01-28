@@ -95,14 +95,17 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 
 		r, err := s.repository.Get(join.Room)
 		if err != nil {
+			_ = conn.WriteError(in.Id, pb.SignalReply_CLOSED)
 			return
 		}
 
 		if r.PeerCount() >= MAX_PEERS {
+			_ = conn.WriteError(in.Id, pb.SignalReply_FULL)
 			return
 		}
 
 		if !s.canJoin(user.ID, r) {
+			_ = conn.WriteError(in.Id, pb.SignalReply_NOT_INVITED)
 			return
 		}
 

@@ -53,6 +53,15 @@ func (w *WebSocketTransport) Write(msg *pb.SignalReply) error {
 	return w.conn.WriteMessage(websocket.BinaryMessage, data)
 }
 
+func (w *WebSocketTransport) WriteError(in string, err pb.SignalReply_Error) error {
+	return w.Write(&pb.SignalReply{
+		Id: in,
+		Payload: &pb.SignalReply_Error_{
+			Error: err,
+		},
+	})
+}
+
 func (w *WebSocketTransport) Close() error {
 	return w.conn.Close()
 }

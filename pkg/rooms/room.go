@@ -456,11 +456,15 @@ func (r *Room) onInviteUser(from int, cmd *pb.Command_InviteUser) {
 		return
 	}
 
+	r.InviteUser(from, int(cmd.Id))
+}
+
+func (r *Room) InviteUser(from, to int) {
 	r.mux.Lock()
-	r.invited[int(cmd.Id)] = true
+	r.invited[to] = true
 	r.mux.Unlock()
 
-	r.onInviteHandlerFunc(r.id, from, int(cmd.Id))
+	r.onInviteHandlerFunc(r.id, from, to)
 }
 
 func (r *Room) onKickUser(from int, cmd *pb.Command_KickUser) {

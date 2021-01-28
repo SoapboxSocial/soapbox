@@ -170,7 +170,12 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 
 		s.setup(room)
 
-		// @todo after this we can invite a set of users if private.
+		// @TODO SHOULD PROBABLY BE IN A CALLBACK SO WE KNOW THE ROOM IS OPEN
+		if create.Visibility == pb.Visibility_PRIVATE {
+			for _, id := range create.Users {
+				room.InviteUser(me.id, int(id))
+			}
+		}
 
 		description := webrtc.SessionDescription{
 			Type: webrtc.NewSDPType(strings.ToLower(create.Description.Type)),
@@ -206,7 +211,6 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// @TODO ensure room isn't shown when peer is not yet connected.
 		s.repository.Set(room)
 
 	default:

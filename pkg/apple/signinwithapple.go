@@ -59,8 +59,6 @@ func (s *SignInWithAppleAppValidation) Validate(jwt string) (*UserInfo, error) {
 		return nil, fmt.Errorf("apple response err: %v", resp.Error)
 	}
 
-	log.Printf("%v", resp)
-
 	userID, err := apple.GetUniqueID(resp.IDToken)
 	if err != nil {
 		return nil, fmt.Errorf("apple.GetUniqueID err: %v", err)

@@ -577,6 +577,8 @@ func (r *Room) onVisibilityUpdate(from int, cmd *pb.Command_VisibilityUpdate) {
 	r.visibility = cmd.Visibility
 	r.mux.Unlock()
 
+	// @TODO IF MAKING PRIVATE, ENSURE ALL USERS ARE INVITED.
+
 	r.notify(&pb.Event{
 		From:    int64(from),
 		Payload: &pb.Event_VisibilityUpdated_{VisibilityUpdated: &pb.Event_VisibilityUpdated{Visibility: cmd.Visibility}},

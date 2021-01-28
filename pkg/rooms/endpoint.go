@@ -57,7 +57,7 @@ func (e *Endpoint) rooms(w http.ResponseWriter, r *http.Request) {
 	}
 
 	e.repository.Map(func(room *Room) {
-		if room.PeerCount() == 0 {
+		if room.ConnectionState() == closed {
 			return
 		}
 

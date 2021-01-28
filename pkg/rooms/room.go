@@ -17,6 +17,13 @@ import (
 
 const CHANNEL = "soapbox"
 
+type RoomConnectionState int
+
+const (
+	open RoomConnectionState = iota
+	closed
+)
+
 type Room struct {
 	mux sync.RWMutex
 
@@ -24,6 +31,8 @@ type Room struct {
 	name       string
 	visibility pb.Visibility
 	group      *groups.Group
+
+	state RoomConnectionState
 
 	members map[int]*Member
 
@@ -45,6 +54,7 @@ func NewRoom(id, name string, group *groups.Group, owner int, visibility pb.Visi
 		name:         name,
 		visibility:   visibility,
 		group:        group,
+		state:        closed,
 		members:      make(map[int]*Member),
 		adminInvites: make(map[int]bool),
 		kicked:       make(map[int]bool),
@@ -88,6 +98,19 @@ func (r *Room) PeerCount() int {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
 	return len(r.members)
+}
+
+func (r *Room) ConnectionState() RoomConnectionState {
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+	return r.state
+}
+
+func (r *Room) SetConnectionState(state RoomConnectionState) {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+
+	r.state = state
 }
 
 func (r *Room) Visibility() pb.Visibility {
@@ -186,7 +209,7 @@ func (r *Room) Handle(me *Member) {
 	r.peerToMember[me.peer.ID()] = me.id
 
 	// @TODO ENSURE ROOM IS NEVER DISPLAYED BEFORE THIS, COULD CAUSE RACE
-	if r.PeerCount() == 0 && r.isInvited(me.id) {
+	if r.ConnectionState() == closed {
 		me.SetRole(pb.RoomState_RoomMember_ADMIN)
 	}
 
@@ -199,6 +222,8 @@ func (r *Room) Handle(me *Member) {
 
 		switch state {
 		case webrtc.ICEConnectionStateConnected:
+			r.SetConnectionState(open)
+
 			r.notify(&pb.Event{
 				From: int64(me.id),
 				Payload: &pb.Event_Joined_{

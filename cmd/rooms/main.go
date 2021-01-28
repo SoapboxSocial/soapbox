@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/soapboxsocial/soapbox/pkg/api/middleware"
+	"github.com/soapboxsocial/soapbox/pkg/blocks"
 	"github.com/soapboxsocial/soapbox/pkg/groups"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
@@ -85,6 +86,7 @@ func main() {
 		rooms.NewCurrentRoomBackend(rdb),
 		groups.NewBackend(db),
 		repository,
+		blocks.NewBackend(db),
 	)
 
 	endpoint := rooms.NewEndpoint(repository, server)

@@ -327,6 +327,21 @@ func (r *Room) electRandomAdmin(previous int64) {
 	}
 }
 
+func (r *Room) ContainsUsers(users []int) bool {
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+
+	return has(r.members, func(me *Member) bool {
+		for _, id := range users {
+			if id == me.id {
+				return true
+			}
+		}
+
+		return false
+	})
+}
+
 func has(members map[int]*Member, fn func(*Member) bool) bool {
 	for _, member := range members {
 		if fn(member) {

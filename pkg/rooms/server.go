@@ -12,6 +12,7 @@ import (
 	"github.com/pion/webrtc/v3"
 
 	auth "github.com/soapboxsocial/soapbox/pkg/api/middleware"
+	"github.com/soapboxsocial/soapbox/pkg/blocks"
 	"github.com/soapboxsocial/soapbox/pkg/groups"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/internal"
@@ -34,6 +35,7 @@ type Server struct {
 	ub     *users.UserBackend
 	groups *groups.Backend
 	queue  *pubsub.Queue
+	blocked *blocks.Backend
 
 	currentRoom *CurrentRoomBackend
 
@@ -48,6 +50,7 @@ func NewServer(
 	currentRoom *CurrentRoomBackend,
 	groups *groups.Backend,
 	repository *Repository,
+	blocked *blocks.Backend,
 ) *Server {
 	return &Server{
 		sfu:         sfu,
@@ -57,6 +60,7 @@ func NewServer(
 		currentRoom: currentRoom,
 		groups:      groups,
 		repository:  repository,
+		blocked: blocked,
 	}
 }
 
@@ -302,9 +306,22 @@ func (s *Server) setup(room *Room) {
 }
 
 func (s *Server) canJoin(peer int, room *Room) bool {
+	if !room.CanJoin(peer) {
+		return false
+	}
+
+	blockingUsers, err := s.blocked.GetUsersWhoBlocked(peer)
+	if err != nil {
+		fmt.Printf("failed to get blocked users who blocked: %+v", err)
+	}
+
+	if room.ContainsUsers(blockingUsers) {
+		return false
+	}
+
 	group := room.Group()
 	if group == nil {
-		return room.CanJoin(peer)
+		return true
 	}
 
 	if group.GroupType != "private" {

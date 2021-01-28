@@ -121,12 +121,3 @@ func limiterKeyForRoomInvite(target int, event *pubsub.Event) string {
 func limiterKeyForFollowerEvent(target int, event *pubsub.Event) string {
 	return fmt.Sprintf("notifications_limit_%d_follower_%v", target, event.Params["follower"])
 }
-
-func getInt(event *pubsub.Event, value string) (int, error) {
-	id, ok := event.Params[value].(float64)
-	if !ok {
-		return 0, fmt.Errorf("failed to recover %s", value)
-	}
-
-	return int(id), nil
-}

@@ -3,7 +3,6 @@ package apple
 import (
 	"context"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/Timothylock/go-signin-with-apple/apple"

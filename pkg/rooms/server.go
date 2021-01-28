@@ -295,7 +295,7 @@ func (s *Server) setup(room *Room) {
 }
 
 func (s *Server) canJoin(peer int, room *Room) bool {
-	group := room.group // @TODO MAKE READABLE
+	group := room.Group()
 	if group == nil {
 		return room.CanJoin(peer)
 	}

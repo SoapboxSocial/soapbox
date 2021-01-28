@@ -105,14 +105,15 @@ func (u *UsersEndpoint) handleUserRetrieval(id int, w http.ResponseWriter, r *ht
 		return
 	}
 
-	cr, err := u.currentRoom.GetCurrentRoomForUser(id)
-	if err != nil && err.Error() != "redis: nil" {
-		log.Println("current room retrieval error", err.Error())
-	}
-
-	if cr != 0 {
-		user.CurrentRoom = &cr
-	}
+	// @TODO READD LATER
+	//cr, err := u.currentRoom.GetCurrentRoomForUser(id)
+	//if err != nil && err.Error() != "redis: nil" {
+	//	log.Println("current room retrieval error", err.Error())
+	//}
+	//
+	//if cr != "" {
+	//	user.CurrentRoom = &cr
+	//}
 
 	err = httputil.JsonEncode(w, user)
 	if err != nil {

@@ -165,13 +165,6 @@ func (r *Room) isInvitedToBeAdmin(id int) bool {
 	return r.adminInvites[id]
 }
 
-func (r *Room) isInvited(id int) bool {
-	r.mux.RLock()
-	defer r.mux.RUnlock()
-
-	return r.invited[id]
-}
-
 func (r *Room) MapMembers(f func(member *Member)) {
 	r.mux.RLock()
 	defer r.mux.RUnlock()

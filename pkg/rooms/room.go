@@ -446,7 +446,7 @@ func (r *Room) onAcceptAdmin(from int) {
 
 	r.notify(&pb.Event{
 		From:    int64(from),
-		Payload: &pb.Event_AddedAdmin_{AddedAdmin: &pb.Event_AddedAdmin{}},
+		Payload: &pb.Event_AddedAdmin_{AddedAdmin: &pb.Event_AddedAdmin{Id: int64(from)}},
 	})
 }
 

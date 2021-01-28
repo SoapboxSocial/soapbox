@@ -1,46 +1,43 @@
 package rooms
 
 import (
-	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
-	"sync"
+	"net/http"
+	"strings"
 
-	"github.com/golang/protobuf/ptypes/empty"
-	sfu "github.com/pion/ion-sfu/pkg"
+	"github.com/gorilla/websocket"
+	"github.com/pion/ion-sfu/pkg/sfu"
 	"github.com/pion/webrtc/v3"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
 
-	"github.com/soapboxsocial/soapbox/pkg/blocks"
+	auth "github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	"github.com/soapboxsocial/soapbox/pkg/groups"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/internal"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
+	"github.com/soapboxsocial/soapbox/pkg/rooms/signal"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
 const MAX_PEERS = 16
 
-type Server struct {
-	mux sync.RWMutex
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
 
-	sfu     *sfu.SFU
-	sm      *sessions.SessionManager
-	ub      *users.UserBackend
-	groups  *groups.Backend
-	queue   *pubsub.Queue
-	blocked *blocks.Backend
+type Server struct {
+	sfu    *sfu.SFU
+	sm     *sessions.SessionManager
+	ub     *users.UserBackend
+	groups *groups.Backend
+	queue  *pubsub.Queue
 
 	currentRoom *CurrentRoomBackend
 
-	rooms map[int]*Room
-
-	nextID int
+	repository *Repository
 }
 
 func NewServer(
@@ -48,372 +45,260 @@ func NewServer(
 	sm *sessions.SessionManager,
 	ub *users.UserBackend,
 	queue *pubsub.Queue,
-	cr *CurrentRoomBackend,
+	currentRoom *CurrentRoomBackend,
 	groups *groups.Backend,
-	blocked *blocks.Backend,
+	repository *Repository,
 ) *Server {
 	return &Server{
-		mux:         sync.RWMutex{},
 		sfu:         sfu,
 		sm:          sm,
 		ub:          ub,
 		queue:       queue,
-		currentRoom: cr,
-		rooms:       make(map[int]*Room),
-		nextID:      1,
+		currentRoom: currentRoom,
 		groups:      groups,
-		blocked:     blocked,
+		repository:  repository,
 	}
 }
 
-func (s *Server) GetRoom(ctx context.Context, in *pb.RoomQuery) (*pb.RoomResponse, error) {
-	s.mux.RLock()
-	defer s.mux.RUnlock()
-
-	r, ok := s.rooms[int(in.Id)]
-	if !ok {
-		return &pb.RoomResponse{Room: nil, Error: "not found"}, nil
-	}
-
-	return &pb.RoomResponse{Room: r.ToProtoForPeer(), Error: ""}, nil
-}
-
-// Deprecated: Remove
-func (s *Server) ListRooms(ctx context.Context, _ *empty.Empty) (*pb.RoomList, error) {
-	auth, err := authForContext(ctx)
+func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
+	c, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		return nil, err
+		log.Println(err)
+		return
 	}
 
-	s.mux.RLock()
-	defer s.mux.RUnlock()
+	conn := signal.NewWebSocketTransport(c)
 
-	id, err := s.sm.GetUserIDForSession(auth)
+	user, err := s.userForSession(r)
 	if err != nil {
-		return nil, err
+		_ = conn.Close()
+		return
 	}
 
-	// @TODO THIS SHOULD BE DONE BETTER.
-	blockingUsers, err := s.blocked.GetUsersWhoBlocked(id)
+	peer := sfu.NewPeer(s.sfu)
+	me := NewMember(user.ID, user.DisplayName, user.Image, peer, conn)
+
+	in, err := me.ReceiveMsg()
 	if err != nil {
-		fmt.Printf("failed to get blocked users who blocked: %+v\n", err)
-	}
-
-	rooms := make([]*pb.RoomState, 0)
-	for _, r := range s.rooms {
-		if !s.canJoin(id, r) {
-			continue
-		}
-
-		if r.ContainsUsers(blockingUsers) {
-			continue
-		}
-
-		proto := r.ToProtoForPeer()
-		proto.Role = ""
-
-		if len(proto.Members) == 0 {
-			continue
-		}
-
-		rooms = append(rooms, proto)
-	}
-
-	return &pb.RoomList{Rooms: rooms}, nil
-}
-
-func (s *Server) Signal(stream pb.RoomService_SignalServer) error {
-	in, err := stream.Recv()
-	if err != nil {
-		return err
+		log.Printf("receive err: %v", err)
+		return
 	}
 
 	var room *Room
-	var peer *sfu.WebRTCTransport
-	var user *member
 
-	auth, _ := authForContext(stream.Context())
-	user, err = s.getMemberForSession(auth)
-	if err != nil {
-		return status.Errorf(codes.Unauthenticated, "unauthenticated")
-	}
-
-	// Auth will be able to be moved out.
-
-	isNew := false
-	switch payload := in.Payload.(type) {
+	switch in.Payload.(type) {
 	case *pb.SignalRequest_Join:
-		s.mux.RLock()
-		r, ok := s.rooms[int(payload.Join.Room)]
-		s.mux.RUnlock()
+		join := in.GetJoin()
+		if join == nil {
+			return
+		}
 
-		if !ok {
-			return status.Errorf(codes.Internal, "join error room closed")
+		r, err := s.repository.Get(join.Room)
+		if err != nil {
+			_ = conn.WriteError(in.Id, pb.SignalReply_CLOSED)
+			return
 		}
 
 		if r.PeerCount() >= MAX_PEERS {
-			return status.Errorf(codes.Internal, "join error room full")
+			_ = conn.WriteError(in.Id, pb.SignalReply_FULL)
+			return
 		}
 
 		if !s.canJoin(user.ID, r) {
-			return status.Errorf(codes.Internal, "user not invited")
+			_ = conn.WriteError(in.Id, pb.SignalReply_NOT_INVITED)
+			return
 		}
 
-		// @TODO
-		blockingUsers, err := s.blocked.GetUsersWhoBlocked(user.ID)
+		description := webrtc.SessionDescription{
+			Type: webrtc.NewSDPType(strings.ToLower(join.Description.Type)),
+			SDP:  join.Description.Sdp,
+		}
+
+		answer, err := peer.Join(join.Room, description)
+		if err != nil && (err != sfu.ErrTransportExists && err != sfu.ErrOfferIgnored) {
+			log.Printf("join err: %v", err)
+			return
+		}
+
+		if answer == nil {
+			log.Printf("answer is nil")
+			return
+		}
+
+		err = conn.Write(&pb.SignalReply{
+			Id: in.Id,
+			Payload: &pb.SignalReply_Join{
+				Join: &pb.JoinReply{
+					Room: r.ToProto(),
+					Description: &pb.SessionDescription{
+						Type: answer.Type.String(),
+						Sdp:  answer.SDP,
+					},
+				},
+			},
+		})
+
 		if err != nil {
-			fmt.Printf("failed to get blocked users who blocked: %+v\n", err)
-		}
-
-		if r.ContainsUsers(blockingUsers) {
-			return status.Errorf(codes.Internal, "user not invited")
+			log.Printf("error sending join response %s", err)
+			return
 		}
 
 		room = r
-		proto := r.ToProtoForPeer()
-
-		peer, err = s.setupConnection(int(payload.Join.Room), stream)
-		if err != nil {
-			return status.Errorf(codes.Internal, "join error %s", err)
-		}
-
-		offer := peer.LocalDescription()
-		err = stream.Send(&pb.SignalReply{
-			Payload: &pb.SignalReply_Join{
-				Join: &pb.JoinReply{
-					Room: proto,
-					Answer: &pb.SessionDescription{
-						Type: offer.Type.String(),
-						Sdp:  []byte(offer.SDP),
-					},
-				},
-			},
-		})
-
-		if err != nil {
-			log.Printf("error sending join response %s", err)
-			return status.Errorf(codes.Internal, "join error %s", err)
-		}
 	case *pb.SignalRequest_Create:
-		isNew = true
-		s.mux.Lock()
-		id := s.nextID
+		create := in.GetCreate()
+		if create == nil {
+			return
+		}
 
-		name := internal.TrimRoomNameToLimit(payload.Create.Name)
+		id := internal.GenerateRoomID()
+		name := internal.TrimRoomNameToLimit(create.Name)
 
 		var group *groups.Group
-		if payload.Create.GetGroup() != 0 {
-			group, err = s.getGroup(user.ID, int(payload.Create.GetGroup()))
+		if create.Visibility != pb.Visibility_PRIVATE && create.GetGroup() != 0 {
+			group, err = s.getGroup(user.ID, int(create.GetGroup()))
 			if err != nil {
-				return status.Errorf(codes.Internal, "group error %s", err)
+				fmt.Printf("group err: %v", err)
 			}
 		}
 
+		session, _ := s.sfu.GetSession(id)
 		room = NewRoom(
 			id,
 			name,
-			s.queue,
-			payload.Create.GetVisibility() == pb.Visibility_PRIVATE,
-			user.ID,
 			group,
-			payload.Create.Users,
-			s.onRoomJoinedEvent,
+			me.id,
+			create.Visibility,
+			session,
 		)
-		s.nextID++
-		s.mux.Unlock()
 
-		room.OnDisconnected(func(room, id int) {
-			s.mux.RLock()
-			r := s.rooms[room]
-			s.mux.RUnlock()
+		s.setup(room)
 
-			if r == nil {
-				return
+		// @TODO SHOULD PROBABLY BE IN A CALLBACK SO WE KNOW THE ROOM IS OPEN
+		if create.Visibility == pb.Visibility_PRIVATE {
+			for _, id := range create.Users {
+				room.InviteUser(me.id, int(id))
 			}
-
-			count := r.PeerCount()
-
-			go func() {
-				s.currentRoom.RemoveCurrentRoomForUser(id)
-
-				err := s.queue.Publish(pubsub.RoomTopic, pubsub.NewRoomLeftEvent(room, id))
-				if err != nil {
-					log.Printf("queue.Publish err: %v\n", err)
-				}
-			}()
-
-			if count > 0 {
-				return
-			}
-
-			s.mux.Lock()
-			delete(s.rooms, room)
-			s.mux.Unlock()
-
-			log.Printf("room %d was closed", room)
-		})
-
-		peer, err = s.setupConnection(id, stream)
-		if err != nil {
-			return status.Errorf(codes.Internal, "join error %s", err)
 		}
 
-		offer := peer.LocalDescription()
-		err = stream.Send(&pb.SignalReply{
+		description := webrtc.SessionDescription{
+			Type: webrtc.NewSDPType(strings.ToLower(create.Description.Type)),
+			SDP:  create.Description.Sdp,
+		}
+
+		answer, err := peer.Join(id, description)
+		if err != nil && (err != sfu.ErrTransportExists && err != sfu.ErrOfferIgnored) {
+			log.Printf("create err: %v", err)
+			return
+		}
+
+		if answer == nil {
+			log.Printf("answer is nil")
+			return
+		}
+
+		err = conn.Write(&pb.SignalReply{
+			Id: in.Id,
 			Payload: &pb.SignalReply_Create{
 				Create: &pb.CreateReply{
-					Id: int64(id),
-					Answer: &pb.SessionDescription{
-						Type: offer.Type.String(),
-						Sdp:  []byte(offer.SDP),
+					Id: id,
+					Description: &pb.SessionDescription{
+						Type: answer.Type.String(),
+						Sdp:  answer.SDP,
 					},
 				},
 			},
 		})
 
 		if err != nil {
-			log.Printf("error sending join response %s", err)
-			return status.Errorf(codes.Internal, "join error %s", err)
+			log.Printf("error sending create response %s", err)
+			return
 		}
 
-		// We only add the room when its safely created
-		s.mux.Lock()
-		s.rooms[id] = room
-		s.mux.Unlock()
+		s.repository.Set(room)
 
-		log.Printf("created room: %d", id)
 	default:
-		return status.Error(codes.FailedPrecondition, "not joined or created room")
+		return
 	}
 
-	return room.Handle(user, stream, peer, isNew)
+	// @TODO ONCE WE SWITCH THE TRANSPORT WE WILL BE ABLE TO RELEASE HERE
+	room.Handle(me)
 }
 
-func (s *Server) setupConnection(room int, stream pb.RoomService_SignalServer) (*sfu.WebRTCTransport, error) {
-	me := sfu.MediaEngine{}
-	me.RegisterDefaultCodecs()
-
-	peer, err := s.sfu.NewWebRTCTransport(string(room), me)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = peer.AddTransceiverFromKind(webrtc.RTPCodecTypeAudio)
-	if err != nil {
-		return nil, err
-	}
-
-	offer, err := peer.CreateOffer()
-	if err != nil {
-		return nil, err
-	}
-
-	err = peer.SetLocalDescription(offer)
-	if err != nil {
-		return nil, err
-	}
-
-	// Notify user of trickle candidates
-	peer.OnICECandidate(func(c *webrtc.ICECandidate) {
-		if c == nil {
+func (s *Server) setup(room *Room) {
+	room.OnDisconnected(func(room string, id int) {
+		r, err := s.repository.Get(room)
+		if err != nil {
+			fmt.Printf("failed to get room %v\n", err)
 			return
 		}
 
-		data, err := json.Marshal(c.ToJSON())
-		if err != nil {
-			log.Printf("json marshal candidate error: %v\n", err)
+		go func() {
+			s.currentRoom.RemoveCurrentRoomForUser(id)
+
+			err := s.queue.Publish(pubsub.RoomTopic, pubsub.NewRoomLeftEvent(room, id))
+			if err != nil {
+				log.Printf("queue.Publish err: %v\n", err)
+			}
+		}()
+
+		if r.PeerCount() > 0 {
 			return
 		}
 
-		err = stream.Send(&pb.SignalReply{
-			Payload: &pb.SignalReply_Trickle{
-				Trickle: &pb.Trickle{
-					Init: string(data),
-				},
-			},
-		})
+		s.repository.Remove(room)
 
+		log.Printf("room \"%s\" was closed", room)
+	})
+
+	room.OnInvite(func(room string, from, to int) {
+		r, err := s.repository.Get(room)
 		if err != nil {
-			log.Printf("OnIceCandidate error %s", err)
+			return
+		}
+
+		err = s.queue.Publish(pubsub.RoomTopic, pubsub.NewRoomInviteEvent(r.Name(), r.id, from, to))
+		if err != nil {
+			log.Printf("queue.Publish err: %v\n", err)
 		}
 	})
 
-	peer.OnNegotiationNeeded(func() {
-		log.Println("on negotiation needed called")
-		offer, err := peer.CreateOffer()
-		if err != nil {
-			log.Printf("CreateOffer error: %v\n", err)
-			return
+	room.OnJoin(func(room *Room, me *Member, isNew bool) {
+		visibility := pubsub.Public
+		if room.Visibility() == pb.Visibility_PRIVATE {
+			visibility = pubsub.Private
 		}
 
-		err = peer.SetLocalDescription(offer)
-		if err != nil {
-			log.Printf("SetLocalDescription error: %v\n", err)
-			return
-		}
+		var event pubsub.Event
+		group := room.Group()
 
-		err = stream.Send(&pb.SignalReply{
-			Payload: &pb.SignalReply_Negotiate{
-				Negotiate: &pb.SessionDescription{
-					Type: offer.Type.String(),
-					Sdp:  []byte(offer.SDP),
-				},
-			},
-		})
-
-		if err != nil {
-			log.Printf("negotiation error %s", err)
-		}
-	})
-
-	return peer, nil
-}
-
-func (s *Server) onRoomJoinedEvent(isNew bool, peer int, room *Room) {
-	visibility := pubsub.Public
-	if room.IsPrivate() {
-		visibility = pubsub.Private
-	}
-
-	var event pubsub.Event
-	group := room.Group()
-
-	if isNew {
-		if group == nil {
-			event = pubsub.NewRoomCreationEvent(room.Name(), room.id, peer, visibility)
+		if isNew {
+			if group == nil {
+				event = pubsub.NewRoomCreationEvent(room.Name(), room.id, me.id, visibility)
+			} else {
+				event = pubsub.NewRoomCreationEventWithGroup(room.Name(), room.id, me.id, group.ID, visibility)
+			}
 		} else {
-			event = pubsub.NewRoomCreationEventWithGroup(room.Name(), room.id, peer, group.ID, visibility)
+			event = pubsub.NewRoomJoinEvent(room.Name(), room.id, me.id, visibility)
 		}
-	} else {
-		event = pubsub.NewRoomJoinEvent(room.Name(), room.id, peer, visibility)
-	}
 
-	err := s.queue.Publish(pubsub.RoomTopic, event)
-	if err != nil {
-		log.Printf("queue.Publish err: %v\n", err)
-	}
+		err := s.queue.Publish(pubsub.RoomTopic, event)
+		if err != nil {
+			log.Printf("queue.Publish err: %v\n", err)
+		}
 
-	if visibility == pubsub.Private {
-		return
-	}
+		if visibility == pubsub.Private {
+			return
+		}
 
-	if group != nil && group.GroupType == "private" {
-		return
-	}
+		if group != nil && group.GroupType == "private" {
+			return
+		}
 
-	err = s.currentRoom.SetCurrentRoomForUser(peer, room.id)
-	if err != nil {
-		log.Printf("failed to set current room err: %v", err)
-	}
-}
-
-func (s *Server) getGroup(peer, id int) (*groups.Group, error) {
-	isMember, err := s.groups.IsGroupMember(peer, id)
-	if err != nil || !isMember {
-		return nil, fmt.Errorf("user %d is not member of group %d", peer, id)
-	}
-
-	return s.groups.FindById(id)
+		err = s.currentRoom.SetCurrentRoomForUser(me.id, room.id)
+		if err != nil {
+			log.Printf("failed to set current room err: %v", err)
+		}
+	})
 }
 
 func (s *Server) canJoin(peer int, room *Room) bool {
@@ -434,31 +319,25 @@ func (s *Server) canJoin(peer int, room *Room) bool {
 	return isMember
 }
 
-func (s *Server) getMemberForSession(session string) (*member, error) {
-	id, err := s.sm.GetUserIDForSession(session)
-	if err != nil {
-		return nil, err
+func (s *Server) getGroup(peer, id int) (*groups.Group, error) {
+	isMember, err := s.groups.IsGroupMember(peer, id)
+	if err != nil || !isMember {
+		return nil, fmt.Errorf("user %d is not member of group %d", peer, id)
 	}
 
-	u, err := s.ub.FindByID(id)
-	if err != nil {
-		return nil, err
-	}
-
-	// @TODO ROLE SHOULD BE BASED ON STUFF
-	return &member{ID: id, DisplayName: u.DisplayName, Image: u.Image, IsMuted: true, Role: SPEAKER}, nil
+	return s.groups.FindById(id)
 }
 
-func authForContext(ctx context.Context) (string, error) {
-	md, ok := metadata.FromIncomingContext(ctx)
+func (s *Server) userForSession(r *http.Request) (*users.User, error) {
+	userID, ok := auth.GetUserIDFromContext(r.Context())
 	if !ok {
-		return "", errors.New("missing metadata")
+		return nil, errors.New("not authenticated")
 	}
 
-	auth := md.Get("authorization")
-	if len(auth) != 1 {
-		return "", errors.New("unauthorized")
+	u, err := s.ub.FindByID(userID)
+	if err != nil {
+		return nil, err
 	}
 
-	return auth[0], nil
+	return u, nil
 }

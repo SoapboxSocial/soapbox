@@ -33,7 +33,7 @@ type Notification struct {
 	Arguments map[string]interface{} `json:"arguments"`
 }
 
-func NewRoomNotification(id int, creator string) *PushNotification {
+func NewRoomNotification(id, creator string) *PushNotification {
 	return &PushNotification{
 		Category: NEW_ROOM,
 		Alert: Alert{
@@ -44,7 +44,7 @@ func NewRoomNotification(id int, creator string) *PushNotification {
 	}
 }
 
-func NewRoomNotificationWithName(id int, creator, name string) *PushNotification {
+func NewRoomNotificationWithName(id, creator, name string) *PushNotification {
 	return &PushNotification{
 		Category: NEW_ROOM,
 		Alert: Alert{
@@ -55,7 +55,7 @@ func NewRoomNotificationWithName(id int, creator, name string) *PushNotification
 	}
 }
 
-func NewRoomWithGroupNotification(id int, creator, group string) *PushNotification {
+func NewRoomWithGroupNotification(id, creator, group string) *PushNotification {
 	return &PushNotification{
 		Category: NEW_ROOM,
 		Alert: Alert{
@@ -67,7 +67,7 @@ func NewRoomWithGroupNotification(id int, creator, group string) *PushNotificati
 	}
 }
 
-func NewRoomWithGroupAndNameNotification(id int, creator, group, name string) *PushNotification {
+func NewRoomWithGroupAndNameNotification(id, creator, group, name string) *PushNotification {
 	return &PushNotification{
 		Category: NEW_ROOM,
 		Alert: Alert{
@@ -90,7 +90,7 @@ func NewFollowerNotification(id int, follower string) *PushNotification {
 	}
 }
 
-func NewRoomJoinedNotification(id int, participant string) *PushNotification {
+func NewRoomJoinedNotification(id, participant string) *PushNotification {
 	return &PushNotification{
 		Category: ROOM_JOINED,
 		Alert: Alert{
@@ -101,7 +101,7 @@ func NewRoomJoinedNotification(id int, participant string) *PushNotification {
 	}
 }
 
-func NewRoomJoinedNotificationWithName(id int, participant, name string) *PushNotification {
+func NewRoomJoinedNotificationWithName(id, participant, name string) *PushNotification {
 	return &PushNotification{
 		Category: ROOM_JOINED,
 		Alert: Alert{
@@ -112,7 +112,7 @@ func NewRoomJoinedNotificationWithName(id int, participant, name string) *PushNo
 	}
 }
 
-func NewRoomInviteNotification(id int, from string) *PushNotification {
+func NewRoomInviteNotification(id, from string) *PushNotification {
 	return &PushNotification{
 		Category: ROOM_INVITE,
 		Alert: Alert{
@@ -123,7 +123,7 @@ func NewRoomInviteNotification(id int, from string) *PushNotification {
 	}
 }
 
-func NewRoomInviteNotificationWithName(id int, from, room string) *PushNotification {
+func NewRoomInviteNotificationWithName(id, from, room string) *PushNotification {
 	return &PushNotification{
 		Category: ROOM_JOINED,
 		Alert: Alert{

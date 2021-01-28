@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"strconv"
 
 	"github.com/gorilla/mux"
 
@@ -15,7 +14,8 @@ import (
 
 type Endpoint struct {
 	usersBackend *users.UserBackend
-	roomService  pb.RoomServiceClient
+
+	roomService pb.RoomServiceClient
 }
 
 func NewEndpoint(usersBackend *users.UserBackend, roomService pb.RoomServiceClient) *Endpoint {
@@ -29,7 +29,7 @@ func (e *Endpoint) Router() *mux.Router {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/users/{username}", e.user).Methods("GET")
-	r.HandleFunc("/rooms/{id:[0-9]+}", e.room).Methods("GET")
+	r.HandleFunc("/rooms/{id}", e.room).Methods("GET")
 
 	return r
 }
@@ -53,13 +53,13 @@ func (e *Endpoint) user(w http.ResponseWriter, r *http.Request) {
 func (e *Endpoint) room(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	id, err := strconv.Atoi(params["id"])
-	if err != nil {
+	id := params["id"]
+	if id == "" {
 		httputil.JsonError(w, http.StatusNotFound, httputil.ErrorCodeNotFound, "not found")
 		return
 	}
 
-	resp, err := e.roomService.GetRoom(context.Background(), &pb.RoomQuery{Id: int64(id)})
+	resp, err := e.roomService.GetRoom(context.Background(), &pb.RoomQuery{Id: id})
 	if err != nil {
 		httputil.JsonError(w, http.StatusNotFound, httputil.ErrorCodeNotFound, "not found")
 		return

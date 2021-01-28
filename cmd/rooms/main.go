@@ -4,16 +4,20 @@ import (
 	"database/sql"
 	"log"
 	"net"
+	"net/http"
 
 	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
-	sfu "github.com/pion/ion-sfu/pkg"
-	"github.com/soapboxsocial/soapbox/pkg/blocks"
+	iLog "github.com/pion/ion-log"
+	"github.com/pion/ion-sfu/pkg/sfu"
 	"google.golang.org/grpc"
 
+	"github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	"github.com/soapboxsocial/soapbox/pkg/groups"
+	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
+	roomGRPC "github.com/soapboxsocial/soapbox/pkg/rooms/grpc"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
 	"github.com/soapboxsocial/soapbox/pkg/users"
@@ -34,6 +38,9 @@ func main() {
 				},
 			},
 		},
+		Log: iLog.Config{
+			Level: "debug",
+		},
 	}
 
 	rdb := redis.NewClient(&redis.Options{
@@ -47,7 +54,10 @@ func main() {
 		panic(err)
 	}
 
-	addr := ":50051"
+	repository := rooms.NewRepository()
+	sm := sessions.NewSessionManager(rdb)
+
+	addr := "127.0.0.1:50052"
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
 		log.Panicf("failed to listen: %v", err)
@@ -57,19 +67,34 @@ func main() {
 	s := grpc.NewServer()
 	pb.RegisterRoomServiceServer(
 		s,
-		rooms.NewServer(
-			sfu.NewSFU(config),
-			sessions.NewSessionManager(rdb),
-			users.NewUserBackend(db),
-			pubsub.NewQueue(rdb),
-			rooms.NewCurrentRoomBackend(rdb),
-			groups.NewBackend(db),
-			blocks.NewBackend(db),
-		),
+		roomGRPC.NewService(repository),
 	)
 
-	err = s.Serve(lis)
+	go func() {
+		err = s.Serve(lis)
+		if err != nil {
+			log.Panicf("failed to serve: %v", err)
+		}
+	}()
+
+	server := rooms.NewServer(
+		sfu.NewSFU(config),
+		sm,
+		users.NewUserBackend(db),
+		pubsub.NewQueue(rdb),
+		rooms.NewCurrentRoomBackend(rdb),
+		groups.NewBackend(db),
+		repository,
+	)
+
+	endpoint := rooms.NewEndpoint(repository, server)
+	router := endpoint.Router()
+
+	amw := middleware.NewAuthenticationMiddleware(sm)
+	router.Use(amw.Middleware)
+
+	err = http.ListenAndServe(":8082", httputil.CORS(router))
 	if err != nil {
-		log.Panicf("failed to serve: %v", err)
+		log.Print(err)
 	}
 }

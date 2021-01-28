@@ -18,17 +18,17 @@ func NewCurrentRoomBackend(db *redis.Client) *CurrentRoomBackend {
 	}
 }
 
-func (b *CurrentRoomBackend) GetCurrentRoomForUser(id int) (int, error) {
+func (b *CurrentRoomBackend) GetCurrentRoomForUser(id int) (string, error) {
 	val, err := b.db.HGet(b.db.Context(), hashName, strconv.Itoa(id)).Result()
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 
-	return strconv.Atoi(val)
+	return val, nil
 }
 
-func (b *CurrentRoomBackend) SetCurrentRoomForUser(user, room int) error {
-	_, err := b.db.HSet(b.db.Context(), hashName, strconv.Itoa(user), strconv.Itoa(room)).Result()
+func (b *CurrentRoomBackend) SetCurrentRoomForUser(user int, room string) error {
+	_, err := b.db.HSet(b.db.Context(), hashName, strconv.Itoa(user), room).Result()
 	return err
 }
 

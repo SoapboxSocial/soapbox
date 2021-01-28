@@ -196,10 +196,7 @@ func onRoomCreation(event *pubsub.Event) ([]int, *notifications.PushNotification
 	}
 
 	name := event.Params["name"].(string)
-	room, ok := event.Params["id"].(float64)
-	if !ok {
-		return nil, nil, errors.New("failed to recover room ID")
-	}
+	room := event.Params["id"].(string)
 
 	displayName, err := getDisplayName(creator)
 	if err != nil {
@@ -208,10 +205,10 @@ func onRoomCreation(event *pubsub.Event) ([]int, *notifications.PushNotification
 
 	notification := func() *notifications.PushNotification {
 		if name == "" {
-			return notifications.NewRoomNotification(int(room), displayName)
+			return notifications.NewRoomNotification(room, displayName)
 		}
 
-		return notifications.NewRoomNotificationWithName(int(room), displayName, name)
+		return notifications.NewRoomNotificationWithName(room, displayName, name)
 	}()
 
 	return targets, notification, nil
@@ -255,10 +252,7 @@ func onGroupRoomCreation(event *pubsub.Event) ([]int, *notifications.PushNotific
 	targets = append(targets, memberIDs...)
 
 	name := event.Params["name"].(string)
-	room, ok := event.Params["id"].(float64)
-	if !ok {
-		return nil, nil, errors.New("failed to recover room ID")
-	}
+	room := event.Params["id"].(string)
 
 	displayName, err := getDisplayName(creator)
 	if err != nil {
@@ -267,10 +261,10 @@ func onGroupRoomCreation(event *pubsub.Event) ([]int, *notifications.PushNotific
 
 	notification := func() *notifications.PushNotification {
 		if name == "" {
-			return notifications.NewRoomWithGroupNotification(int(room), displayName, group.Name)
+			return notifications.NewRoomWithGroupNotification(room, displayName, group.Name)
 		}
 
-		return notifications.NewRoomWithGroupAndNameNotification(int(room), displayName, group.Name, name)
+		return notifications.NewRoomWithGroupAndNameNotification(room, displayName, group.Name, name)
 	}()
 
 	return targets, notification, nil
@@ -292,10 +286,7 @@ func onRoomJoined(event *pubsub.Event) ([]int, *notifications.PushNotification, 
 	}
 
 	name := event.Params["name"].(string)
-	room, ok := event.Params["id"].(float64)
-	if !ok {
-		return nil, nil, errors.New("failed to recover room ID")
-	}
+	room := event.Params["id"].(string)
 
 	displayName, err := getDisplayName(creator)
 	if err != nil {
@@ -304,10 +295,10 @@ func onRoomJoined(event *pubsub.Event) ([]int, *notifications.PushNotification, 
 
 	notification := func() *notifications.PushNotification {
 		if name == "" {
-			return notifications.NewRoomJoinedNotification(int(room), displayName)
+			return notifications.NewRoomJoinedNotification(room, displayName)
 		}
 
-		return notifications.NewRoomJoinedNotificationWithName(int(room), displayName, name)
+		return notifications.NewRoomJoinedNotificationWithName(room, displayName, name)
 	}()
 
 	return targets, notification, nil
@@ -373,10 +364,7 @@ func onRoomInvite(event *pubsub.Event) ([]int, *notifications.PushNotification, 
 	}
 
 	name := event.Params["name"].(string)
-	room, ok := event.Params["room"].(float64)
-	if !ok {
-		return nil, nil, errors.New("failed to recover room ID")
-	}
+	room := event.Params["room"].(string)
 
 	displayName, err := getDisplayName(creator)
 	if err != nil {
@@ -385,10 +373,10 @@ func onRoomInvite(event *pubsub.Event) ([]int, *notifications.PushNotification, 
 
 	notification := func() *notifications.PushNotification {
 		if name == "" {
-			return notifications.NewRoomInviteNotification(int(room), displayName)
+			return notifications.NewRoomInviteNotification(room, displayName)
 		}
 
-		return notifications.NewRoomInviteNotificationWithName(int(room), displayName, name)
+		return notifications.NewRoomInviteNotificationWithName(room, displayName, name)
 	}()
 
 	return []int{int(targetID)}, notification, nil

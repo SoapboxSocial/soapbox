@@ -11,7 +11,6 @@ import (
 	"github.com/dghubble/oauth1"
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/go-redis/redis/v8"
-	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 	"github.com/sendgrid/sendgrid-go"
@@ -170,19 +169,7 @@ func main() {
 	searchRouter.Use(amw.Middleware)
 	mount(r, "/v1/search", searchRouter)
 
-	headersOk := handlers.AllowedHeaders([]string{
-		"Content-Type",
-		"X-Requested-With",
-		"Accept",
-		"Accept-Language",
-		"Accept-Encoding",
-		"Content-Language",
-		"Origin",
-	})
-	originsOk := handlers.AllowedOrigins([]string{"*"})
-	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS", "DELETE"})
-
-	log.Fatal(http.ListenAndServe(":8080", handlers.CORS(originsOk, headersOk, methodsOk)(r)))
+	log.Fatal(http.ListenAndServe(":8080", httputil.CORS(r)))
 }
 
 func mount(r *mux.Router, path string, handler http.Handler) {

@@ -93,14 +93,11 @@ func (l *Limiter) limit(key string, duration time.Duration) {
 
 func (l *Limiter) isUserInRoom(user int, event *pubsub.Event) bool {
 	room, _ := l.currentRoom.GetCurrentRoomForUser(user)
-	if room == 0 {
+	if room == "" {
 		return false
 	}
 
-	id, err := getInt(event, "id")
-	if err != nil {
-		return false
-	}
+	id := event.Params["id"].(string)
 
 	return id == room
 }
@@ -123,13 +120,4 @@ func limiterKeyForRoomInvite(target int, event *pubsub.Event) string {
 
 func limiterKeyForFollowerEvent(target int, event *pubsub.Event) string {
 	return fmt.Sprintf("notifications_limit_%d_follower_%v", target, event.Params["follower"])
-}
-
-func getInt(event *pubsub.Event, value string) (int, error) {
-	id, ok := event.Params[value].(float64)
-	if !ok {
-		return 0, fmt.Errorf("failed to recover %s", value)
-	}
-
-	return int(id), nil
 }

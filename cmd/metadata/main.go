@@ -8,8 +8,7 @@ import (
 	_ "github.com/lib/pq"
 	"google.golang.org/grpc"
 
-	"github.com/gorilla/handlers"
-
+	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/metadata"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 	"github.com/soapboxsocial/soapbox/pkg/users"
@@ -23,7 +22,7 @@ func main() {
 
 	usersBackend := users.NewUserBackend(db)
 
-	conn, err := grpc.Dial("127.0.0.1:50051", grpc.WithInsecure())
+	conn, err := grpc.Dial("127.0.0.1:50052", grpc.WithInsecure())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -31,21 +30,9 @@ func main() {
 	defer conn.Close()
 
 	client := pb.NewRoomServiceClient(conn)
-
 	endpoint := metadata.NewEndpoint(usersBackend, client)
+
 	router := endpoint.Router()
 
-	headersOk := handlers.AllowedHeaders([]string{
-		"Content-Type",
-		"X-Requested-With",
-		"Accept",
-		"Accept-Language",
-		"Accept-Encoding",
-		"Content-Language",
-		"Origin",
-	})
-	originsOk := handlers.AllowedOrigins([]string{"*"})
-	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS", "DELETE"})
-
-	log.Print(http.ListenAndServe(":8081", handlers.CORS(originsOk, headersOk, methodsOk)(router)))
+	log.Print(http.ListenAndServe(":8081", httputil.CORS(router)))
 }

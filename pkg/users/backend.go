@@ -45,7 +45,6 @@ type Profile struct {
 	IsFollowing    *bool           `json:"is_following,omitempty"`
 	IsBlocked      *bool           `json:"is_blocked,omitempty"`
 	Image          string          `json:"image"`
-	CurrentRoom    *int            `json:"current_room,omitempty"`
 	LinkedAccounts []LinkedAccount `json:"linked_accounts"`
 }
 

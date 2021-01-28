@@ -231,8 +231,9 @@ func (r *Room) ToProto() *pb.RoomState {
 }
 
 func (r *Room) Handle(me *Member) {
-	// @TODO SAFETY
+	r.mux.Lock()
 	r.peerToMember[me.peer.ID()] = me.id
+	r.mux.Unlock()
 
 	isNew := r.ConnectionState() == closed
 	if isNew {

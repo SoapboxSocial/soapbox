@@ -239,6 +239,11 @@ func (r *Room) Handle(me *Member) {
 		me.SetRole(pb.RoomState_RoomMember_ADMIN)
 	}
 
+	if r.member(me.id) != nil {
+		_ = me.Close()
+		return
+	}
+
 	r.mux.Lock()
 	r.members[me.id] = me
 	r.mux.Unlock()

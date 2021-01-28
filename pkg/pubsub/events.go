@@ -1,5 +1,9 @@
 package pubsub
 
+import (
+	"fmt"
+)
+
 type EventType int
 
 const (
@@ -30,6 +34,15 @@ const (
 type Event struct {
 	Type   EventType              `json:"type"`
 	Params map[string]interface{} `json:"params"`
+}
+
+func (e Event) GetInt(field string) (int, error) {
+	val, ok := e.Params[field].(float64)
+	if !ok {
+		return 0, fmt.Errorf("failed to recover %s", field)
+	}
+
+	return int(val), nil
 }
 
 func NewUserUpdateEvent(id int) Event {

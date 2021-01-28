@@ -93,14 +93,11 @@ func (l *Limiter) limit(key string, duration time.Duration) {
 
 func (l *Limiter) isUserInRoom(user int, event *pubsub.Event) bool {
 	room, _ := l.currentRoom.GetCurrentRoomForUser(user)
-	if room == 0 {
+	if room == "" {
 		return false
 	}
 
-	id, err := getInt(event, "id")
-	if err != nil {
-		return false
-	}
+	id := event.Params["id"].(string)
 
 	return id == room
 }

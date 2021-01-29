@@ -376,6 +376,8 @@ func (r *Room) onMessage(from int, command *pb.Command) {
 		r.onMuteUser(from, command.GetMuteUser())
 	case *pb.Command_RecordScreen_:
 		r.onRecordScreen(from)
+	case *pb.Command_VisibilityUpdate_:
+		r.onVisibilityUpdate(from, command.GetVisibilityUpdate())
 	}
 }
 
@@ -563,6 +565,26 @@ func (r *Room) onRecordScreen(from int) {
 	r.notify(&pb.Event{
 		From:    int64(from),
 		Payload: &pb.Event_RecordedScreen_{RecordedScreen: &pb.Event_RecordedScreen{}},
+	})
+}
+
+func (r *Room) onVisibilityUpdate(from int, cmd *pb.Command_VisibilityUpdate) {
+	if !r.isAdmin(from) {
+		return
+	}
+
+	r.mux.Lock()
+	r.visibility = cmd.Visibility
+
+	for i := range r.members {
+		r.invited[i] = true
+	}
+
+	r.mux.Unlock()
+
+	r.notify(&pb.Event{
+		From:    int64(from),
+		Payload: &pb.Event_VisibilityUpdated_{VisibilityUpdated: &pb.Event_VisibilityUpdated{Visibility: cmd.Visibility}},
 	})
 }
 

@@ -30,11 +30,11 @@ var upgrader = websocket.Upgrader{
 }
 
 type Server struct {
-	sfu    *sfu.SFU
-	sm     *sessions.SessionManager
-	ub     *users.UserBackend
-	groups *groups.Backend
-	queue  *pubsub.Queue
+	sfu     *sfu.SFU
+	sm      *sessions.SessionManager
+	ub      *users.UserBackend
+	groups  *groups.Backend
+	queue   *pubsub.Queue
 	blocked *blocks.Backend
 
 	currentRoom *CurrentRoomBackend
@@ -60,7 +60,7 @@ func NewServer(
 		currentRoom: currentRoom,
 		groups:      groups,
 		repository:  repository,
-		blocked: blocked,
+		blocked:     blocked,
 	}
 }
 

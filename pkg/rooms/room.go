@@ -597,7 +597,14 @@ func (r *Room) onPinLink(from int, cmd *pb.Command_PinLink) {
 		return
 	}
 
-	// @TODO CHECK IF LINK IS SET ALREADY
+	r.mux.RLock()
+	link := r.link
+	r.mux.RUnlock()
+
+	// @TODO MAY NEED TO BE BETTER
+	if link != "" {
+		return
+	}
 
 	r.mux.Lock()
 	r.link = cmd.Link

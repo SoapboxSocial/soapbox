@@ -181,7 +181,7 @@ func onRoomCreation(event *pubsub.Event) ([]int, *notifications.PushNotification
 		return nil, nil, errRoomPrivate
 	}
 
-	creator, err := getCreatorId(event)
+	creator, err := event.GetInt("creator")
 	if err != nil {
 		return nil, nil, err
 	}
@@ -214,7 +214,7 @@ func onRoomCreation(event *pubsub.Event) ([]int, *notifications.PushNotification
 	return targets, notification, nil
 }
 func onGroupRoomCreation(event *pubsub.Event) ([]int, *notifications.PushNotification, error) {
-	creator, err := getCreatorId(event)
+	creator, err := event.GetInt("creator")
 	if err != nil {
 		return nil, nil, err
 	}
@@ -223,7 +223,7 @@ func onGroupRoomCreation(event *pubsub.Event) ([]int, *notifications.PushNotific
 		return nil, nil, nil
 	}
 
-	groupId, err := getId(event, "group")
+	groupId, err := event.GetInt("group")
 	if err != nil {
 		return nil, nil, err
 	}
@@ -275,7 +275,7 @@ func onRoomJoined(event *pubsub.Event) ([]int, *notifications.PushNotification, 
 		return nil, nil, errRoomPrivate
 	}
 
-	creator, err := getCreatorId(event)
+	creator, err := event.GetInt("creator")
 	if err != nil {
 		return nil, nil, err
 	}
@@ -305,7 +305,7 @@ func onRoomJoined(event *pubsub.Event) ([]int, *notifications.PushNotification, 
 }
 
 func onNewFollower(event *pubsub.Event) ([]int, *notifications.PushNotification, error) {
-	creator, err := getId(event, "follower")
+	creator, err := event.GetInt("follower")
 	if err != nil {
 		return nil, nil, err
 	}
@@ -324,17 +324,17 @@ func onNewFollower(event *pubsub.Event) ([]int, *notifications.PushNotification,
 }
 
 func onGroupInvite(event *pubsub.Event) ([]int, *notifications.PushNotification, error) {
-	creator, err := getId(event, "from")
+	creator, err := event.GetInt("from")
 	if err != nil {
 		return nil, nil, err
 	}
 
-	targetID, err := getId(event, "id")
+	targetID, err := event.GetInt("id")
 	if err != nil {
 		return nil, nil, err
 	}
 
-	groupId, err := getId(event, "group")
+	groupId, err := event.GetInt("group")
 	if err != nil {
 		return nil, nil, err
 	}
@@ -353,7 +353,7 @@ func onGroupInvite(event *pubsub.Event) ([]int, *notifications.PushNotification,
 }
 
 func onRoomInvite(event *pubsub.Event) ([]int, *notifications.PushNotification, error) {
-	creator, err := getId(event, "from")
+	creator, err := event.GetInt("from")
 	if err != nil {
 		return nil, nil, err
 	}
@@ -380,19 +380,6 @@ func onRoomInvite(event *pubsub.Event) ([]int, *notifications.PushNotification, 
 	}()
 
 	return []int{int(targetID)}, notification, nil
-}
-
-func getId(event *pubsub.Event, field string) (int, error) {
-	creator, ok := event.Params[field].(float64)
-	if !ok {
-		return 0, errors.New("failed to recover creator")
-	}
-
-	return int(creator), nil
-}
-
-func getCreatorId(event *pubsub.Event) (int, error) {
-	return getId(event, "creator")
 }
 
 func getDisplayName(id int) (string, error) {

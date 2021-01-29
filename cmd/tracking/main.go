@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"log"
 	"strconv"
 
@@ -62,7 +61,7 @@ type Event struct {
 func handleEvent(event *pubsub.Event) *Event {
 	switch event.Type {
 	case pubsub.EventTypeNewRoom:
-		id, err := getId(event, "creator")
+		id, err := event.GetInt("creator")
 		if err != nil {
 			return nil
 		}
@@ -76,7 +75,7 @@ func handleEvent(event *pubsub.Event) *Event {
 			},
 		}
 	case pubsub.EventTypeRoomJoin:
-		id, err := getId(event, "creator")
+		id, err := event.GetInt("creator")
 		if err != nil {
 			return nil
 		}
@@ -90,7 +89,7 @@ func handleEvent(event *pubsub.Event) *Event {
 			},
 		}
 	case pubsub.EventTypeRoomLeft:
-		id, err := getId(event, "creator")
+		id, err := event.GetInt("creator")
 		if err != nil {
 			return nil
 		}
@@ -103,7 +102,7 @@ func handleEvent(event *pubsub.Event) *Event {
 			},
 		}
 	case pubsub.EventTypeNewUser:
-		id, err := getId(event, "id")
+		id, err := event.GetInt("id")
 		if err != nil {
 			return nil
 		}
@@ -117,7 +116,7 @@ func handleEvent(event *pubsub.Event) *Event {
 			},
 		}
 	case pubsub.EventTypeNewGroup:
-		id, err := getId(event, "creator")
+		id, err := event.GetInt("creator")
 		if err != nil {
 			return nil
 		}
@@ -131,7 +130,7 @@ func handleEvent(event *pubsub.Event) *Event {
 			},
 		}
 	case pubsub.EventTypeNewGroupRoom:
-		id, err := getId(event, "creator")
+		id, err := event.GetInt("creator")
 		if err != nil {
 			return nil
 		}
@@ -146,7 +145,7 @@ func handleEvent(event *pubsub.Event) *Event {
 			},
 		}
 	case pubsub.EventTypeNewFollower:
-		id, err := getId(event, "follower")
+		id, err := event.GetInt("follower")
 		if err != nil {
 			return nil
 		}
@@ -159,7 +158,7 @@ func handleEvent(event *pubsub.Event) *Event {
 			},
 		}
 	case pubsub.EventTypeGroupJoin:
-		id, err := getId(event, "id")
+		id, err := event.GetInt("id")
 		if err != nil {
 			return nil
 		}
@@ -172,7 +171,7 @@ func handleEvent(event *pubsub.Event) *Event {
 			},
 		}
 	case pubsub.EventTypeNewStory:
-		id, err := getId(event, "creator")
+		id, err := event.GetInt("creator")
 		if err != nil {
 			return nil
 		}
@@ -183,7 +182,7 @@ func handleEvent(event *pubsub.Event) *Event {
 			properties: map[string]interface{}{},
 		}
 	case pubsub.EventTypeStoryReaction:
-		id, err := getId(event, "id")
+		id, err := event.GetInt("id")
 		if err != nil {
 			return nil
 		}
@@ -196,13 +195,4 @@ func handleEvent(event *pubsub.Event) *Event {
 	}
 
 	return nil
-}
-
-func getId(event *pubsub.Event, field string) (int, error) {
-	creator, ok := event.Params[field].(float64)
-	if !ok {
-		return 0, errors.New("failed to recover creator")
-	}
-
-	return int(creator), nil
 }

@@ -1,8 +1,6 @@
 package tracking
 
 import (
-	"log"
-
 	"github.com/dukex/mixpanel"
 )
 
@@ -26,7 +24,7 @@ func NewMixpanelTracker(client mixpanel.Mixpanel) *MixpanelTracker {
 func (m *MixpanelTracker) Track(event *Event) error {
 	err := m.client.Track(event.ID, event.Name, &mixpanel.Event{IP: "0", Properties: event.Properties})
 	if err != nil {
-		log.Printf("tracker.Track err: %v\n", err)
+		return err
 	}
 
 	if event.Name == newUser {
@@ -37,7 +35,7 @@ func (m *MixpanelTracker) Track(event *Event) error {
 		})
 
 		if err != nil {
-			log.Printf("tracker.Update err: %v\n", err)
+			return err
 		}
 	}
 

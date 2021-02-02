@@ -21,8 +21,12 @@ github.com/Shopify/sarama v1.19.0/go.mod h1:FVkBWblsNy7DGZRfXLU0O9RCGt5g3g3yEuWX
 github.com/Shopify/toxiproxy v2.1.4+incompatible/go.mod h1:OXgGpZ6Cli1/URJOF1DMxUHB2q5Ap20/P/eIdh4G0pI=
 github.com/SoapboxSocial/ion-sfu v1.8.2-0.20210125184457-9d39499cd67d h1:whJTDaDhq/7jkXRFtzV8HqfGiaWd0pM6WTJVeSfZgOg=
 github.com/SoapboxSocial/ion-sfu v1.8.2-0.20210125184457-9d39499cd67d/go.mod h1:MKDh4JSLpBA/hFeYAYALb6nYpe6Ruknd3pmxPMbdpM8=
+github.com/SoapboxSocial/ion-sfu v1.8.2-0.20210126173429-dfe8ff571a96 h1:FEYciy0tB+PD/8KQ6RcLuMYdQbEuRwa9UlkeF7RKuIY=
+github.com/SoapboxSocial/ion-sfu v1.8.2-0.20210126173429-dfe8ff571a96/go.mod h1:MKDh4JSLpBA/hFeYAYALb6nYpe6Ruknd3pmxPMbdpM8=
 github.com/SoapboxSocial/ion-sfu v1.8.2-0.20210201112118-cc49fe03ad6c h1:hqO7QSZXFEJOL19yONQ0x1AGngg++LBAyEhGKbO2bfI=
 github.com/SoapboxSocial/ion-sfu v1.8.2-0.20210201112118-cc49fe03ad6c/go.mod h1:MKDh4JSLpBA/hFeYAYALb6nYpe6Ruknd3pmxPMbdpM8=
+github.com/SoapboxSocial/ion-sfu v1.8.2-0.20210202111434-4e93c74fb656 h1:6L3qsXGb6e7sHuFM61b41r3q5cI2tiY2FGuY2Nu7h30=
+github.com/SoapboxSocial/ion-sfu v1.8.2-0.20210202111434-4e93c74fb656/go.mod h1:b6FI2WFTBsifw9EhxvfDks5/9SGYmVvm00IogZEgaik=
 github.com/Timothylock/go-signin-with-apple v0.0.0-20201001225820-74e17fc11560 h1:Lmt8mwWQED54DjJqsKnqjlZBen13qzgx16vl0Yk4kPg=
 github.com/Timothylock/go-signin-with-apple v0.0.0-20201001225820-74e17fc11560/go.mod h1:fz2au0tz0plvT851IG2WJEfRMByDEh+6occORo9jhCY=
 github.com/VividCortex/gohistogram v1.0.0/go.mod h1:Pf5mBqqDxYaXu3hDrrU+w6nw50o/4+TcAqDqk/vUH7g=

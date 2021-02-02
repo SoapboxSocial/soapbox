@@ -2,10 +2,7 @@ package rooms
 
 import (
 	"database/sql"
-	"strconv"
 )
-
-const hashName = "current_room"
 
 type CurrentRoomBackend struct {
 	db *sql.DB

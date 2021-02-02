@@ -116,3 +116,11 @@ CREATE TABLE IF NOT EXISTS blocks (
 );
 
 CREATE UNIQUE INDEX idx_blocks ON blocks (user_id, blocked);
+
+CREATE TABLE IF NOT EXISTS current_room (
+    user_id INT NOT NULL,
+    room VARCHAR(27) NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+);
+
+CREATE INDEX idx_current_room ON current_room (room);

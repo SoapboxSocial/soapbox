@@ -153,7 +153,7 @@ func NewGroupDeleteEvent(group int) Event {
 
 func NewUserHeartbeatEvent(user int) Event {
 	return Event{
-		Type:   EventTypeGroupDelete,
+		Type:   EventTypeUserHeartbeat,
 		Params: map[string]interface{}{"id": user},
 	}
 }

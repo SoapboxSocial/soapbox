@@ -15,6 +15,7 @@ import (
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/linkedaccounts"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
+	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/stories"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
@@ -26,6 +27,7 @@ type Endpoint struct {
 	oauthConfig *oauth1.Config
 	la          *linkedaccounts.Backend
 	stories     *stories.Backend
+	queue       *pubsub.Queue
 }
 
 // Me is returned to the user calling the `/me` endpoint.
@@ -48,7 +50,15 @@ type Notification struct {
 	Category  notifications.NotificationCategory `json:"category"`
 }
 
-func NewEndpoint(users *users.UserBackend, groups *groups.Backend, ns *notifications.Storage, config *oauth1.Config, la *linkedaccounts.Backend, backend *stories.Backend) *Endpoint {
+func NewEndpoint(
+	users *users.UserBackend,
+	groups *groups.Backend,
+	ns *notifications.Storage,
+	config *oauth1.Config,
+	la *linkedaccounts.Backend,
+	backend *stories.Backend,
+	queue *pubsub.Queue,
+) *Endpoint {
 	return &Endpoint{
 		users:       users,
 		groups:      groups,
@@ -56,6 +66,7 @@ func NewEndpoint(users *users.UserBackend, groups *groups.Backend, ns *notificat
 		oauthConfig: config,
 		la:          la,
 		stories:     backend,
+		queue:       queue,
 	}
 }
 
@@ -86,6 +97,13 @@ func (m *Endpoint) me(w http.ResponseWriter, r *http.Request) {
 
 	has := m.ns.HasNewNotifications(id)
 	me := &Me{user, has}
+
+	go func() {
+		err := m.queue.Publish(pubsub.UserTopic, pubsub.NewUserHeartbeatEvent(id))
+		if err != nil {
+			log.Printf("queue.Publish err %v", err)
+		}
+	}()
 
 	err = httputil.JsonEncode(w, me)
 	if err != nil {

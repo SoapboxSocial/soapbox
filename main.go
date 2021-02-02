@@ -154,7 +154,7 @@ func main() {
 
 	pb := linkedaccounts.NewLinkedAccountsBackend(db)
 
-	meEndpoint := me.NewEndpoint(ub, groupsBackend, ns, oauth, pb, storiesBackend)
+	meEndpoint := me.NewEndpoint(ub, groupsBackend, ns, oauth, pb, storiesBackend, queue)
 	meRoutes := meEndpoint.Router()
 
 	meRoutes.Use(amw.Middleware)

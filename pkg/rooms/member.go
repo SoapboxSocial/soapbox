@@ -107,7 +107,7 @@ func (m *Member) RunSignal() error {
 				answer, err := m.peer.Answer(sdp)
 				if err != nil {
 					if err == sfu.ErrNoTransportEstablished || err == sfu.ErrOfferIgnored {
-						return nil
+						continue
 					}
 
 					return fmt.Errorf("negotatie err: %v", err)

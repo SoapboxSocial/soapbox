@@ -242,7 +242,7 @@ func (s *Server) setup(room *Room) {
 				log.Printf("currentRoom.RemoveCurrentRoomForUser err: %v\n", err)
 			}
 
-			err := s.queue.Publish(pubsub.RoomTopic, pubsub.NewRoomLeftEvent(room, id))
+			err = s.queue.Publish(pubsub.RoomTopic, pubsub.NewRoomLeftEvent(room, id))
 			if err != nil {
 				log.Printf("queue.Publish err: %v\n", err)
 			}

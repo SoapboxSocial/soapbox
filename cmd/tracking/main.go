@@ -11,7 +11,6 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/tracking"
 )
 
-
 func main() {
 	client := mixpanel.New("d124ce8f1516eb7baa7980f4de68ded5", "https://api-eu.mixpanel.com")
 	tracker := tracking.NewMixpanelTracker(client)

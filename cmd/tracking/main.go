@@ -43,6 +43,7 @@ func main() {
 func handleEvent(event *pubsub.Event) *tracking.Event {
 	switch event.Type {
 	case pubsub.EventTypeNewRoom:
+
 		id, err := event.GetInt("creator")
 		if err != nil {
 			return nil
@@ -175,6 +176,9 @@ func handleEvent(event *pubsub.Event) *tracking.Event {
 			Properties: map[string]interface{}{},
 		}
 	case pubsub.EventTypeUserHeartbeat:
+
+		// @TODO ADD HEARTBEAT COOLDOWN of 30 mins
+
 		id, err := event.GetInt("id")
 		if err != nil {
 			return nil

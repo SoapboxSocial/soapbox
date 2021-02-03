@@ -22,6 +22,7 @@ const (
 	EventTypeGroupDelete
 	EventTypeNewStory
 	EventTypeStoryReaction
+	EventTypeUserHeartbeat
 )
 
 type RoomVisibility string
@@ -147,5 +148,12 @@ func NewGroupDeleteEvent(group int) Event {
 	return Event{
 		Type:   EventTypeGroupDelete,
 		Params: map[string]interface{}{"group": group},
+	}
+}
+
+func NewUserHeartbeatEvent(user int) Event {
+	return Event{
+		Type:   EventTypeUserHeartbeat,
+		Params: map[string]interface{}{"id": user},
 	}
 }

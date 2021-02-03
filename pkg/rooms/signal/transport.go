@@ -1,6 +1,8 @@
 package signal
 
 import (
+	"sync"
+
 	"github.com/gorilla/websocket"
 	"google.golang.org/protobuf/proto"
 
@@ -20,6 +22,8 @@ type Transport interface {
 }
 
 type WebSocketTransport struct {
+	mux sync.Mutex
+
 	conn *websocket.Conn
 }
 
@@ -49,6 +53,9 @@ func (w *WebSocketTransport) Write(msg *pb.SignalReply) error {
 	if err != nil {
 		return err
 	}
+
+	w.mux.Lock()
+	defer w.mux.Unlock()
 
 	return w.conn.WriteMessage(websocket.BinaryMessage, data)
 }

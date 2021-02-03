@@ -8,12 +8,12 @@ import (
 	"github.com/go-redis/redis/v8"
 
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
+	"github.com/soapboxsocial/soapbox/pkg/tracking"
 )
 
-const new_user = "new_user"
-
 func main() {
-	tracker := mixpanel.New("d124ce8f1516eb7baa7980f4de68ded5", "https://api-eu.mixpanel.com")
+	client := mixpanel.New("d124ce8f1516eb7baa7980f4de68ded5", "https://api-eu.mixpanel.com")
+	tracker := tracking.NewMixpanelTracker(client)
 
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
@@ -32,44 +32,27 @@ func main() {
 		}
 
 		go func() {
-			err := tracker.Track(event.id, event.name, &mixpanel.Event{IP: "0", Properties: event.properties})
+			err := tracker.Track(event)
 			if err != nil {
-				log.Printf("tracker.Track err: %v\n", err)
-			}
-
-			if event.name == new_user {
-				err := tracker.Update(event.id, &mixpanel.Update{
-					IP:         "0",
-					Operation:  "$set",
-					Properties: event.properties,
-				})
-
-				if err != nil {
-					log.Printf("tracker.Update err: %v\n", err)
-				}
+				log.Printf("tracker.Track err %v", err)
 			}
 		}()
 	}
 }
 
-type Event struct {
-	id         string
-	name       string
-	properties map[string]interface{}
-}
-
-func handleEvent(event *pubsub.Event) *Event {
+func handleEvent(event *pubsub.Event) *tracking.Event {
 	switch event.Type {
 	case pubsub.EventTypeNewRoom:
+
 		id, err := event.GetInt("creator")
 		if err != nil {
 			return nil
 		}
 
-		return &Event{
-			id:   strconv.Itoa(id),
-			name: "room_new",
-			properties: map[string]interface{}{
+		return &tracking.Event{
+			ID:   strconv.Itoa(id),
+			Name: "room_new",
+			Properties: map[string]interface{}{
 				"room_id":    event.Params["id"],
 				"visibility": event.Params["visibility"],
 			},
@@ -80,10 +63,10 @@ func handleEvent(event *pubsub.Event) *Event {
 			return nil
 		}
 
-		return &Event{
-			id:   strconv.Itoa(id),
-			name: "room_join",
-			properties: map[string]interface{}{
+		return &tracking.Event{
+			ID:   strconv.Itoa(id),
+			Name: "room_join",
+			Properties: map[string]interface{}{
 				"room_id":    event.Params["id"],
 				"visibility": event.Params["visibility"],
 			},
@@ -94,10 +77,10 @@ func handleEvent(event *pubsub.Event) *Event {
 			return nil
 		}
 
-		return &Event{
-			id:   strconv.Itoa(id),
-			name: "room_left",
-			properties: map[string]interface{}{
+		return &tracking.Event{
+			ID:   strconv.Itoa(id),
+			Name: "room_left",
+			Properties: map[string]interface{}{
 				"room_id": event.Params["id"],
 			},
 		}
@@ -107,10 +90,10 @@ func handleEvent(event *pubsub.Event) *Event {
 			return nil
 		}
 
-		return &Event{
-			id:   strconv.Itoa(id),
-			name: new_user,
-			properties: map[string]interface{}{
+		return &tracking.Event{
+			ID:   strconv.Itoa(id),
+			Name: "new_user",
+			Properties: map[string]interface{}{
 				"user_id":  event.Params["id"],
 				"username": event.Params["username"],
 			},
@@ -121,10 +104,10 @@ func handleEvent(event *pubsub.Event) *Event {
 			return nil
 		}
 
-		return &Event{
-			id:   strconv.Itoa(id),
-			name: "group_new",
-			properties: map[string]interface{}{
+		return &tracking.Event{
+			ID:   strconv.Itoa(id),
+			Name: "group_new",
+			Properties: map[string]interface{}{
 				"group_id": event.Params["id"],
 				"name":     event.Params["name"],
 			},
@@ -135,10 +118,10 @@ func handleEvent(event *pubsub.Event) *Event {
 			return nil
 		}
 
-		return &Event{
-			id:   strconv.Itoa(id),
-			name: "room_new",
-			properties: map[string]interface{}{
+		return &tracking.Event{
+			ID:   strconv.Itoa(id),
+			Name: "room_new",
+			Properties: map[string]interface{}{
 				"room_id":    event.Params["id"],
 				"visibility": event.Params["visibility"],
 				"group_id":   event.Params["group"],
@@ -150,10 +133,10 @@ func handleEvent(event *pubsub.Event) *Event {
 			return nil
 		}
 
-		return &Event{
-			id:   strconv.Itoa(id),
-			name: "followed",
-			properties: map[string]interface{}{
+		return &tracking.Event{
+			ID:   strconv.Itoa(id),
+			Name: "followed",
+			Properties: map[string]interface{}{
 				"following_id": event.Params["id"],
 			},
 		}
@@ -163,10 +146,10 @@ func handleEvent(event *pubsub.Event) *Event {
 			return nil
 		}
 
-		return &Event{
-			id:   strconv.Itoa(id),
-			name: "group_join",
-			properties: map[string]interface{}{
+		return &tracking.Event{
+			ID:   strconv.Itoa(id),
+			Name: "group_join",
+			Properties: map[string]interface{}{
 				"group": event.Params["group"],
 			},
 		}
@@ -176,10 +159,10 @@ func handleEvent(event *pubsub.Event) *Event {
 			return nil
 		}
 
-		return &Event{
-			id:         strconv.Itoa(id),
-			name:       "story_new",
-			properties: map[string]interface{}{},
+		return &tracking.Event{
+			ID:         strconv.Itoa(id),
+			Name:       "story_new",
+			Properties: map[string]interface{}{},
 		}
 	case pubsub.EventTypeStoryReaction:
 		id, err := event.GetInt("id")
@@ -187,10 +170,24 @@ func handleEvent(event *pubsub.Event) *Event {
 			return nil
 		}
 
-		return &Event{
-			id:         strconv.Itoa(id),
-			name:       "story_reaction",
-			properties: map[string]interface{}{},
+		return &tracking.Event{
+			ID:         strconv.Itoa(id),
+			Name:       "story_reaction",
+			Properties: map[string]interface{}{},
+		}
+	case pubsub.EventTypeUserHeartbeat:
+
+		// @TODO ADD HEARTBEAT COOLDOWN of 30 mins
+
+		id, err := event.GetInt("id")
+		if err != nil {
+			return nil
+		}
+
+		return &tracking.Event{
+			ID:         strconv.Itoa(id),
+			Name:       "heartbeat",
+			Properties: map[string]interface{}{},
 		}
 	}
 

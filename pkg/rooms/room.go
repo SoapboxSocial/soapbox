@@ -6,6 +6,7 @@ import (
 	"log"
 	"sync"
 
+	"github.com/gorilla/websocket"
 	"github.com/pion/ion-sfu/pkg/sfu"
 	"github.com/pion/webrtc/v3"
 	"google.golang.org/protobuf/proto"
@@ -275,6 +276,11 @@ func (r *Room) Handle(me *Member) {
 
 	err := me.RunSignal()
 	if err != nil {
+		_, ok := err.(*websocket.CloseError)
+		if ok {
+			return
+		}
+
 		log.Printf("me.Signal err: %v", err)
 	}
 }
@@ -642,8 +648,6 @@ func (r *Room) notify(event *pb.Event) {
 		if id == int(event.From) {
 			continue
 		}
-
-		log.Printf("notify %d", id)
 
 		err := member.Notify(CHANNEL, data)
 		if err != nil {

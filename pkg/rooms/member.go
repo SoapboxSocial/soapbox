@@ -2,6 +2,7 @@ package rooms
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"strings"
 	"sync"
@@ -64,7 +65,12 @@ func (m *Member) SetRole(role pb.RoomState_RoomMember_Role) {
 }
 
 func (m *Member) Notify(label string, data []byte) error {
-	return m.peer.GetDataChannel(label).Send(data)
+	c := m.peer.GetDataChannel(label) // @TODO SHOULD WE STORE THIS?
+	if c == nil {
+		return io.EOF
+	}
+
+	return c.Send(data)
 }
 
 func (m *Member) Role() pb.RoomState_RoomMember_Role {
@@ -78,7 +84,6 @@ func (m *Member) ReceiveMsg() (*pb.SignalRequest, error) {
 	msg, err := m.signal.ReadMsg()
 	if err != nil {
 		_ = m.Close()
-		log.Printf("signal error %v", err)
 		return nil, err
 	}
 
@@ -107,7 +112,7 @@ func (m *Member) RunSignal() error {
 				answer, err := m.peer.Answer(sdp)
 				if err != nil {
 					if err == sfu.ErrNoTransportEstablished || err == sfu.ErrOfferIgnored {
-						return nil
+						continue
 					}
 
 					return fmt.Errorf("negotatie err: %v", err)

@@ -43,11 +43,14 @@ func main() {
 			Level: "debug",
 		},
 		Router: sfu.RouterConfig{
+			WithStats: true,
 			AudioLevelFilter: 20,
 			AudioLevelThreshold: 40,
 			AudioLevelInterval: 1000,
 		},
 	}
+
+	config.SFU.WithStats = true
 
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",

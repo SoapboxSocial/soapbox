@@ -31,6 +31,8 @@ github.com/SoapboxSocial/ion-sfu v1.8.2-0.20210202104115-0c22a6f192b0 h1:8JG6c97
 github.com/SoapboxSocial/ion-sfu v1.8.2-0.20210202104115-0c22a6f192b0/go.mod h1:MKDh4JSLpBA/hFeYAYALb6nYpe6Ruknd3pmxPMbdpM8=
 github.com/SoapboxSocial/ion-sfu v1.8.2-0.20210202111434-4e93c74fb656 h1:6L3qsXGb6e7sHuFM61b41r3q5cI2tiY2FGuY2Nu7h30=
 github.com/SoapboxSocial/ion-sfu v1.8.2-0.20210202111434-4e93c74fb656/go.mod h1:b6FI2WFTBsifw9EhxvfDks5/9SGYmVvm00IogZEgaik=
+github.com/SoapboxSocial/ion-sfu v1.8.2-0.20210203115109-d3de22b4ba31 h1:LSFuwAhdpmb7sdxYC7FM4ftX+8hf1kQv6Wp+LVGTyhU=
+github.com/SoapboxSocial/ion-sfu v1.8.2-0.20210203115109-d3de22b4ba31/go.mod h1:MKDh4JSLpBA/hFeYAYALb6nYpe6Ruknd3pmxPMbdpM8=
 github.com/Timothylock/go-signin-with-apple v0.0.0-20201001225820-74e17fc11560 h1:Lmt8mwWQED54DjJqsKnqjlZBen13qzgx16vl0Yk4kPg=
 github.com/Timothylock/go-signin-with-apple v0.0.0-20201001225820-74e17fc11560/go.mod h1:fz2au0tz0plvT851IG2WJEfRMByDEh+6occORo9jhCY=
 github.com/Timothylock/go-signin-with-apple v0.0.0-20210131195746-828dfdd59ab1 h1:ikId4o21ZtP6qh2El/2EBxbQsFnl6f8/TlBsyxVMR4I=

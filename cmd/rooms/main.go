@@ -42,6 +42,11 @@ func main() {
 		Log: iLog.Config{
 			Level: "debug",
 		},
+		Router: sfu.RouterConfig{
+			AudioLevelFilter: 20,
+			AudioLevelThreshold: 40,
+			AudioLevelInterval: 1000,
+		},
 	}
 
 	rdb := redis.NewClient(&redis.Options{

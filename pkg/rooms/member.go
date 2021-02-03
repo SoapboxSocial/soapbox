@@ -84,7 +84,6 @@ func (m *Member) ReceiveMsg() (*pb.SignalRequest, error) {
 	msg, err := m.signal.ReadMsg()
 	if err != nil {
 		_ = m.Close()
-		log.Printf("signal error %v", err)
 		return nil, err
 	}
 

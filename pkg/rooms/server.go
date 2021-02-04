@@ -37,6 +37,7 @@ type Server struct {
 	queue   *pubsub.Queue
 	blocked *blocks.Backend
 
+	ws          *WelcomeStore
 	currentRoom *CurrentRoomBackend
 
 	repository *Repository
@@ -48,6 +49,7 @@ func NewServer(
 	ub *users.UserBackend,
 	queue *pubsub.Queue,
 	currentRoom *CurrentRoomBackend,
+	ws *WelcomeStore,
 	groups *groups.Backend,
 	repository *Repository,
 	blocked *blocks.Backend,
@@ -58,6 +60,7 @@ func NewServer(
 		ub:          ub,
 		queue:       queue,
 		currentRoom: currentRoom,
+		ws:          ws,
 		groups:      groups,
 		repository:  repository,
 		blocked:     blocked,
@@ -97,7 +100,7 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		r, err := s.repository.Get(join.Room)
+		r, err := s.getRoom(join.Room, user.ID)
 		if err != nil {
 			_ = conn.WriteError(in.Id, pb.SignalReply_CLOSED)
 			return
@@ -222,6 +225,30 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 
 	// @TODO ONCE WE SWITCH THE TRANSPORT WE WILL BE ABLE TO RELEASE HERE
 	room.Handle(me)
+}
+
+func (s *Server) getRoom(id string, owner int) (*Room, error) {
+	r, err := s.repository.Get(id)
+	if err == nil {
+		return r, nil
+	}
+
+	user, err := s.ws.GetUserIDForWelcomeRoom(id)
+	if err != nil {
+		return nil, err
+	}
+
+	if user == 0 {
+		return nil, errors.New("unknown room")
+	}
+
+	// @TODO NAME
+	r = s.createRoom(id, "Welcome!", owner, pb.Visibility_PUBLIC, nil)
+	s.repository.Set(r)
+
+	r.InviteUser(owner, user)
+
+	return r, nil
 }
 
 func (s *Server) createRoom(id, name string, owner int, visibility pb.Visibility, group *groups.Group) *Room {

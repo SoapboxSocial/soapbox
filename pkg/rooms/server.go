@@ -100,6 +100,8 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// @TODO COULD PROBABLY CLEAN THIS UP WITH A PRECONDITION, if !repo.has -> check if welcome room -> add
+
 		r, err := s.getRoom(join.Room, user.ID)
 		if err != nil {
 			_ = conn.WriteError(in.Id, pb.SignalReply_CLOSED)

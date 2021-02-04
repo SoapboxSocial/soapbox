@@ -282,11 +282,6 @@ func (r *Room) onDisconnected(id int64) {
 		return
 	}
 
-	r.notify(&pb.Event{
-		From:    id,
-		Payload: &pb.Event_Left_{},
-	})
-
 	err := peer.Close()
 	if err != nil {
 		log.Printf("rtc.Close error %v\n", err)
@@ -295,6 +290,11 @@ func (r *Room) onDisconnected(id int64) {
 	r.mux.Lock()
 	delete(r.members, int(id))
 	r.mux.Unlock()
+
+	r.notify(&pb.Event{
+		From:    id,
+		Payload: &pb.Event_Left_{},
+	})
 
 	r.electRandomAdmin(id)
 
@@ -605,9 +605,10 @@ func (r *Room) notify(event *pb.Event) {
 	}
 
 	r.mux.RLock()
-	defer r.mux.RUnlock()
+	members := r.members
+	r.mux.RUnlock()
 
-	for id, member := range r.members {
+	for id, member := range members {
 		if id == int(event.From) {
 			continue
 		}

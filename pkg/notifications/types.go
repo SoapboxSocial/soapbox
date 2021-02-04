@@ -10,7 +10,6 @@ const (
 	ROOM_INVITE  NotificationCategory = "ROOM_INVITE"
 	ROOM_JOINED  NotificationCategory = "ROOM_JOINED"
 	GROUP_INVITE NotificationCategory = "GROUP_INVITE"
-	WELCOME_ROOM NotificationCategory = "WELCOME_ROOM"
 )
 
 type Alert struct {
@@ -61,6 +60,7 @@ func NewRoomWithGroupNotification(id, creator, group string) *PushNotification {
 		Category: NEW_ROOM,
 		Alert: Alert{
 			Key:       "new_room_with_group_notification",
+			Body:      fmt.Sprintf("%s created a room in \"%s\", why not join them?", creator, group),
 			Arguments: []string{creator, group},
 		},
 		Arguments: map[string]interface{}{"id": id},
@@ -72,6 +72,7 @@ func NewRoomWithGroupAndNameNotification(id, creator, group, name string) *PushN
 		Category: NEW_ROOM,
 		Alert: Alert{
 			Key:       "new_room_with_group_and_name_notification",
+			Body:      fmt.Sprintf("%s created the room \"%s\" in \"%s\", why not join them?", creator, name, group),
 			Arguments: []string{creator, name, group},
 		},
 		Arguments: map[string]interface{}{"id": id},
@@ -141,17 +142,5 @@ func NewGroupInviteNotification(groupId, fromId int, from, group string) *PushNo
 			Arguments: []string{from, group},
 		},
 		Arguments: map[string]interface{}{"id": groupId, "from": fromId},
-	}
-}
-
-func NewWelcomeUserNotification(user, room string) *PushNotification {
-	return &PushNotification{
-		Category: WELCOME_ROOM,
-		Alert: Alert{
-			Key:       "welcome_room_notification",
-			Body:      fmt.Sprintf("%s just signed up, why not welcome them?", user),
-			Arguments: []string{user},
-		},
-		Arguments: map[string]interface{}{"id": room},
 	}
 }

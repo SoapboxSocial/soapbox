@@ -3,7 +3,6 @@ package grpc
 import (
 	"context"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc"
 
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
@@ -29,7 +28,7 @@ func (s *Service) GetRoom(ctx context.Context, in *pb.RoomQuery) (*pb.RoomRespon
 	return &pb.RoomResponse{Room: r.ToProto(), Error: ""}, nil
 }
 
-func (s *Service) RegisterWelcomeRoom(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*pb.WelcomeRoomRegisterResponse, error) {
-
+func (s *Service) RegisterWelcomeRoom(ctx context.Context, in *pb.WelcomeRoomRegisterRequest, opts ...grpc.CallOption) (*pb.WelcomeRoomRegisterResponse, error) {
+	return nil, nil
 }
 

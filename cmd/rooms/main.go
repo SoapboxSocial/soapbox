@@ -75,7 +75,6 @@ func main() {
 		return
 	}
 
-
 	gs := grpc.NewServer()
 	pb.RegisterRoomServiceServer(
 		gs,

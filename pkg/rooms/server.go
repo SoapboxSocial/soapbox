@@ -165,17 +165,13 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		session, _ := s.sfu.GetSession(id)
-		room = NewRoom(
+		room = s.createRoom(
 			id,
 			name,
-			group,
 			me.id,
 			create.Visibility,
-			session,
+			group,
 		)
-
-		s.setup(room)
 
 		// @TODO SHOULD PROBABLY BE IN A CALLBACK SO WE KNOW THE ROOM IS OPEN
 		if create.Visibility == pb.Visibility_PRIVATE {
@@ -228,7 +224,11 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 	room.Handle(me)
 }
 
-func (s *Server) setup(room *Room) {
+func (s *Server) createRoom(id, name string, owner int, visibility pb.Visibility, group *groups.Group) *Room {
+	session, _ := s.sfu.GetSession(id)
+
+	room := NewRoom(id, name, group, owner, visibility, session)
+
 	room.OnDisconnected(func(room string, id int) {
 		r, err := s.repository.Get(room)
 		if err != nil {
@@ -303,6 +303,8 @@ func (s *Server) setup(room *Room) {
 			log.Printf("failed to set current room err: %v", err)
 		}
 	})
+
+	return room
 }
 
 func (s *Server) canJoin(peer int, room *Room) bool {

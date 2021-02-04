@@ -66,6 +66,7 @@ func main() {
 
 	repository := rooms.NewRepository()
 	sm := sessions.NewSessionManager(rdb)
+	ws := rooms.NewWelcomeStore(rdb)
 
 	addr := "127.0.0.1:50052"
 	lis, err := net.Listen("tcp", addr)
@@ -74,10 +75,11 @@ func main() {
 		return
 	}
 
+
 	gs := grpc.NewServer()
 	pb.RegisterRoomServiceServer(
 		gs,
-		roomGRPC.NewService(repository),
+		roomGRPC.NewService(repository, ws),
 	)
 
 	go func() {

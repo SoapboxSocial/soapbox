@@ -17,11 +17,11 @@ func NewService(repository *rooms.Repository) *Service {
 	}
 }
 
-func (s *Service) GetRoom(ctx context.Context, in *pb.RoomQuery) (*pb.RoomResponse, error) {
+func (s *Service) GetRoom(ctx context.Context, in *pb.RoomQuery) (*pb.RoomState, error) {
 	r, err := s.repository.Get(in.Id)
 	if err != nil {
-		return &pb.RoomResponse{Room: nil, Error: "not found"}, nil
+		return nil, err
 	}
 
-	return &pb.RoomResponse{Room: r.ToProto(), Error: ""}, nil
+	return r.ToProto(), nil
 }

@@ -98,6 +98,7 @@ func main() {
 		users.NewUserBackend(db),
 		pubsub.NewQueue(rdb),
 		rooms.NewCurrentRoomBackend(rdb),
+		ws,
 		groups.NewBackend(db),
 		repository,
 		blocks.NewBackend(db),

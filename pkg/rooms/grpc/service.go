@@ -21,7 +21,7 @@ func NewService(repository *rooms.Repository, ws *rooms.WelcomeStore) *Service {
 	}
 }
 
-func (s *Service) GetRoom(ctx context.Context, in *pb.RoomQuery) (*pb.RoomState, error) {
+func (s *Service) GetRoom(_ context.Context, in *pb.RoomQuery) (*pb.RoomState, error) {
 	r, err := s.repository.Get(in.Id)
 	if err != nil {
 		return nil, err
@@ -30,7 +30,7 @@ func (s *Service) GetRoom(ctx context.Context, in *pb.RoomQuery) (*pb.RoomState,
 	return r.ToProto(), nil
 }
 
-func (s *Service) RegisterWelcomeRoom(ctx context.Context, in *pb.WelcomeRoomRegisterRequest) (*pb.WelcomeRoomRegisterResponse, error) {
+func (s *Service) RegisterWelcomeRoom(_ context.Context, in *pb.WelcomeRoomRegisterRequest) (*pb.WelcomeRoomRegisterResponse, error) {
 	id := internal.GenerateRoomID()
 
 	if in == nil || in.UserId == 0 {

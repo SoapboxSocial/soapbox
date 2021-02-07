@@ -146,7 +146,7 @@ func NewGroupInviteNotification(groupId, fromId int, from, group string) *PushNo
 	}
 }
 
-func NewWelcomeUserNotification(user, room string) *PushNotification {
+func NewWelcomeRoomNotification(user, room string, from int) *PushNotification {
 	return &PushNotification{
 		Category: WELCOME_ROOM,
 		Alert: Alert{
@@ -154,6 +154,6 @@ func NewWelcomeUserNotification(user, room string) *PushNotification {
 			Body:      fmt.Sprintf("%s just signed up, why not welcome them?", user),
 			Arguments: []string{user},
 		},
-		Arguments: map[string]interface{}{"id": room},
+		Arguments: map[string]interface{}{"id": room, "from": from},
 	}
 }

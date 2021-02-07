@@ -23,6 +23,7 @@ const (
 	EventTypeNewStory
 	EventTypeStoryReaction
 	EventTypeUserHeartbeat
+	EventTypeWelcomeRoom
 )
 
 type RoomVisibility string
@@ -155,5 +156,12 @@ func NewUserHeartbeatEvent(user int) Event {
 	return Event{
 		Type:   EventTypeUserHeartbeat,
 		Params: map[string]interface{}{"id": user},
+	}
+}
+
+func NewWelcomeRoomEvent(user int, room string) Event {
+	return Event{
+		Type:   EventTypeWelcomeRoom,
+		Params: map[string]interface{}{"id": user, "room": room},
 	}
 }

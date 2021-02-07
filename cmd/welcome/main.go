@@ -47,5 +47,10 @@ func main() {
 		if err != nil {
 			log.Printf("client.RegisterWelcomeRoom err %v", err)
 		}
+
+		err = queue.Publish(pubsub.RoomTopic, pubsub.NewWelcomeRoomEvent(id, resp.Id))
+		if err != nil {
+			log.Printf("queue.Publish err: %v", err)
+		}
 	}
 }

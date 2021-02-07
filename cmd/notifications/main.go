@@ -121,6 +121,8 @@ func getHandler(eventType pubsub.EventType) handlerFunc {
 		return onGroupInvite
 	case pubsub.EventTypeNewGroupRoom:
 		return onGroupRoomCreation
+	case pubsub.EventTypeWelcomeRoom:
+		return onWelcomeRoom
 	default:
 		return nil
 	}
@@ -170,6 +172,13 @@ func getNotificationForStore(notification *notifications.PushNotification) *noti
 			From:      notification.Arguments["from"].(int),
 			Category:  notification.Category,
 			Arguments: map[string]interface{}{"group": notification.Arguments["id"].(int)},
+		}
+	case notifications.WELCOME_ROOM:
+		return &notifications.Notification{
+			Timestamp: time.Now().Unix(),
+			From:      notification.Arguments["from"].(int),
+			Category:  notification.Category,
+			Arguments: map[string]interface{}{"room": notification.Arguments["id"]},
 		}
 	default:
 		return nil
@@ -380,6 +389,25 @@ func onRoomInvite(event *pubsub.Event) ([]int, *notifications.PushNotification, 
 	}()
 
 	return []int{int(targetID)}, notification, nil
+}
+
+func onWelcomeRoom(event *pubsub.Event) ([]int, *notifications.PushNotification, error) {
+	creator, err := event.GetInt("id")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	room := event.Params["room"].(string)
+
+	displayName, err := getDisplayName(creator)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	staticTargets := []int{1, 75}
+
+	notification := notifications.NewWelcomeRoomNotification(displayName, room, creator)
+	return staticTargets, notification, nil
 }
 
 func getDisplayName(id int) (string, error) {

@@ -60,6 +60,8 @@ func (l *Limiter) ShouldSendNotification(target int, event *pubsub.Event) bool {
 		return !l.isLimited(limiterKeyForFollowerEvent(target, event))
 	case pubsub.EventTypeGroupInvite:
 		return true
+	case pubsub.EventTypeWelcomeRoom:
+		return true // @TODO
 	default:
 		return false
 	}

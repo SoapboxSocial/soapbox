@@ -29,6 +29,7 @@ sudo ln -s /vagrant/conf/supervisord/notifications.conf /etc/supervisor/conf.d/n
 sudo ln -s /vagrant/conf/supervisord/indexer.conf /etc/supervisor/conf.d/indexer.conf
 sudo ln -s /vagrant/conf/supervisord/rooms.conf /etc/supervisor/conf.d/rooms.conf
 sudo ln -s /vagrant/conf/supervisord/metadata.conf /etc/supervisor/conf.d/metadata.conf
+sudo ln -s /vagrant/conf/supervisord/welcome.conf /etc/supervisor/conf.d/welcome.conf
 
 echo 'export GOPATH="/home/vagrant/go"' >> ~/.bashrc
 echo 'export PATH="$PATH:${GOPATH//://bin:}/bin"' >> ~/.bashrc

@@ -9,6 +9,7 @@ import (
 	"github.com/go-redis/redis/v8"
 	_ "github.com/lib/pq"
 	iLog "github.com/pion/ion-log"
+	"github.com/pion/ion-sfu/pkg/middlewares/datachannel"
 	"github.com/pion/ion-sfu/pkg/sfu"
 	"google.golang.org/grpc"
 
@@ -42,7 +43,15 @@ func main() {
 		Log: iLog.Config{
 			Level: "debug",
 		},
+		Router: sfu.RouterConfig{
+			WithStats:           true,
+			AudioLevelFilter:    20,
+			AudioLevelThreshold: 40,
+			AudioLevelInterval:  1000,
+		},
 	}
+
+	config.SFU.WithStats = true
 
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
@@ -57,6 +66,7 @@ func main() {
 
 	repository := rooms.NewRepository()
 	sm := sessions.NewSessionManager(rdb)
+	ws := rooms.NewWelcomeStore(rdb)
 
 	addr := "127.0.0.1:50052"
 	lis, err := net.Listen("tcp", addr)
@@ -65,25 +75,30 @@ func main() {
 		return
 	}
 
-	s := grpc.NewServer()
+	gs := grpc.NewServer()
 	pb.RegisterRoomServiceServer(
-		s,
-		roomGRPC.NewService(repository),
+		gs,
+		roomGRPC.NewService(repository, ws),
 	)
 
 	go func() {
-		err = s.Serve(lis)
+		err = gs.Serve(lis)
 		if err != nil {
 			log.Panicf("failed to serve: %v", err)
 		}
 	}()
 
+	s := sfu.NewSFU(config)
+	dc := s.NewDatachannel(sfu.APIChannelLabel)
+	dc.Use(datachannel.SubscriberAPI)
+
 	server := rooms.NewServer(
-		sfu.NewSFU(config),
+		s,
 		sm,
 		users.NewUserBackend(db),
 		pubsub.NewQueue(rdb),
 		rooms.NewCurrentRoomBackend(rdb),
+		ws,
 		groups.NewBackend(db),
 		repository,
 		blocks.NewBackend(db),

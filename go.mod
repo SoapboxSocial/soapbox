@@ -11,7 +11,7 @@ require (
 	github.com/dghubble/oauth1 v0.7.0
 	github.com/dukex/mixpanel v0.0.0-20180925151559-f8d5594f958e
 	github.com/elastic/go-elasticsearch/v7 v7.10.0
-	github.com/go-redis/redis/v8 v8.4.11
+	github.com/go-redis/redis/v8 v8.5.0
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.4.3
 	github.com/gomodule/redigo v1.8.3 // indirect
@@ -20,12 +20,12 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.4.2
 	github.com/lib/pq v1.9.0
-	github.com/pion/ice/v2 v2.0.15 // indirect
+	github.com/pion/dtls/v2 v2.0.5 // indirect
 	github.com/pion/ion-log v1.0.0
-	github.com/pion/ion-sfu v1.8.1
-	github.com/pion/webrtc/v3 v3.0.4
+	github.com/pion/ion-sfu v1.8.3
+	github.com/pion/webrtc/v3 v3.0.5
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/procfs v0.3.0 // indirect
+	github.com/prometheus/procfs v0.4.0 // indirect
 	github.com/segmentio/ksuid v1.0.3
 	github.com/sendgrid/rest v2.6.2+incompatible // indirect
 	github.com/sendgrid/sendgrid-go v3.7.2+incompatible
@@ -33,12 +33,11 @@ require (
 	github.com/tideland/golib v4.24.2+incompatible // indirect
 	github.com/tideland/gorest v2.15.5+incompatible // indirect
 	github.com/yuin/gopher-lua v0.0.0-20200816102855-ee81675732da // indirect
-	golang.org/x/net v0.0.0-20210119194325-5f4716e94777 // indirect
 	golang.org/x/sys v0.0.0-20210124154548-22da62e12c0c // indirect
 	golang.org/x/text v0.3.5 // indirect
-	google.golang.org/genproto v0.0.0-20210201184850-646a494a81ea // indirect
+	google.golang.org/genproto v0.0.0-20210207032614-bba0dbe2a9ea // indirect
 	google.golang.org/grpc v1.35.0
 	google.golang.org/protobuf v1.25.0
 )
 
-replace github.com/pion/ion-sfu => github.com/SoapboxSocial/ion-sfu v1.8.2-0.20210202104115-0c22a6f192b0
+replace github.com/pion/ion-sfu => github.com/soapboxsocial/ion-sfu v1.8.2-0.20210207184449-a254868c3d20

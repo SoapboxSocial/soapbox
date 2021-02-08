@@ -47,6 +47,7 @@ type Notification struct {
 	Timestamp int64                              `json:"timestamp"`
 	From      *users.NotificationUser            `json:"from"`
 	Group     *groups.Group                      `json:"group,omitempty"`
+	Room      *string                            `json:"room,omitempty"`
 	Category  notifications.NotificationCategory `json:"category"`
 }
 
@@ -150,6 +151,11 @@ func (m *Endpoint) notifications(w http.ResponseWriter, r *http.Request) {
 			}
 
 			populatedNotification.Group = group
+		}
+
+		if notification.Category == notifications.WELCOME_ROOM {
+			room := notification.Arguments["room"].(string)
+			populatedNotification.Room = &room
 		}
 
 		populated = append(populated, populatedNotification)

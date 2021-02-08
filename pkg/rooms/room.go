@@ -2,7 +2,7 @@ package rooms
 
 import (
 	"context"
-	"fmt"
+	"io"
 	"log"
 	"sync"
 
@@ -259,16 +259,6 @@ func (r *Room) Handle(me *Member) {
 					Joined: &pb.Event_Joined{User: me.ToProto()},
 				},
 			})
-
-			dc := me.peer.GetDataChannel(CHANNEL)
-			if dc == nil {
-				fmt.Println("data channel not found")
-				return
-			}
-
-			dc.OnClose(func() {
-				r.onDisconnected(int64(me.id))
-			})
 		case webrtc.ICEConnectionStateClosed, webrtc.ICEConnectionStateFailed:
 			r.onDisconnected(int64(me.id))
 		}
@@ -278,6 +268,7 @@ func (r *Room) Handle(me *Member) {
 	if err != nil {
 		_, ok := err.(*websocket.CloseError)
 		if ok {
+			r.onDisconnected(int64(me.id))
 			return
 		}
 
@@ -293,11 +284,6 @@ func (r *Room) onDisconnected(id int64) {
 		return
 	}
 
-	r.notify(&pb.Event{
-		From:    id,
-		Payload: &pb.Event_Left_{},
-	})
-
 	err := peer.Close()
 	if err != nil {
 		log.Printf("rtc.Close error %v\n", err)
@@ -306,6 +292,11 @@ func (r *Room) onDisconnected(id int64) {
 	r.mux.Lock()
 	delete(r.members, int(id))
 	r.mux.Unlock()
+
+	r.notify(&pb.Event{
+		From:    id,
+		Payload: &pb.Event_Left_{},
+	})
 
 	r.electRandomAdmin(id)
 
@@ -642,15 +633,21 @@ func (r *Room) notify(event *pb.Event) {
 	}
 
 	r.mux.RLock()
-	defer r.mux.RUnlock()
+	members := r.members
+	r.mux.RUnlock()
 
-	for id, member := range r.members {
+	for id, member := range members {
 		if id == int(event.From) {
 			continue
 		}
 
 		err := member.Notify(CHANNEL, data)
 		if err != nil {
+			if err == io.EOF {
+				r.onDisconnected(int64(id))
+				continue
+			}
+
 			log.Printf("failed to notify: %v\n", err)
 		}
 	}

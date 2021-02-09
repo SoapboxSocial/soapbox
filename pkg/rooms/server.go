@@ -118,19 +118,25 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		err = peer.Join(join.Room)
+		if err != nil && (err != sfu.ErrTransportExists && err != sfu.ErrOfferIgnored) {
+			_ = conn.WriteError(in.Id, pb.SignalReply_CLOSED)
+			return
+		}
+
 		description := webrtc.SessionDescription{
 			Type: webrtc.NewSDPType(strings.ToLower(join.Description.Type)),
 			SDP:  join.Description.Sdp,
 		}
 
-		answer, err := peer.Join(join.Room, description)
-		if err != nil && (err != sfu.ErrTransportExists && err != sfu.ErrOfferIgnored) {
-			log.Printf("join err: %v", err)
+		answer, err := peer.Answer(description)
+		if err != nil {
+			_ = conn.WriteError(in.Id, pb.SignalReply_CLOSED)
 			return
 		}
 
 		if answer == nil {
-			log.Printf("answer is nil")
+			_ = conn.WriteError(in.Id, pb.SignalReply_CLOSED)
 			return
 		}
 
@@ -185,19 +191,25 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
+		err = peer.Join(id)
+		if err != nil && (err != sfu.ErrTransportExists && err != sfu.ErrOfferIgnored) {
+			_ = conn.WriteError(in.Id, pb.SignalReply_CLOSED)
+			return
+		}
+
 		description := webrtc.SessionDescription{
 			Type: webrtc.NewSDPType(strings.ToLower(create.Description.Type)),
 			SDP:  create.Description.Sdp,
 		}
 
-		answer, err := peer.Join(id, description)
-		if err != nil && (err != sfu.ErrTransportExists && err != sfu.ErrOfferIgnored) {
-			log.Printf("create err: %v", err)
+		answer, err := peer.Answer(description)
+		if err != nil {
+			_ = conn.WriteError(in.Id, pb.SignalReply_CLOSED)
 			return
 		}
 
 		if answer == nil {
-			log.Printf("answer is nil")
+			_ = conn.WriteError(in.Id, pb.SignalReply_CLOSED)
 			return
 		}
 

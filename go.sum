@@ -19,6 +19,8 @@ github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible/go
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/Shopify/sarama v1.19.0/go.mod h1:FVkBWblsNy7DGZRfXLU0O9RCGt5g3g3yEuWXgklEdEo=
 github.com/Shopify/toxiproxy v2.1.4+incompatible/go.mod h1:OXgGpZ6Cli1/URJOF1DMxUHB2q5Ap20/P/eIdh4G0pI=
+github.com/SoapboxSocial/ion-sfu v1.8.2-0.20210209221250-9e55d85873bf h1:9nVs8GwkA5DeXJz+e9P/nR5Z8aooLEhz7mcDalCtdRM=
+github.com/SoapboxSocial/ion-sfu v1.8.2-0.20210209221250-9e55d85873bf/go.mod h1:MKDh4JSLpBA/hFeYAYALb6nYpe6Ruknd3pmxPMbdpM8=
 github.com/Timothylock/go-signin-with-apple v0.0.0-20210131195746-828dfdd59ab1 h1:ikId4o21ZtP6qh2El/2EBxbQsFnl6f8/TlBsyxVMR4I=
 github.com/Timothylock/go-signin-with-apple v0.0.0-20210131195746-828dfdd59ab1/go.mod h1:fz2au0tz0plvT851IG2WJEfRMByDEh+6occORo9jhCY=
 github.com/VividCortex/gohistogram v1.0.0/go.mod h1:Pf5mBqqDxYaXu3hDrrU+w6nw50o/4+TcAqDqk/vUH7g=

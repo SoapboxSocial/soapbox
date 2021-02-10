@@ -46,7 +46,7 @@ func main() {
 }
 
 func sendNotification(event *pubsub.Event) {
-	time.Sleep(3 * time.Minute)
+	time.Sleep(1 * time.Minute)
 
 	id, err := event.GetInt("id")
 	if err != nil {

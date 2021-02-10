@@ -25,6 +25,12 @@ type RedisConf struct {
 	Database int    `mapstructure:"database"`
 }
 
+// AddrConf describes a default configuration for host addresses.
+type AddrConf struct {
+	Host string `mapstructure:"host"`
+	Port int    `mapstructure:"port"`
+}
+
 // Load opens and parses a configuration file.
 func Load(file string, conf interface{}) error {
 	_, err := os.Stat(file)

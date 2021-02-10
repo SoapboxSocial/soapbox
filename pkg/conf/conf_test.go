@@ -8,9 +8,9 @@ import (
 )
 
 func TestLoad(t *testing.T) {
-	var conftests = []struct{
-		in string
-		err bool
+	var conftests = []struct {
+		in   string
+		err  bool
 		conf *conf.RedisConf
 	}{
 		{
@@ -18,9 +18,9 @@ func TestLoad(t *testing.T) {
 			false,
 			&conf.RedisConf{
 				Database: 12,
-				Port: 1234,
+				Port:     1234,
 				Password: "test",
-				Host: "test",
+				Host:     "test",
 			},
 		},
 		{
@@ -48,7 +48,6 @@ func TestLoad(t *testing.T) {
 					return
 				}
 			}
-
 
 			if !reflect.DeepEqual(c, tt.conf) {
 				t.Fatalf("config %v does not match %v", c, tt.conf)

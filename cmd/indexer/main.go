@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"flag"
@@ -20,6 +19,7 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/conf"
 	"github.com/soapboxsocial/soapbox/pkg/groups"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
+	"github.com/soapboxsocial/soapbox/pkg/sql"
 
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
@@ -58,16 +58,9 @@ func main() {
 		DB:       config.Redis.Database, // use default DB
 	})
 
-	db, err := sql.Open(
-		"postgres",
-		fmt.Sprintf(
-			"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
-			config.DB.Host, config.DB.Port, config.DB.User, config.DB.Password, config.DB.Database, config.DB.SSL,
-		),
-	)
-
+	db, err := sql.Open(config.DB)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to open db: %s", err)
 	}
 
 	client, err = elasticsearch.NewDefaultClient()

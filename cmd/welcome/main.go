@@ -10,12 +10,18 @@ import (
 	"github.com/go-redis/redis/v8"
 	"google.golang.org/grpc"
 
+	"github.com/soapboxsocial/soapbox/pkg/conf"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 )
 
 var queue *pubsub.Queue
 var client pb.RoomServiceClient
+
+type Conf struct {
+	Redis conf.RedisConf    `mapstructure:"redis"`
+	Rooms    conf.AddrConf `mapstructure:"rooms"`
+}
 
 func main() {
 	rdb := redis.NewClient(&redis.Options{

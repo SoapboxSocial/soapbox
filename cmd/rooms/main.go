@@ -30,9 +30,8 @@ type Conf struct {
 	SFU   sfu.Config        `mapstructure:"sfu"`
 	Redis conf.RedisConf    `mapstructure:"redis"`
 	DB    conf.PostgresConf `mapstructure:"db"`
-	GRPC conf.AddrConf `mapstructure:"grpc"`
-	API conf.AddrConf     `mapstructure:"api"`
-
+	GRPC  conf.AddrConf     `mapstructure:"grpc"`
+	API   conf.AddrConf     `mapstructure:"api"`
 }
 
 func parse() (*Conf, error) {

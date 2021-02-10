@@ -404,7 +404,7 @@ func onWelcomeRoom(event *pubsub.Event) ([]int, *notifications.PushNotification,
 		return nil, nil, err
 	}
 
-	staticTargets := []int{1, 75, 962, 13} // @TODO - currently limtied to: Dean, Jeff, Mike and Ozan.
+	staticTargets := []int{1, 75, 962, 13, 6}
 
 	notification := notifications.NewWelcomeRoomNotification(displayName, room, creator)
 	return staticTargets, notification, nil

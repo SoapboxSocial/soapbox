@@ -54,8 +54,8 @@ func main() {
 
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%d", config.Redis.Host, config.Redis.Port),
-		Password: config.Redis.Password, // no password set
-		DB:       config.Redis.Database, // use default DB
+		Password: config.Redis.Password,
+		DB:       config.Redis.Database,
 	})
 
 	db, err := sql.Open(config.DB)

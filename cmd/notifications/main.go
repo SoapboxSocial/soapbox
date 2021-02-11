@@ -1,23 +1,24 @@
 package main
 
 import (
-	"database/sql"
 	"errors"
+	"flag"
 	"log"
 	"time"
 
-	"github.com/go-redis/redis/v8"
-	_ "github.com/lib/pq"
 	"github.com/sideshow/apns2"
 	"github.com/sideshow/apns2/token"
 
+	"github.com/soapboxsocial/soapbox/pkg/conf"
 	"github.com/soapboxsocial/soapbox/pkg/devices"
 	"github.com/soapboxsocial/soapbox/pkg/followers"
 	"github.com/soapboxsocial/soapbox/pkg/groups"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/notifications/limiter"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
+	"github.com/soapboxsocial/soapbox/pkg/redis"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
+	"github.com/soapboxsocial/soapbox/pkg/sql"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
@@ -27,28 +28,49 @@ var (
 	errRoomPrivate = errors.New("room is private")
 )
 
-var devicesBackend *devices.Backend
-var userBackend *users.UserBackend
-var followersBackend *followers.FollowersBackend
-var groupsBackend *groups.Backend
-var service *notifications.Service
-var notificationLimiter *limiter.Limiter
-var notificationStorage *notifications.Storage
+var (
+	devicesBackend      *devices.Backend
+	userBackend         *users.UserBackend
+	followersBackend    *followers.FollowersBackend
+	groupsBackend       *groups.Backend
+	service             *notifications.Service
+	notificationLimiter *limiter.Limiter
+	notificationStorage *notifications.Storage
+)
 
 type handlerFunc func(*pubsub.Event) ([]int, *notifications.PushNotification, error)
 
-func main() {
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
+type Conf struct {
+	APNS  conf.AppleConf    `mapstructure:"apns"`
+	Redis conf.RedisConf    `mapstructure:"redis"`
+	DB    conf.PostgresConf `mapstructure:"db"`
+}
 
+func parse() (*Conf, error) {
+	var file string
+	flag.StringVar(&file, "c", "config.toml", "config file")
+
+	config := &Conf{}
+	err := conf.Load(file, config)
+	if err != nil {
+		return nil, err
+	}
+
+	return config, nil
+}
+
+func main() {
+	config, err := parse()
+	if err != nil {
+		log.Fatal("failed to parse config")
+	}
+
+	rdb := redis.NewRedis(config.Redis)
 	queue := pubsub.NewQueue(rdb)
 
-	db, err := sql.Open("postgres", "host=127.0.0.1 port=5432 user=voicely password=voicely dbname=voicely sslmode=disable")
+	db, err := sql.Open(config.DB)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to open db: %s", err)
 	}
 
 	devicesBackend = devices.NewBackend(db)
@@ -59,7 +81,7 @@ func main() {
 	notificationStorage = notifications.NewStorage(rdb)
 	groupsBackend = groups.NewBackend(db)
 
-	authKey, err := token.AuthKeyFromFile("/conf/authkey.p8")
+	authKey, err := token.AuthKeyFromFile(config.APNS.Path)
 	if err != nil {
 		panic(err)
 	}
@@ -68,11 +90,11 @@ func main() {
 
 	client := apns2.NewTokenClient(&token.Token{
 		AuthKey: authKey,
-		KeyID:   "9U8K3MKG2K", // @todo these should be in config files
-		TeamID:  "Z9LC5GZ33U",
+		KeyID:   config.APNS.KeyID,
+		TeamID:  config.APNS.TeamID,
 	}).Production()
 
-	service = notifications.NewService("app.social.soapbox", client)
+	service = notifications.NewService(config.APNS.Bundle, client)
 
 	events := queue.Subscribe(pubsub.RoomTopic, pubsub.UserTopic, pubsub.GroupTopic)
 
@@ -121,6 +143,8 @@ func getHandler(eventType pubsub.EventType) handlerFunc {
 		return onGroupInvite
 	case pubsub.EventTypeNewGroupRoom:
 		return onGroupRoomCreation
+	case pubsub.EventTypeWelcomeRoom:
+		return onWelcomeRoom
 	default:
 		return nil
 	}
@@ -170,6 +194,13 @@ func getNotificationForStore(notification *notifications.PushNotification) *noti
 			From:      notification.Arguments["from"].(int),
 			Category:  notification.Category,
 			Arguments: map[string]interface{}{"group": notification.Arguments["id"].(int)},
+		}
+	case notifications.WELCOME_ROOM:
+		return &notifications.Notification{
+			Timestamp: time.Now().Unix(),
+			From:      notification.Arguments["from"].(int),
+			Category:  notification.Category,
+			Arguments: map[string]interface{}{"room": notification.Arguments["id"]},
 		}
 	default:
 		return nil
@@ -380,6 +411,25 @@ func onRoomInvite(event *pubsub.Event) ([]int, *notifications.PushNotification, 
 	}()
 
 	return []int{int(targetID)}, notification, nil
+}
+
+func onWelcomeRoom(event *pubsub.Event) ([]int, *notifications.PushNotification, error) {
+	creator, err := event.GetInt("id")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	room := event.Params["room"].(string)
+
+	displayName, err := getDisplayName(creator)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	staticTargets := []int{1, 75, 962, 13, 6}
+
+	notification := notifications.NewWelcomeRoomNotification(displayName, room, creator)
+	return staticTargets, notification, nil
 }
 
 func getDisplayName(id int) (string, error) {

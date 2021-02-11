@@ -1,0 +1,8 @@
+[redis]
+host = "localhost"
+port = 6379
+database = 0
+
+[mixpanel]
+token = "d124ce8f1516eb7baa7980f4de68ded5"
+url = "https://api-eu.mixpanel.com"

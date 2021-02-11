@@ -1,28 +1,54 @@
 package main
 
 import (
-	"database/sql"
+	"flag"
+	"fmt"
 	"log"
 	"net/http"
 
-	_ "github.com/lib/pq"
 	"google.golang.org/grpc"
 
+	"github.com/soapboxsocial/soapbox/pkg/conf"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/metadata"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
+	"github.com/soapboxsocial/soapbox/pkg/sql"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
-func main() {
-	db, err := sql.Open("postgres", "host=127.0.0.1 port=5432 user=voicely password=voicely dbname=voicely sslmode=disable")
+type Conf struct {
+	DB     conf.PostgresConf `mapstructure:"db"`
+	GRPC   conf.AddrConf     `mapstructure:"grpc"`
+	Listen conf.AddrConf     `mapstructure:"listen"`
+}
+
+func parse() (*Conf, error) {
+	var file string
+	flag.StringVar(&file, "c", "config.toml", "config file")
+
+	config := &Conf{}
+	err := conf.Load(file, config)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
+	}
+
+	return config, nil
+}
+
+func main() {
+	config, err := parse()
+	if err != nil {
+		log.Fatal("failed to parse config")
+	}
+
+	db, err := sql.Open(config.DB)
+	if err != nil {
+		log.Fatalf("failed to open db: %s", err)
 	}
 
 	usersBackend := users.NewUserBackend(db)
 
-	conn, err := grpc.Dial("127.0.0.1:50052", grpc.WithInsecure())
+	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", config.GRPC.Host, config.GRPC.Port), grpc.WithInsecure())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -34,5 +60,5 @@ func main() {
 
 	router := endpoint.Router()
 
-	log.Print(http.ListenAndServe(":8081", httputil.CORS(router)))
+	log.Print(http.ListenAndServe(fmt.Sprintf(":%d", config.Listen.Port), httputil.CORS(router)))
 }

@@ -29,6 +29,7 @@ sudo ln -s /vagrant/conf/supervisord/notifications.conf /etc/supervisor/conf.d/n
 sudo ln -s /vagrant/conf/supervisord/indexer.conf /etc/supervisor/conf.d/indexer.conf
 sudo ln -s /vagrant/conf/supervisord/rooms.conf /etc/supervisor/conf.d/rooms.conf
 sudo ln -s /vagrant/conf/supervisord/metadata.conf /etc/supervisor/conf.d/metadata.conf
+sudo ln -s /vagrant/conf/supervisord/welcome.conf /etc/supervisor/conf.d/welcome.conf
 
 echo 'export GOPATH="/home/vagrant/go"' >> ~/.bashrc
 echo 'export PATH="$PATH:${GOPATH//://bin:}/bin"' >> ~/.bashrc
@@ -57,6 +58,8 @@ sudo ln -s /vagrant/conf/nginx.conf /etc/nginx/nginx.conf
 
 mkdir -p $GOPATH/src/github.com/soapboxsocial/
 sudo ln -s /var/www/ $GOPATH/src/github.com/soapboxsocial/soapbox
+
+sudo ln -s $GOPATH/src/github.com/soapboxsocial/soapbox/conf/services/ /conf/services
 
 sudo mkdir -p /cdn/images/groups/
 sudo chown nginx:nginx -R /cdn/images

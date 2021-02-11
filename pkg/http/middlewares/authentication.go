@@ -1,26 +1,11 @@
-package middleware
+package middlewares
 
 import (
-	"context"
 	"net/http"
 
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
 )
-
-type key string
-
-const userID key = "id"
-
-func GetUserIDFromContext(ctx context.Context) (int, bool) {
-	val := ctx.Value(userID)
-	id, ok := val.(int)
-	return id, ok
-}
-
-func WithUserID(ctx context.Context, id int) context.Context {
-	return context.WithValue(ctx, userID, id)
-}
 
 type authenticationHandler struct {
 	sm *sessions.SessionManager
@@ -46,7 +31,7 @@ func (h authenticationHandler) Middleware(next http.Handler) http.Handler {
 			return
 		}
 
-		r := req.WithContext(WithUserID(req.Context(), id))
+		r := req.WithContext(httputil.WithUserID(req.Context(), id))
 
 		next.ServeHTTP(w, r)
 	})

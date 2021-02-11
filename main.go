@@ -14,7 +14,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sendgrid/sendgrid-go"
 
-	"github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	usersapi "github.com/soapboxsocial/soapbox/pkg/api/users"
 	"github.com/soapboxsocial/soapbox/pkg/apple"
 	"github.com/soapboxsocial/soapbox/pkg/blocks"
@@ -23,6 +22,7 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/followers"
 	"github.com/soapboxsocial/soapbox/pkg/groups"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
+	"github.com/soapboxsocial/soapbox/pkg/http/middlewares"
 	"github.com/soapboxsocial/soapbox/pkg/images"
 	"github.com/soapboxsocial/soapbox/pkg/linkedaccounts"
 	"github.com/soapboxsocial/soapbox/pkg/login"
@@ -97,7 +97,7 @@ func main() {
 
 	devicesBackend := devices.NewBackend(db)
 
-	amw := middleware.NewAuthenticationMiddleware(s)
+	amw := middlewares.NewAuthenticationMiddleware(s)
 
 	r := mux.NewRouter()
 

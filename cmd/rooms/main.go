@@ -11,11 +11,11 @@ import (
 	"github.com/pion/ion-sfu/pkg/sfu"
 	"google.golang.org/grpc"
 
-	"github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	"github.com/soapboxsocial/soapbox/pkg/blocks"
 	"github.com/soapboxsocial/soapbox/pkg/conf"
 	"github.com/soapboxsocial/soapbox/pkg/groups"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
+	"github.com/soapboxsocial/soapbox/pkg/http/middlewares"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/redis"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
@@ -103,7 +103,7 @@ func main() {
 	endpoint := rooms.NewEndpoint(repository, server)
 	router := endpoint.Router()
 
-	amw := middleware.NewAuthenticationMiddleware(sm)
+	amw := middlewares.NewAuthenticationMiddleware(sm)
 	router.Use(amw.Middleware)
 
 	err = http.ListenAndServe(fmt.Sprintf(":%d", config.API.Port), httputil.CORS(router))

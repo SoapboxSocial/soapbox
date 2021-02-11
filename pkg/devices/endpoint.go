@@ -5,7 +5,6 @@ import (
 
 	"github.com/gorilla/mux"
 
-	auth "github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 )
 
@@ -40,7 +39,7 @@ func (d *Endpoint) add(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, ok := auth.GetUserIDFromContext(r.Context())
+	userID, ok := httputil.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 		return

@@ -9,7 +9,6 @@ import (
 
 	"github.com/gorilla/mux"
 
-	auth "github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 )
@@ -47,7 +46,7 @@ func (e *Endpoint) UploadStory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, ok := auth.GetUserIDFromContext(r.Context())
+	userID, ok := httputil.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 		return
@@ -89,7 +88,7 @@ func (e *Endpoint) DeleteStory(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	id := params["id"]
-	userID, ok := auth.GetUserIDFromContext(r.Context())
+	userID, ok := httputil.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 		return
@@ -141,7 +140,7 @@ func (e *Endpoint) Reacted(w http.ResponseWriter, r *http.Request) {
 
 	id := params["id"]
 
-	userID, ok := auth.GetUserIDFromContext(r.Context())
+	userID, ok := httputil.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 		return

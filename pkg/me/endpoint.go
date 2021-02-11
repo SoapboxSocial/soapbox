@@ -10,7 +10,6 @@ import (
 	"github.com/dghubble/oauth1"
 	"github.com/gorilla/mux"
 
-	auth "github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	"github.com/soapboxsocial/soapbox/pkg/groups"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/linkedaccounts"
@@ -84,7 +83,7 @@ func (m *Endpoint) Router() *mux.Router {
 }
 
 func (m *Endpoint) me(w http.ResponseWriter, r *http.Request) {
-	id, ok := auth.GetUserIDFromContext(r.Context())
+	id, ok := httputil.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 		return
@@ -113,7 +112,7 @@ func (m *Endpoint) me(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Endpoint) notifications(w http.ResponseWriter, r *http.Request) {
-	id, ok := auth.GetUserIDFromContext(r.Context())
+	id, ok := httputil.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 		return
@@ -176,7 +175,7 @@ func (m *Endpoint) addTwitter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, ok := auth.GetUserIDFromContext(r.Context())
+	id, ok := httputil.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "unauthorized")
 		return
@@ -214,7 +213,7 @@ func (m *Endpoint) addTwitter(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Endpoint) removeTwitter(w http.ResponseWriter, r *http.Request) {
-	id, ok := auth.GetUserIDFromContext(r.Context())
+	id, ok := httputil.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "unauthorized")
 		return
@@ -230,7 +229,7 @@ func (m *Endpoint) removeTwitter(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Endpoint) feed(w http.ResponseWriter, r *http.Request) {
-	id, ok := auth.GetUserIDFromContext(r.Context())
+	id, ok := httputil.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "unauthorized")
 		return

@@ -4,6 +4,8 @@ package main
 
 import (
 	"context"
+	"flag"
+	"fmt"
 	"log"
 	"time"
 
@@ -19,21 +21,39 @@ var queue *pubsub.Queue
 var client pb.RoomServiceClient
 
 type Conf struct {
-	Redis conf.RedisConf    `mapstructure:"redis"`
-	Rooms    conf.AddrConf `mapstructure:"rooms"`
+	Redis conf.RedisConf `mapstructure:"redis"`
+	Rooms conf.AddrConf  `mapstructure:"rooms"`
+}
+
+func parse() (*Conf, error) {
+	var file string
+	flag.StringVar(&file, "c", "config.toml", "config file")
+
+	config := &Conf{}
+	err := conf.Load(file, config)
+	if err != nil {
+		return nil, err
+	}
+
+	return config, nil
 }
 
 func main() {
+	config, err := parse()
+	if err != nil {
+		log.Fatal("failed to parse config")
+	}
+
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
+		Addr:     fmt.Sprintf("%s:%d", config.Redis.Host, config.Redis.Port),
+		Password: config.Redis.Password,
+		DB:       config.Redis.Database,
 	})
 
 	queue = pubsub.NewQueue(rdb)
 	events := queue.Subscribe(pubsub.UserTopic)
 
-	conn, err := grpc.Dial("127.0.0.1:50052", grpc.WithInsecure())
+	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", config.Rooms.Host, config.Rooms.Port), grpc.WithInsecure())
 	if err != nil {
 		log.Fatal(err)
 	}

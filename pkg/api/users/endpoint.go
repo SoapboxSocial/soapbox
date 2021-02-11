@@ -12,7 +12,6 @@ import (
 
 	"github.com/soapboxsocial/soapbox/pkg/followers"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
-	"github.com/soapboxsocial/soapbox/pkg/http/middlewares"
 	"github.com/soapboxsocial/soapbox/pkg/images"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"

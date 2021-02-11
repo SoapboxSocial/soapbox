@@ -1,23 +1,24 @@
 package main
 
 import (
-	"database/sql"
 	"errors"
+	"flag"
 	"log"
 	"time"
 
-	"github.com/go-redis/redis/v8"
-	_ "github.com/lib/pq"
 	"github.com/sideshow/apns2"
 	"github.com/sideshow/apns2/token"
 
+	"github.com/soapboxsocial/soapbox/pkg/conf"
 	"github.com/soapboxsocial/soapbox/pkg/devices"
 	"github.com/soapboxsocial/soapbox/pkg/followers"
 	"github.com/soapboxsocial/soapbox/pkg/groups"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/notifications/limiter"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
+	"github.com/soapboxsocial/soapbox/pkg/redis"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
+	"github.com/soapboxsocial/soapbox/pkg/sql"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
@@ -37,18 +38,42 @@ var notificationStorage *notifications.Storage
 
 type handlerFunc func(*pubsub.Event) ([]int, *notifications.PushNotification, error)
 
-func main() {
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
+type Conf struct {
+	APNS struct{
+		Path string `mapstructure:"path"`
+		KeyID string `mapstructure:"key"`
+		TeamID string `mapstructure:"team"`
+		Bundle string `mapstructure:"bundle"`
+	} `mapstructure:"apns"`
+	Redis conf.RedisConf    `mapstructure:"redis"`
+	DB    conf.PostgresConf `mapstructure:"db"`
+}
 
+func parse() (*Conf, error) {
+	var file string
+	flag.StringVar(&file, "c", "config.toml", "config file")
+
+	config := &Conf{}
+	err := conf.Load(file, config)
+	if err != nil {
+		return nil, err
+	}
+
+	return config, nil
+}
+
+func main() {
+	config, err := parse()
+	if err != nil {
+		log.Fatal("failed to parse config")
+	}
+
+	rdb := redis.NewRedis(config.Redis)
 	queue := pubsub.NewQueue(rdb)
 
-	db, err := sql.Open("postgres", "host=127.0.0.1 port=5432 user=voicely password=voicely dbname=voicely sslmode=disable")
+	db, err := sql.Open(config.DB)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to open db: %s", err)
 	}
 
 	devicesBackend = devices.NewBackend(db)
@@ -59,7 +84,7 @@ func main() {
 	notificationStorage = notifications.NewStorage(rdb)
 	groupsBackend = groups.NewBackend(db)
 
-	authKey, err := token.AuthKeyFromFile("/conf/authkey.p8")
+	authKey, err := token.AuthKeyFromFile(config.APNS.Path)
 	if err != nil {
 		panic(err)
 	}
@@ -68,11 +93,11 @@ func main() {
 
 	client := apns2.NewTokenClient(&token.Token{
 		AuthKey: authKey,
-		KeyID:   "9U8K3MKG2K", // @todo these should be in config files
-		TeamID:  "Z9LC5GZ33U",
+		KeyID:   config.APNS.KeyID,
+		TeamID:  config.APNS.TeamID,
 	}).Production()
 
-	service = notifications.NewService("app.social.soapbox", client)
+	service = notifications.NewService(config.APNS.Bundle, client)
 
 	events := queue.Subscribe(pubsub.RoomTopic, pubsub.UserTopic, pubsub.GroupTopic)
 

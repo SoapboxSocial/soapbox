@@ -21,7 +21,7 @@ require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/lib/pq v1.9.0
 	github.com/pion/dtls/v2 v2.0.5 // indirect
-	github.com/pion/ion-log v1.0.0
+	github.com/pion/ion-log v1.0.0 // indirect
 	github.com/pion/ion-sfu v1.8.3
 	github.com/pion/webrtc/v3 v3.0.5
 	github.com/pkg/errors v0.9.1

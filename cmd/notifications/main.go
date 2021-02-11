@@ -28,20 +28,22 @@ var (
 	errRoomPrivate = errors.New("room is private")
 )
 
-var devicesBackend *devices.Backend
-var userBackend *users.UserBackend
-var followersBackend *followers.FollowersBackend
-var groupsBackend *groups.Backend
-var service *notifications.Service
-var notificationLimiter *limiter.Limiter
-var notificationStorage *notifications.Storage
+var (
+	devicesBackend      *devices.Backend
+	userBackend         *users.UserBackend
+	followersBackend    *followers.FollowersBackend
+	groupsBackend       *groups.Backend
+	service             *notifications.Service
+	notificationLimiter *limiter.Limiter
+	notificationStorage *notifications.Storage
+)
 
 type handlerFunc func(*pubsub.Event) ([]int, *notifications.PushNotification, error)
 
 type Conf struct {
-	APNS struct{
-		Path string `mapstructure:"path"`
-		KeyID string `mapstructure:"key"`
+	APNS struct {
+		Path   string `mapstructure:"path"`
+		KeyID  string `mapstructure:"key"`
 		TeamID string `mapstructure:"team"`
 		Bundle string `mapstructure:"bundle"`
 	} `mapstructure:"apns"`

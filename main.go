@@ -60,6 +60,7 @@ type Conf struct {
 func parse() (*Conf, error) {
 	var file string
 	flag.StringVar(&file, "c", "config.toml", "config file")
+	flag.Parse()
 
 	config := &Conf{}
 	err := conf.Load(file, config)
@@ -73,7 +74,7 @@ func parse() (*Conf, error) {
 func main() {
 	config, err := parse()
 	if err != nil {
-		log.Fatal("failed to parse config")
+		log.Fatalf("failed to parse config err: %v", err)
 	}
 
 	rdb := redis.NewRedis(config.Redis)

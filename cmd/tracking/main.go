@@ -24,6 +24,7 @@ type Conf struct {
 func parse() (*Conf, error) {
 	var file string
 	flag.StringVar(&file, "c", "config.toml", "config file")
+	flag.Parse()
 
 	config := &Conf{}
 	err := conf.Load(file, config)

@@ -19,7 +19,7 @@ func NewSessionManager(db *redis.Client) *SessionManager {
 }
 
 func (sm *SessionManager) NewSession(id string, user users.User, expiration time.Duration) error {
-	return sm.db.Set(context.Background(), generateSessionKey(id), user.ID, expiration).Err() // @todo we may not need more
+	return sm.db.Set(context.Background(), generateSessionKey(id), user.ID, expiration).Err()
 }
 
 func (sm *SessionManager) GetUserIDForSession(id string) (int, error) {

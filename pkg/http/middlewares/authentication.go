@@ -7,17 +7,17 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
 )
 
-type authenticationHandler struct {
+type AuthenticationMiddleware struct {
 	sm *sessions.SessionManager
 }
 
-func NewAuthenticationMiddleware(sm *sessions.SessionManager) *authenticationHandler {
-	return &authenticationHandler{
+func NewAuthenticationMiddleware(sm *sessions.SessionManager) *AuthenticationMiddleware {
+	return &AuthenticationMiddleware{
 		sm: sm,
 	}
 }
 
-func (h authenticationHandler) Middleware(next http.Handler) http.Handler {
+func (h AuthenticationMiddleware) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		token := req.Header.Get("Authorization")
 		if token == "" {

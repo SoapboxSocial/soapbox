@@ -9,11 +9,11 @@ import (
 	"log"
 	"time"
 
-	"github.com/go-redis/redis/v8"
 	"google.golang.org/grpc"
 
 	"github.com/soapboxsocial/soapbox/pkg/conf"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
+	"github.com/soapboxsocial/soapbox/pkg/redis"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 )
 
@@ -44,11 +44,7 @@ func main() {
 		log.Fatal("failed to parse config")
 	}
 
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%d", config.Redis.Host, config.Redis.Port),
-		Password: config.Redis.Password,
-		DB:       config.Redis.Database,
-	})
+	rdb := redis.NewRedis(config.Redis)
 
 	queue = pubsub.NewQueue(rdb)
 	events := queue.Subscribe(pubsub.UserTopic)

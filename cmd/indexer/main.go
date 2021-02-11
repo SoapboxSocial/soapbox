@@ -14,11 +14,11 @@ import (
 
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
-	"github.com/go-redis/redis/v8"
 
 	"github.com/soapboxsocial/soapbox/pkg/conf"
 	"github.com/soapboxsocial/soapbox/pkg/groups"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
+	"github.com/soapboxsocial/soapbox/pkg/redis"
 	"github.com/soapboxsocial/soapbox/pkg/sql"
 
 	"github.com/soapboxsocial/soapbox/pkg/users"
@@ -52,11 +52,7 @@ func main() {
 		log.Fatal("failed to parse config")
 	}
 
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%d", config.Redis.Host, config.Redis.Port),
-		Password: config.Redis.Password,
-		DB:       config.Redis.Database,
-	})
+	rdb := redis.NewRedis(config.Redis)
 
 	db, err := sql.Open(config.DB)
 	if err != nil {

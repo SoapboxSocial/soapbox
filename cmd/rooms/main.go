@@ -7,7 +7,6 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/go-redis/redis/v8"
 	"github.com/pion/ion-sfu/pkg/middlewares/datachannel"
 	"github.com/pion/ion-sfu/pkg/sfu"
 	"google.golang.org/grpc"
@@ -18,6 +17,7 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/groups"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
+	"github.com/soapboxsocial/soapbox/pkg/redis"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
 	roomGRPC "github.com/soapboxsocial/soapbox/pkg/rooms/grpc"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
@@ -53,11 +53,7 @@ func main() {
 		log.Fatal("failed to parse config")
 	}
 
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%d", config.Redis.Host, config.Redis.Port),
-		Password: config.Redis.Password,
-		DB:       config.Redis.Database,
-	})
+	rdb := redis.NewRedis(config.Redis)
 
 	db, err := sql.Open(config.DB)
 	if err != nil {

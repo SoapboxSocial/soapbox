@@ -21,7 +21,7 @@ require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/lib/pq v1.9.0
 	github.com/pion/dtls/v2 v2.0.5 // indirect
-	github.com/pion/ion-log v1.0.0
+	github.com/pion/ion-log v1.0.0 // indirect
 	github.com/pion/ion-sfu v1.8.3
 	github.com/pion/webrtc/v3 v3.0.5
 	github.com/pkg/errors v0.9.1
@@ -30,6 +30,7 @@ require (
 	github.com/sendgrid/rest v2.6.2+incompatible // indirect
 	github.com/sendgrid/sendgrid-go v3.7.2+incompatible
 	github.com/sideshow/apns2 v0.20.0
+	github.com/spf13/viper v1.7.1
 	github.com/tideland/golib v4.24.2+incompatible // indirect
 	github.com/tideland/gorest v2.15.5+incompatible // indirect
 	github.com/yuin/gopher-lua v0.0.0-20200816102855-ee81675732da // indirect

@@ -1,24 +1,50 @@
 package main
 
 import (
-	"database/sql"
+	"flag"
 	"log"
 	"time"
 
 	_ "github.com/lib/pq"
 
+	"github.com/soapboxsocial/soapbox/pkg/conf"
+	"github.com/soapboxsocial/soapbox/pkg/sql"
 	"github.com/soapboxsocial/soapbox/pkg/stories"
 )
 
-func main() {
+type Conf struct {
+	Data struct {
+		Path string `mapstructure:"path"`
+	} `mapstructure:"data"`
+	DB conf.PostgresConf `mapstructure:"db"`
+}
 
-	db, err := sql.Open("postgres", "host=127.0.0.1 port=5432 user=voicely password=voicely dbname=voicely sslmode=disable")
+func parse() (*Conf, error) {
+	var file string
+	flag.StringVar(&file, "c", "config.toml", "config file")
+
+	config := &Conf{}
+	err := conf.Load(file, config)
 	if err != nil {
-		panic(err)
+		return nil, err
+	}
+
+	return config, nil
+}
+
+func main() {
+	config, err := parse()
+	if err != nil {
+		log.Fatal("failed to parse config")
+	}
+
+	db, err := sql.Open(config.DB)
+	if err != nil {
+		log.Fatalf("failed to open db: %s", err)
 	}
 
 	backend := stories.NewBackend(db)
-	files := stories.NewFileBackend("/cdn/stories")
+	files := stories.NewFileBackend(config.Data.Path)
 
 	now := time.Now().Unix()
 

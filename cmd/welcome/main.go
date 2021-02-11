@@ -4,30 +4,52 @@ package main
 
 import (
 	"context"
+	"flag"
+	"fmt"
 	"log"
 	"time"
 
-	"github.com/go-redis/redis/v8"
 	"google.golang.org/grpc"
 
+	"github.com/soapboxsocial/soapbox/pkg/conf"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
+	"github.com/soapboxsocial/soapbox/pkg/redis"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 )
 
 var queue *pubsub.Queue
 var client pb.RoomServiceClient
 
+type Conf struct {
+	Redis conf.RedisConf `mapstructure:"redis"`
+	Rooms conf.AddrConf  `mapstructure:"rooms"`
+}
+
+func parse() (*Conf, error) {
+	var file string
+	flag.StringVar(&file, "c", "config.toml", "config file")
+
+	config := &Conf{}
+	err := conf.Load(file, config)
+	if err != nil {
+		return nil, err
+	}
+
+	return config, nil
+}
+
 func main() {
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
+	config, err := parse()
+	if err != nil {
+		log.Fatal("failed to parse config")
+	}
+
+	rdb := redis.NewRedis(config.Redis)
 
 	queue = pubsub.NewQueue(rdb)
 	events := queue.Subscribe(pubsub.UserTopic)
 
-	conn, err := grpc.Dial("127.0.0.1:50052", grpc.WithInsecure())
+	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", config.Rooms.Host, config.Rooms.Port), grpc.WithInsecure())
 	if err != nil {
 		log.Fatal(err)
 	}

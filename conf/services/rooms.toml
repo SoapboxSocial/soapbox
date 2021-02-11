@@ -1,0 +1,37 @@
+[redis]
+host = "localhost"
+port = 6379
+database = 0
+
+[db]
+host = "127.0.0.1"
+port = 5432
+user = "voicely"
+password = "voicely"
+database = "voicely"
+ssl = "disable"
+
+[grpc]
+host = "127.0.0.1"
+port = 50052
+
+[api]
+port = 8082
+
+[sfu]
+withstats = false
+
+[sfu.webrtc.iceserver]
+urls = [
+    "stun:stun.l.google.com:19302",
+    "stun:stun1.l.google.com:19302",
+    "stun:stun2.l.google.com:19302",
+    "stun:stun3.l.google.com:19302",
+    "stun:stun4.l.google.com:19302",
+]
+
+[sfu.router]
+withstats = false
+audiolevelthreshold = 40
+audiolevelinterval=500
+audiolevelfilter = 20

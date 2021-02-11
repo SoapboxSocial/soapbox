@@ -1,26 +1,50 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"strconv"
 
 	"github.com/dukex/mixpanel"
-	"github.com/go-redis/redis/v8"
 
+	"github.com/soapboxsocial/soapbox/pkg/conf"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
+	"github.com/soapboxsocial/soapbox/pkg/redis"
 	"github.com/soapboxsocial/soapbox/pkg/tracking"
 )
 
+type Conf struct {
+	Mixpanel struct {
+		Token string `mapstructure:"token"`
+		URL   string `mapstructure:"url"`
+	} `mapstructure:"data"`
+	Redis conf.RedisConf `mapstructure:"redis"`
+}
+
+func parse() (*Conf, error) {
+	var file string
+	flag.StringVar(&file, "c", "config.toml", "config file")
+	flag.Parse()
+
+	config := &Conf{}
+	err := conf.Load(file, config)
+	if err != nil {
+		return nil, err
+	}
+
+	return config, nil
+}
+
 func main() {
-	client := mixpanel.New("d124ce8f1516eb7baa7980f4de68ded5", "https://api-eu.mixpanel.com")
+	config, err := parse()
+	if err != nil {
+		log.Fatal("failed to parse config")
+	}
+
+	client := mixpanel.New(config.Mixpanel.Token, config.Mixpanel.URL)
 	tracker := tracking.NewMixpanelTracker(client)
 
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
-
+	rdb := redis.NewRedis(config.Redis)
 	queue := pubsub.NewQueue(rdb)
 
 	events := queue.Subscribe(pubsub.RoomTopic, pubsub.UserTopic, pubsub.GroupTopic, pubsub.StoryTopic)

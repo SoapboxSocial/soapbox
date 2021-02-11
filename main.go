@@ -1,7 +1,8 @@
 package main
 
 import (
-	"database/sql"
+	"flag"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -10,15 +11,14 @@ import (
 	signinwithapple "github.com/Timothylock/go-signin-with-apple/apple"
 	"github.com/dghubble/oauth1"
 	"github.com/elastic/go-elasticsearch/v7"
-	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"
-	_ "github.com/lib/pq"
 	"github.com/sendgrid/sendgrid-go"
 
 	"github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	usersapi "github.com/soapboxsocial/soapbox/pkg/api/users"
 	"github.com/soapboxsocial/soapbox/pkg/apple"
 	"github.com/soapboxsocial/soapbox/pkg/blocks"
+	"github.com/soapboxsocial/soapbox/pkg/conf"
 	"github.com/soapboxsocial/soapbox/pkg/devices"
 	"github.com/soapboxsocial/soapbox/pkg/followers"
 	"github.com/soapboxsocial/soapbox/pkg/groups"
@@ -30,31 +30,60 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/me"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
+	"github.com/soapboxsocial/soapbox/pkg/redis"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
 	"github.com/soapboxsocial/soapbox/pkg/search"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
+	"github.com/soapboxsocial/soapbox/pkg/sql"
 	"github.com/soapboxsocial/soapbox/pkg/stories"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
-// @todo do this in config
-const sendgrid_api = "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"
+type Conf struct {
+	Twitter struct {
+		Key    string `mapstructure:"key"`
+		Secret string `mapstructure:"secret"`
+	} `mapstructure:"twitter"`
+	Sendgrid struct {
+		Key string `mapstructure:"key"`
+	} `mapstructure:"sendgrid"`
+	CDN struct {
+		Images  string `mapstructure:"images"`
+		Stories string `mapstructure:"stories"`
+	} `mapstructure:"cdn"`
+	Apple  conf.AppleConf    `mapstructure:"apple"`
+	Redis  conf.RedisConf    `mapstructure:"redis"`
+	DB     conf.PostgresConf `mapstructure:"db"`
+	Listen conf.AddrConf     `mapstructure:"listen"`
+}
 
-// @TODO: THINK ABOUT CHANGING QUEUES TO REDIS PUBSUB
+func parse() (*Conf, error) {
+	var file string
+	flag.StringVar(&file, "c", "config.toml", "config file")
+	flag.Parse()
 
-func main() {
-	db, err := sql.Open("postgres", "host=127.0.0.1 port=5432 user=voicely password=voicely dbname=voicely sslmode=disable")
+	config := &Conf{}
+	err := conf.Load(file, config)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
+	return config, nil
+}
 
+func main() {
+	config, err := parse()
+	if err != nil {
+		log.Fatalf("failed to parse config err: %v", err)
+	}
+
+	rdb := redis.NewRedis(config.Redis)
 	queue := pubsub.NewQueue(rdb)
+
+	db, err := sql.Open(config.DB)
+	if err != nil {
+		log.Fatalf("failed to open db: %s", err)
+	}
 
 	s := sessions.NewSessionManager(rdb)
 	ub := users.NewUserBackend(db)
@@ -75,21 +104,21 @@ func main() {
 	r.MethodNotAllowedHandler = http.HandlerFunc(httputil.NotAllowedHandler)
 	r.NotFoundHandler = http.HandlerFunc(httputil.NotFoundHandler)
 
-	ib := images.NewImagesBackend("/cdn/images")
-	ms := mail.NewMailService(sendgrid.NewSendClient(sendgrid_api))
+	ib := images.NewImagesBackend(config.CDN.Images)
+	ms := mail.NewMailService(sendgrid.NewSendClient(config.Sendgrid.Key))
 
 	loginState := login.NewStateManager(rdb)
 
-	secret, err := ioutil.ReadFile("/conf/sign-in-key.p8")
+	secret, err := ioutil.ReadFile(config.Apple.Path)
 	if err != nil {
 		panic(err)
 	}
 
 	appleClient, err := apple.NewSignInWithAppleAppValidation(
 		signinwithapple.New(),
-		"Z9LC5GZ33U",
-		"app.social.soapbox",
-		"G9F2GMYU4Y",
+		config.Apple.TeamID,
+		config.Apple.Bundle,
+		config.Apple.KeyID,
 		string(secret),
 	)
 
@@ -116,7 +145,7 @@ func main() {
 	groupsEndpoint := groups.NewEndpoint(groupsBackend, ib, queue)
 
 	storiesBackend := stories.NewBackend(db)
-	storiesEndpoint := stories.NewEndpoint(storiesBackend, stories.NewFileBackend("/cdn/stories"), queue)
+	storiesEndpoint := stories.NewEndpoint(storiesBackend, stories.NewFileBackend(config.CDN.Stories), queue)
 	storiesRouter := storiesEndpoint.Router()
 	storiesRouter.Use(amw.Middleware)
 	mount(r, "/v1/stories", storiesRouter)
@@ -148,8 +177,8 @@ func main() {
 
 	// twitter oauth config
 	oauth := oauth1.NewConfig(
-		"nAzgMi6loUf3cl0hIkkXhZSth",
-		"sFQEQ2cjJZSJgepUMmNyeTxiGggFXA1EKfSYAXpbARTu3CXBQY",
+		config.Twitter.Key,
+		config.Twitter.Secret,
 	)
 
 	pb := linkedaccounts.NewLinkedAccountsBackend(db)
@@ -169,7 +198,7 @@ func main() {
 	searchRouter.Use(amw.Middleware)
 	mount(r, "/v1/search", searchRouter)
 
-	log.Fatal(http.ListenAndServe(":8080", httputil.CORS(r)))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", config.Listen.Port), httputil.CORS(r)))
 }
 
 func mount(r *mux.Router, path string, handler http.Handler) {

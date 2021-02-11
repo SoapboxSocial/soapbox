@@ -1,75 +1,71 @@
 package main
 
 import (
-	"database/sql"
+	"flag"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
 
-	"github.com/go-redis/redis/v8"
-	_ "github.com/lib/pq"
-	iLog "github.com/pion/ion-log"
 	"github.com/pion/ion-sfu/pkg/middlewares/datachannel"
 	"github.com/pion/ion-sfu/pkg/sfu"
 	"google.golang.org/grpc"
 
 	"github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	"github.com/soapboxsocial/soapbox/pkg/blocks"
+	"github.com/soapboxsocial/soapbox/pkg/conf"
 	"github.com/soapboxsocial/soapbox/pkg/groups"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
+	"github.com/soapboxsocial/soapbox/pkg/redis"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
 	roomGRPC "github.com/soapboxsocial/soapbox/pkg/rooms/grpc"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
+	"github.com/soapboxsocial/soapbox/pkg/sql"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
-func main() {
-	config := sfu.Config{
-		WebRTC: sfu.WebRTCConfig{
-			ICEServers: []sfu.ICEServerConfig{
-				{
-					URLs: []string{
-						"stun:stun.l.google.com:19302",
-						"stun:stun1.l.google.com:19302",
-						"stun:stun2.l.google.com:19302",
-						"stun:stun3.l.google.com:19302",
-						"stun:stun4.l.google.com:19302",
-					},
-				},
-			},
-		},
-		Log: iLog.Config{
-			Level: "debug",
-		},
-		Router: sfu.RouterConfig{
-			WithStats:           true,
-			AudioLevelFilter:    20,
-			AudioLevelThreshold: 40,
-			AudioLevelInterval:  1000,
-		},
+type Conf struct {
+	SFU   sfu.Config        `mapstructure:"sfu"`
+	Redis conf.RedisConf    `mapstructure:"redis"`
+	DB    conf.PostgresConf `mapstructure:"db"`
+	GRPC  conf.AddrConf     `mapstructure:"grpc"`
+	API   conf.AddrConf     `mapstructure:"api"`
+}
+
+func parse() (*Conf, error) {
+	var file string
+	flag.StringVar(&file, "c", "config.toml", "config file")
+	flag.Parse()
+
+	config := &Conf{}
+	err := conf.Load(file, config)
+	if err != nil {
+		return nil, err
 	}
 
-	config.SFU.WithStats = true
+	return config, nil
+}
 
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
-
-	db, err := sql.Open("postgres", "host=127.0.0.1 port=5432 user=voicely password=voicely dbname=voicely sslmode=disable")
+func main() {
+	config, err := parse()
 	if err != nil {
-		panic(err)
+		log.Fatal("failed to parse config")
+	}
+
+	rdb := redis.NewRedis(config.Redis)
+
+	db, err := sql.Open(config.DB)
+	if err != nil {
+		log.Fatalf("failed to open db: %s", err)
 	}
 
 	repository := rooms.NewRepository()
 	sm := sessions.NewSessionManager(rdb)
 	ws := rooms.NewWelcomeStore(rdb)
 
-	addr := "127.0.0.1:50052"
-	lis, err := net.Listen("tcp", addr)
+	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", config.GRPC.Host, config.GRPC.Port))
 	if err != nil {
 		log.Panicf("failed to listen: %v", err)
 		return
@@ -88,7 +84,7 @@ func main() {
 		}
 	}()
 
-	s := sfu.NewSFU(config)
+	s := sfu.NewSFU(config.SFU)
 	dc := s.NewDatachannel(sfu.APIChannelLabel)
 	dc.Use(datachannel.SubscriberAPI)
 
@@ -110,7 +106,7 @@ func main() {
 	amw := middleware.NewAuthenticationMiddleware(sm)
 	router.Use(amw.Middleware)
 
-	err = http.ListenAndServe(":8082", httputil.CORS(router))
+	err = http.ListenAndServe(fmt.Sprintf(":%d", config.API.Port), httputil.CORS(router))
 	if err != nil {
 		log.Print(err)
 	}

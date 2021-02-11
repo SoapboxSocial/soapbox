@@ -2,9 +2,9 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"log"
 	"strconv"
@@ -14,10 +14,12 @@ import (
 
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/elastic/go-elasticsearch/v7/esapi"
-	"github.com/go-redis/redis/v8"
 
+	"github.com/soapboxsocial/soapbox/pkg/conf"
 	"github.com/soapboxsocial/soapbox/pkg/groups"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
+	"github.com/soapboxsocial/soapbox/pkg/redis"
+	"github.com/soapboxsocial/soapbox/pkg/sql"
 
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
@@ -26,16 +28,36 @@ var client *elasticsearch.Client
 var userBackend *users.UserBackend
 var groupsBackend *groups.Backend
 
-func main() {
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
+type Conf struct {
+	Redis conf.RedisConf    `mapstructure:"redis"`
+	DB    conf.PostgresConf `mapstructure:"db"`
+}
 
-	db, err := sql.Open("postgres", "host=127.0.0.1 port=5432 user=voicely password=voicely dbname=voicely sslmode=disable")
+func parse() (*Conf, error) {
+	var file string
+	flag.StringVar(&file, "c", "config.toml", "config file")
+	flag.Parse()
+
+	config := &Conf{}
+	err := conf.Load(file, config)
 	if err != nil {
-		panic(err)
+		return nil, err
+	}
+
+	return config, nil
+}
+
+func main() {
+	config, err := parse()
+	if err != nil {
+		log.Fatal("failed to parse config")
+	}
+
+	rdb := redis.NewRedis(config.Redis)
+
+	db, err := sql.Open(config.DB)
+	if err != nil {
+		log.Fatalf("failed to open db: %s", err)
 	}
 
 	client, err = elasticsearch.NewDefaultClient()

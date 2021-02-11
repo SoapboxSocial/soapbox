@@ -379,6 +379,8 @@ func (r *Room) onMessage(from int, command *pb.Command) {
 		r.onVisibilityUpdate(from, command.GetVisibilityUpdate())
 	case *pb.Command_PinLink_:
 		r.onPinLink(from, command.GetPinLink())
+	case *pb.Command_UnpinLink_:
+		r.onUnpinLink(from)
 	}
 }
 
@@ -610,6 +612,21 @@ func (r *Room) onPinLink(from int, cmd *pb.Command_PinLink) {
 	r.notify(&pb.Event{
 		From:    int64(from),
 		Payload: &pb.Event_PinnedLink_{PinnedLink: &pb.Event_PinnedLink{Link: cmd.Link}},
+	})
+}
+
+func (r *Room) onUnpinLink(from int) {
+	if !r.isAdmin(from) {
+		return
+	}
+
+	r.mux.Lock()
+	r.link = ""
+	r.mux.Unlock()
+
+	r.notify(&pb.Event{
+		From:    int64(from),
+		Payload: &pb.Event_UnpinnedLink_{UnpinnedLink: &pb.Event_UnpinnedLink{}},
 	})
 }
 

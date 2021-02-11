@@ -73,6 +73,7 @@ func JsonEncode(w http.ResponseWriter, v interface{}) error {
 	return json.NewEncoder(w).Encode(v)
 }
 
+// GetInt returns an integer value from a URL query.
 func GetInt(v url.Values, key string, defaultValue int) int {
 	str := v.Get(key)
 	if str == "" {

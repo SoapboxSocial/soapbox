@@ -7,6 +7,14 @@ import (
 	"github.com/spf13/viper"
 )
 
+// AppleConf describes a default configuration for dealing with apple keys.
+type AppleConf struct {
+	Path   string `mapstructure:"path"`
+	KeyID  string `mapstructure:"key"`
+	TeamID string `mapstructure:"team"`
+	Bundle string `mapstructure:"bundle"`
+}
+
 // PostgresConf describes a default configuration for the postgres database.
 type PostgresConf struct {
 	Host     string `mapstructure:"host"`

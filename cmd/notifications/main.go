@@ -41,12 +41,7 @@ var (
 type handlerFunc func(*pubsub.Event) ([]int, *notifications.PushNotification, error)
 
 type Conf struct {
-	APNS struct {
-		Path   string `mapstructure:"path"`
-		KeyID  string `mapstructure:"key"`
-		TeamID string `mapstructure:"team"`
-		Bundle string `mapstructure:"bundle"`
-	} `mapstructure:"apns"`
+	APNS  conf.AppleConf    `mapstructure:"apns"`
 	Redis conf.RedisConf    `mapstructure:"redis"`
 	DB    conf.PostgresConf `mapstructure:"db"`
 }

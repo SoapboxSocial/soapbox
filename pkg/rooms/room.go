@@ -223,6 +223,7 @@ func (r *Room) ToProto() *pb.RoomState {
 		Members:    members,
 		Visibility: r.visibility,
 		Group:      group,
+		Link:       r.link,
 	}
 }
 

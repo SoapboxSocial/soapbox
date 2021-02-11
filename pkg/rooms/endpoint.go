@@ -6,7 +6,6 @@ import (
 
 	"github.com/gorilla/mux"
 
-	auth "github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	"github.com/soapboxsocial/soapbox/pkg/groups"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
@@ -50,7 +49,7 @@ func (e *Endpoint) Router() *mux.Router {
 func (e *Endpoint) rooms(w http.ResponseWriter, r *http.Request) {
 	rooms := make([]RoomState, 0)
 
-	userID, ok := auth.GetUserIDFromContext(r.Context())
+	userID, ok := httputil.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 		return

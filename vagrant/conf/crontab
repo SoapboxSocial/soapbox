@@ -1,1 +1,1 @@
-0 * * * * sh /usr/local/bin/stories -c /conf/services/stories.conf >> /var/log/stories.log 2>&1
+0 * * * * sh /usr/local/bin/stories -c /conf/services/stories.toml >> /var/log/stories.log 2>&1

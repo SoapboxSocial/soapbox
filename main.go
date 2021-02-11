@@ -14,7 +14,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sendgrid/sendgrid-go"
 
-	"github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	usersapi "github.com/soapboxsocial/soapbox/pkg/api/users"
 	"github.com/soapboxsocial/soapbox/pkg/apple"
 	"github.com/soapboxsocial/soapbox/pkg/blocks"
@@ -23,6 +22,7 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/followers"
 	"github.com/soapboxsocial/soapbox/pkg/groups"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
+	"github.com/soapboxsocial/soapbox/pkg/http/middlewares"
 	"github.com/soapboxsocial/soapbox/pkg/images"
 	"github.com/soapboxsocial/soapbox/pkg/linkedaccounts"
 	"github.com/soapboxsocial/soapbox/pkg/login"
@@ -60,6 +60,7 @@ type Conf struct {
 func parse() (*Conf, error) {
 	var file string
 	flag.StringVar(&file, "c", "config.toml", "config file")
+	flag.Parse()
 
 	config := &Conf{}
 	err := conf.Load(file, config)
@@ -73,7 +74,7 @@ func parse() (*Conf, error) {
 func main() {
 	config, err := parse()
 	if err != nil {
-		log.Fatal("failed to parse config")
+		log.Fatalf("failed to parse config err: %v", err)
 	}
 
 	rdb := redis.NewRedis(config.Redis)
@@ -96,7 +97,7 @@ func main() {
 
 	devicesBackend := devices.NewBackend(db)
 
-	amw := middleware.NewAuthenticationMiddleware(s)
+	amw := middlewares.NewAuthenticationMiddleware(s)
 
 	r := mux.NewRouter()
 

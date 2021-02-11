@@ -1,0 +1,14 @@
+[db]
+host = "127.0.0.1"
+port = 5432
+user = "voicely"
+password = "voicely"
+database = "voicely"
+ssl = "disable"
+
+[grpc]
+host = "127.0.0.1"
+port = "50052"
+
+[listen]
+port = "8081"

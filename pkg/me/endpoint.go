@@ -241,19 +241,18 @@ func (m *Endpoint) feed(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	feeds := make([]stories.StoryFeed, 0)
+	feeds := make([]FeedUser, 0)
 	for id, results := range s {
 		user, err := m.users.FindByID(id)
 		if err != nil {
 			continue
 		}
 
-		user.Bio = ""
-		user.Email = nil
-
-		feeds = append(feeds, stories.StoryFeed{
-			User:    *user,
-			Stories: results,
+		feeds = append(feeds, FeedUser{
+			Name:     user.DisplayName,
+			Username: user.Username,
+			Image:    user.Image,
+			Stories:  results,
 		})
 	}
 

@@ -47,6 +47,8 @@ type Room struct {
 	kicked       map[int]bool
 	invited      map[int]bool
 
+	link string
+
 	peerToMember map[string]int
 
 	onDisconnectedHandlerFunc DisconnectedHandlerFunc
@@ -221,6 +223,7 @@ func (r *Room) ToProto() *pb.RoomState {
 		Members:    members,
 		Visibility: r.visibility,
 		Group:      group,
+		Link:       r.link,
 	}
 }
 
@@ -375,6 +378,10 @@ func (r *Room) onMessage(from int, command *pb.Command) {
 		r.onRecordScreen(from)
 	case *pb.Command_VisibilityUpdate_:
 		r.onVisibilityUpdate(from, command.GetVisibilityUpdate())
+	case *pb.Command_PinLink_:
+		r.onPinLink(from, command.GetPinLink())
+	case *pb.Command_UnpinLink_:
+		r.onUnpinLink(from)
 	}
 }
 
@@ -582,6 +589,45 @@ func (r *Room) onVisibilityUpdate(from int, cmd *pb.Command_VisibilityUpdate) {
 	r.notify(&pb.Event{
 		From:    int64(from),
 		Payload: &pb.Event_VisibilityUpdated_{VisibilityUpdated: &pb.Event_VisibilityUpdated{Visibility: cmd.Visibility}},
+	})
+}
+
+func (r *Room) onPinLink(from int, cmd *pb.Command_PinLink) {
+	if !r.isAdmin(from) {
+		return
+	}
+
+	r.mux.RLock()
+	link := r.link
+	r.mux.RUnlock()
+
+	// @TODO MAY NEED TO BE BETTER
+	if link != "" {
+		return
+	}
+
+	r.mux.Lock()
+	r.link = cmd.Link
+	r.mux.Unlock()
+
+	r.notify(&pb.Event{
+		From:    int64(from),
+		Payload: &pb.Event_PinnedLink_{PinnedLink: &pb.Event_PinnedLink{Link: cmd.Link}},
+	})
+}
+
+func (r *Room) onUnpinLink(from int) {
+	if !r.isAdmin(from) {
+		return
+	}
+
+	r.mux.Lock()
+	r.link = ""
+	r.mux.Unlock()
+
+	r.notify(&pb.Event{
+		From:    int64(from),
+		Payload: &pb.Event_UnpinnedLink_{UnpinnedLink: &pb.Event_UnpinnedLink{}},
 	})
 }
 

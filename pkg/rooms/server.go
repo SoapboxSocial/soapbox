@@ -11,9 +11,9 @@ import (
 	"github.com/pion/ion-sfu/pkg/sfu"
 	"github.com/pion/webrtc/v3"
 
-	auth "github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	"github.com/soapboxsocial/soapbox/pkg/blocks"
 	"github.com/soapboxsocial/soapbox/pkg/groups"
+	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/internal"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
@@ -389,7 +389,7 @@ func (s *Server) getGroup(peer, id int) (*groups.Group, error) {
 }
 
 func (s *Server) userForSession(r *http.Request) (*users.User, error) {
-	userID, ok := auth.GetUserIDFromContext(r.Context())
+	userID, ok := httputil.GetUserIDFromContext(r.Context())
 	if !ok {
 		return nil, errors.New("not authenticated")
 	}

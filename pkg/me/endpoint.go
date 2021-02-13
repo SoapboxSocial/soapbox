@@ -4,12 +4,12 @@ import (
 	"errors"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/dghubble/go-twitter/twitter"
 	"github.com/dghubble/oauth1"
 	"github.com/gorilla/mux"
 
+	"github.com/soapboxsocial/soapbox/pkg/actives"
 	"github.com/soapboxsocial/soapbox/pkg/groups"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/linkedaccounts"
@@ -27,6 +27,7 @@ type Endpoint struct {
 	la          *linkedaccounts.Backend
 	stories     *stories.Backend
 	queue       *pubsub.Queue
+	actives     *actives.Backend
 }
 
 // Me is returned to the user calling the `/me` endpoint.
@@ -235,27 +236,45 @@ func (m *Endpoint) feed(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s, err := m.stories.GetStoriesForFollower(id, time.Now().Unix())
+	activeUsers, err := m.actives.GetActivesFor(id)
 	if err != nil {
-		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "unauthorized")
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeNotFound, "error")
 		return
 	}
 
 	feeds := make([]FeedUser, 0)
-	for id, results := range s {
-		user, err := m.users.FindByID(id)
-		if err != nil {
-			continue
-		}
-
-		feeds = append(feeds, FeedUser{
+	for _, user := range activeUsers {
+		// @TODO MORE INFO
+		feed := FeedUser{
 			Name:     user.DisplayName,
 			Username: user.Username,
 			Image:    user.Image,
-			Stories:  results,
-		})
+		}
+
+		feeds = append(feeds, feed)
 	}
 
+	//s, err := m.stories.GetStoriesForFollower(id, time.Now().Unix())
+	//if err != nil {
+	//	httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "unauthorized")
+	//	return
+	//}
+	//
+	//feeds := make([]FeedUser, 0)
+	//for id, results := range s {
+	//	user, err := m.users.FindByID(id)
+	//	if err != nil {
+	//		continue
+	//	}
+	//
+	//	feeds = append(feeds, FeedUser{
+	//		Name:     user.DisplayName,
+	//		Username: user.Username,
+	//		Image:    user.Image,
+	//		Stories:  results,
+	//	})
+	//}
+	//
 	err = httputil.JsonEncode(w, feeds)
 	if err != nil {
 		log.Printf("failed to write me response: %s\n", err.Error())

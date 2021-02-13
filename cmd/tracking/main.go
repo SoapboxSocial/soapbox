@@ -17,7 +17,7 @@ type Conf struct {
 	Mixpanel struct {
 		Token string `mapstructure:"token"`
 		URL   string `mapstructure:"url"`
-	} `mapstructure:"data"`
+	} `mapstructure:"mixpanel"`
 	Redis conf.RedisConf `mapstructure:"redis"`
 }
 

@@ -19,6 +19,8 @@ github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible/go
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/Shopify/sarama v1.19.0/go.mod h1:FVkBWblsNy7DGZRfXLU0O9RCGt5g3g3yEuWXgklEdEo=
 github.com/Shopify/toxiproxy v2.1.4+incompatible/go.mod h1:OXgGpZ6Cli1/URJOF1DMxUHB2q5Ap20/P/eIdh4G0pI=
+github.com/SoapboxSocial/ion-sfu v1.8.2-0.20210209221250-9e55d85873bf h1:9nVs8GwkA5DeXJz+e9P/nR5Z8aooLEhz7mcDalCtdRM=
+github.com/SoapboxSocial/ion-sfu v1.8.2-0.20210209221250-9e55d85873bf/go.mod h1:MKDh4JSLpBA/hFeYAYALb6nYpe6Ruknd3pmxPMbdpM8=
 github.com/Timothylock/go-signin-with-apple v0.0.0-20210131195746-828dfdd59ab1 h1:ikId4o21ZtP6qh2El/2EBxbQsFnl6f8/TlBsyxVMR4I=
 github.com/Timothylock/go-signin-with-apple v0.0.0-20210131195746-828dfdd59ab1/go.mod h1:fz2au0tz0plvT851IG2WJEfRMByDEh+6occORo9jhCY=
 github.com/VividCortex/gohistogram v1.0.0/go.mod h1:Pf5mBqqDxYaXu3hDrrU+w6nw50o/4+TcAqDqk/vUH7g=
@@ -444,6 +446,10 @@ github.com/smartystreets/assertions v0.0.0-20180927180507-b2de0cb4f26d/go.mod h1
 github.com/smartystreets/goconvey v1.6.4/go.mod h1:syvi0/a8iFYH4r/RixwvyeAJjdLS9QV7WQ/tjFTllLA=
 github.com/soapboxsocial/ion-sfu v1.8.2-0.20210207184449-a254868c3d20 h1:HVcmMOqm6SpGKXZ4FzHzSST3k/YwX501T/Ux2MI7Hx0=
 github.com/soapboxsocial/ion-sfu v1.8.2-0.20210207184449-a254868c3d20/go.mod h1:MKDh4JSLpBA/hFeYAYALb6nYpe6Ruknd3pmxPMbdpM8=
+github.com/soapboxsocial/ion-sfu v1.8.2-0.20210215081154-321123e90634 h1:dUsN9vHFagiuCq2mKjey+aJvgUD+MVAQoyXvI7ieTi8=
+github.com/soapboxsocial/ion-sfu v1.8.2-0.20210215081154-321123e90634/go.mod h1:MKDh4JSLpBA/hFeYAYALb6nYpe6Ruknd3pmxPMbdpM8=
+github.com/soapboxsocial/ion-sfu v1.8.2-0.20210215085152-4b45aa8b4070 h1:jZKBEuIsQGmrjb52LVZggKvZN0JREcSR8h4vFL7Tnio=
+github.com/soapboxsocial/ion-sfu v1.8.2-0.20210215085152-4b45aa8b4070/go.mod h1:MKDh4JSLpBA/hFeYAYALb6nYpe6Ruknd3pmxPMbdpM8=
 github.com/soheilhy/cmux v0.1.4/go.mod h1:IM3LyeVVIOuxMH7sFAkER9+bJ4dT7Ms6E4xg4kGIyLM=
 github.com/sony/gobreaker v0.4.1/go.mod h1:ZKptC7FHNvhBz7dN2LGjPVBz2sZJmc0/PkyDJOjmxWY=
 github.com/sourcegraph/jsonrpc2 v0.0.0-20200429184054-15c2290dcb37/go.mod h1:ZafdZgk/axhT1cvZAPOhw+95nz2I/Ra5qMlU4gTRwIo=

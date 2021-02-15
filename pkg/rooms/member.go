@@ -65,7 +65,7 @@ func (m *Member) SetRole(role pb.RoomState_RoomMember_Role) {
 }
 
 func (m *Member) Notify(label string, data []byte) error {
-	c := m.peer.GetDataChannel(label) // @TODO SHOULD WE STORE THIS?
+	c := m.peer.Subscriber().DataChannel(label) // @TODO SHOULD WE STORE THIS?
 	if c == nil {
 		return io.EOF
 	}

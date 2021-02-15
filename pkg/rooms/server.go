@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gorilla/websocket"
@@ -118,7 +119,7 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		err = peer.Join(join.Room)
+		err = peer.Join(join.Room, strconv.Itoa(user.ID))
 		if err != nil && (err != sfu.ErrTransportExists && err != sfu.ErrOfferIgnored) {
 			_ = conn.WriteError(in.Id, pb.SignalReply_CLOSED)
 			return
@@ -191,7 +192,7 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		err = peer.Join(id)
+		err = peer.Join(id, strconv.Itoa(user.ID))
 		if err != nil && (err != sfu.ErrTransportExists && err != sfu.ErrOfferIgnored) {
 			_ = conn.WriteError(in.Id, pb.SignalReply_CLOSED)
 			return

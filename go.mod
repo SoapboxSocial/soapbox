@@ -41,4 +41,4 @@ require (
 	google.golang.org/protobuf v1.25.0
 )
 
-replace github.com/pion/ion-sfu => github.com/soapboxsocial/ion-sfu 4b45aa8b40705d959e9c5072daba07eb5effb9d7
+replace github.com/pion/ion-sfu => github.com/soapboxsocial/ion-sfu v1.8.2-0.20210215085152-4b45aa8b4070

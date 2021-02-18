@@ -242,8 +242,6 @@ func (r *Room) Handle(me *Member) {
 		return
 	}
 
-	// @TODO SET DATA CHANNEL
-
 	me.StartChannel(CHANNEL)
 
 	r.mux.Lock()

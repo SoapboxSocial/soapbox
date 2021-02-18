@@ -41,7 +41,7 @@ func (b *BufferedDataChannel) Write(data []byte) error {
 func (b *BufferedDataChannel) handle() {
 	for msg := range b.msgQueue {
 		err := b.channel.Send(msg)
-		if err != nil && err.Error() == "Stream closed" {
+		if err != nil && (err.Error() == "Stream closed" || err == io.EOF) {
 			close(b.msgQueue)
 		}
 	}

@@ -242,6 +242,10 @@ func (r *Room) Handle(me *Member) {
 		return
 	}
 
+	// @TODO SET DATA CHANNEL
+
+	me.StartChannel(CHANNEL)
+
 	r.mux.Lock()
 	r.members[me.id] = me
 	r.mux.Unlock()
@@ -443,7 +447,7 @@ func (r *Room) onInviteAdmin(from int, cmd *pb.Command_InviteAdmin) {
 		return
 	}
 
-	err = member.Notify(CHANNEL, data)
+	err = member.Notify(data)
 	if err != nil {
 		log.Printf("failed to notify %v", err)
 	}
@@ -559,7 +563,7 @@ func (r *Room) onMuteUser(from int, cmd *pb.Command_MuteUser) {
 		return
 	}
 
-	err = member.Notify(CHANNEL, data)
+	err = member.Notify(data)
 	if err != nil {
 		log.Printf("failed to notify %v", err)
 	}
@@ -659,7 +663,7 @@ func (r *Room) notify(event *pb.Event) {
 			continue
 		}
 
-		err := member.Notify(CHANNEL, data)
+		err := member.Notify(data)
 		if err != nil {
 			if err == io.EOF {
 				r.onDisconnected(int64(id))

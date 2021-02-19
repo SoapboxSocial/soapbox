@@ -297,7 +297,7 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	bio := strings.TrimSpace(strings.ReplaceAll(r.Form.Get("bio"), "\n", " "))
-	if len([]rune(bio)) > 300 {
+	if len([]rune(bio)) > 150 {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}

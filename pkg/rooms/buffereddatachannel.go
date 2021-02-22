@@ -7,7 +7,7 @@ import (
 )
 
 type BufferedDataChannel struct {
-	channel *webrtc.DataChannel
+	channel  *webrtc.DataChannel
 	msgQueue chan []byte
 }
 
@@ -29,13 +29,16 @@ func (b *BufferedDataChannel) Start(channel *webrtc.DataChannel) {
 	})
 }
 
-func (b *BufferedDataChannel) Write(data []byte) error {
-	select {
-	case b.msgQueue <- data:
-		return nil
-	default:
-		return io.EOF
-	}
+func (b *BufferedDataChannel) Write(data []byte) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = io.EOF
+		}
+	}()
+
+	b.msgQueue <- data
+
+	return nil
 }
 
 func (b *BufferedDataChannel) handle() {

@@ -31,13 +31,13 @@ type Member struct {
 
 func NewMember(id int, name, image string, peer *sfu.Peer, signal signal.Transport) *Member {
 	m := &Member{
-		id:       id,
-		name:     name,
-		image:    image,
-		muted:    true,
-		peer:     peer,
-		signal:   signal,
-		role:     pb.RoomState_RoomMember_REGULAR,
+		id:          id,
+		name:        name,
+		image:       image,
+		muted:       true,
+		peer:        peer,
+		signal:      signal,
+		role:        pb.RoomState_RoomMember_REGULAR,
 		dataChannel: NewBufferedDataChannel(),
 	}
 

@@ -126,6 +126,7 @@ CREATE TABLE IF NOT EXISTS apps (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     image VARCHAR(100) NOT NULL,
+    slug VARCHAR(100) NOT NULL,
     developer_id INT NOT NULL
     FOREIGN KEY (developer_id) REFERENCES app_developers(id) ON DELETE CASCADE
 );

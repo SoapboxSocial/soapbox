@@ -116,3 +116,16 @@ CREATE TABLE IF NOT EXISTS blocks (
 );
 
 CREATE UNIQUE INDEX idx_blocks ON blocks (user_id, blocked);
+
+CREATE TABLE IF NOT exists app_developers (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS apps (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    image VARCHAR(100) NOT NULL,
+    developer_id INT NOT NULL
+    FOREIGN KEY (developer_id) REFERENCES app_developers(id) ON DELETE CASCADE
+);

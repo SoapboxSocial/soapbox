@@ -117,18 +117,18 @@ CREATE TABLE IF NOT EXISTS blocks (
 
 CREATE UNIQUE INDEX idx_blocks ON blocks (user_id, blocked);
 
-CREATE TABLE IF NOT exists app_developers (
+CREATE TABLE IF NOT exists mini_developers (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL
 );
 
-CREATE UNIQUE INDEX idx_app_developers_name ON app_developers (name);
+CREATE UNIQUE INDEX idx_mini_developers_name ON mini_developers (name);
 
-CREATE TABLE IF NOT EXISTS apps (
+CREATE TABLE IF NOT EXISTS minis (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     image VARCHAR(100) NOT NULL,
     slug VARCHAR(100) NOT NULL,
     developer_id INT NOT NULL,
-    FOREIGN KEY (developer_id) REFERENCES app_developers(id) ON DELETE CASCADE
+    FOREIGN KEY (developer_id) REFERENCES mini_developers(id) ON DELETE CASCADE
 );

@@ -657,6 +657,15 @@ func (r *Room) onCloseMini(from int) {
 	if !r.isAdmin(from) {
 		return
 	}
+
+	r.mux.Lock()
+	r.mini = ""
+	r.mux.Unlock()
+
+	r.notify(&pb.Event{
+		From:    int64(from),
+		Payload: &pb.Event_ClosedMini_{ClosedMini: &pb.Event_ClosedMini{}},
+	})
 }
 
 func (r *Room) member(id int) *Member {

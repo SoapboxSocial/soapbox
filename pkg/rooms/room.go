@@ -48,6 +48,7 @@ type Room struct {
 	invited      map[int]bool
 
 	link string
+	mini string
 
 	peerToMember map[string]int
 
@@ -384,6 +385,10 @@ func (r *Room) onMessage(from int, command *pb.Command) {
 		r.onPinLink(from, command.GetPinLink())
 	case *pb.Command_UnpinLink_:
 		r.onUnpinLink(from)
+	case *pb.Command_OpenMini_:
+		r.onOpenMini(from, command.GetOpenMini())
+	case *pb.Command_CloseMini_:
+		r.onCloseMini(from)
 	}
 }
 
@@ -631,6 +636,27 @@ func (r *Room) onUnpinLink(from int) {
 		From:    int64(from),
 		Payload: &pb.Event_UnpinnedLink_{UnpinnedLink: &pb.Event_UnpinnedLink{}},
 	})
+}
+
+func (r *Room) onOpenMini(from int, mini *pb.Command_OpenMini) {
+	if !r.isAdmin(from) {
+		return
+	}
+
+	r.mux.Lock()
+	r.mini = mini.Mini
+	r.mux.Unlock()
+
+	r.notify(&pb.Event{
+		From:    int64(from),
+		Payload: &pb.Event_OpenedMini_{OpenedMini: &pb.Event_OpenedMini{Mini: mini.Mini}},
+	})
+}
+
+func (r *Room) onCloseMini(from int) {
+	if !r.isAdmin(from) {
+		return
+	}
 }
 
 func (r *Room) member(id int) *Member {

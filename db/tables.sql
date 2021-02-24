@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS blocks (
 
 CREATE UNIQUE INDEX idx_blocks ON blocks (user_id, blocked);
 
-CREATE TABLE IF NOT exists mini_developers (
+CREATE TABLE IF NOT EXISTS mini_developers (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL
 );

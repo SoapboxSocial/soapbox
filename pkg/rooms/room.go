@@ -125,6 +125,13 @@ func (r *Room) Name() string {
 	return r.name
 }
 
+func (r *Room) WasAdminOnDisconnect(id int) bool {
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+
+	return r.adminsOnDisconnected[id]
+}
+
 func (r *Room) ConnectionState() RoomConnectionState {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
@@ -246,10 +253,6 @@ func (r *Room) Handle(me *Member) {
 	}
 
 	r.mux.Lock()
-	if r.adminsOnDisconnected[me.id] {
-		me.SetRole(pb.RoomState_RoomMember_ADMIN)
-	}
-
 	delete(r.adminsOnDisconnected, me.id)
 	r.mux.Unlock()
 

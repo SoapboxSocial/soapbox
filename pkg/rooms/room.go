@@ -47,6 +47,9 @@ type Room struct {
 	kicked       map[int]bool
 	invited      map[int]bool
 
+	// users that were admins when they disconnected.
+	adminsOnDisconnected map[int]bool
+
 	link string
 
 	peerToMember map[string]int
@@ -242,6 +245,14 @@ func (r *Room) Handle(me *Member) {
 		return
 	}
 
+	r.mux.Lock()
+	if r.adminsOnDisconnected[me.id] {
+		me.SetRole(pb.RoomState_RoomMember_ADMIN)
+	}
+
+	delete(r.adminsOnDisconnected, me.id)
+	r.mux.Unlock()
+
 	me.StartChannel(CHANNEL)
 
 	r.mux.Lock()
@@ -293,6 +304,10 @@ func (r *Room) onDisconnected(id int64) {
 	}
 
 	r.mux.Lock()
+	if peer.Role() == pb.RoomState_RoomMember_ADMIN {
+		r.adminsOnDisconnected[int(id)] = true
+	}
+
 	delete(r.members, int(id))
 	r.mux.Unlock()
 

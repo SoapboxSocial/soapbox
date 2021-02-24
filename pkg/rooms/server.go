@@ -141,10 +141,8 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		role := pb.RoomState_RoomMember_REGULAR
 		if r.WasAdminOnDisconnect(user.ID) {
-			role = pb.RoomState_RoomMember_ADMIN
-			me.SetRole(role)
+			me.SetRole(pb.RoomState_RoomMember_ADMIN)
 		}
 
 		err = conn.Write(&pb.SignalReply{
@@ -156,7 +154,7 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 						Type: answer.Type.String(),
 						Sdp:  answer.SDP,
 					},
-					Role: role,
+					Role: me.Role(),
 				},
 			},
 		})

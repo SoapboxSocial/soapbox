@@ -132,3 +132,7 @@ CREATE TABLE IF NOT EXISTS minis (
     developer_id INT NOT NULL,
     FOREIGN KEY (developer_id) REFERENCES mini_developers(id) ON DELETE CASCADE
 );
+
+-- Inserting apps
+INSERT INTO mini_developers (name) VALUES ('Soapbox');
+INSERT INTO minis (name, image, slug, developer_id) VALUES ('Polls', '', '/polls', 1);

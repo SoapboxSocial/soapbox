@@ -5,4 +5,5 @@ type Mini struct {
 	Name  string `json:"name"`
 	Image string `json:"image"`
 	Slug  string `json:"slug"`
+	Description  string `json:"description"`
 }

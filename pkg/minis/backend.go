@@ -30,7 +30,7 @@ func (b Backend) ListMinis() ([]Mini, error) {
 
 		err := rows.Scan(&mini.ID, &mini.Name, &mini.Slug, &mini.Image)
 		if err != nil {
-			return nil, err // @todo
+			continue
 		}
 
 		result = append(result, mini)

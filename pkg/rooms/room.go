@@ -63,17 +63,18 @@ type Room struct {
 
 func NewRoom(id, name string, group *groups.Group, owner int, visibility pb.Visibility, session *sfu.Session) *Room {
 	r := &Room{
-		id:           id,
-		name:         name,
-		visibility:   visibility,
-		group:        group,
-		state:        closed,
-		members:      make(map[int]*Member),
-		adminInvites: make(map[int]bool),
-		kicked:       make(map[int]bool),
-		invited:      make(map[int]bool),
-		peerToMember: make(map[string]int),
-		session:      session,
+		id:                   id,
+		name:                 name,
+		visibility:           visibility,
+		group:                group,
+		state:                closed,
+		members:              make(map[int]*Member),
+		adminInvites:         make(map[int]bool),
+		kicked:               make(map[int]bool),
+		invited:              make(map[int]bool),
+		peerToMember:         make(map[string]int),
+		adminsOnDisconnected: make(map[int]bool),
+		session:              session,
 	}
 
 	r.invited[owner] = true

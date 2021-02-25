@@ -47,6 +47,9 @@ type Room struct {
 	kicked       map[int]bool
 	invited      map[int]bool
 
+	// users that were admins when they disconnected.
+	adminsOnDisconnected map[int]bool
+
 	link string
 	mini string
 
@@ -61,17 +64,18 @@ type Room struct {
 
 func NewRoom(id, name string, group *groups.Group, owner int, visibility pb.Visibility, session *sfu.Session) *Room {
 	r := &Room{
-		id:           id,
-		name:         name,
-		visibility:   visibility,
-		group:        group,
-		state:        closed,
-		members:      make(map[int]*Member),
-		adminInvites: make(map[int]bool),
-		kicked:       make(map[int]bool),
-		invited:      make(map[int]bool),
-		peerToMember: make(map[string]int),
-		session:      session,
+		id:                   id,
+		name:                 name,
+		visibility:           visibility,
+		group:                group,
+		state:                closed,
+		members:              make(map[int]*Member),
+		adminInvites:         make(map[int]bool),
+		kicked:               make(map[int]bool),
+		invited:              make(map[int]bool),
+		peerToMember:         make(map[string]int),
+		adminsOnDisconnected: make(map[int]bool),
+		session:              session,
 	}
 
 	r.invited[owner] = true
@@ -121,6 +125,13 @@ func (r *Room) Name() string {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
 	return r.name
+}
+
+func (r *Room) WasAdminOnDisconnect(id int) bool {
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+
+	return r.adminsOnDisconnected[id]
 }
 
 func (r *Room) ConnectionState() RoomConnectionState {
@@ -244,6 +255,10 @@ func (r *Room) Handle(me *Member) {
 		return
 	}
 
+	r.mux.Lock()
+	delete(r.adminsOnDisconnected, me.id)
+	r.mux.Unlock()
+
 	me.StartChannel(CHANNEL)
 
 	r.mux.Lock()
@@ -295,6 +310,10 @@ func (r *Room) onDisconnected(id int64) {
 	}
 
 	r.mux.Lock()
+	if peer.Role() == pb.RoomState_RoomMember_ADMIN {
+		r.adminsOnDisconnected[int(id)] = true
+	}
+
 	delete(r.members, int(id))
 	r.mux.Unlock()
 

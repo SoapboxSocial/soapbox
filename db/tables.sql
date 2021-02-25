@@ -116,3 +116,24 @@ CREATE TABLE IF NOT EXISTS blocks (
 );
 
 CREATE UNIQUE INDEX idx_blocks ON blocks (user_id, blocked);
+
+CREATE TABLE IF NOT EXISTS mini_developers (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL
+);
+
+CREATE UNIQUE INDEX idx_mini_developers_name ON mini_developers (name);
+
+CREATE TABLE IF NOT EXISTS minis (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    image VARCHAR(100) NOT NULL,
+    slug VARCHAR(100) NOT NULL,
+    description TEXT NOT NULL,
+    developer_id INT NOT NULL,
+    FOREIGN KEY (developer_id) REFERENCES mini_developers(id) ON DELETE CASCADE
+);
+
+-- Inserting apps
+INSERT INTO mini_developers (name) VALUES ('Soapbox');
+INSERT INTO minis (name, image, slug, developer_id) VALUES ('Polls', '', '/polls', 1);

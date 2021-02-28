@@ -28,6 +28,7 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/login"
 	"github.com/soapboxsocial/soapbox/pkg/mail"
 	"github.com/soapboxsocial/soapbox/pkg/me"
+	"github.com/soapboxsocial/soapbox/pkg/minis"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/redis"
@@ -197,6 +198,13 @@ func main() {
 	searchRouter := searchEndpoint.Router()
 	searchRouter.Use(amw.Middleware)
 	mount(r, "/v1/search", searchRouter)
+
+	minisBackend := minis.NewBackend(db)
+	minisEndpoint := minis.NewEndpoint(minisBackend)
+
+	minisRouter := minisEndpoint.Router()
+	minisRouter.Use(amw.Middleware)
+	mount(r, "/v1/minis", minisRouter)
 
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", config.Listen.Port), httputil.CORS(r)))
 }

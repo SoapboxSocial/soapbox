@@ -2,7 +2,6 @@ package rooms
 
 import (
 	"fmt"
-	"io"
 	"log"
 	"strings"
 	"sync"
@@ -26,17 +25,20 @@ type Member struct {
 	// @TODO MIGHT MAKE SENSE TO MOVE THIS INTO A CLASS THAT MANAGES CONNECTION STUFF SIMILAR TO HOW IT WORKS ON CLIENT.
 	peer   *sfu.Peer
 	signal signal.Transport
+
+	dataChannel *BufferedDataChannel
 }
 
 func NewMember(id int, name, image string, peer *sfu.Peer, signal signal.Transport) *Member {
 	m := &Member{
-		id:     id,
-		name:   name,
-		image:  image,
-		muted:  true,
-		peer:   peer,
-		signal: signal,
-		role:   pb.RoomState_RoomMember_REGULAR,
+		id:          id,
+		name:        name,
+		image:       image,
+		muted:       true,
+		peer:        peer,
+		signal:      signal,
+		role:        pb.RoomState_RoomMember_REGULAR,
+		dataChannel: NewBufferedDataChannel(),
 	}
 
 	m.setup()
@@ -64,13 +66,8 @@ func (m *Member) SetRole(role pb.RoomState_RoomMember_Role) {
 	m.role = role
 }
 
-func (m *Member) Notify(label string, data []byte) error {
-	c := m.peer.GetDataChannel(label) // @TODO SHOULD WE STORE THIS?
-	if c == nil {
-		return io.EOF
-	}
-
-	return c.Send(data)
+func (m *Member) Notify(data []byte) error {
+	return m.dataChannel.Write(data)
 }
 
 func (m *Member) Role() pb.RoomState_RoomMember_Role {
@@ -88,6 +85,10 @@ func (m *Member) ReceiveMsg() (*pb.SignalRequest, error) {
 	}
 
 	return msg, nil
+}
+
+func (m *Member) StartChannel(label string) {
+	m.dataChannel.Start(m.peer.Subscriber().DataChannel(label))
 }
 
 func (m *Member) RunSignal() error {

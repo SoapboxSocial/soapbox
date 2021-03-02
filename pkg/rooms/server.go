@@ -89,6 +89,7 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 	in, err := me.ReceiveMsg()
 	if err != nil {
 		log.Printf("receive err: %v", err)
+		_ = conn.Close()
 		return
 	}
 

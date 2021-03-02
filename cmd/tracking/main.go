@@ -213,6 +213,33 @@ func handleEvent(event *pubsub.Event) *tracking.Event {
 			Name:       "heartbeat",
 			Properties: map[string]interface{}{},
 		}
+	case pubsub.EventTypeRoomOpenMini:
+		id, err := event.GetInt("id")
+		if err != nil {
+			return nil
+		}
+
+		return &tracking.Event{
+			ID:   strconv.Itoa(id),
+			Name: "room_open_mini",
+			Properties: map[string]interface{}{
+				"room_id": event.Params["room"],
+				"mini":    event.Params["mini"],
+			},
+		}
+	case pubsub.EventTypeRoomLinkShare:
+		id, err := event.GetInt("id")
+		if err != nil {
+			return nil
+		}
+
+		return &tracking.Event{
+			ID:   strconv.Itoa(id),
+			Name: "room_link_share",
+			Properties: map[string]interface{}{
+				"room_id": event.Params["room"],
+			},
+		}
 	}
 
 	return nil

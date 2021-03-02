@@ -24,6 +24,8 @@ const (
 	EventTypeStoryReaction
 	EventTypeUserHeartbeat
 	EventTypeWelcomeRoom
+	EventTypeRoomLinkShare
+	EventTypeRoomOpenMini
 )
 
 type RoomVisibility string
@@ -163,5 +165,19 @@ func NewWelcomeRoomEvent(user int, room string) Event {
 	return Event{
 		Type:   EventTypeWelcomeRoom,
 		Params: map[string]interface{}{"id": user, "room": room},
+	}
+}
+
+func NewRoomLinkShareEvent(user int, room string) Event {
+	return Event{
+		Type:   EventTypeRoomLinkShare,
+		Params: map[string]interface{}{"id": user, "room": room},
+	}
+}
+
+func NewRoomOpenMiniEvent(user int, mini, room string) Event {
+	return Event{
+		Type:   EventTypeRoomOpenMini,
+		Params: map[string]interface{}{"id": user, "mini": mini, "room": room},
 	}
 }

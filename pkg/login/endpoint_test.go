@@ -19,7 +19,7 @@ import (
 
 	"github.com/soapboxsocial/soapbox/pkg/images"
 	"github.com/soapboxsocial/soapbox/pkg/login"
-	mocks "github.com/soapboxsocial/soapbox/pkg/login/internal/mock"
+	"github.com/soapboxsocial/soapbox/pkg/login/internal/mocks"
 	"github.com/soapboxsocial/soapbox/pkg/mail"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"

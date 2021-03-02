@@ -149,7 +149,6 @@ func TestLoginEndpoint_PinSubmission(t *testing.T) {
 	}
 }
 
-
 func TestLoginEndpoint_RegistrationCompleted(t *testing.T) {
 	db, _, err := sqlmock.New()
 	if err != nil {

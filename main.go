@@ -13,6 +13,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/gorilla/mux"
 	"github.com/sendgrid/sendgrid-go"
+	"google.golang.org/grpc"
 
 	usersapi "github.com/soapboxsocial/soapbox/pkg/api/users"
 	"github.com/soapboxsocial/soapbox/pkg/apple"
@@ -33,6 +34,7 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/redis"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
+	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 	"github.com/soapboxsocial/soapbox/pkg/search"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
 	"github.com/soapboxsocial/soapbox/pkg/sql"
@@ -55,6 +57,7 @@ type Conf struct {
 	Apple  conf.AppleConf    `mapstructure:"apple"`
 	Redis  conf.RedisConf    `mapstructure:"redis"`
 	DB     conf.PostgresConf `mapstructure:"db"`
+	GRPC   conf.AddrConf     `mapstructure:"grpc"`
 	Listen conf.AddrConf     `mapstructure:"listen"`
 }
 
@@ -127,7 +130,16 @@ func main() {
 		panic(err)
 	}
 
-	loginEndpoints := login.NewEndpoint(ub, loginState, s, ms, ib, queue, appleClient)
+	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", config.GRPC.Host, config.GRPC.Port), grpc.WithInsecure())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer conn.Close()
+
+	roomService := pb.NewRoomServiceClient(conn)
+
+	loginEndpoints := login.NewEndpoint(ub, loginState, s, ms, ib, queue, appleClient, roomService)
 	loginRouter := loginEndpoints.Router()
 	mount(r, "/v1/login", loginRouter)
 

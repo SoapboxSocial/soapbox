@@ -19,7 +19,7 @@ import (
 
 	"github.com/soapboxsocial/soapbox/pkg/images"
 	"github.com/soapboxsocial/soapbox/pkg/login"
-	"github.com/soapboxsocial/soapbox/pkg/login/internal"
+	mocks "github.com/soapboxsocial/soapbox/pkg/login/internal/mock"
 	"github.com/soapboxsocial/soapbox/pkg/mail"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
@@ -50,7 +50,7 @@ func TestLoginEndpoint_LoginWithTestAccount(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	m := internal.NewMockSignInWithApple(ctrl)
+	m := mocks.NewMockSignInWithApple(ctrl)
 
 	endpoint := login.NewEndpoint(
 		users.NewUserBackend(db),
@@ -60,6 +60,7 @@ func TestLoginEndpoint_LoginWithTestAccount(t *testing.T) {
 		images.NewImagesBackend("/foo"),
 		pubsub.NewQueue(rdb),
 		m,
+		mocks.NewMockRoomServiceClient(ctrl),
 	)
 
 	rr := httptest.NewRecorder()
@@ -105,7 +106,7 @@ func TestLoginEndpoint_PinSubmission(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	m := internal.NewMockSignInWithApple(ctrl)
+	m := mocks.NewMockSignInWithApple(ctrl)
 
 	endpoint := login.NewEndpoint(
 		users.NewUserBackend(db),
@@ -115,6 +116,7 @@ func TestLoginEndpoint_PinSubmission(t *testing.T) {
 		images.NewImagesBackend("/foo"),
 		pubsub.NewQueue(rdb),
 		m,
+		mocks.NewMockRoomServiceClient(ctrl),
 	)
 
 	rr := httptest.NewRecorder()

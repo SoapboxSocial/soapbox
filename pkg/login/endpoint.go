@@ -408,6 +408,8 @@ func (e *Endpoint) completed(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("queue.Publish err: %v", err)
 	}
+
+	httputil.JsonSuccess(w)
 }
 
 func (e *Endpoint) processProfilePicture(file multipart.File) (string, error) {

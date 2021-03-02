@@ -275,7 +275,7 @@ func (s *Server) getRoom(id string, owner int) (*Room, error) {
 func (s *Server) createRoom(id, name string, owner int, visibility pb.Visibility, group *groups.Group) *Room {
 	session, _ := s.sfu.GetSession(id)
 
-	room := NewRoom(id, name, group, owner, visibility, session)
+	room := NewRoom(id, name, group, owner, visibility, session, s.queue)
 
 	room.OnDisconnected(func(room string, id int) {
 		r, err := s.repository.Get(room)

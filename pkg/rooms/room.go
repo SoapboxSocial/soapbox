@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/soapboxsocial/soapbox/pkg/groups"
+	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/internal"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 )
@@ -60,9 +61,11 @@ type Room struct {
 	onJoinHandlerFunc         JoinHandlerFunc
 
 	session *sfu.Session
+
+	queue *pubsub.Queue
 }
 
-func NewRoom(id, name string, group *groups.Group, owner int, visibility pb.Visibility, session *sfu.Session) *Room {
+func NewRoom(id, name string, group *groups.Group, owner int, visibility pb.Visibility, session *sfu.Session, queue *pubsub.Queue) *Room {
 	r := &Room{
 		id:                   id,
 		name:                 name,
@@ -76,6 +79,7 @@ func NewRoom(id, name string, group *groups.Group, owner int, visibility pb.Visi
 		peerToMember:         make(map[string]int),
 		adminsOnDisconnected: make(map[int]bool),
 		session:              session,
+		queue:                queue,
 	}
 
 	r.invited[owner] = true
@@ -439,6 +443,11 @@ func (r *Room) onReaction(from int, cmd *pb.Command_Reaction) {
 }
 
 func (r *Room) onLinkShare(from int, cmd *pb.Command_LinkShare) {
+	_ = r.queue.Publish(
+		pubsub.RoomTopic,
+		pubsub.NewRoomLinkShareEvent(from, r.id),
+	)
+
 	r.notify(&pb.Event{
 		From:    int64(from),
 		Payload: &pb.Event_LinkShared_{LinkShared: &pb.Event_LinkShared{Link: cmd.Link}},
@@ -662,6 +671,11 @@ func (r *Room) onOpenMini(from int, mini *pb.Command_OpenMini) {
 	if !r.isAdmin(from) {
 		return
 	}
+
+	_ = r.queue.Publish(
+		pubsub.RoomTopic,
+		pubsub.NewRoomOpenMiniEvent(from, mini.Mini, r.id),
+	)
 
 	r.mux.Lock()
 	r.mini = mini.Mini

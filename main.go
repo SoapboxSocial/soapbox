@@ -218,7 +218,10 @@ func main() {
 	minisRouter.Use(amw.Middleware)
 	mount(r, "/v1/minis", minisRouter)
 
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", config.Listen.Port), httputil.CORS(r)))
+	err = http.ListenAndServe(fmt.Sprintf(":%d", config.Listen.Port), httputil.CORS(r))
+	if err != nil {
+		log.Print(err)
+	}
 }
 
 func mount(r *mux.Router, path string, handler http.Handler) {

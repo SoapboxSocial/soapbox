@@ -19,9 +19,10 @@ import (
 
 	"github.com/soapboxsocial/soapbox/pkg/images"
 	"github.com/soapboxsocial/soapbox/pkg/login"
-	"github.com/soapboxsocial/soapbox/pkg/login/internal"
+	"github.com/soapboxsocial/soapbox/pkg/login/internal/mocks"
 	"github.com/soapboxsocial/soapbox/pkg/mail"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
+	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
@@ -50,8 +51,6 @@ func TestLoginEndpoint_LoginWithTestAccount(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	m := internal.NewMockSignInWithApple(ctrl)
-
 	endpoint := login.NewEndpoint(
 		users.NewUserBackend(db),
 		login.NewStateManager(rdb),
@@ -59,7 +58,8 @@ func TestLoginEndpoint_LoginWithTestAccount(t *testing.T) {
 		mail.NewMailService(&sendgrid.Client{}),
 		images.NewImagesBackend("/foo"),
 		pubsub.NewQueue(rdb),
-		m,
+		mocks.NewMockSignInWithApple(ctrl),
+		mocks.NewMockRoomServiceClient(ctrl),
 	)
 
 	rr := httptest.NewRecorder()
@@ -105,8 +105,6 @@ func TestLoginEndpoint_PinSubmission(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	m := internal.NewMockSignInWithApple(ctrl)
-
 	endpoint := login.NewEndpoint(
 		users.NewUserBackend(db),
 		state,
@@ -114,7 +112,8 @@ func TestLoginEndpoint_PinSubmission(t *testing.T) {
 		mail.NewMailService(&sendgrid.Client{}),
 		images.NewImagesBackend("/foo"),
 		pubsub.NewQueue(rdb),
-		m,
+		mocks.NewMockSignInWithApple(ctrl),
+		mocks.NewMockRoomServiceClient(ctrl),
 	)
 
 	rr := httptest.NewRecorder()
@@ -146,6 +145,70 @@ func TestLoginEndpoint_PinSubmission(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 
 	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
+	}
+}
+
+func TestLoginEndpoint_RegistrationCompleted(t *testing.T) {
+	db, _, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rdb := redis.NewClient(&redis.Options{
+		Addr: mr.Addr(),
+	})
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	m := mocks.NewMockRoomServiceClient(ctrl)
+	sm := sessions.NewSessionManager(rdb)
+
+	endpoint := login.NewEndpoint(
+		users.NewUserBackend(db),
+		login.NewStateManager(rdb),
+		sm,
+		mail.NewMailService(&sendgrid.Client{}),
+		images.NewImagesBackend("/foo"),
+		pubsub.NewQueue(rdb),
+		mocks.NewMockSignInWithApple(ctrl),
+		m,
+	)
+
+	rr := httptest.NewRecorder()
+	handler := endpoint.Router()
+
+	session := "1234"
+	userID := 1
+
+	err = sm.NewSession(session, users.User{ID: userID}, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req, err := http.NewRequest("POST", "/register/completed", strings.NewReader(""))
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Authorization", session)
+
+	m.
+		EXPECT().
+		RegisterWelcomeRoom(gomock.Any(), gomock.Eq(&pb.WelcomeRoomRegisterRequest{UserId: int64(userID)})).
+		Return(&pb.WelcomeRoomRegisterResponse{Id: "foo"}, nil)
+
+	handler.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		print(rr.Body.String())
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusOK)
 	}
 }

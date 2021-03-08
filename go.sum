@@ -134,6 +134,8 @@ github.com/go-kit/kit v0.10.0/go.mod h1:xUsJbQ/Fp4kEt7AFgCuvyX4a71u8h9jB8tj/ORgO
 github.com/go-logfmt/logfmt v0.3.0/go.mod h1:Qt1PoO58o5twSAckw1HlFXLmHsOX5/0LbT9GBnD5lWE=
 github.com/go-logfmt/logfmt v0.4.0/go.mod h1:3RMwSq7FuexP4Kalkev3ejPJsZTpXXBr9+V4qmtdjCk=
 github.com/go-logfmt/logfmt v0.5.0/go.mod h1:wCYkCAKZfumFQihp8CzCvQ3paCTfi41vtzG1KdI/P7A=
+github.com/go-logr/logr v0.4.0 h1:K7/B1jt6fIBQVd4Owv2MqGQClcgf0R266+7C/QjRcLc=
+github.com/go-logr/logr v0.4.0/go.mod h1:z6/tIYblkpsD+a4lm/fGIIU9mZ+XfAiaFtq7xTgseGU=
 github.com/go-redis/redis/v8 v8.5.0 h1:L3r1Q3I5WOUdXZGCP6g44EruKh0u3n6co5Hl5xWkdGA=
 github.com/go-redis/redis/v8 v8.5.0/go.mod h1:YmEcgBDttjnkbMzDAhDtQxY9yVA7jMN6PCR5HeMvqFE=
 github.com/go-redis/redis/v8 v8.6.0 h1:swqbqOrxaPztsj2Hf1p94M3YAgl7hYEpcw21z299hh8=
@@ -498,6 +500,8 @@ github.com/soapboxsocial/ion-sfu v1.8.2-0.20210215085152-4b45aa8b4070 h1:jZKBEuI
 github.com/soapboxsocial/ion-sfu v1.8.2-0.20210215085152-4b45aa8b4070/go.mod h1:MKDh4JSLpBA/hFeYAYALb6nYpe6Ruknd3pmxPMbdpM8=
 github.com/soapboxsocial/ion-sfu v1.8.2-0.20210301184156-6333dd2ce518 h1:4tucr5LYl9VeXfuSB/A3r68Q1ISH7OiXDOJ7+jY6wAg=
 github.com/soapboxsocial/ion-sfu v1.8.2-0.20210301184156-6333dd2ce518/go.mod h1:eRGTRVxYYvW7mhxcBByROYvZdm2aUqDSG499rje2Jh8=
+github.com/soapboxsocial/ion-sfu v1.8.2-0.20210308202629-6c101f59a256 h1:TNCz3ANDKxDoNbb0Bf+6SmqtUwC9KzNi6S/sPVVOeM0=
+github.com/soapboxsocial/ion-sfu v1.8.2-0.20210308202629-6c101f59a256/go.mod h1:BQf2nidxkQU5Qc37e13i+rc7Q+qt8CWp0HmYtsy00o8=
 github.com/soheilhy/cmux v0.1.4/go.mod h1:IM3LyeVVIOuxMH7sFAkER9+bJ4dT7Ms6E4xg4kGIyLM=
 github.com/sony/gobreaker v0.4.1/go.mod h1:ZKptC7FHNvhBz7dN2LGjPVBz2sZJmc0/PkyDJOjmxWY=
 github.com/sourcegraph/jsonrpc2 v0.0.0-20200429184054-15c2290dcb37/go.mod h1:ZafdZgk/axhT1cvZAPOhw+95nz2I/Ra5qMlU4gTRwIo=

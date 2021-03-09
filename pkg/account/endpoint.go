@@ -46,6 +46,8 @@ func (e *Endpoint) delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("deleted user %d", id)
+
 	err = e.queue.Publish(pubsub.UserTopic, pubsub.NewDeleteUserEvent(id))
 	if err != nil {
 		log.Printf("failed to write delete event: %v", err)

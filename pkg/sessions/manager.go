@@ -30,6 +30,11 @@ func (sm *SessionManager) GetUserIDForSession(id string) (int, error) {
 	return strconv.Atoi(str)
 }
 
+func (sm *SessionManager) CloseSession(id string) error {
+	_, err := sm.db.Del(sm.db.Context(), generateSessionKey(id)).Result()
+	return err
+}
+
 func generateSessionKey(id string) string {
 	return "session_" + id
 }

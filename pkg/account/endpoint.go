@@ -12,15 +12,15 @@ import (
 )
 
 type Endpoint struct {
-	backend *Backend
-	queue *pubsub.Queue
+	backend  *Backend
+	queue    *pubsub.Queue
 	sessions *sessions.SessionManager
 }
 
 func NewEndpoint(backend *Backend, queue *pubsub.Queue, sessions *sessions.SessionManager) *Endpoint {
 	return &Endpoint{
-		backend: backend,
-		queue: queue,
+		backend:  backend,
+		queue:    queue,
 		sessions: sessions,
 	}
 }

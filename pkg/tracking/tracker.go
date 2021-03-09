@@ -11,7 +11,10 @@ type Tracker interface {
 	Track(event Event) error
 }
 
-const newUser = "new_user"
+const (
+	NewUser = "new_user"
+	DeleteUser = "delete_user"
+)
 
 type MixpanelTracker struct {
 	client mixpanel.Mixpanel
@@ -22,12 +25,19 @@ func NewMixpanelTracker(client mixpanel.Mixpanel) *MixpanelTracker {
 }
 
 func (m *MixpanelTracker) Track(event *Event) error {
+	if event.Name == DeleteUser {
+		return m.client.Update(event.ID, &mixpanel.Update{
+			IP:         "0",
+			Operation:  "$delete",
+		})
+	}
+
 	err := m.client.Track(event.ID, event.Name, &mixpanel.Event{IP: "0", Properties: event.Properties})
 	if err != nil {
 		return err
 	}
 
-	if event.Name == newUser {
+	if event.Name == NewUser {
 		err := m.client.Update(event.ID, &mixpanel.Update{
 			IP:         "0",
 			Operation:  "$set",

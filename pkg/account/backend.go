@@ -19,9 +19,5 @@ func (b *Backend) DeleteAccount(id int) error {
 	}
 
 	_, err = stmt.Exec(id)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }

@@ -15,7 +15,6 @@ require (
 	github.com/golang/mock v1.5.0
 	github.com/golang/protobuf v1.4.3
 	github.com/gomodule/redigo v1.8.3 // indirect
-	github.com/google/uuid v1.2.0 // indirect
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.4.2
@@ -23,9 +22,6 @@ require (
 	github.com/magiconair/properties v1.8.4 // indirect
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/pelletier/go-toml v1.8.1 // indirect
-	github.com/pion/dtls/v2 v2.0.8 // indirect
-	github.com/pion/interceptor v0.0.10 // indirect
-	github.com/pion/ion-log v1.0.0 // indirect
 	github.com/pion/ion-sfu v1.9.3
 	github.com/pion/webrtc/v3 v3.0.14
 	github.com/pkg/errors v0.9.1
@@ -44,7 +40,6 @@ require (
 	github.com/tideland/gorest v2.15.5+incompatible // indirect
 	github.com/yuin/gopher-lua v0.0.0-20200816102855-ee81675732da // indirect
 	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83 // indirect
-	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110 // indirect
 	golang.org/x/sys v0.0.0-20210308170721-88b6017d0656 // indirect
 	golang.org/x/text v0.3.5 // indirect
 	google.golang.org/genproto v0.0.0-20210303154014-9728d6b83eeb // indirect

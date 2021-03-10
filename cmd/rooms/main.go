@@ -86,7 +86,7 @@ func main() {
 		}
 	}()
 
-	plog.SetGlobalOptions(plog.GlobalConfig{V: 0})
+	plog.SetGlobalOptions(plog.GlobalConfig{V: 1})
 	logger := plog.New()
 
 	// SFU instance needs to be created with logr implementation

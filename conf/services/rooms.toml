@@ -36,5 +36,3 @@ audiolevelthreshold = 40
 audiolevelinterval=500
 audiolevelfilter = 20
 
-[sfu.log]
-v = 1

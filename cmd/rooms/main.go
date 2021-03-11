@@ -11,6 +11,8 @@ import (
 	"github.com/pion/ion-sfu/pkg/sfu"
 	"google.golang.org/grpc"
 
+	plog "github.com/pion/ion-sfu/pkg/logger"
+
 	"github.com/soapboxsocial/soapbox/pkg/blocks"
 	"github.com/soapboxsocial/soapbox/pkg/conf"
 	"github.com/soapboxsocial/soapbox/pkg/groups"
@@ -83,6 +85,12 @@ func main() {
 			log.Panicf("failed to serve: %v", err)
 		}
 	}()
+
+	plog.SetGlobalOptions(plog.GlobalConfig{V: 1})
+	logger := plog.New()
+
+	// SFU instance needs to be created with logr implementation
+	sfu.Logger = logger
 
 	s := sfu.NewSFU(config.SFU)
 	dc := s.NewDatachannel(sfu.APIChannelLabel)

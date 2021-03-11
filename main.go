@@ -15,6 +15,7 @@ import (
 	"github.com/sendgrid/sendgrid-go"
 	"google.golang.org/grpc"
 
+	"github.com/soapboxsocial/soapbox/pkg/account"
 	usersapi "github.com/soapboxsocial/soapbox/pkg/api/users"
 	"github.com/soapboxsocial/soapbox/pkg/apple"
 	"github.com/soapboxsocial/soapbox/pkg/blocks"
@@ -181,6 +182,11 @@ func main() {
 	devicesRoutes := devicesEndpoint.Router()
 	devicesRoutes.Use(amw.Middleware)
 	mount(r, "/v1/devices", devicesRoutes)
+
+	accountEndpoint := account.NewEndpoint(account.NewBackend(db), queue, s)
+	accountRouter := accountEndpoint.Router()
+	accountRouter.Use(amw.Middleware)
+	mount(r, "/v1/account", accountRouter)
 
 	blocksBackend := blocks.NewBackend(db)
 	blocksEndpoint := blocks.NewEndpoint(blocksBackend)

@@ -92,6 +92,7 @@ func (e *Endpoint) Router() *mux.Router {
 
 	// This is kinda hacky but we need it. Reason being, we want to only be able to register completed when logged in.
 	// But we also still want to use these routes.
+	// @TODO INJECT
 	mw := middlewares.NewAuthenticationMiddleware(e.sessions)
 	r.Path("/register/completed").Methods("POST").Handler(mw.Middleware(http.HandlerFunc(e.completed)))
 

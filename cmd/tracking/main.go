@@ -116,7 +116,7 @@ func handleEvent(event *pubsub.Event) *tracking.Event {
 
 		return &tracking.Event{
 			ID:   strconv.Itoa(id),
-			Name: "new_user",
+			Name: tracking.NewUser,
 			Properties: map[string]interface{}{
 				"user_id":  event.Params["id"],
 				"username": event.Params["username"],
@@ -239,6 +239,16 @@ func handleEvent(event *pubsub.Event) *tracking.Event {
 			Properties: map[string]interface{}{
 				"room_id": event.Params["room"],
 			},
+		}
+	case pubsub.EventTypeDeleteUser:
+		id, err := event.GetInt("id")
+		if err != nil {
+			return nil
+		}
+
+		return &tracking.Event{
+			ID:   strconv.Itoa(id),
+			Name: tracking.DeleteUser,
 		}
 	}
 

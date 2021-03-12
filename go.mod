@@ -13,7 +13,6 @@ require (
 	github.com/elastic/go-elasticsearch/v7 v7.11.0
 	github.com/go-redis/redis/v8 v8.7.1
 	github.com/golang/mock v1.5.0
-	github.com/golang/protobuf v1.4.3
 	github.com/gomodule/redigo v1.8.3 // indirect
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
@@ -44,9 +43,10 @@ require (
 	golang.org/x/text v0.3.5 // indirect
 	google.golang.org/genproto v0.0.0-20210310155132-4ce2db91004e // indirect
 	google.golang.org/grpc v1.36.0
-	google.golang.org/protobuf v1.25.0
+	google.golang.org/protobuf v1.25.1-0.20201208041424-160c7477e0e8
 	gopkg.in/ini.v1 v1.62.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
 
 replace github.com/pion/ion-sfu => github.com/soapboxsocial/ion-sfu v1.8.2-0.20210308202629-6c101f59a256

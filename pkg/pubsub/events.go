@@ -183,7 +183,7 @@ func NewRoomOpenMiniEvent(user int, mini, room string) Event {
 	}
 }
 
-func NewDeleteUserEvent(user int,) Event {
+func NewDeleteUserEvent(user int) Event {
 	return Event{
 		Type:   EventTypeDeleteUser,
 		Params: map[string]interface{}{"id": user},

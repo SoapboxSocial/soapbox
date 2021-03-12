@@ -59,18 +59,23 @@ func (e *Endpoint) room(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	room, err := e.roomService.GetRoom(context.Background(), &pb.RoomQuery{Id: id})
+	response, err := e.roomService.GetRoom(context.Background(), &pb.GetRoomRequest{Id: id})
 	if err != nil {
 		httputil.JsonError(w, http.StatusNotFound, httputil.ErrorCodeNotFound, "not found")
 		return
 	}
 
-	if room.Visibility == pb.Visibility_PRIVATE {
+	if response.State == nil {
 		httputil.JsonError(w, http.StatusNotFound, httputil.ErrorCodeNotFound, "not found")
 		return
 	}
 
-	err = httputil.JsonEncode(w, room)
+	if response.State.Visibility == pb.Visibility_VISIBILITY_PRIVATE {
+		httputil.JsonError(w, http.StatusNotFound, httputil.ErrorCodeNotFound, "not found")
+		return
+	}
+
+	err = httputil.JsonEncode(w, response.State)
 	if err != nil {
 		log.Printf("failed to encode: %v", err)
 	}

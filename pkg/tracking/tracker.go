@@ -12,7 +12,7 @@ type Tracker interface {
 }
 
 const (
-	NewUser = "new_user"
+	NewUser    = "new_user"
 	DeleteUser = "delete_user"
 )
 
@@ -27,8 +27,8 @@ func NewMixpanelTracker(client mixpanel.Mixpanel) *MixpanelTracker {
 func (m *MixpanelTracker) Track(event *Event) error {
 	if event.Name == DeleteUser {
 		return m.client.Update(event.ID, &mixpanel.Update{
-			IP:         "0",
-			Operation:  "$delete",
+			IP:        "0",
+			Operation: "$delete",
 		})
 	}
 

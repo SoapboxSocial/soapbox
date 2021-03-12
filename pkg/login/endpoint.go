@@ -397,7 +397,7 @@ func (e *Endpoint) completed(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := e.roomService.RegisterWelcomeRoom(
 		context.Background(),
-		&pb.WelcomeRoomRegisterRequest{UserId: int64(userID)},
+		&pb.RegisterWelcomeRoomRequest{UserId: int64(userID)},
 	)
 
 	if err != nil {

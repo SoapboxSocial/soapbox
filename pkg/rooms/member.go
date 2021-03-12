@@ -37,7 +37,7 @@ func NewMember(id int, name, image string, peer *sfu.Peer, signal signal.Transpo
 		muted:       true,
 		peer:        peer,
 		signal:      signal,
-		role:        pb.RoomState_RoomMember_REGULAR,
+		role:        pb.RoomState_RoomMember_ROLE_REGULAR,
 		dataChannel: NewBufferedDataChannel(),
 	}
 

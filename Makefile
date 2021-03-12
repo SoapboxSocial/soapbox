@@ -1,11 +1,7 @@
 .PHONY: protobuf
 
 protobuf:
-	 protoc \
- 	  --proto_path=$(PROTO_PATH) \
- 	  --go_out=plugins=grpc:. \
- 	  --grpc-gateway_out=:. \
-	  room.proto room_api.proto signal.proto
+         buf generate https://github.com/soapboxsocial/protobufs.git
 
 mock:
 	mockgen -package=mocks -destination=pkg/login/internal/mocks/signinwithapple_mock.go -source=pkg/apple/signinwithapple.go

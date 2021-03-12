@@ -48,7 +48,7 @@ func init() {
 	server.PersistentFlags().StringVarP(&file, "config", "c", "config.toml", "config file")
 }
 
-func runServer(cmd *cobra.Command, args []string) error {
+func runServer(*cobra.Command, []string) error {
 	config := &Conf{}
 	err := conf.Load(file, config)
 	if err != nil {

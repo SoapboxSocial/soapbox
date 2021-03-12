@@ -14,6 +14,8 @@ var (
 
 func init() {
 	rootCmd.AddCommand(server)
+	rootCmd.AddCommand(list)
+	rootCmd.AddCommand(close)
 }
 
 // Execute executes the root command.

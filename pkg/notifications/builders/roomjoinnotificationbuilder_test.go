@@ -30,8 +30,8 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 			notification: &notifications.PushNotification{
 				Category: notifications.ROOM_JOINED,
 				Alert: notifications.Alert{
-					Body:      "Join Test with foo",
-					Key:       "join_room_name_with_1",
+					Body:      "Join \"Test\" with foo",
+					Key:       "join_room_name_with_1_notification",
 					Arguments: []string{"Test", "foo"},
 				},
 				Arguments: map[string]interface{}{"id": "xyz"},
@@ -46,7 +46,7 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 				Category: notifications.ROOM_JOINED,
 				Alert: notifications.Alert{
 					Body:      "Join a room with foo",
-					Key:       "join_room_with_1",
+					Key:       "join_room_with_1_notification",
 					Arguments: []string{"foo"},
 				},
 				Arguments: map[string]interface{}{"id": "xyz"},
@@ -60,8 +60,8 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 			notification: &notifications.PushNotification{
 				Category: notifications.ROOM_JOINED,
 				Alert: notifications.Alert{
-					Body:      "Join Test with foo and bar",
-					Key:       "join_room_name_with_2",
+					Body:      "Join \"Test\" with foo and bar",
+					Key:       "join_room_name_with_2_notification",
 					Arguments: []string{"Test", "foo", "bar"},
 				},
 				Arguments: map[string]interface{}{"id": "xyz"},
@@ -75,8 +75,8 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 			notification: &notifications.PushNotification{
 				Category: notifications.ROOM_JOINED,
 				Alert: notifications.Alert{
-					Body:      "Join Test with foo, bar and baz",
-					Key:       "join_room_name_with_3",
+					Body:      "Join \"Test\" with foo, bar and baz",
+					Key:       "join_room_name_with_3_notification",
 					Arguments: []string{"Test", "foo", "bar", "baz"},
 				},
 				Arguments: map[string]interface{}{"id": "xyz"},
@@ -90,8 +90,8 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 			notification: &notifications.PushNotification{
 				Category: notifications.ROOM_JOINED,
 				Alert: notifications.Alert{
-					Body:      "Join Test with foo, bar, baz and 1 others",
-					Key:       "join_room_name_with_3_and_more",
+					Body:      "Join \"Test\" with foo, bar, baz and 1 others",
+					Key:       "join_room_name_with_3_and_more_notification",
 					Arguments: []string{"Test", "foo", "bar", "baz", "1"},
 				},
 				Arguments: map[string]interface{}{"id": "xyz"},

@@ -59,7 +59,7 @@ func (b *RoomJoinNotificationBuilder) Build(event *pubsub.Event) ([]int, *notifi
 
 	if state.Name != "" {
 		translation = "join_room_name_with_"
-		body = "Join " + state.Name + " with "
+		body = "Join \"" + state.Name + "\" with "
 		args = append(args, state.Name)
 	}
 
@@ -96,7 +96,7 @@ func (b *RoomJoinNotificationBuilder) Build(event *pubsub.Event) ([]int, *notifi
 		Category: notifications.ROOM_JOINED,
 		Alert: notifications.Alert{
 			Body:      body,
-			Key:       translation,
+			Key:       translation + "_notification",
 			Arguments: args,
 		},
 		Arguments: map[string]interface{}{"id": room},

@@ -635,7 +635,12 @@ func (r *Room) onPinLink(from int, cmd *pb.Command_PinLink) {
 
 	r.mux.RLock()
 	link := r.link
+	mini := r.mini
 	r.mux.RUnlock()
+
+	if mini != "" {
+		return
+	}
 
 	// @TODO MAY NEED TO BE BETTER
 	if link != "" {

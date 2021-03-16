@@ -8,5 +8,6 @@ protobuf:
 	  room.proto room_api.proto signal.proto
 
 mock:
-	mockgen -package=internal -destination=pkg/login/internal/signinwithapple_mock.go -source=pkg/apple/signinwithapple.go
+	mockgen -package=mocks -destination=pkg/login/internal/mocks/signinwithapple_mock.go -source=pkg/apple/signinwithapple.go
+	mockgen -package=mocks -destination=pkg/login/internal/mocks/roomserviceclient_mock.go -source=pkg/rooms/pb/room_api.pb.go RoomServiceClient
 .PHONY: mock

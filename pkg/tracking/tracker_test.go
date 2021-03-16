@@ -15,7 +15,7 @@ func TestMixpanelTracker_Track(t *testing.T) {
 
 	id := "123"
 	properties := map[string]interface{}{"foo": "bar"}
-	event := &tracking.Event{ID: id, Name: "new_user", Properties: properties}
+	event := &tracking.Event{ID: id, Name: tracking.NewUser, Properties: properties}
 
 	err := tracker.Track(event)
 	if err != nil {

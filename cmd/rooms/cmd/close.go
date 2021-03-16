@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log"
 
 	"github.com/spf13/cobra"
@@ -21,6 +22,7 @@ var room string
 
 func init() {
 	close.Flags().StringVarP(&room, "room", "r", "", "room id")
+	close.Flags().StringVarP(&addr, "addr", "a", "127.0.0.1:50052", "grpc address")
 }
 
 func runClose(*cobra.Command, []string) error {
@@ -37,14 +39,16 @@ func runClose(*cobra.Command, []string) error {
 
 	client := pb.NewRoomServiceClient(conn)
 
-	resp, err := client.ListRooms(context.TODO(), &pb.ListRoomsRequest{})
+	resp, err := client.CloseRoom(context.TODO(), &pb.CloseRoomRequest{Id: room})
 	if err != nil {
 		return err
 	}
 
-	for _, room := range resp.Rooms {
-		log.Printf("Room (%s) Peers = %d Visibility = %s", room.Id, len(room.Members), room.Visibility)
+	if !resp.Success {
+		return errors.New("failed to close room")
 	}
+
+	fmt.Printf("Closed %s\n", room)
 
 	return nil
 }

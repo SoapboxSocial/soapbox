@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/spf13/cobra"
@@ -14,6 +15,10 @@ var list = &cobra.Command{
 	Use:   "list",
 	Short: "list all active rooms",
 	RunE:  runList,
+}
+
+func init() {
+	list.Flags().StringVarP(&addr, "addr", "a", "127.0.0.1:50052", "grpc address")
 }
 
 func runList(*cobra.Command, []string) error {
@@ -32,8 +37,10 @@ func runList(*cobra.Command, []string) error {
 	}
 
 	for _, room := range resp.Rooms {
-		log.Printf("Room (%s) Peers = %d Visibility = %s", room.Id, len(room.Members), room.Visibility)
+		fmt.Printf("Room (%s) Peers = %d Visibility = %s\n", room.Id, len(room.Members), room.Visibility)
 	}
+
+	fmt.Printf("Total Rooms %d\n", len(resp.Rooms))
 
 	return nil
 }

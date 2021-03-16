@@ -35,6 +35,7 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 					Arguments: []string{"Test", "foo"},
 				},
 				Arguments: map[string]interface{}{"id": "xyz"},
+				CollapseID: "xyz",
 			},
 		},
 		{
@@ -50,6 +51,7 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 					Arguments: []string{"foo"},
 				},
 				Arguments: map[string]interface{}{"id": "xyz"},
+				CollapseID: "xyz",
 			},
 		},
 		{
@@ -65,6 +67,7 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 					Arguments: []string{"Test", "foo", "bar"},
 				},
 				Arguments: map[string]interface{}{"id": "xyz"},
+				CollapseID: "xyz",
 			},
 		},
 		{
@@ -80,6 +83,7 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 					Arguments: []string{"Test", "foo", "bar", "baz"},
 				},
 				Arguments: map[string]interface{}{"id": "xyz"},
+				CollapseID: "xyz",
 			},
 		},
 		{
@@ -95,6 +99,7 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 					Arguments: []string{"Test", "foo", "bar", "baz", "1"},
 				},
 				Arguments: map[string]interface{}{"id": "xyz"},
+				CollapseID: "xyz",
 			},
 		},
 	}

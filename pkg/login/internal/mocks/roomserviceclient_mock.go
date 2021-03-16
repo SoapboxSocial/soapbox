@@ -55,6 +55,46 @@ func (mr *MockRoomServiceClientMockRecorder) GetRoom(ctx, in interface{}, opts .
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRoom", reflect.TypeOf((*MockRoomServiceClient)(nil).GetRoom), varargs...)
 }
 
+// ListRooms mocks base method
+func (m *MockRoomServiceClient) ListRooms(ctx context.Context, in *pb.ListRoomsRequest, opts ...grpc.CallOption) (*pb.ListRoomsResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "ListRooms", varargs...)
+	ret0, _ := ret[0].(*pb.ListRoomsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListRooms indicates an expected call of ListRooms
+func (mr *MockRoomServiceClientMockRecorder) ListRooms(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListRooms", reflect.TypeOf((*MockRoomServiceClient)(nil).ListRooms), varargs...)
+}
+
+// CloseRoom mocks base method
+func (m *MockRoomServiceClient) CloseRoom(ctx context.Context, in *pb.CloseRoomRequest, opts ...grpc.CallOption) (*pb.CloseRoomResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "CloseRoom", varargs...)
+	ret0, _ := ret[0].(*pb.CloseRoomResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CloseRoom indicates an expected call of CloseRoom
+func (mr *MockRoomServiceClientMockRecorder) CloseRoom(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloseRoom", reflect.TypeOf((*MockRoomServiceClient)(nil).CloseRoom), varargs...)
+}
+
 // RegisterWelcomeRoom mocks base method
 func (m *MockRoomServiceClient) RegisterWelcomeRoom(ctx context.Context, in *pb.RegisterWelcomeRoomRequest, opts ...grpc.CallOption) (*pb.RegisterWelcomeRoomResponse, error) {
 	m.ctrl.T.Helper()
@@ -111,6 +151,36 @@ func (m *MockRoomServiceServer) GetRoom(arg0 context.Context, arg1 *pb.GetRoomRe
 func (mr *MockRoomServiceServerMockRecorder) GetRoom(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRoom", reflect.TypeOf((*MockRoomServiceServer)(nil).GetRoom), arg0, arg1)
+}
+
+// ListRooms mocks base method
+func (m *MockRoomServiceServer) ListRooms(arg0 context.Context, arg1 *pb.ListRoomsRequest) (*pb.ListRoomsResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ListRooms", arg0, arg1)
+	ret0, _ := ret[0].(*pb.ListRoomsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListRooms indicates an expected call of ListRooms
+func (mr *MockRoomServiceServerMockRecorder) ListRooms(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListRooms", reflect.TypeOf((*MockRoomServiceServer)(nil).ListRooms), arg0, arg1)
+}
+
+// CloseRoom mocks base method
+func (m *MockRoomServiceServer) CloseRoom(arg0 context.Context, arg1 *pb.CloseRoomRequest) (*pb.CloseRoomResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CloseRoom", arg0, arg1)
+	ret0, _ := ret[0].(*pb.CloseRoomResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CloseRoom indicates an expected call of CloseRoom
+func (mr *MockRoomServiceServerMockRecorder) CloseRoom(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CloseRoom", reflect.TypeOf((*MockRoomServiceServer)(nil).CloseRoom), arg0, arg1)
 }
 
 // RegisterWelcomeRoom mocks base method

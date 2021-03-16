@@ -21,13 +21,14 @@ require (
 	github.com/magiconair/properties v1.8.4 // indirect
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/pelletier/go-toml v1.8.1 // indirect
-	github.com/pion/ion-sfu v1.9.3
+	github.com/pion/ion-sfu v1.9.5
+	github.com/pion/transport v0.12.3 // indirect
 	github.com/pion/webrtc/v3 v3.0.14
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/common v0.18.0 // indirect
+	github.com/prometheus/common v0.19.0 // indirect
 	github.com/prometheus/procfs v0.6.0 // indirect
 	github.com/segmentio/ksuid v1.0.3
-	github.com/sendgrid/rest v2.6.2+incompatible // indirect
+	github.com/sendgrid/rest v2.6.3+incompatible // indirect
 	github.com/sendgrid/sendgrid-go v3.8.0+incompatible
 	github.com/sideshow/apns2 v0.20.0
 	github.com/spf13/afero v1.5.1 // indirect
@@ -38,10 +39,11 @@ require (
 	github.com/tideland/golib v4.24.2+incompatible // indirect
 	github.com/tideland/gorest v2.15.5+incompatible // indirect
 	github.com/yuin/gopher-lua v0.0.0-20200816102855-ee81675732da // indirect
-	golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83 // indirect
-	golang.org/x/sys v0.0.0-20210309074719-68d13333faf2 // indirect
+	golang.org/x/crypto v0.0.0-20210314154223-e6e6c4f2bb5b // indirect
+	golang.org/x/net v0.0.0-20210316092652-d523dce5a7f4 // indirect
+	golang.org/x/sys v0.0.0-20210316164454-77fc1eacc6aa // indirect
 	golang.org/x/text v0.3.5 // indirect
-	google.golang.org/genproto v0.0.0-20210310155132-4ce2db91004e // indirect
+	google.golang.org/genproto v0.0.0-20210315173758-2651cd453018 // indirect
 	google.golang.org/grpc v1.36.0
 	google.golang.org/protobuf v1.25.1-0.20201208041424-160c7477e0e8
 	gopkg.in/ini.v1 v1.62.0 // indirect

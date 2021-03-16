@@ -161,7 +161,7 @@ func (r *Room) CanJoin(id int) bool {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
 
-	if r.visibility == pb.Visibility_PRIVATE {
+	if r.visibility == pb.Visibility_VISIBILITY_PRIVATE {
 		return r.invited[id]
 	}
 
@@ -174,7 +174,7 @@ func (r *Room) isAdmin(id int) bool {
 		return false
 	}
 
-	return member.Role() == pb.RoomState_RoomMember_ADMIN
+	return member.Role() == pb.RoomState_RoomMember_ROLE_ADMIN
 }
 
 func (r *Room) isInvitedToBeAdmin(id int) bool {
@@ -251,7 +251,7 @@ func (r *Room) Handle(me *Member) {
 
 	isNew := r.ConnectionState() == closed
 	if isNew {
-		me.SetRole(pb.RoomState_RoomMember_ADMIN)
+		me.SetRole(pb.RoomState_RoomMember_ROLE_ADMIN)
 	}
 
 	if r.member(me.id) != nil {
@@ -314,7 +314,7 @@ func (r *Room) onDisconnected(id int64) {
 	}
 
 	r.mux.Lock()
-	if peer.Role() == pb.RoomState_RoomMember_ADMIN {
+	if peer.Role() == pb.RoomState_RoomMember_ROLE_ADMIN {
 		r.adminsOnDisconnected[int(id)] = true
 	}
 
@@ -336,7 +336,7 @@ func (r *Room) electRandomAdmin(previous int64) {
 	defer r.mux.Unlock()
 
 	hasAdmin := has(r.members, func(me *Member) bool {
-		return me.Role() == pb.RoomState_RoomMember_ADMIN
+		return me.Role() == pb.RoomState_RoomMember_ROLE_ADMIN
 	})
 
 	if hasAdmin {
@@ -344,7 +344,7 @@ func (r *Room) electRandomAdmin(previous int64) {
 	}
 
 	for k := range r.members {
-		r.members[k].SetRole(pb.RoomState_RoomMember_ADMIN)
+		r.members[k].SetRole(pb.RoomState_RoomMember_ROLE_ADMIN)
 
 		go r.notify(&pb.Event{
 			From:    previous,
@@ -499,7 +499,7 @@ func (r *Room) onAcceptAdmin(from int) {
 		return
 	}
 
-	member.SetRole(pb.RoomState_RoomMember_ADMIN)
+	member.SetRole(pb.RoomState_RoomMember_ROLE_ADMIN)
 
 	r.notify(&pb.Event{
 		From:    int64(from),
@@ -518,7 +518,7 @@ func (r *Room) onRemoveAdmin(from int, cmd *pb.Command_RemoveAdmin) {
 		return
 	}
 
-	member.SetRole(pb.RoomState_RoomMember_ADMIN)
+	member.SetRole(pb.RoomState_RoomMember_ROLE_ADMIN)
 
 	r.notify(&pb.Event{
 		From:    int64(from),
@@ -542,7 +542,7 @@ func (r *Room) onRenameRoom(from int, cmd *pb.Command_RenameRoom) {
 }
 
 func (r *Room) onInviteUser(from int, cmd *pb.Command_InviteUser) {
-	if r.Visibility() == pb.Visibility_PRIVATE && !r.isAdmin(from) {
+	if r.Visibility() == pb.Visibility_VISIBILITY_PRIVATE && !r.isAdmin(from) {
 		return
 	}
 

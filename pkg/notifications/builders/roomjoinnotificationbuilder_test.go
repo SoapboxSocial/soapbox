@@ -125,7 +125,7 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 			mock.ExpectPrepare("^SELECT (.+)").ExpectQuery().
 				WillReturnRows(mock.NewRows([]string{"follower"}).FromCSVString("2"))
 
-			m.EXPECT().GetRoom(gomock.Any(), gomock.Any(), gomock.Any()).Return(tt.state, nil)
+			m.EXPECT().GetRoom(gomock.Any(), gomock.Any(), gomock.Any()).Return(&pb.GetRoomResponse{State: tt.state}, nil)
 
 			event, err := getRawEvent(&tt.event)
 			if err != nil {

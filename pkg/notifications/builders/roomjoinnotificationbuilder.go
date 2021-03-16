@@ -15,6 +15,7 @@ var (
 	errRoomPrivate   = errors.New("room is private")
 	errNoRoomMembers = errors.New("room is empty")
 	errFailedToSort  = errors.New("failed to sort")
+	errEmptyResponse = errors.New("empty response")
 )
 
 type RoomJoinNotificationBuilder struct {
@@ -45,10 +46,16 @@ func (b *RoomJoinNotificationBuilder) Build(event *pubsub.Event) ([]int, *notifi
 	}
 
 	room := event.Params["id"].(string)
-	state, err := b.metadata.GetRoom(context.Background(), &pb.RoomQuery{Id: room})
+	response, err := b.metadata.GetRoom(context.Background(), &pb.GetRoomRequest{Id: room})
 	if err != nil {
 		return nil, nil, err
 	}
+
+	if response == nil || response.State == nil {
+		return nil, nil, errEmptyResponse
+	}
+
+	state := response.State
 
 	if len(state.Members) == 0 {
 		return nil, nil, errNoRoomMembers

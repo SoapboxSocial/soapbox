@@ -32,7 +32,7 @@ func (s *Service) GetRoom(_ context.Context, request *pb.GetRoomRequest) (*pb.Ge
 	return &pb.GetRoomResponse{State: r.ToProto()}, nil
 }
 
-func (s *Service) ListRoom(context.Context, *pb.ListRoomsRequest) (*pb.ListRoomsResponse, error) {
+func (s *Service) ListRooms(context.Context, *pb.ListRoomsRequest) (*pb.ListRoomsResponse, error) {
 	result := make([]*pb.RoomState, 0)
 
 	s.repository.Map(func(room *rooms.Room) {

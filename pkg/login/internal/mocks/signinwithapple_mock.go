@@ -6,9 +6,8 @@ package mocks
 
 import (
 	gomock "github.com/golang/mock/gomock"
+	apple "github.com/soapboxsocial/soapbox/pkg/apple"
 	reflect "reflect"
-
-	"github.com/soapboxsocial/soapbox/pkg/apple"
 )
 
 // MockSignInWithApple is a mock of SignInWithApple interface

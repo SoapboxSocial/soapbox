@@ -7,10 +7,9 @@ package mocks
 import (
 	context "context"
 	gomock "github.com/golang/mock/gomock"
+	pb "github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 	grpc "google.golang.org/grpc"
 	reflect "reflect"
-
-	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 )
 
 // MockRoomServiceClient is a mock of RoomServiceClient interface

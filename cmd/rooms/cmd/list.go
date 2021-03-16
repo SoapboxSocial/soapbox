@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
@@ -24,7 +23,7 @@ func init() {
 func runList(*cobra.Command, []string) error {
 	conn, err := grpc.Dial(addr, grpc.WithInsecure())
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	defer conn.Close()

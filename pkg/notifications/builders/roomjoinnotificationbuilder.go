@@ -14,6 +14,7 @@ import (
 var (
 	errRoomPrivate   = errors.New("room is private")
 	errNoRoomMembers = errors.New("room is empty")
+	errFailedToSort  = errors.New("failed to sort")
 )
 
 type RoomJoinNotificationBuilder struct {
@@ -87,6 +88,9 @@ func (b *RoomJoinNotificationBuilder) Build(event *pubsub.Event) ([]int, *notifi
 		translation += "3_and_more"
 
 		members := members(state.Members, creator)
+		if len(members) < 3 {
+			return nil, nil, errFailedToSort
+		}
 
 		body += members[0] + ", " + members[1] + ", " + members[2] + " and " + strconv.Itoa(count-3) + " others"
 		args = append(args, members[0], members[1], members[2], strconv.Itoa(count-3))

@@ -202,8 +202,8 @@ func TestLoginEndpoint_RegistrationCompleted(t *testing.T) {
 
 	m.
 		EXPECT().
-		RegisterWelcomeRoom(gomock.Any(), gomock.Eq(&pb.WelcomeRoomRegisterRequest{UserId: int64(userID)})).
-		Return(&pb.WelcomeRoomRegisterResponse{Id: "foo"}, nil)
+		RegisterWelcomeRoom(gomock.Any(), gomock.Eq(&pb.RegisterWelcomeRoomRequest{UserId: int64(userID)})).
+		Return(&pb.RegisterWelcomeRoomResponse{Id: "foo"}, nil)
 
 	handler.ServeHTTP(rr, req)
 

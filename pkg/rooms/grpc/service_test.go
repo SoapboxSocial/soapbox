@@ -28,7 +28,7 @@ func TestService_RegisterWelcomeRoom(t *testing.T) {
 	service := grpc.NewService(repository, ws)
 
 	userID := int64(1)
-	resp, err := service.RegisterWelcomeRoom(context.Background(), &pb.WelcomeRoomRegisterRequest{UserId: userID})
+	resp, err := service.RegisterWelcomeRoom(context.Background(), &pb.RegisterWelcomeRoomRequest{UserId: userID})
 	if err != nil {
 		t.Fatal(err)
 	}

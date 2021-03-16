@@ -71,8 +71,11 @@ func (l *Limiter) SentNotification(target int, event *pubsub.Event) {
 	switch event.Type {
 	case pubsub.EventTypeNewGroupRoom:
 		l.limit(limiterKeyForGroupRoom(target, event), groupRoomCooldown)
-		fallthrough
-	case pubsub.EventTypeNewRoom, pubsub.EventTypeRoomJoin:
+		l.limit(limiterKeyForRoomMember(target, event), roomMemberCooldown)
+		l.limit(limiterKeyForRoom(target, event), roomCooldown)
+	case pubsub.EventTypeNewRoom:
+		l.limit(limiterKeyForRoomMember(target, event), roomMemberCooldown)
+	case pubsub.EventTypeRoomJoin:
 		l.limit(limiterKeyForRoomMember(target, event), roomMemberCooldown)
 		l.limit(limiterKeyForRoom(target, event), roomCooldown)
 	case pubsub.EventTypeRoomInvite:

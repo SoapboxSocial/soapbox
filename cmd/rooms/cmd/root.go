@@ -12,7 +12,11 @@ var (
 	}
 )
 
+var addr string
+
 func init() {
+	list.PersistentFlags().StringVarP(&addr, "addr", "a", "127:0:0:1:50052", "grpc address")
+
 	rootCmd.AddCommand(server)
 	rootCmd.AddCommand(list)
 	rootCmd.AddCommand(close)

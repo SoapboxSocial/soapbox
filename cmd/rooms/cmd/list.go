@@ -17,7 +17,7 @@ var list = &cobra.Command{
 }
 
 func runList(*cobra.Command, []string) error {
-	conn, err := grpc.Dial("@TODO", grpc.WithInsecure())
+	conn, err := grpc.Dial(addr, grpc.WithInsecure())
 	if err != nil {
 		log.Fatal(err)
 	}

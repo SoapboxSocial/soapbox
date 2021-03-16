@@ -45,7 +45,7 @@ var server = &cobra.Command{
 var file string
 
 func init() {
-	server.PersistentFlags().StringVarP(&file, "config", "c", "config.toml", "config file")
+	server.Flags().StringVarP(&file, "config", "c", "config.toml", "config file")
 }
 
 func runServer(*cobra.Command, []string) error {

@@ -20,7 +20,7 @@ var close = &cobra.Command{
 var room string
 
 func init() {
-	list.PersistentFlags().StringVarP(&room, "room", "r", "", "room id")
+	close.Flags().StringVarP(&room, "room", "r", "", "room id")
 }
 
 func runClose(*cobra.Command, []string) error {

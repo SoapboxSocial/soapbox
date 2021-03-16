@@ -21,9 +21,10 @@ type Alert struct {
 
 // PushNotification is JSON encoded and sent to the APNS service.
 type PushNotification struct {
-	Category  NotificationCategory   `json:"category"`
-	Alert     Alert                  `json:"alert"`
-	Arguments map[string]interface{} `json:"arguments"`
+	Category   NotificationCategory   `json:"category"`
+	Alert      Alert                  `json:"alert"`
+	Arguments  map[string]interface{} `json:"arguments"`
+	CollapseID string                 `json:"-"`
 }
 
 // Notification is stored in redis for the notification endpoint.
@@ -41,7 +42,8 @@ func NewRoomNotification(id, creator string) *PushNotification {
 			Key:       "new_room_notification",
 			Arguments: []string{creator},
 		},
-		Arguments: map[string]interface{}{"id": id},
+		Arguments:  map[string]interface{}{"id": id},
+		CollapseID: id,
 	}
 }
 
@@ -52,7 +54,8 @@ func NewRoomNotificationWithName(id, creator, name string) *PushNotification {
 			Key:       "new_room_with_name_notification",
 			Arguments: []string{creator, name},
 		},
-		Arguments: map[string]interface{}{"id": id},
+		Arguments:  map[string]interface{}{"id": id},
+		CollapseID: id,
 	}
 }
 
@@ -64,7 +67,8 @@ func NewRoomWithGroupNotification(id, creator, group string) *PushNotification {
 			Body:      fmt.Sprintf("%s created a room in \"%s\", why not join them?", creator, group),
 			Arguments: []string{creator, group},
 		},
-		Arguments: map[string]interface{}{"id": id},
+		Arguments:  map[string]interface{}{"id": id},
+		CollapseID: id,
 	}
 }
 
@@ -76,7 +80,8 @@ func NewRoomWithGroupAndNameNotification(id, creator, group, name string) *PushN
 			Body:      fmt.Sprintf("%s created the room \"%s\" in \"%s\", why not join them?", creator, name, group),
 			Arguments: []string{creator, name, group},
 		},
-		Arguments: map[string]interface{}{"id": id},
+		Arguments:  map[string]interface{}{"id": id},
+		CollapseID: id,
 	}
 }
 
@@ -98,7 +103,8 @@ func NewRoomJoinedNotification(id, participant string) *PushNotification {
 			Key:       "room_joined_notification",
 			Arguments: []string{participant},
 		},
-		Arguments: map[string]interface{}{"id": id},
+		Arguments:  map[string]interface{}{"id": id},
+		CollapseID: id,
 	}
 }
 
@@ -109,7 +115,8 @@ func NewRoomJoinedNotificationWithName(id, participant, name string) *PushNotifi
 			Key:       "room_joined_with_name_notification",
 			Arguments: []string{participant, name},
 		},
-		Arguments: map[string]interface{}{"id": id},
+		Arguments:  map[string]interface{}{"id": id},
+		CollapseID: id,
 	}
 }
 
@@ -131,7 +138,8 @@ func NewRoomInviteNotificationWithName(id, from, room string) *PushNotification 
 			Key:       "room_invite_with_name_notification",
 			Arguments: []string{from, room},
 		},
-		Arguments: map[string]interface{}{"id": id},
+		Arguments:  map[string]interface{}{"id": id},
+		CollapseID: room,
 	}
 }
 
@@ -154,6 +162,7 @@ func NewWelcomeRoomNotification(user, room string, from int) *PushNotification {
 			Body:      fmt.Sprintf("%s just signed up, why not welcome them?", user),
 			Arguments: []string{user},
 		},
-		Arguments: map[string]interface{}{"id": room, "from": from},
+		Arguments:  map[string]interface{}{"id": room, "from": from},
+		CollapseID: room,
 	}
 }

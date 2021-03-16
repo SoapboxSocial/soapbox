@@ -29,6 +29,7 @@ func (s *Service) Send(target string, notification PushNotification) error {
 		DeviceToken: target,
 		Topic:       s.topic,
 		Payload:     data,
+		CollapseID:  notification.CollapseID,
 	}
 
 	// @todo handle response properly

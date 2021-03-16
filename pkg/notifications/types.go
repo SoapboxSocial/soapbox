@@ -96,30 +96,6 @@ func NewFollowerNotification(id int, follower string) *PushNotification {
 	}
 }
 
-func NewRoomJoinedNotification(id, participant string) *PushNotification {
-	return &PushNotification{
-		Category: ROOM_JOINED,
-		Alert: Alert{
-			Key:       "room_joined_notification",
-			Arguments: []string{participant},
-		},
-		Arguments:  map[string]interface{}{"id": id},
-		CollapseID: id,
-	}
-}
-
-func NewRoomJoinedNotificationWithName(id, participant, name string) *PushNotification {
-	return &PushNotification{
-		Category: ROOM_JOINED,
-		Alert: Alert{
-			Key:       "room_joined_with_name_notification",
-			Arguments: []string{participant, name},
-		},
-		Arguments:  map[string]interface{}{"id": id},
-		CollapseID: id,
-	}
-}
-
 func NewRoomInviteNotification(id, from string) *PushNotification {
 	return &PushNotification{
 		Category: ROOM_INVITE,

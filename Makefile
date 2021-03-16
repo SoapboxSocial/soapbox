@@ -1,7 +1,11 @@
 .PHONY: protobuf
 
 protobuf:
+ifdef BRANCH
+	buf generate https://github.com/soapboxsocial/protobufs.git#branch=$(BRANCH)
+else
 	buf generate https://github.com/soapboxsocial/protobufs.git
+endif
 
 mock:
 	mockgen -package=mocks -destination=pkg/login/internal/mocks/signinwithapple_mock.go -source=pkg/apple/signinwithapple.go

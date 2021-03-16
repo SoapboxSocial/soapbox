@@ -3,21 +3,25 @@ package main
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"time"
 
 	"github.com/sideshow/apns2"
 	"github.com/sideshow/apns2/token"
+	"google.golang.org/grpc"
 
 	"github.com/soapboxsocial/soapbox/pkg/conf"
 	"github.com/soapboxsocial/soapbox/pkg/devices"
 	"github.com/soapboxsocial/soapbox/pkg/followers"
 	"github.com/soapboxsocial/soapbox/pkg/groups"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
+	"github.com/soapboxsocial/soapbox/pkg/notifications/builders"
 	"github.com/soapboxsocial/soapbox/pkg/notifications/limiter"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/redis"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
+	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 	"github.com/soapboxsocial/soapbox/pkg/sql"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
@@ -36,6 +40,8 @@ var (
 	service             *notifications.Service
 	notificationLimiter *limiter.Limiter
 	notificationStorage *notifications.Storage
+
+	joinRoomNotificationBuilder *builders.RoomJoinNotificationBuilder
 )
 
 type handlerFunc func(*pubsub.Event) ([]int, *notifications.PushNotification, error)
@@ -44,6 +50,7 @@ type Conf struct {
 	APNS  conf.AppleConf    `mapstructure:"apns"`
 	Redis conf.RedisConf    `mapstructure:"redis"`
 	DB    conf.PostgresConf `mapstructure:"db"`
+	GRPC  conf.AddrConf     `mapstructure:"grpc"`
 }
 
 func parse() (*Conf, error) {
@@ -81,6 +88,17 @@ func main() {
 	notificationLimiter = limiter.NewLimiter(rdb, currentRoom)
 	notificationStorage = notifications.NewStorage(rdb)
 	groupsBackend = groups.NewBackend(db)
+
+	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", config.GRPC.Host, config.GRPC.Port), grpc.WithInsecure())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer conn.Close()
+
+	metadata := pb.NewRoomServiceClient(conn)
+
+	joinRoomNotificationBuilder = builders.NewRoomJoinNotificationBuilder(followersBackend, metadata)
 
 	authKey, err := token.AuthKeyFromFile(config.APNS.Path)
 	if err != nil {
@@ -137,7 +155,7 @@ func getHandler(eventType pubsub.EventType) handlerFunc {
 	case pubsub.EventTypeNewFollower:
 		return onNewFollower
 	case pubsub.EventTypeRoomJoin:
-		return onRoomJoined
+		return joinRoomNotificationBuilder.Build
 	case pubsub.EventTypeRoomInvite:
 		return onRoomInvite
 	case pubsub.EventTypeGroupInvite:
@@ -297,40 +315,6 @@ func onGroupRoomCreation(event *pubsub.Event) ([]int, *notifications.PushNotific
 		}
 
 		return notifications.NewRoomWithGroupAndNameNotification(room, displayName, group.Name, name)
-	}()
-
-	return targets, notification, nil
-}
-
-func onRoomJoined(event *pubsub.Event) ([]int, *notifications.PushNotification, error) {
-	if pubsub.RoomVisibility(event.Params["visibility"].(string)) == pubsub.Private {
-		return nil, nil, errRoomPrivate
-	}
-
-	creator, err := event.GetInt("creator")
-	if err != nil {
-		return nil, nil, err
-	}
-
-	targets, err := followersBackend.GetAllFollowerIDsFor(creator)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	name := event.Params["name"].(string)
-	room := event.Params["id"].(string)
-
-	displayName, err := getDisplayName(creator)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	notification := func() *notifications.PushNotification {
-		if name == "" {
-			return notifications.NewRoomJoinedNotification(room, displayName)
-		}
-
-		return notifications.NewRoomJoinedNotificationWithName(room, displayName, name)
 	}()
 
 	return targets, notification, nil

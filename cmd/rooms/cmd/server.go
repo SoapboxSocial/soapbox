@@ -59,7 +59,7 @@ func runServer(*cobra.Command, []string) error {
 
 	db, err := sql.Open(config.DB)
 	if err != nil {
-		log.Fatalf("failed to open db: %s", err)
+		return errors.Wrap(err, "failed to open db")
 	}
 
 	repository := rooms.NewRepository()

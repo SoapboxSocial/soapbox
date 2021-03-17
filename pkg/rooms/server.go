@@ -278,12 +278,6 @@ func (s *Server) createRoom(id, name string, owner int, visibility pb.Visibility
 	room := NewRoom(id, name, group, owner, visibility, session, s.queue)
 
 	room.OnDisconnected(func(room string, id int) {
-		r, err := s.repository.Get(room)
-		if err != nil {
-			fmt.Printf("failed to get room %v\n", err)
-			return
-		}
-
 		go func() {
 			s.currentRoom.RemoveCurrentRoomForUser(id)
 
@@ -292,6 +286,12 @@ func (s *Server) createRoom(id, name string, owner int, visibility pb.Visibility
 				log.Printf("queue.Publish err: %v\n", err)
 			}
 		}()
+
+		r, err := s.repository.Get(room)
+		if err != nil {
+			fmt.Printf("failed to get room %v\n", err)
+			return
+		}
 
 		if r.PeerCount() > 0 {
 			return

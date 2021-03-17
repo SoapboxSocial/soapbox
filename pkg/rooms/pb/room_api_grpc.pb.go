@@ -20,6 +20,10 @@ const _ = grpc.SupportPackageIsVersion7
 type RoomServiceClient interface {
 	// Get a room specified by the ID.
 	GetRoom(ctx context.Context, in *GetRoomRequest, opts ...grpc.CallOption) (*GetRoomResponse, error)
+	// List all the currently open rooms.
+	ListRooms(ctx context.Context, in *ListRoomsRequest, opts ...grpc.CallOption) (*ListRoomsResponse, error)
+	// Close a room.
+	CloseRoom(ctx context.Context, in *CloseRoomRequest, opts ...grpc.CallOption) (*CloseRoomResponse, error)
 	// Registers a welcome room on the server and returns its ID.
 	RegisterWelcomeRoom(ctx context.Context, in *RegisterWelcomeRoomRequest, opts ...grpc.CallOption) (*RegisterWelcomeRoomResponse, error)
 }
@@ -41,6 +45,24 @@ func (c *roomServiceClient) GetRoom(ctx context.Context, in *GetRoomRequest, opt
 	return out, nil
 }
 
+func (c *roomServiceClient) ListRooms(ctx context.Context, in *ListRoomsRequest, opts ...grpc.CallOption) (*ListRoomsResponse, error) {
+	out := new(ListRoomsResponse)
+	err := c.cc.Invoke(ctx, "/soapbox.v1.RoomService/ListRooms", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *roomServiceClient) CloseRoom(ctx context.Context, in *CloseRoomRequest, opts ...grpc.CallOption) (*CloseRoomResponse, error) {
+	out := new(CloseRoomResponse)
+	err := c.cc.Invoke(ctx, "/soapbox.v1.RoomService/CloseRoom", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *roomServiceClient) RegisterWelcomeRoom(ctx context.Context, in *RegisterWelcomeRoomRequest, opts ...grpc.CallOption) (*RegisterWelcomeRoomResponse, error) {
 	out := new(RegisterWelcomeRoomResponse)
 	err := c.cc.Invoke(ctx, "/soapbox.v1.RoomService/RegisterWelcomeRoom", in, out, opts...)
@@ -56,6 +78,10 @@ func (c *roomServiceClient) RegisterWelcomeRoom(ctx context.Context, in *Registe
 type RoomServiceServer interface {
 	// Get a room specified by the ID.
 	GetRoom(context.Context, *GetRoomRequest) (*GetRoomResponse, error)
+	// List all the currently open rooms.
+	ListRooms(context.Context, *ListRoomsRequest) (*ListRoomsResponse, error)
+	// Close a room.
+	CloseRoom(context.Context, *CloseRoomRequest) (*CloseRoomResponse, error)
 	// Registers a welcome room on the server and returns its ID.
 	RegisterWelcomeRoom(context.Context, *RegisterWelcomeRoomRequest) (*RegisterWelcomeRoomResponse, error)
 	mustEmbedUnimplementedRoomServiceServer()
@@ -67,6 +93,12 @@ type UnimplementedRoomServiceServer struct {
 
 func (UnimplementedRoomServiceServer) GetRoom(context.Context, *GetRoomRequest) (*GetRoomResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetRoom not implemented")
+}
+func (UnimplementedRoomServiceServer) ListRooms(context.Context, *ListRoomsRequest) (*ListRoomsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListRooms not implemented")
+}
+func (UnimplementedRoomServiceServer) CloseRoom(context.Context, *CloseRoomRequest) (*CloseRoomResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CloseRoom not implemented")
 }
 func (UnimplementedRoomServiceServer) RegisterWelcomeRoom(context.Context, *RegisterWelcomeRoomRequest) (*RegisterWelcomeRoomResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RegisterWelcomeRoom not implemented")
@@ -102,6 +134,42 @@ func _RoomService_GetRoom_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RoomService_ListRooms_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListRoomsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RoomServiceServer).ListRooms(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/soapbox.v1.RoomService/ListRooms",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RoomServiceServer).ListRooms(ctx, req.(*ListRoomsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RoomService_CloseRoom_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CloseRoomRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RoomServiceServer).CloseRoom(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/soapbox.v1.RoomService/CloseRoom",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RoomServiceServer).CloseRoom(ctx, req.(*CloseRoomRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RoomService_RegisterWelcomeRoom_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RegisterWelcomeRoomRequest)
 	if err := dec(in); err != nil {
@@ -130,6 +198,14 @@ var RoomService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetRoom",
 			Handler:    _RoomService_GetRoom_Handler,
+		},
+		{
+			MethodName: "ListRooms",
+			Handler:    _RoomService_ListRooms_Handler,
+		},
+		{
+			MethodName: "CloseRoom",
+			Handler:    _RoomService_CloseRoom_Handler,
 		},
 		{
 			MethodName: "RegisterWelcomeRoom",

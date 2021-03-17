@@ -111,7 +111,7 @@ func (b *RoomJoinNotificationBuilder) Build(event *pubsub.Event) ([]int, *notifi
 			Arguments: args,
 		},
 		CollapseID: room,
-		Arguments: map[string]interface{}{"id": room},
+		Arguments:  map[string]interface{}{"id": room},
 	}
 
 	return targets, notification, nil

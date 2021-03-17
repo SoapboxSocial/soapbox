@@ -325,12 +325,12 @@ func (s *Server) createRoom(id, name string, owner int, visibility pb.Visibility
 
 		if isNew {
 			if group == nil {
-				event = pubsub.NewRoomCreationEvent(room.Name(), room.id, me.id, visibility)
+				event = pubsub.NewRoomCreationEvent(room.id, me.id, visibility)
 			} else {
-				event = pubsub.NewRoomCreationEventWithGroup(room.Name(), room.id, me.id, group.ID, visibility)
+				event = pubsub.NewRoomCreationEventWithGroup(room.id, me.id, group.ID, visibility)
 			}
 		} else {
-			event = pubsub.NewRoomJoinEvent(room.Name(), room.id, me.id, visibility)
+			event = pubsub.NewRoomJoinEvent(room.id, me.id, visibility)
 		}
 
 		err := s.queue.Publish(pubsub.RoomTopic, event)

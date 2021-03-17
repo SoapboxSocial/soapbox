@@ -71,24 +71,24 @@ func NewFollowerEvent(follower, id int) Event {
 	}
 }
 
-func NewRoomCreationEvent(name, id string, creator int, visibility RoomVisibility) Event {
+func NewRoomCreationEvent(id string, creator int, visibility RoomVisibility) Event {
 	return Event{
 		Type:   EventTypeNewRoom,
-		Params: map[string]interface{}{"name": name, "id": id, "creator": creator, "visibility": visibility},
+		Params: map[string]interface{}{"id": id, "creator": creator, "visibility": visibility},
 	}
 }
 
-func NewRoomCreationEventWithGroup(name, id string, creator, group int, visibility RoomVisibility) Event {
+func NewRoomCreationEventWithGroup(id string, creator, group int, visibility RoomVisibility) Event {
 	return Event{
 		Type:   EventTypeNewGroupRoom,
-		Params: map[string]interface{}{"name": name, "id": id, "creator": creator, "visibility": visibility, "group": group},
+		Params: map[string]interface{}{"id": id, "creator": creator, "visibility": visibility, "group": group},
 	}
 }
 
-func NewRoomJoinEvent(name, id string, creator int, visibility RoomVisibility) Event {
+func NewRoomJoinEvent(id string, creator int, visibility RoomVisibility) Event {
 	return Event{
 		Type:   EventTypeRoomJoin,
-		Params: map[string]interface{}{"name": name, "id": id, "creator": creator, "visibility": visibility},
+		Params: map[string]interface{}{"id": id, "creator": creator, "visibility": visibility},
 	}
 }
 

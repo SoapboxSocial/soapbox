@@ -24,6 +24,9 @@ const (
 	EventTypeStoryReaction
 	EventTypeUserHeartbeat
 	EventTypeWelcomeRoom
+	EventTypeRoomLinkShare
+	EventTypeRoomOpenMini
+	EventTypeDeleteUser
 )
 
 type RoomVisibility string
@@ -68,24 +71,24 @@ func NewFollowerEvent(follower, id int) Event {
 	}
 }
 
-func NewRoomCreationEvent(name, id string, creator int, visibility RoomVisibility) Event {
+func NewRoomCreationEvent(id string, creator int, visibility RoomVisibility) Event {
 	return Event{
 		Type:   EventTypeNewRoom,
-		Params: map[string]interface{}{"name": name, "id": id, "creator": creator, "visibility": visibility},
+		Params: map[string]interface{}{"id": id, "creator": creator, "visibility": visibility},
 	}
 }
 
-func NewRoomCreationEventWithGroup(name, id string, creator, group int, visibility RoomVisibility) Event {
+func NewRoomCreationEventWithGroup(id string, creator, group int, visibility RoomVisibility) Event {
 	return Event{
 		Type:   EventTypeNewGroupRoom,
-		Params: map[string]interface{}{"name": name, "id": id, "creator": creator, "visibility": visibility, "group": group},
+		Params: map[string]interface{}{"id": id, "creator": creator, "visibility": visibility, "group": group},
 	}
 }
 
-func NewRoomJoinEvent(name, id string, creator int, visibility RoomVisibility) Event {
+func NewRoomJoinEvent(id string, creator int, visibility RoomVisibility) Event {
 	return Event{
 		Type:   EventTypeRoomJoin,
-		Params: map[string]interface{}{"name": name, "id": id, "creator": creator, "visibility": visibility},
+		Params: map[string]interface{}{"id": id, "creator": creator, "visibility": visibility},
 	}
 }
 
@@ -163,5 +166,26 @@ func NewWelcomeRoomEvent(user int, room string) Event {
 	return Event{
 		Type:   EventTypeWelcomeRoom,
 		Params: map[string]interface{}{"id": user, "room": room},
+	}
+}
+
+func NewRoomLinkShareEvent(user int, room string) Event {
+	return Event{
+		Type:   EventTypeRoomLinkShare,
+		Params: map[string]interface{}{"id": user, "room": room},
+	}
+}
+
+func NewRoomOpenMiniEvent(user int, mini, room string) Event {
+	return Event{
+		Type:   EventTypeRoomOpenMini,
+		Params: map[string]interface{}{"id": user, "mini": mini, "room": room},
+	}
+}
+
+func NewDeleteUserEvent(user int) Event {
+	return Event{
+		Type:   EventTypeDeleteUser,
+		Params: map[string]interface{}{"id": user},
 	}
 }

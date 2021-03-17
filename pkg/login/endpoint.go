@@ -1,6 +1,7 @@
 package login
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -15,10 +16,12 @@ import (
 
 	"github.com/soapboxsocial/soapbox/pkg/apple"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
+	"github.com/soapboxsocial/soapbox/pkg/http/middlewares"
 	"github.com/soapboxsocial/soapbox/pkg/images"
 	"github.com/soapboxsocial/soapbox/pkg/login/internal"
 	"github.com/soapboxsocial/soapbox/pkg/mail"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
+	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
@@ -54,6 +57,7 @@ type Endpoint struct {
 	queue *pubsub.Queue
 
 	signInWithApple apple.SignInWithApple
+	roomService     pb.RoomServiceClient
 }
 
 func NewEndpoint(
@@ -64,6 +68,7 @@ func NewEndpoint(
 	ib *images.Backend,
 	queue *pubsub.Queue,
 	signInWithApple apple.SignInWithApple,
+	roomService pb.RoomServiceClient,
 ) Endpoint {
 	return Endpoint{
 		users:           ub,
@@ -73,6 +78,7 @@ func NewEndpoint(
 		ib:              ib,
 		queue:           queue,
 		signInWithApple: signInWithApple,
+		roomService:     roomService,
 	}
 }
 
@@ -83,6 +89,12 @@ func (e *Endpoint) Router() *mux.Router {
 	r.Path("/start/apple").Methods("POST").HandlerFunc(e.loginWithApple)
 	r.Path("/pin").Methods("POST").HandlerFunc(e.submitPin)
 	r.Path("/register").Methods("POST").HandlerFunc(e.register)
+
+	// This is kinda hacky but we need it. Reason being, we want to only be able to register completed when logged in.
+	// But we also still want to use these routes.
+	// @TODO INJECT
+	mw := middlewares.NewAuthenticationMiddleware(e.sessions)
+	r.Path("/register/completed").Methods("POST").Handler(mw.Middleware(http.HandlerFunc(e.completed)))
 
 	return r
 }
@@ -374,6 +386,31 @@ func (e *Endpoint) register(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("queue.Publish err: %v\n", err)
 	}
+}
+
+func (e *Endpoint) completed(w http.ResponseWriter, r *http.Request) {
+	userID, ok := httputil.GetUserIDFromContext(r.Context())
+	if !ok {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	resp, err := e.roomService.RegisterWelcomeRoom(
+		context.Background(),
+		&pb.RegisterWelcomeRoomRequest{UserId: int64(userID)},
+	)
+
+	if err != nil {
+		log.Printf("client.RegisterWelcomeRoom err %v", err)
+		return
+	}
+
+	err = e.queue.Publish(pubsub.RoomTopic, pubsub.NewWelcomeRoomEvent(userID, resp.Id))
+	if err != nil {
+		log.Printf("queue.Publish err: %v", err)
+	}
+
+	httputil.JsonSuccess(w)
 }
 
 func (e *Endpoint) processProfilePicture(file multipart.File) (string, error) {

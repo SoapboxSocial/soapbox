@@ -10,6 +10,8 @@ import (
 )
 
 type Service struct {
+	pb.UnsafeRoomServiceServer
+
 	repository *rooms.Repository
 	ws         *rooms.WelcomeStore
 }
@@ -21,26 +23,51 @@ func NewService(repository *rooms.Repository, ws *rooms.WelcomeStore) *Service {
 	}
 }
 
-func (s *Service) GetRoom(_ context.Context, in *pb.RoomQuery) (*pb.RoomState, error) {
-	r, err := s.repository.Get(in.Id)
+func (s *Service) GetRoom(_ context.Context, request *pb.GetRoomRequest) (*pb.GetRoomResponse, error) {
+	r, err := s.repository.Get(request.Id)
 	if err != nil {
 		return nil, err
 	}
 
-	return r.ToProto(), nil
+	return &pb.GetRoomResponse{State: r.ToProto()}, nil
 }
 
-func (s *Service) RegisterWelcomeRoom(_ context.Context, in *pb.WelcomeRoomRegisterRequest) (*pb.WelcomeRoomRegisterResponse, error) {
+func (s *Service) ListRooms(context.Context, *pb.ListRoomsRequest) (*pb.ListRoomsResponse, error) {
+	result := make([]*pb.RoomState, 0)
+
+	s.repository.Map(func(room *rooms.Room) {
+		result = append(result, room.ToProto())
+	})
+
+	return &pb.ListRoomsResponse{Rooms: result}, nil
+}
+
+func (s *Service) CloseRoom(_ context.Context, request *pb.CloseRoomRequest) (*pb.CloseRoomResponse, error) {
+	room, err := s.repository.Get(request.Id)
+	if err != nil {
+		return nil, err // @TODO PROBABLY FALSE RESPONSE
+	}
+
+	s.repository.Remove(request.Id)
+
+	room.MapMembers(func(member *rooms.Member) {
+		_ = member.Close()
+	})
+
+	return &pb.CloseRoomResponse{Success: true}, nil
+}
+
+func (s *Service) RegisterWelcomeRoom(_ context.Context, request *pb.RegisterWelcomeRoomRequest) (*pb.RegisterWelcomeRoomResponse, error) {
 	id := internal.GenerateRoomID()
 
-	if in == nil || in.UserId == 0 {
+	if request == nil || request.UserId == 0 {
 		return nil, errors.New("no message")
 	}
 
-	err := s.ws.StoreWelcomeRoomID(id, in.UserId)
+	err := s.ws.StoreWelcomeRoomID(id, request.UserId)
 	if err != nil {
 		return nil, err
 	}
 
-	return &pb.WelcomeRoomRegisterResponse{Id: id}, nil
+	return &pb.RegisterWelcomeRoomResponse{Id: id}, nil
 }

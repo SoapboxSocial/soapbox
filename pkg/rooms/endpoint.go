@@ -74,7 +74,7 @@ func (e *Endpoint) rooms(w http.ResponseWriter, r *http.Request) {
 		})
 
 		visibility := "public"
-		if room.visibility == pb.Visibility_PRIVATE {
+		if room.visibility == pb.Visibility_VISIBILITY_PRIVATE {
 			visibility = "private"
 		}
 

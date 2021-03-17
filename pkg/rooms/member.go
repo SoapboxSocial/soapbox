@@ -37,7 +37,7 @@ func NewMember(id int, name, image string, peer *sfu.Peer, signal signal.Transpo
 		muted:       true,
 		peer:        peer,
 		signal:      signal,
-		role:        pb.RoomState_RoomMember_REGULAR,
+		role:        pb.RoomState_RoomMember_ROLE_REGULAR,
 		dataChannel: NewBufferedDataChannel(),
 	}
 
@@ -159,7 +159,7 @@ func (m *Member) RunSignal() error {
 }
 
 func (m *Member) Close() error {
-	m.signal.Close()
+	_ = m.signal.Close()
 	return m.peer.Close()
 }
 

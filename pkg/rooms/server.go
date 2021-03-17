@@ -89,6 +89,7 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 	in, err := me.ReceiveMsg()
 	if err != nil {
 		log.Printf("receive err: %v", err)
+		_ = conn.Close()
 		return
 	}
 
@@ -105,23 +106,23 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 
 		r, err := s.getRoom(join.Room, user.ID)
 		if err != nil {
-			_ = conn.WriteError(in.Id, pb.SignalReply_CLOSED)
+			_ = conn.WriteError(in.Id, pb.SignalReply_ERROR_CLOSED)
 			return
 		}
 
 		if r.PeerCount() >= MAX_PEERS {
-			_ = conn.WriteError(in.Id, pb.SignalReply_FULL)
+			_ = conn.WriteError(in.Id, pb.SignalReply_ERROR_FULL)
 			return
 		}
 
 		if !s.canJoin(user.ID, r) {
-			_ = conn.WriteError(in.Id, pb.SignalReply_NOT_INVITED)
+			_ = conn.WriteError(in.Id, pb.SignalReply_ERROR_NOT_INVITED)
 			return
 		}
 
 		err = peer.Join(join.Room, strconv.Itoa(user.ID))
 		if err != nil && (err != sfu.ErrTransportExists && err != sfu.ErrOfferIgnored) {
-			_ = conn.WriteError(in.Id, pb.SignalReply_CLOSED)
+			_ = conn.WriteError(in.Id, pb.SignalReply_ERROR_CLOSED)
 			return
 		}
 
@@ -132,17 +133,17 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 
 		answer, err := peer.Answer(description)
 		if err != nil {
-			_ = conn.WriteError(in.Id, pb.SignalReply_CLOSED)
+			_ = conn.WriteError(in.Id, pb.SignalReply_ERROR_CLOSED)
 			return
 		}
 
 		if answer == nil {
-			_ = conn.WriteError(in.Id, pb.SignalReply_CLOSED)
+			_ = conn.WriteError(in.Id, pb.SignalReply_ERROR_CLOSED)
 			return
 		}
 
 		if r.WasAdminOnDisconnect(user.ID) {
-			me.SetRole(pb.RoomState_RoomMember_ADMIN)
+			me.SetRole(pb.RoomState_RoomMember_ROLE_ADMIN)
 		}
 
 		err = conn.Write(&pb.SignalReply{
@@ -175,7 +176,7 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 		name := internal.TrimRoomNameToLimit(create.Name)
 
 		var group *groups.Group
-		if create.Visibility != pb.Visibility_PRIVATE && create.GetGroup() != 0 {
+		if create.Visibility != pb.Visibility_VISIBILITY_PRIVATE && create.GetGroup() != 0 {
 			group, err = s.getGroup(user.ID, int(create.GetGroup()))
 			if err != nil {
 				fmt.Printf("group err: %v", err)
@@ -191,7 +192,7 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 		)
 
 		// @TODO SHOULD PROBABLY BE IN A CALLBACK SO WE KNOW THE ROOM IS OPEN
-		if create.Visibility == pb.Visibility_PRIVATE {
+		if create.Visibility == pb.Visibility_VISIBILITY_PRIVATE {
 			for _, id := range create.Users {
 				room.InviteUser(me.id, int(id))
 			}
@@ -199,7 +200,7 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 
 		err = peer.Join(id, strconv.Itoa(user.ID))
 		if err != nil && (err != sfu.ErrTransportExists && err != sfu.ErrOfferIgnored) {
-			_ = conn.WriteError(in.Id, pb.SignalReply_CLOSED)
+			_ = conn.WriteError(in.Id, pb.SignalReply_ERROR_CLOSED)
 			return
 		}
 
@@ -210,12 +211,12 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 
 		answer, err := peer.Answer(description)
 		if err != nil {
-			_ = conn.WriteError(in.Id, pb.SignalReply_CLOSED)
+			_ = conn.WriteError(in.Id, pb.SignalReply_ERROR_CLOSED)
 			return
 		}
 
 		if answer == nil {
-			_ = conn.WriteError(in.Id, pb.SignalReply_CLOSED)
+			_ = conn.WriteError(in.Id, pb.SignalReply_ERROR_CLOSED)
 			return
 		}
 
@@ -263,7 +264,7 @@ func (s *Server) getRoom(id string, owner int) (*Room, error) {
 	}
 
 	// @TODO NAME
-	r = s.createRoom(id, "Welcome!", owner, pb.Visibility_PUBLIC, nil)
+	r = s.createRoom(id, "Welcome!", owner, pb.Visibility_VISIBILITY_PUBLIC, nil)
 	s.repository.Set(r)
 
 	r.InviteUser(owner, user)
@@ -274,15 +275,9 @@ func (s *Server) getRoom(id string, owner int) (*Room, error) {
 func (s *Server) createRoom(id, name string, owner int, visibility pb.Visibility, group *groups.Group) *Room {
 	session, _ := s.sfu.GetSession(id)
 
-	room := NewRoom(id, name, group, owner, visibility, session)
+	room := NewRoom(id, name, group, owner, visibility, session, s.queue)
 
 	room.OnDisconnected(func(room string, id int) {
-		r, err := s.repository.Get(room)
-		if err != nil {
-			fmt.Printf("failed to get room %v\n", err)
-			return
-		}
-
 		go func() {
 			err := s.currentRoom.RemoveCurrentRoomForUser(id)
 			if err != nil {
@@ -294,6 +289,12 @@ func (s *Server) createRoom(id, name string, owner int, visibility pb.Visibility
 				log.Printf("queue.Publish err: %v\n", err)
 			}
 		}()
+
+		r, err := s.repository.Get(room)
+		if err != nil {
+			fmt.Printf("failed to get room %v\n", err)
+			return
+		}
 
 		if r.PeerCount() > 0 {
 			return
@@ -318,7 +319,7 @@ func (s *Server) createRoom(id, name string, owner int, visibility pb.Visibility
 
 	room.OnJoin(func(room *Room, me *Member, isNew bool) {
 		visibility := pubsub.Public
-		if room.Visibility() == pb.Visibility_PRIVATE {
+		if room.Visibility() == pb.Visibility_VISIBILITY_PRIVATE {
 			visibility = pubsub.Private
 		}
 
@@ -327,12 +328,12 @@ func (s *Server) createRoom(id, name string, owner int, visibility pb.Visibility
 
 		if isNew {
 			if group == nil {
-				event = pubsub.NewRoomCreationEvent(room.Name(), room.id, me.id, visibility)
+				event = pubsub.NewRoomCreationEvent(room.id, me.id, visibility)
 			} else {
-				event = pubsub.NewRoomCreationEventWithGroup(room.Name(), room.id, me.id, group.ID, visibility)
+				event = pubsub.NewRoomCreationEventWithGroup(room.id, me.id, group.ID, visibility)
 			}
 		} else {
-			event = pubsub.NewRoomJoinEvent(room.Name(), room.id, me.id, visibility)
+			event = pubsub.NewRoomJoinEvent(room.id, me.id, visibility)
 		}
 
 		err := s.queue.Publish(pubsub.RoomTopic, event)

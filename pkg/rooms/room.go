@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/soapboxsocial/soapbox/pkg/groups"
+	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/internal"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 )
@@ -60,9 +61,11 @@ type Room struct {
 	onJoinHandlerFunc         JoinHandlerFunc
 
 	session *sfu.Session
+
+	queue *pubsub.Queue
 }
 
-func NewRoom(id, name string, group *groups.Group, owner int, visibility pb.Visibility, session *sfu.Session) *Room {
+func NewRoom(id, name string, group *groups.Group, owner int, visibility pb.Visibility, session *sfu.Session, queue *pubsub.Queue) *Room {
 	r := &Room{
 		id:                   id,
 		name:                 name,
@@ -76,6 +79,7 @@ func NewRoom(id, name string, group *groups.Group, owner int, visibility pb.Visi
 		peerToMember:         make(map[string]int),
 		adminsOnDisconnected: make(map[int]bool),
 		session:              session,
+		queue:                queue,
 	}
 
 	r.invited[owner] = true
@@ -157,7 +161,7 @@ func (r *Room) CanJoin(id int) bool {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
 
-	if r.visibility == pb.Visibility_PRIVATE {
+	if r.visibility == pb.Visibility_VISIBILITY_PRIVATE {
 		return r.invited[id]
 	}
 
@@ -170,7 +174,7 @@ func (r *Room) isAdmin(id int) bool {
 		return false
 	}
 
-	return member.Role() == pb.RoomState_RoomMember_ADMIN
+	return member.Role() == pb.RoomState_RoomMember_ROLE_ADMIN
 }
 
 func (r *Room) isInvitedToBeAdmin(id int) bool {
@@ -247,7 +251,7 @@ func (r *Room) Handle(me *Member) {
 
 	isNew := r.ConnectionState() == closed
 	if isNew {
-		me.SetRole(pb.RoomState_RoomMember_ADMIN)
+		me.SetRole(pb.RoomState_RoomMember_ROLE_ADMIN)
 	}
 
 	if r.member(me.id) != nil {
@@ -310,7 +314,7 @@ func (r *Room) onDisconnected(id int64) {
 	}
 
 	r.mux.Lock()
-	if peer.Role() == pb.RoomState_RoomMember_ADMIN {
+	if peer.Role() == pb.RoomState_RoomMember_ROLE_ADMIN {
 		r.adminsOnDisconnected[int(id)] = true
 	}
 
@@ -332,7 +336,7 @@ func (r *Room) electRandomAdmin(previous int64) {
 	defer r.mux.Unlock()
 
 	hasAdmin := has(r.members, func(me *Member) bool {
-		return me.Role() == pb.RoomState_RoomMember_ADMIN
+		return me.Role() == pb.RoomState_RoomMember_ROLE_ADMIN
 	})
 
 	if hasAdmin {
@@ -340,7 +344,7 @@ func (r *Room) electRandomAdmin(previous int64) {
 	}
 
 	for k := range r.members {
-		r.members[k].SetRole(pb.RoomState_RoomMember_ADMIN)
+		r.members[k].SetRole(pb.RoomState_RoomMember_ROLE_ADMIN)
 
 		go r.notify(&pb.Event{
 			From:    previous,
@@ -439,6 +443,11 @@ func (r *Room) onReaction(from int, cmd *pb.Command_Reaction) {
 }
 
 func (r *Room) onLinkShare(from int, cmd *pb.Command_LinkShare) {
+	_ = r.queue.Publish(
+		pubsub.RoomTopic,
+		pubsub.NewRoomLinkShareEvent(from, r.id),
+	)
+
 	r.notify(&pb.Event{
 		From:    int64(from),
 		Payload: &pb.Event_LinkShared_{LinkShared: &pb.Event_LinkShared{Link: cmd.Link}},
@@ -490,7 +499,7 @@ func (r *Room) onAcceptAdmin(from int) {
 		return
 	}
 
-	member.SetRole(pb.RoomState_RoomMember_ADMIN)
+	member.SetRole(pb.RoomState_RoomMember_ROLE_ADMIN)
 
 	r.notify(&pb.Event{
 		From:    int64(from),
@@ -509,7 +518,7 @@ func (r *Room) onRemoveAdmin(from int, cmd *pb.Command_RemoveAdmin) {
 		return
 	}
 
-	member.SetRole(pb.RoomState_RoomMember_ADMIN)
+	member.SetRole(pb.RoomState_RoomMember_ROLE_ADMIN)
 
 	r.notify(&pb.Event{
 		From:    int64(from),
@@ -533,7 +542,7 @@ func (r *Room) onRenameRoom(from int, cmd *pb.Command_RenameRoom) {
 }
 
 func (r *Room) onInviteUser(from int, cmd *pb.Command_InviteUser) {
-	if r.Visibility() == pb.Visibility_PRIVATE && !r.isAdmin(from) {
+	if r.Visibility() == pb.Visibility_VISIBILITY_PRIVATE && !r.isAdmin(from) {
 		return
 	}
 
@@ -626,7 +635,12 @@ func (r *Room) onPinLink(from int, cmd *pb.Command_PinLink) {
 
 	r.mux.RLock()
 	link := r.link
+	mini := r.mini
 	r.mux.RUnlock()
+
+	if mini != "" {
+		return
+	}
 
 	// @TODO MAY NEED TO BE BETTER
 	if link != "" {
@@ -662,6 +676,11 @@ func (r *Room) onOpenMini(from int, mini *pb.Command_OpenMini) {
 	if !r.isAdmin(from) {
 		return
 	}
+
+	_ = r.queue.Publish(
+		pubsub.RoomTopic,
+		pubsub.NewRoomOpenMiniEvent(from, mini.Mini, r.id),
+	)
 
 	r.mux.Lock()
 	r.mini = mini.Mini

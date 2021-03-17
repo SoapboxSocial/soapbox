@@ -16,3 +16,7 @@ path = "/conf/authkey.p8"
 key = "9U8K3MKG2K"
 team = "Z9LC5GZ33U"
 bundle = "app.social.soapbox"
+
+[grpc]
+host = "127.0.0.1"
+port = "50052"

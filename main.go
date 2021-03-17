@@ -152,7 +152,7 @@ func main() {
 		s,
 		ib,
 		queue,
-		rooms.NewCurrentRoomBackend(rdb),
+		rooms.NewCurrentRoomBackend(db),
 	)
 
 	groupsBackend := groups.NewBackend(db)

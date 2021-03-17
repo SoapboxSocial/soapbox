@@ -84,7 +84,7 @@ func main() {
 	devicesBackend = devices.NewBackend(db)
 	userBackend = users.NewUserBackend(db)
 	followersBackend = followers.NewFollowersBackend(db)
-	currentRoom := rooms.NewCurrentRoomBackend(rdb)
+	currentRoom := rooms.NewCurrentRoomBackend(db)
 	notificationLimiter = limiter.NewLimiter(rdb, currentRoom)
 	notificationStorage = notifications.NewStorage(rdb)
 	groupsBackend = groups.NewBackend(db)

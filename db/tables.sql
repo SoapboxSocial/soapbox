@@ -124,6 +124,15 @@ CREATE TABLE IF NOT EXISTS mini_developers (
 
 CREATE UNIQUE INDEX idx_mini_developers_name ON mini_developers (name);
 
+CREATE TABLE IF NOT EXISTS current_rooms (
+    user_id INT NOT NULL,
+    room VARCHAR(27) NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_current_rooms ON current_rooms (room);
+CREATE UNIQUE INDEX idx_current_rooms_user_id ON current_rooms (user_id, room);
+
 CREATE TABLE IF NOT EXISTS minis (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,

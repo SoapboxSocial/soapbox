@@ -48,7 +48,7 @@ func TestCurrentRoomBackend_SetCurrentRoomForUser(t *testing.T) {
 	room := "foo"
 
 	mock.
-		ExpectPrepare("INSERT INTO current_room").
+		ExpectPrepare("INSERT INTO current_rooms").
 		ExpectExec().
 		WithArgs(user, room).
 		WillReturnResult(sqlmock.NewResult(1, 1))
@@ -71,7 +71,7 @@ func TestCurrentRoomBackend_RemoveCurrentRoomForUser(t *testing.T) {
 	user := 10
 
 	mock.
-		ExpectPrepare("DELETE FROM current_room").
+		ExpectPrepare("DELETE FROM current_rooms").
 		ExpectExec().
 		WithArgs(user).
 		WillReturnResult(sqlmock.NewResult(1, 1))

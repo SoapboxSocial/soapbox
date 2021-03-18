@@ -15,7 +15,7 @@ func NewCurrentRoomBackend(db *sql.DB) *CurrentRoomBackend {
 }
 
 func (b *CurrentRoomBackend) GetCurrentRoomForUser(id int) (string, error) {
-	stmt, err := b.db.Prepare("SELECT room FROM current_room WHERE user_id = $1;")
+	stmt, err := b.db.Prepare("SELECT room FROM current_rooms WHERE user_id = $1;")
 	if err != nil {
 		return "", err
 	}
@@ -32,7 +32,7 @@ func (b *CurrentRoomBackend) GetCurrentRoomForUser(id int) (string, error) {
 }
 
 func (b *CurrentRoomBackend) SetCurrentRoomForUser(user int, room string) error {
-	stmt, err := b.db.Prepare("INSERT INTO current_room (user_id, room) VALUES ($1, $2);")
+	stmt, err := b.db.Prepare("INSERT INTO current_rooms (user_id, room) VALUES ($1, $2);")
 	if err != nil {
 		return err
 	}
@@ -42,7 +42,7 @@ func (b *CurrentRoomBackend) SetCurrentRoomForUser(user int, room string) error 
 }
 
 func (b *CurrentRoomBackend) RemoveCurrentRoomForUser(user int) error {
-	stmt, err := b.db.Prepare("DELETE FROM current_room WHERE user_id = $1")
+	stmt, err := b.db.Prepare("DELETE FROM current_rooms WHERE user_id = $1")
 	if err != nil {
 		return err
 	}

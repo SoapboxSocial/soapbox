@@ -15,7 +15,7 @@ func NewCurrentRoomBackend(db *sql.DB) *CurrentRoomBackend {
 }
 
 func (b *CurrentRoomBackend) GetCurrentRoomForUser(id int) (string, error) {
-	stmt, err := b.db.Prepare("SELECT room FROM current_room WHERE user_id = $1")
+	stmt, err := b.db.Prepare("SELECT room FROM current_room WHERE user_id = $1;")
 	if err != nil {
 		return "", err
 	}

@@ -76,7 +76,7 @@ func (m *Endpoint) Router() *mux.Router {
 	r.HandleFunc("/notifications", m.notifications).Methods("GET")
 	r.HandleFunc("/profiles/twitter", m.addTwitter).Methods("POST")
 	r.HandleFunc("/profiles/twitter", m.removeTwitter).Methods("DELETE")
-	r.HandleFunc("/feed/users", m.usersFeed).Methods("GET")
+	r.HandleFunc("/feed", m.feed).Methods("GET")
 
 	return r
 }
@@ -235,40 +235,40 @@ func (m *Endpoint) usersFeed(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-//func (m *Endpoint) feed(w http.ResponseWriter, r *http.Request) {
-//	id, ok := httputil.GetUserIDFromContext(r.Context())
-//	if !ok {
-//		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "unauthorized")
-//		return
-//	}
-//
-//	s, err := m.stories.GetStoriesForFollower(id, time.Now().Unix())
-//	if err != nil {
-//		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "unauthorized")
-//		return
-//	}
-//
-//	feeds := make([]stories.StoryFeed, 0)
-//	for id, results := range s {
-//		user, err := m.users.FindByID(id)
-//		if err != nil {
-//			continue
-//		}
-//
-//		user.Bio = ""
-//		user.Email = nil
-//
-//		feeds = append(feeds, stories.StoryFeed{
-//			User:    *user,
-//			Stories: results,
-//		})
-//	}
-//
-//	err = httputil.JsonEncode(w, feeds)
-//	if err != nil {
-//		log.Printf("failed to write me response: %s\n", err.Error())
-//	}
-//}
+func (m *Endpoint) feed(w http.ResponseWriter, r *http.Request) {
+	id, ok := httputil.GetUserIDFromContext(r.Context())
+	if !ok {
+		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "unauthorized")
+		return
+	}
+
+	s, err := m.stories.GetStoriesForFollower(id, time.Now().Unix())
+	if err != nil {
+		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "unauthorized")
+		return
+	}
+
+	feeds := make([]stories.StoryFeed, 0)
+	for id, results := range s {
+		user, err := m.users.FindByID(id)
+		if err != nil {
+			continue
+		}
+
+		user.Bio = ""
+		user.Email = nil
+
+		feeds = append(feeds, stories.StoryFeed{
+			User:    *user,
+			Stories: results,
+		})
+	}
+
+	err = httputil.JsonEncode(w, feeds)
+	if err != nil {
+		log.Printf("failed to write me response: %s\n", err.Error())
+	}
+}
 
 func getId(event *notifications.Notification, field string) (int, error) {
 	creator, ok := event.Arguments[field].(float64)

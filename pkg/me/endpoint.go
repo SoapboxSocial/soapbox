@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/dghubble/go-twitter/twitter"
 	"github.com/dghubble/oauth1"
@@ -77,6 +78,7 @@ func (m *Endpoint) Router() *mux.Router {
 	r.HandleFunc("/profiles/twitter", m.addTwitter).Methods("POST")
 	r.HandleFunc("/profiles/twitter", m.removeTwitter).Methods("DELETE")
 	r.HandleFunc("/feed", m.feed).Methods("GET")
+	r.HandleFunc("/feed/actives", m.activeUsers).Methods("GET")
 
 	return r
 }
@@ -227,12 +229,14 @@ func (m *Endpoint) removeTwitter(w http.ResponseWriter, r *http.Request) {
 	httputil.JsonSuccess(w)
 }
 
-func (m *Endpoint) usersFeed(w http.ResponseWriter, r *http.Request) {
-	id, ok := httputil.GetUserIDFromContext(r.Context())
+func (m *Endpoint) activeUsers(w http.ResponseWriter, r *http.Request) {
+	_, ok := httputil.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "unauthorized")
 		return
 	}
+
+	//`SELECT * FROM users WHERE id = ()`
 }
 
 func (m *Endpoint) feed(w http.ResponseWriter, r *http.Request) {

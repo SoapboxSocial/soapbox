@@ -131,6 +131,7 @@ CREATE TABLE IF NOT EXISTS current_room (
 );
 
 CREATE INDEX idx_current_room ON current_room (room);
+CREATE UNIQUE INDEX idx_current_room_user_id ON current_room (user_id, room);
 
 CREATE TABLE IF NOT EXISTS minis (
     id SERIAL PRIMARY KEY,

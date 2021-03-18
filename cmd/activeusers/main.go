@@ -33,8 +33,14 @@ func main() {
 
 	events := queue.Subscribe(pubsub.UserTopic)
 
-	for evt := range events {
-		if evt.Type != pubsub.EventTypeUserHeartbeat {
+	for event := range events {
+		if event.Type != pubsub.EventTypeUserHeartbeat {
+			continue
+		}
+
+
+		id, err := event.GetInt("id")
+		if err != nil {
 			continue
 		}
 

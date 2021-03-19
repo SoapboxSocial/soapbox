@@ -13,11 +13,11 @@ type UserRoomLogTracker struct {
 	backend *backends.UserRoomLogBackend
 }
 
-func (r UserRoomLogTracker) CanTrack(event pubsub.Event) bool {
+func (r UserRoomLogTracker) CanTrack(event *pubsub.Event) bool {
 	return event.Type == pubsub.EventTypeRoomLeft
 }
 
-func (r UserRoomLogTracker) Track(event pubsub.Event) error {
+func (r UserRoomLogTracker) Track(event *pubsub.Event) error {
 	if event.Type != pubsub.EventTypeRoomLeft {
 		return fmt.Errorf("invalid type for tracker: %d", event.Type)
 	}
@@ -35,8 +35,8 @@ func (r UserRoomLogTracker) Track(event pubsub.Event) error {
 	return r.backend.Store(user, event.Params["id"].(string), joined, time.Now())
 }
 
-func getTime(event pubsub.Event, field string) (time.Time, error) {
-	value, err := event.GetInt("id")
+func getTime(event *pubsub.Event, field string) (time.Time, error) {
+	value, err := event.GetInt(field)
 	if err != nil {
 		return time.Time{}, err
 	}

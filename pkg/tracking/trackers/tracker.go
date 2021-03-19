@@ -6,8 +6,8 @@ import "github.com/soapboxsocial/soapbox/pkg/pubsub"
 type Tracker interface {
 
 	// CanTrack returns whether tracker tracks a specific event.
-	CanTrack(event pubsub.Event) bool
+	CanTrack(event *pubsub.Event) bool
 
 	// Track tracks an event, returns an error if failed.
-	Track(event pubsub.Event) error
+	Track(event *pubsub.Event) error
 }

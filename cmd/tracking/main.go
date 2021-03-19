@@ -40,8 +40,11 @@ func main() {
 		log.Fatal("failed to parse config")
 	}
 
+	t := make([]trackers.Tracker, 0)
+
 	client := mixpanel.New(config.Mixpanel.Token, config.Mixpanel.URL)
-	tracker := trackers.NewMixpanelTracker(client)
+	mt := trackers.NewMixpanelTracker(client)
+	t = append(t, mt)
 
 	rdb := redis.NewRedis(config.Redis)
 	queue := pubsub.NewQueue(rdb)
@@ -49,13 +52,15 @@ func main() {
 	events := queue.Subscribe(pubsub.RoomTopic, pubsub.UserTopic, pubsub.GroupTopic, pubsub.StoryTopic)
 
 	for evt := range events {
-		if !tracker.CanTrack(evt) {
-			continue
-		}
+		for _, tracker := range t {
+			if !tracker.CanTrack(evt) {
+				continue
+			}
 
-		err := tracker.Track(evt)
-		if err != nil {
-			log.Printf("tacker.Track err %v", err)
+			err := tracker.Track(evt)
+			if err != nil {
+				log.Printf("tacker.Track err %v", err)
+			}
 		}
 	}
-}
+}g

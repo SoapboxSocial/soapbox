@@ -14,6 +14,7 @@ type SearchUser struct {
 	Image       string `json:"image"`
 	Bio         string `json:"bio"`
 	Followers   int    `json:"followers"`
+	RoomTime    int    `json:"room_time"`
 }
 
 type User struct {
@@ -99,7 +100,8 @@ func (ub *UserBackend) GetUserByUsername(username string) (*User, error) {
 func (ub *UserBackend) GetUserForSearchEngine(id int) (*SearchUser, error) {
 	query := `SELECT 
        id, display_name, username, image, bio,
-       (SELECT COUNT(*) FROM followers WHERE user_id = id) AS followers FROM users WHERE id = $1;`
+       (SELECT COUNT(*) FROM followers WHERE user_id = id) AS followers, 
+       (SELECT seconds FROM user_room_time_log WHERE user_id = id AND visibility = 'public') FROM users WHERE id = $1;`
 
 	stmt, err := ub.db.Prepare(query)
 	if err != nil {
@@ -114,6 +116,7 @@ func (ub *UserBackend) GetUserForSearchEngine(id int) (*SearchUser, error) {
 		&profile.Image,
 		&profile.Bio,
 		&profile.Followers,
+		&profile.RoomTime,
 	)
 
 	if err != nil {

@@ -11,4 +11,3 @@ type Tracker interface {
 	// Track tracks an event, returns an error if failed.
 	Track(event pubsub.Event) error
 }
-

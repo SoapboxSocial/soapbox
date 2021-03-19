@@ -42,7 +42,7 @@ func NewMember(id int, name, image string, peer *sfu.Peer, signal signal.Transpo
 		signal:      signal,
 		role:        pb.RoomState_RoomMember_ROLE_REGULAR,
 		dataChannel: NewBufferedDataChannel(),
-		joined: time.Now(),
+		joined:      time.Now(),
 	}
 
 	m.setup()

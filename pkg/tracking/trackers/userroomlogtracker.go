@@ -2,6 +2,7 @@ package trackers
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/tracking/backends"
@@ -20,5 +21,25 @@ func (r UserRoomLogTracker) Track(event pubsub.Event) error {
 	if event.Type != pubsub.EventTypeRoomLeft {
 		return fmt.Errorf("invalid type for tracker: %d", event.Type)
 	}
-	panic("implement me")
+
+	user, err := event.GetInt("creator")
+	if err != nil {
+		return err
+	}
+
+	joined, err := getTime(event, "joined")
+	if err != nil {
+		return err
+	}
+
+	return r.backend.Store(user, event.Params["id"].(string), joined, time.Now())
+}
+
+func getTime(event pubsub.Event, field string) (time.Time, error) {
+	value, err := event.GetInt("id")
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	return time.Unix(int64(value), 0), nil
 }

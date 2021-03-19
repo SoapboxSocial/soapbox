@@ -179,7 +179,7 @@ func (e *Endpoint) search(index, query string, limit, offset int) (*internal.Res
 		if query == "*" {
 			config = append(config, e.client.Search.WithSort("room_time:desc", "followers:desc"))
 		} else {
-			config = append(config, e.client.Search.WithSort("_score"))
+			config = append(config, e.client.Search.WithSort("_score:desc"))
 		}
 	}
 

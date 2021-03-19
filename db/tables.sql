@@ -181,7 +181,7 @@ CREATE OR REPLACE FUNCTION log_user_room_time()
         VALUES(NEW.user_id, DATEDIFF('second', NEW.join_time, NEW.left_time), NEW.visibility)
             ON CONFLICT ON CONSTRAINT idx_user_room_time_log
             DO
-                UPDATE SET seconds + DATEDIFF('second', NEW.join_time, NEW.left_time);
+                UPDATE SET seconds = seconds + DATE_PART('second', NEW.left_time - NEW.join_time);
     RETURN NULL;
     END;
     $user_room_time$;

@@ -1,3 +1,5 @@
+SET timezone = 'Europe/Zurich';
+
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     display_name VARCHAR(256) NOT NULL,
@@ -146,3 +148,46 @@ CREATE TABLE IF NOT EXISTS minis (
 -- Inserting apps
 INSERT INTO mini_developers (name) VALUES ('Soapbox');
 INSERT INTO minis (name, image, slug, developer_id) VALUES ('Polls', '', '/polls', 1);
+
+CREATE TABLE IF NOT EXISTS user_room_logs (
+    user_id INT NOT NULL,
+    room VARCHAR(27) NOT NULL,
+    join_time TIMESTAMPTZ,
+    left_time TIMESTAMPTZ,
+    visibility VARCHAR(7),
+    CHECK (visibility IN ('public', 'private')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX idx_user_room_logs_user_join ON user_room_logs (user_id, room, join_time);
+
+CREATE TABLE IF NOT EXISTS user_room_time_log (
+    user_id INT NOT NULL,
+    seconds INT NOT NULL,
+    visibility VARCHAR(7),
+    CHECK (visibility IN ('public', 'private')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX idx_user_room_time_log ON user_room_time_log (user_id, visibility);
+
+CREATE OR REPLACE FUNCTION log_user_room_time()
+    RETURNS TRIGGER
+    LANGUAGE PLPGSQL
+    AS $user_room_time$
+    BEGIN
+        -- This inserts or updates the time a user has spent in a specific room type.
+        INSERT INTO user_room_time_log (user_id, seconds, visibility)
+        VALUES(NEW.user_id, DATEDIFF('second', NEW.join_time, NEW.left_time), NEW.visibility)
+            ON CONFLICT ON CONSTRAINT idx_user_room_time_log
+            DO
+                UPDATE SET seconds + DATEDIFF('second', NEW.join_time, NEW.left_time);
+    RETURN NULL;
+    END;
+    $user_room_time$;
+
+CREATE TRIGGER calculate_room_time
+    AFTER INSERT
+    ON user_room_time_log
+    FOR EACH ROW
+    EXECUTE PROCEDURE log_user_room_time();

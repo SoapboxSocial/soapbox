@@ -2,6 +2,7 @@ package pubsub
 
 import (
 	"fmt"
+	"time"
 )
 
 type EventType int
@@ -113,10 +114,10 @@ func NewRoomInviteEvent(name, room string, creator, target int) Event {
 	}
 }
 
-func NewRoomLeftEvent(room string, user int) Event {
+func NewRoomLeftEvent(room string, user int, joined time.Time) Event {
 	return Event{
 		Type:   EventTypeRoomLeft,
-		Params: map[string]interface{}{"id": room, "creator": user},
+		Params: map[string]interface{}{"id": room, "creator": user, "joined": joined.Unix()},
 	}
 }
 

@@ -5,6 +5,7 @@ import (
 	"log"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/pion/ion-sfu/pkg/sfu"
 	"github.com/pion/webrtc/v3"
@@ -21,6 +22,8 @@ type Member struct {
 	image string
 	muted bool
 	role  pb.RoomState_RoomMember_Role
+
+	joined time.Time
 
 	// @TODO MIGHT MAKE SENSE TO MOVE THIS INTO A CLASS THAT MANAGES CONNECTION STUFF SIMILAR TO HOW IT WORKS ON CLIENT.
 	peer   *sfu.Peer
@@ -39,10 +42,15 @@ func NewMember(id int, name, image string, peer *sfu.Peer, signal signal.Transpo
 		signal:      signal,
 		role:        pb.RoomState_RoomMember_ROLE_REGULAR,
 		dataChannel: NewBufferedDataChannel(),
+		joined: time.Now(),
 	}
 
 	m.setup()
 	return m
+}
+
+func (m *Member) Joined() time.Time {
+	return m.joined
 }
 
 func (m *Member) Mute() {

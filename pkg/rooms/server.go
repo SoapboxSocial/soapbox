@@ -277,11 +277,11 @@ func (s *Server) createRoom(id, name string, owner int, visibility pb.Visibility
 
 	room := NewRoom(id, name, group, owner, visibility, session, s.queue)
 
-	room.OnDisconnected(func(room string, id int) {
+	room.OnDisconnected(func(room string, peer *Member) {
 		go func() {
-			s.currentRoom.RemoveCurrentRoomForUser(id)
+			s.currentRoom.RemoveCurrentRoomForUser(peer.id)
 
-			err := s.queue.Publish(pubsub.RoomTopic, pubsub.NewRoomLeftEvent(room, id))
+			err := s.queue.Publish(pubsub.RoomTopic, pubsub.NewRoomLeftEvent(room, peer.id, peer.joined))
 			if err != nil {
 				log.Printf("queue.Publish err: %v\n", err)
 			}

@@ -178,10 +178,10 @@ CREATE OR REPLACE FUNCTION log_user_room_time()
     BEGIN
         -- This inserts or updates the time a user has spent in a specific room type.
         INSERT INTO user_room_time_log (user_id, seconds, visibility)
-        VALUES(NEW.user_id, DATEDIFF('second', NEW.join_time, NEW.left_time), NEW.visibility)
+        VALUES(NEW.user_id, EXTRACT(EPOCH FROM NEW.left_time - NEW.join_time), NEW.visibility)
             ON CONFLICT ON CONSTRAINT idx_user_room_time_log
             DO
-                UPDATE SET seconds = seconds + DATE_PART('second', NEW.left_time - NEW.join_time);
+                UPDATE SET seconds = seconds + EXTRACT(EPOCH FROM NEW.left_time - NEW.join_time)
     RETURN NULL;
     END;
     $user_room_time$;

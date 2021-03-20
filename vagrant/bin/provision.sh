@@ -38,7 +38,7 @@ mkdir -p $GOPATH/{bin,pkg,src}
 source ~/.bashrc
 
 sudo rpm -Uvh https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x86_64/pgdg-redhat-repo-latest.noarch.rpm
-sudo yum install postgresql96-server postgresql96
+sudo yum install -y postgresql96-server postgresql96
 sudo /usr/pgsql-9.6/bin/postgresql96-setup initdb
 
 sudo systemctl start postgresql-9.6

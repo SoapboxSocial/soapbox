@@ -47,8 +47,8 @@ sudo systemctl enable postgresql-9.6
 sudo su - postgres -c "psql -a -w -f /var/www/db/database.sql"
 sudo su - postgres -c "psql -t voicely -a -w -f /var/www/db/tables.sql"
 
-#rm /var/lib/pgsql/data/pg_hba.conf
-#ln -s /vagrant/conf/postgres.conf /var/lib/pgsql/9.6/data/pg_hba.conf
+rm /var/lib/pgsql/data/pg_hba.conf
+ln -s /vagrant/conf/postgres.conf /var/lib/pgsql/9.6/data/pg_hba.conf
 
 wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.8.1-x86_64.rpm
 wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.8.1-x86_64.rpm.sha512
@@ -60,10 +60,11 @@ sudo ln -s /vagrant/conf/nginx.conf /etc/nginx/nginx.conf
 mkdir -p $GOPATH/src/github.com/soapboxsocial/
 sudo ln -s /var/www/ $GOPATH/src/github.com/soapboxsocial/soapbox
 
-mkdir /conf
+mkdir -p /conf/services
+sudo cp -p sudo cp -R /var/www/conf/services/* /conf/services
+sudo chown nginx:nginx -R /conf/services
 
 sudo ln -s $GOPATH/src/github.com/soapboxsocial/soapbox/conf/services/ /conf/services
-sudo chown nginx:nginx -R /conf/services
 
 sudo mkdir -p /cdn/images/groups/
 sudo chown nginx:nginx -R /cdn/images

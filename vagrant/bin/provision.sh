@@ -44,9 +44,9 @@ sudo /usr/pgsql-9.6/bin/postgresql96-setup initdb
 sudo systemctl start postgresql-9.6
 sudo systemctl enable postgresql-9.6
 
-#sudo su - postgres -c "psql -a -w -f /var/www/db/database.sql"
-#sudo su - postgres -c "psql -t voicely -a -w -f /var/www/db/tables.sql"
-#
+sudo su - postgres -c "psql -a -w -f /var/www/db/database.sql"
+sudo su - postgres -c "psql -t voicely -a -w -f /var/www/db/tables.sql"
+
 #rm /var/lib/pgsql/data/pg_hba.conf
 #ln -s /vagrant/conf/postgres.conf /var/lib/pgsql/9.6/data/pg_hba.conf
 
@@ -60,11 +60,10 @@ sudo ln -s /vagrant/conf/nginx.conf /etc/nginx/nginx.conf
 mkdir -p $GOPATH/src/github.com/soapboxsocial/
 sudo ln -s /var/www/ $GOPATH/src/github.com/soapboxsocial/soapbox
 
-mkdir -p /conf/services
-sudo cp -p sudo cp -R /var/www/conf/services/* /conf/services
-sudo chown nginx:nginx -R /conf/services
+mkdir /conf
 
 sudo ln -s $GOPATH/src/github.com/soapboxsocial/soapbox/conf/services/ /conf/services
+sudo chown nginx:nginx -R /conf/services
 
 sudo mkdir -p /cdn/images/groups/
 sudo chown nginx:nginx -R /cdn/images

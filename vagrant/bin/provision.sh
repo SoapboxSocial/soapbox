@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+sudo echo nameserver 8.8.8.8 >> /etc/resolv.conf
 sudo yum install -y epel-release
 
 sudo yum clean all
@@ -36,17 +37,18 @@ mkdir -p $GOPATH/{bin,pkg,src}
 
 source ~/.bashrc
 
-yum install -y postgresql-server postgresql-contrib
-postgresql-setup initdb
+sudo rpm -Uvh https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+sudo yum install -y postgresql96-server postgresql96
+sudo /usr/pgsql-9.6/bin/postgresql96-setup initdb
 
-systemctl start postgresql
-systemctl enable postgresql
+sudo systemctl start postgresql-9.6
+sudo systemctl enable postgresql-9.6
 
 sudo su - postgres -c "psql -a -w -f /var/www/db/database.sql"
 sudo su - postgres -c "psql -t voicely -a -w -f /var/www/db/tables.sql"
 
-rm /var/lib/pgsql/data/pg_hba.conf
-ln -s /vagrant/conf/postgres.conf /var/lib/pgsql/data/pg_hba.conf
+#rm /var/lib/pgsql/9.6/data/postgresql.conf
+#ln -s /vagrant/conf/postgres.conf /var/lib/pgsql/9.6/data/postgresql.conf
 
 wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.8.1-x86_64.rpm
 wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.8.1-x86_64.rpm.sha512

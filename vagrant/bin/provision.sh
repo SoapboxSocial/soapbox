@@ -61,7 +61,7 @@ mkdir -p $GOPATH/src/github.com/soapboxsocial/
 sudo ln -s /var/www/ $GOPATH/src/github.com/soapboxsocial/soapbox
 
 mkdir -p /conf/services
-sudo cp -p sudo cp -R /var/www/conf/services/* /conf/services
+sudo cp -p /var/www/conf/services/* /conf/services
 sudo chown nginx:nginx -R /conf/services
 
 sudo ln -s $GOPATH/src/github.com/soapboxsocial/soapbox/conf/services/ /conf/services

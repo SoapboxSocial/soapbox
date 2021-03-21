@@ -77,13 +77,24 @@ func (e *Endpoint) rooms(w http.ResponseWriter, r *http.Request) {
 func (e *Endpoint) room(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
+	userID, ok := httputil.GetUserIDFromContext(r.Context())
+	if !ok {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
 	room, err := e.repository.Get(params["id"])
 	if err != nil {
 		httputil.JsonError(w, http.StatusNotFound, httputil.ErrorCodeNotFound, "not found")
 		return
 	}
 
-	err = httputil.JsonEncode(w, room)
+	if !e.server.canJoin(userID, room) {
+		httputil.JsonError(w, http.StatusNotFound, httputil.ErrorCodeNotFound, "not found")
+		return
+	}
+
+	err = httputil.JsonEncode(w, roomToRoomState(room))
 	if err != nil {
 		log.Printf("room error: %v\n", err)
 	}

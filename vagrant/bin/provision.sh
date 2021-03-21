@@ -47,8 +47,8 @@ sudo systemctl enable postgresql-9.6
 sudo su - postgres -c "psql -a -w -f /var/www/db/database.sql"
 sudo su - postgres -c "psql -t voicely -a -w -f /var/www/db/tables.sql"
 
-#rm /var/lib/pgsql/9.6/data/postgresql.conf
-#ln -s /vagrant/conf/postgres.conf /var/lib/pgsql/9.6/data/postgresql.conf
+rm /var/lib/pgsql/9.6/data/pg_hba.conf
+ln -s /vagrant/conf/pg_hba.conf /var/lib/pgsql/9.6/data/pg_hba.conf
 
 wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.8.1-x86_64.rpm
 wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-7.8.1-x86_64.rpm.sha512

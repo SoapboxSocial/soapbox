@@ -11,11 +11,13 @@ import (
 // UserRoomLogTracker tracks a users join / leave room events.
 type UserRoomLogTracker struct {
 	backend *backends.UserRoomLogBackend
+	queue   *pubsub.Queue
 }
 
-func NewUserRoomLogTracker(backend *backends.UserRoomLogBackend) *UserRoomLogTracker {
+func NewUserRoomLogTracker(backend *backends.UserRoomLogBackend, queue *pubsub.Queue) *UserRoomLogTracker {
 	return &UserRoomLogTracker{
 		backend: backend,
+		queue:   queue,
 	}
 }
 
@@ -38,7 +40,14 @@ func (r UserRoomLogTracker) Track(event *pubsub.Event) error {
 		return err
 	}
 
-	return r.backend.Store(user, event.Params["id"].(string), joined, time.Now())
+	err = r.backend.Store(user, event.Params["id"].(string), joined, time.Now())
+	if err != nil {
+		return err
+	}
+
+	_ = r.queue.Publish(pubsub.UserTopic, pubsub.NewUserUpdateEvent(user))
+
+	return nil
 }
 
 func getTime(event *pubsub.Event, field string) (time.Time, error) {

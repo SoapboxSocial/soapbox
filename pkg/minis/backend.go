@@ -46,14 +46,14 @@ func (b *Backend) GetMiniWithSlug(slug string) (*Mini, error) {
 	}
 
 	mini := &Mini{}
-	err = stmt.QueryRow(slug).Scan(&mini.ID, &mini.Name, &mini.Image, &mini.Size, mini.Description)
+	err = stmt.QueryRow(slug).Scan(&mini.ID, &mini.Name, &mini.Image, &mini.Size, &mini.Description)
 	if err != nil {
 		return nil, err
 	}
 
 	mini.Slug = slug
 
-	return nil, nil
+	return mini, nil
 }
 
 func (b *Backend) GetMiniWithID(id int) (*Mini, error) {
@@ -63,12 +63,12 @@ func (b *Backend) GetMiniWithID(id int) (*Mini, error) {
 	}
 
 	mini := &Mini{}
-	err = stmt.QueryRow(id).Scan(&mini.Name, &mini.Image, &mini.Slug, &mini.Size, mini.Description)
+	err = stmt.QueryRow(id).Scan(&mini.Name, &mini.Image, &mini.Slug, &mini.Size, &mini.Description)
 	if err != nil {
 		return nil, err
 	}
 
 	mini.ID = id
 
-	return nil, nil
+	return mini, nil
 }

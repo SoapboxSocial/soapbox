@@ -173,20 +173,21 @@ CREATE UNIQUE INDEX idx_user_room_time_log ON user_room_time_log (user_id, visib
 
 CREATE OR REPLACE FUNCTION log_user_room_time()
     RETURNS TRIGGER
-    LANGUAGE PLPGSQL
     AS $user_room_time$
     BEGIN
         -- This inserts or updates the time a user has spent in a specific room type.
-        INSERT INTO user_room_time_log (user_id, seconds, visibility)
+        INSERT INTO user_room_time_log(user_id, seconds, visibility)
         VALUES(NEW.user_id, EXTRACT(EPOCH FROM (NEW.left_time - NEW.join_time)), NEW.visibility)
-            ON CONFLICT ON CONSTRAINT idx_user_room_time_log
+            ON CONFLICT (user_id, visibility)
             DO
-                UPDATE SET seconds = seconds + EXTRACT(EPOCH FROM (NEW.left_time - NEW.join_time));
+                UPDATE SET seconds = user_room_time_log.seconds + EXTRACT(EPOCH FROM (NEW.left_time - NEW.join_time));
+        RETURN NEW;
     END;
-    $user_room_time$;
+    $user_room_time$
+    LANGUAGE PLPGSQL;
 
 CREATE TRIGGER calculate_room_time
     AFTER INSERT
-    ON user_room_time_log
+    ON user_room_logs
     FOR EACH ROW
     EXECUTE PROCEDURE log_user_room_time();

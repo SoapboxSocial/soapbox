@@ -58,7 +58,7 @@ func main() {
 		t = append(t, mt)
 	}
 
-	if config.Trackers.UserLog {
+	if config.Trackers.RoomTimeLog {
 		db, err := sql.Open(config.DB)
 		if err != nil {
 			log.Fatalf("failed to open db: %s", err)

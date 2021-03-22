@@ -39,6 +39,7 @@ func runWriter(*cobra.Command, []string) error {
 	index := 0
 	for rows.Next() {
 		if index % 15 == 0 {
+			log.Printf("indexed %d users, sleeping for 5s", index)
 			time.Sleep(5 * time.Second)
 		}
 
@@ -55,6 +56,8 @@ func runWriter(*cobra.Command, []string) error {
 
 		index++
 	}
+
+	log.Printf("finished, total indexed: %d", index)
 
 	return nil
 }

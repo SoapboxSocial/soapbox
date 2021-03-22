@@ -114,10 +114,10 @@ func NewRoomInviteEvent(name, room string, creator, target int) Event {
 	}
 }
 
-func NewRoomLeftEvent(room string, user int, joined time.Time) Event {
+func NewRoomLeftEvent(room string, user int, visibility RoomVisibility, joined time.Time) Event {
 	return Event{
 		Type:   EventTypeRoomLeft,
-		Params: map[string]interface{}{"id": room, "creator": user, "joined": joined.Unix()},
+		Params: map[string]interface{}{"id": room, "creator": user, "joined": joined.Unix(), "visibility": visibility},
 	}
 }
 

@@ -108,6 +108,8 @@ func (ub *UserBackend) GetUserForSearchEngine(id int) (*SearchUser, error) {
 		return nil, err
 	}
 
+	roomTime := sql.NullInt64{}
+
 	profile := &SearchUser{}
 	err = stmt.QueryRow(id).Scan(
 		&profile.ID,
@@ -116,8 +118,12 @@ func (ub *UserBackend) GetUserForSearchEngine(id int) (*SearchUser, error) {
 		&profile.Image,
 		&profile.Bio,
 		&profile.Followers,
-		&profile.RoomTime,
+		&roomTime,
 	)
+
+	if roomTime.Valid {
+		profile.RoomTime = int(roomTime.Int64)
+	}
 
 	if err != nil {
 		return nil, err

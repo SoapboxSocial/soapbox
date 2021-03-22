@@ -40,7 +40,7 @@ func (r UserRoomLogTracker) Track(event *pubsub.Event) error {
 		return err
 	}
 
-	err = r.backend.Store(user, event.Params["id"].(string), joined, time.Now())
+	err = r.backend.Store(user, event.Params["id"].(string), event.Params["visibility"].(string), joined, time.Now())
 	if err != nil {
 		return err
 	}

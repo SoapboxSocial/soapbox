@@ -15,6 +15,10 @@ import (
 )
 
 type Conf struct {
+	Trackers struct {
+		RoomTimeLog bool `mapstructure:"roomtimelog"`
+		Mixpanel    bool `mapstructure:"mixpanel"`
+	} `mapstructure:"trackers"`
 	Mixpanel struct {
 		Token string `mapstructure:"token"`
 		URL   string `mapstructure:"url"`
@@ -48,18 +52,22 @@ func main() {
 
 	t := make([]trackers.Tracker, 0)
 
-	client := mixpanel.New(config.Mixpanel.Token, config.Mixpanel.URL)
-	mt := trackers.NewMixpanelTracker(client)
-	t = append(t, mt)
-
-	db, err := sql.Open(config.DB)
-	if err != nil {
-		log.Fatalf("failed to open db: %s", err)
+	if config.Trackers.Mixpanel {
+		client := mixpanel.New(config.Mixpanel.Token, config.Mixpanel.URL)
+		mt := trackers.NewMixpanelTracker(client)
+		t = append(t, mt)
 	}
 
-	backend := backends.NewUserRoomLogBackend(db)
-	rt := trackers.NewUserRoomLogTracker(backend, queue)
-	t = append(t, rt)
+	if config.Trackers.UserLog {
+		db, err := sql.Open(config.DB)
+		if err != nil {
+			log.Fatalf("failed to open db: %s", err)
+		}
+
+		backend := backends.NewUserRoomLogBackend(db)
+		rt := trackers.NewUserRoomLogTracker(backend, queue)
+		t = append(t, rt)
+	}
 
 	events := queue.Subscribe(pubsub.RoomTopic, pubsub.UserTopic, pubsub.GroupTopic, pubsub.StoryTopic)
 

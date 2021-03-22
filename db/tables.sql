@@ -181,8 +181,7 @@ CREATE OR REPLACE FUNCTION log_user_room_time()
         VALUES(NEW.user_id, EXTRACT(EPOCH FROM (NEW.left_time - NEW.join_time)), NEW.visibility)
             ON CONFLICT ON CONSTRAINT idx_user_room_time_log
             DO
-                UPDATE SET seconds = seconds + EXTRACT(EPOCH FROM (NEW.left_time - NEW.join_time))
-    RETURN NULL;
+                UPDATE SET seconds = seconds + EXTRACT(EPOCH FROM (NEW.left_time - NEW.join_time));
     END;
     $user_room_time$;
 

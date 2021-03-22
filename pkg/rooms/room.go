@@ -93,7 +93,7 @@ func NewRoom(
 		adminsOnDisconnected: make(map[int]bool),
 		session:              session,
 		queue:                queue,
-		minis: backend,
+		minis:                backend,
 	}
 
 	r.invited[owner] = true
@@ -702,17 +702,19 @@ func (r *Room) onOpenMini(from int, mini *pb.Command_OpenMini) {
 		return
 	}
 
-	r.mux.Lock()
-	r.mini = &pb.RoomState_Mini{
-		Id: int64(resp.ID),
+	minipb := &pb.RoomState_Mini{
+		Id:   int64(resp.ID),
 		Slug: resp.Slug,
 		// @TODO SIZE
 	}
+
+	r.mux.Lock()
+	r.mini = minipb
 	r.mux.Unlock()
 
 	r.notify(&pb.Event{
 		From:    int64(from),
-		Payload: &pb.Event_OpenedMini_{OpenedMini: &pb.Event_OpenedMini{Mini: mini.Mini}},
+		Payload: &pb.Event_OpenedMini_{OpenedMini: &pb.Event_OpenedMini{Mini: minipb}},
 	})
 }
 

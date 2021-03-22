@@ -43,7 +43,6 @@ func (b *Backend) GetMiniWithSlug(slug string) (*Mini, error) {
 	return nil, nil
 }
 
-
 func (b *Backend) GetMiniWithID(id int64) (*Mini, error) {
 	return nil, nil
 }

@@ -140,7 +140,7 @@ CREATE TABLE IF NOT EXISTS minis (
     name VARCHAR(100) NOT NULL,
     image VARCHAR(100) NOT NULL,
     slug VARCHAR(100) NOT NULL,
-    size INT NOT NULL, -- 0 - Small, 1 - Regular, 2 - large
+    size INT NOT NULL DEFAULT 1, -- 0 - Small, 1 - Regular, 2 - large
     description TEXT NOT NULL,
     developer_id INT NOT NULL,
     FOREIGN KEY (developer_id) REFERENCES mini_developers(id) ON DELETE CASCADE
@@ -148,7 +148,7 @@ CREATE TABLE IF NOT EXISTS minis (
 
 -- Inserting apps
 INSERT INTO mini_developers (name) VALUES ('Soapbox');
-INSERT INTO minis (name, image, slug, developer_id) VALUES ('Polls', '', '/polls', 1);
+INSERT INTO minis (name, image, slug, size, developer_id) VALUES ('Polls', '', '/polls', 1, 1);
 
 CREATE TABLE IF NOT EXISTS user_room_logs (
     user_id INT NOT NULL,

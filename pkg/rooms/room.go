@@ -714,7 +714,7 @@ func (r *Room) onOpenMini(from int, mini *pb.Command_OpenMini) {
 
 	r.notify(&pb.Event{
 		From:    int64(from),
-		Payload: &pb.Event_OpenedMini_{OpenedMini: &pb.Event_OpenedMini{Mini: minipb}},
+		Payload: &pb.Event_OpenedMini_{OpenedMini: &pb.Event_OpenedMini{Slug: minipb.Slug, Mini: minipb}},
 	})
 }
 

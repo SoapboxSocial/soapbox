@@ -31,7 +31,7 @@ func runWorker(*cobra.Command, []string) error {
 
 	db, err := sql.Open(config.DB)
 	if err != nil {
-		log.Fatalf("failed to open db: %s", err)
+		return err
 	}
 
 	client, err = elasticsearch.NewDefaultClient()

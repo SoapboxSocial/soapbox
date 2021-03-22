@@ -35,7 +35,9 @@ type Conf struct {
 func init() {
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVarP(&file, "config", "c", "config.toml", "config file")
+
 	rootCmd.AddCommand(worker)
+	rootCmd.AddCommand(writer)
 }
 
 // Execute executes the root command.

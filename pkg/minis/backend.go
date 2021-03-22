@@ -10,7 +10,7 @@ func NewBackend(db *sql.DB) *Backend {
 	return &Backend{db: db}
 }
 
-func (b Backend) ListMinis() ([]Mini, error) {
+func (b *Backend) ListMinis() ([]Mini, error) {
 	query := `SELECT id, name, slug, image, description FROM minis`
 
 	stmt, err := b.db.Prepare(query)
@@ -37,4 +37,13 @@ func (b Backend) ListMinis() ([]Mini, error) {
 	}
 
 	return result, nil
+}
+
+func (b *Backend) GetMiniWithSlug(slug string) (*Mini, error) {
+	return nil, nil
+}
+
+
+func (b *Backend) GetMiniWithID(id int64) (*Mini, error) {
+	return nil, nil
 }

@@ -29,7 +29,7 @@ const (
 type (
 	JoinHandlerFunc         func(room *Room, me *Member, isNew bool)
 	InviteHandlerFunc       func(room string, from, to int)
-	DisconnectedHandlerFunc func(room string, id int)
+	DisconnectedHandlerFunc func(room string, peer *Member)
 )
 
 type Room struct {
@@ -328,7 +328,7 @@ func (r *Room) onDisconnected(id int64) {
 
 	r.electRandomAdmin(id)
 
-	r.onDisconnectedHandlerFunc(r.id, int(id))
+	r.onDisconnectedHandlerFunc(r.id, peer)
 }
 
 func (r *Room) electRandomAdmin(previous int64) {

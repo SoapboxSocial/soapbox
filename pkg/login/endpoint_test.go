@@ -17,9 +17,10 @@ import (
 
 	"github.com/alicebob/miniredis"
 
+	"github.com/soapboxsocial/soapbox/mocks"
+
 	"github.com/soapboxsocial/soapbox/pkg/images"
 	"github.com/soapboxsocial/soapbox/pkg/login"
-	"github.com/soapboxsocial/soapbox/pkg/login/internal/mocks"
 	"github.com/soapboxsocial/soapbox/pkg/mail"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"

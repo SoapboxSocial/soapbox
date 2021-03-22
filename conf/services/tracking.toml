@@ -6,3 +6,11 @@ database = 0
 [mixpanel]
 token = "d124ce8f1516eb7baa7980f4de68ded5"
 url = "https://api-eu.mixpanel.com"
+
+[db]
+host = "127.0.0.1"
+port = 5432
+user = "voicely"
+password = "voicely"
+database = "voicely"
+ssl = "disable"

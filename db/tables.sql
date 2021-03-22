@@ -140,6 +140,7 @@ CREATE TABLE IF NOT EXISTS minis (
     name VARCHAR(100) NOT NULL,
     image VARCHAR(100) NOT NULL,
     slug VARCHAR(100) NOT NULL,
+    size INT NOT NULL, -- 0 - Small, 1 - Regular, 2 - large
     description TEXT NOT NULL,
     developer_id INT NOT NULL,
     FOREIGN KEY (developer_id) REFERENCES mini_developers(id) ON DELETE CASCADE

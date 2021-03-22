@@ -40,9 +40,35 @@ func (b *Backend) ListMinis() ([]Mini, error) {
 }
 
 func (b *Backend) GetMiniWithSlug(slug string) (*Mini, error) {
+	stmt, err := b.db.Prepare("SELECT id, name, image, size, description FROM minis WHERE slug = $1;")
+	if err != nil {
+		return nil, err
+	}
+
+	mini := &Mini{}
+	err = stmt.QueryRow(slug).Scan(&mini.ID, &mini.Name, &mini.Image, &mini.Size, mini.Description)
+	if err != nil {
+		return nil, err
+	}
+
+	mini.Slug = slug
+
 	return nil, nil
 }
 
-func (b *Backend) GetMiniWithID(id int64) (*Mini, error) {
+func (b *Backend) GetMiniWithID(id int) (*Mini, error) {
+	stmt, err := b.db.Prepare("SELECT name, image, slug, size, description FROM minis WHERE id = $1;")
+	if err != nil {
+		return nil, err
+	}
+
+	mini := &Mini{}
+	err = stmt.QueryRow(id).Scan(&mini.Name, &mini.Image, &mini.Slug, &mini.Size, mini.Description)
+	if err != nil {
+		return nil, err
+	}
+
+	mini.ID = id
+
 	return nil, nil
 }

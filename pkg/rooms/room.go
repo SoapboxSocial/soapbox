@@ -247,16 +247,21 @@ func (r *Room) ToProto() *pb.RoomState {
 		}
 	}
 
-	return &pb.RoomState{
+	state := &pb.RoomState{
 		Id:         r.id,
 		Name:       r.name,
 		Members:    members,
 		Visibility: r.visibility,
 		Group:      group,
 		Link:       r.link,
-		MiniOld:    r.mini.Slug,
 		Mini:       r.mini,
 	}
+
+	if r.mini != nil {
+		state.MiniOld = r.mini.Slug
+	}
+
+	return state
 }
 
 func (r *Room) Handle(me *Member) {
@@ -735,7 +740,7 @@ func (r *Room) onCloseMini(from int) {
 
 func (r *Room) getMini(cmd *pb.Command_OpenMini) (*minis.Mini, error) {
 	if cmd.GetId() != 0 {
-		return r.minis.GetMiniWithID(cmd.Id)
+		return r.minis.GetMiniWithID(int(cmd.Id))
 	}
 
 	if cmd.GetMini() != "" {

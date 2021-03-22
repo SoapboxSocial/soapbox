@@ -1,6 +1,6 @@
 [trackers]
 roomtimelog = true
-mixpanel = true
+mixpanel = false
 
 [redis]
 host = "localhost"

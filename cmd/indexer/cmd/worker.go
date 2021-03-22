@@ -26,10 +26,6 @@ var worker = &cobra.Command{
 	RunE:  runWorker,
 }
 
-var client *elasticsearch.Client
-var userBackend *users.UserBackend
-var groupsBackend *groups.Backend
-
 func runWorker(*cobra.Command, []string) error {
 	rdb := redis.NewRedis(config.Redis)
 
@@ -148,4 +144,3 @@ func groupDeleteRequest(event *pubsub.Event) (esapi.Request, error) {
 		Refresh:    "true",
 	}, nil
 }
-

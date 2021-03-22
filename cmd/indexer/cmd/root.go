@@ -3,14 +3,22 @@ package cmd
 import (
 	"log"
 
+	"github.com/elastic/go-elasticsearch/v7"
 	"github.com/spf13/cobra"
 
 	"github.com/soapboxsocial/soapbox/pkg/conf"
+	"github.com/soapboxsocial/soapbox/pkg/groups"
+	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
 var (
-	file string
+	file   string
 	config *Conf
+
+	// Used by some of the commands.
+	client        *elasticsearch.Client
+	userBackend   *users.UserBackend
+	groupsBackend *groups.Backend
 
 	rootCmd = &cobra.Command{
 		Use:   "indexer",
@@ -23,7 +31,6 @@ type Conf struct {
 	Redis conf.RedisConf    `mapstructure:"redis"`
 	DB    conf.PostgresConf `mapstructure:"db"`
 }
-
 
 func init() {
 	cobra.OnInitialize(initConfig)

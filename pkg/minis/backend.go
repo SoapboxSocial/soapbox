@@ -11,7 +11,7 @@ func NewBackend(db *sql.DB) *Backend {
 }
 
 func (b *Backend) ListMinis() ([]Mini, error) {
-	query := `SELECT id, name, slug, image, description FROM minis`
+	query := `SELECT id, name, slug, image, size, description FROM minis`
 
 	stmt, err := b.db.Prepare(query)
 	if err != nil {
@@ -28,7 +28,7 @@ func (b *Backend) ListMinis() ([]Mini, error) {
 	for rows.Next() {
 		mini := Mini{}
 
-		err := rows.Scan(&mini.ID, &mini.Name, &mini.Slug, &mini.Image, &mini.Description)
+		err := rows.Scan(&mini.ID, &mini.Name, &mini.Slug, &mini.Image, &mini.Size, &mini.Description)
 		if err != nil {
 			continue
 		}

@@ -705,7 +705,7 @@ func (r *Room) onOpenMini(from int, mini *pb.Command_OpenMini) {
 	minipb := &pb.RoomState_Mini{
 		Id:   int64(resp.ID),
 		Slug: resp.Slug,
-		// @TODO SIZE
+		Size: pb.RoomState_Mini_Size(int32(resp.Size)),
 	}
 
 	r.mux.Lock()

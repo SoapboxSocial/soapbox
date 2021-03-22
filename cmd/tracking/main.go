@@ -9,6 +9,8 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/conf"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/redis"
+	"github.com/soapboxsocial/soapbox/pkg/sql"
+	"github.com/soapboxsocial/soapbox/pkg/tracking/backends"
 	"github.com/soapboxsocial/soapbox/pkg/tracking/trackers"
 )
 
@@ -17,7 +19,8 @@ type Conf struct {
 		Token string `mapstructure:"token"`
 		URL   string `mapstructure:"url"`
 	} `mapstructure:"mixpanel"`
-	Redis conf.RedisConf `mapstructure:"redis"`
+	Redis conf.RedisConf    `mapstructure:"redis"`
+	DB    conf.PostgresConf `mapstructure:"db"`
 }
 
 func parse() (*Conf, error) {
@@ -45,6 +48,15 @@ func main() {
 	client := mixpanel.New(config.Mixpanel.Token, config.Mixpanel.URL)
 	mt := trackers.NewMixpanelTracker(client)
 	t = append(t, mt)
+
+	db, err := sql.Open(config.DB)
+	if err != nil {
+		log.Fatalf("failed to open db: %s", err)
+	}
+
+	backend := backends.NewUserRoomLogBackend(db)
+	rt := trackers.NewUserRoomLogTracker(backend)
+	t = append(t, rt)
 
 	rdb := redis.NewRedis(config.Redis)
 	queue := pubsub.NewQueue(rdb)

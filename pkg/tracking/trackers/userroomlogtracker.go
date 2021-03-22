@@ -13,6 +13,12 @@ type UserRoomLogTracker struct {
 	backend *backends.UserRoomLogBackend
 }
 
+func NewUserRoomLogTracker(backend *backends.UserRoomLogBackend) *UserRoomLogTracker {
+	return &UserRoomLogTracker{
+		backend: backend,
+	}
+}
+
 func (r UserRoomLogTracker) CanTrack(event *pubsub.Event) bool {
 	return event.Type == pubsub.EventTypeRoomLeft
 }

@@ -33,7 +33,7 @@ func runWriter(*cobra.Command, []string) error {
 
 	rows, err := db.Query("SELECT id FROM users;")
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	index := 0

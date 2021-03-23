@@ -9,6 +9,8 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/redis"
 )
 
+// @TODO JUST MAKE THIS TRACKING
+
 func parse() (*conf.RedisConf, error) {
 	var file string
 	flag.StringVar(&file, "c", "config.toml", "config file")

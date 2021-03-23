@@ -32,9 +32,9 @@ func TestEndpoint_ListMinis(t *testing.T) {
 	rr := httptest.NewRecorder()
 	handler := endpoint.Router()
 
-	mock.ExpectPrepare("SELECT id, name, slug, image, description FROM minis").
+	mock.ExpectPrepare("SELECT id, name, slug, image, size, description FROM minis").
 		ExpectQuery().
-		WillReturnRows(mock.NewRows([]string{"id", "name", "slug", "image", "description"}).AddRow(1, "name", "slug", "image", ""))
+		WillReturnRows(mock.NewRows([]string{"id", "name", "slug", "image", "size", "description"}).AddRow(1, "name", "slug", "image", 0, ""))
 
 	reader := strings.NewReader("")
 

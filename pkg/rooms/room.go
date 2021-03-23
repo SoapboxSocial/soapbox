@@ -2,6 +2,7 @@ package rooms
 
 import (
 	"context"
+	"errors"
 	"io"
 	"log"
 	"sync"
@@ -12,6 +13,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/soapboxsocial/soapbox/pkg/groups"
+	"github.com/soapboxsocial/soapbox/pkg/minis"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/internal"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
@@ -29,7 +31,7 @@ const (
 type (
 	JoinHandlerFunc         func(room *Room, me *Member, isNew bool)
 	InviteHandlerFunc       func(room string, from, to int)
-	DisconnectedHandlerFunc func(room string, id int)
+	DisconnectedHandlerFunc func(room string, peer *Member)
 )
 
 type Room struct {
@@ -52,7 +54,9 @@ type Room struct {
 	adminsOnDisconnected map[int]bool
 
 	link string
-	mini string
+	mini *pb.RoomState_Mini
+
+	minis *minis.Backend
 
 	peerToMember map[string]int
 
@@ -65,7 +69,16 @@ type Room struct {
 	queue *pubsub.Queue
 }
 
-func NewRoom(id, name string, group *groups.Group, owner int, visibility pb.Visibility, session *sfu.Session, queue *pubsub.Queue) *Room {
+func NewRoom(
+	id,
+	name string,
+	group *groups.Group,
+	owner int,
+	visibility pb.Visibility,
+	session *sfu.Session,
+	queue *pubsub.Queue,
+	backend *minis.Backend,
+) *Room {
 	r := &Room{
 		id:                   id,
 		name:                 name,
@@ -80,6 +93,7 @@ func NewRoom(id, name string, group *groups.Group, owner int, visibility pb.Visi
 		adminsOnDisconnected: make(map[int]bool),
 		session:              session,
 		queue:                queue,
+		minis:                backend,
 	}
 
 	r.invited[owner] = true
@@ -233,7 +247,7 @@ func (r *Room) ToProto() *pb.RoomState {
 		}
 	}
 
-	return &pb.RoomState{
+	state := &pb.RoomState{
 		Id:         r.id,
 		Name:       r.name,
 		Members:    members,
@@ -242,6 +256,12 @@ func (r *Room) ToProto() *pb.RoomState {
 		Link:       r.link,
 		Mini:       r.mini,
 	}
+
+	if r.mini != nil {
+		state.MiniOld = r.mini.Slug
+	}
+
+	return state
 }
 
 func (r *Room) Handle(me *Member) {
@@ -328,7 +348,7 @@ func (r *Room) onDisconnected(id int64) {
 
 	r.electRandomAdmin(id)
 
-	r.onDisconnectedHandlerFunc(r.id, int(id))
+	r.onDisconnectedHandlerFunc(r.id, peer)
 }
 
 func (r *Room) electRandomAdmin(previous int64) {
@@ -638,7 +658,7 @@ func (r *Room) onPinLink(from int, cmd *pb.Command_PinLink) {
 	mini := r.mini
 	r.mux.RUnlock()
 
-	if mini != "" {
+	if mini != nil {
 		return
 	}
 
@@ -682,13 +702,24 @@ func (r *Room) onOpenMini(from int, mini *pb.Command_OpenMini) {
 		pubsub.NewRoomOpenMiniEvent(from, mini.Mini, r.id),
 	)
 
+	resp, err := r.getMini(mini)
+	if err != nil {
+		return
+	}
+
+	minipb := &pb.RoomState_Mini{
+		Id:   int64(resp.ID),
+		Slug: resp.Slug,
+		Size: pb.RoomState_Mini_Size(int32(resp.Size)),
+	}
+
 	r.mux.Lock()
-	r.mini = mini.Mini
+	r.mini = minipb
 	r.mux.Unlock()
 
 	r.notify(&pb.Event{
 		From:    int64(from),
-		Payload: &pb.Event_OpenedMini_{OpenedMini: &pb.Event_OpenedMini{Mini: mini.Mini}},
+		Payload: &pb.Event_OpenedMini_{OpenedMini: &pb.Event_OpenedMini{Slug: minipb.Slug, Mini: minipb}},
 	})
 }
 
@@ -698,13 +729,25 @@ func (r *Room) onCloseMini(from int) {
 	}
 
 	r.mux.Lock()
-	r.mini = ""
+	r.mini = nil
 	r.mux.Unlock()
 
 	r.notify(&pb.Event{
 		From:    int64(from),
 		Payload: &pb.Event_ClosedMini_{ClosedMini: &pb.Event_ClosedMini{}},
 	})
+}
+
+func (r *Room) getMini(cmd *pb.Command_OpenMini) (*minis.Mini, error) {
+	if cmd.GetId() != 0 {
+		return r.minis.GetMiniWithID(int(cmd.Id))
+	}
+
+	if cmd.GetMini() != "" {
+		return r.minis.GetMiniWithSlug(cmd.Mini)
+	}
+
+	return nil, errors.New("no mini found")
 }
 
 func (r *Room) member(id int) *Member {

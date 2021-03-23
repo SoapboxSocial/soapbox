@@ -1,3 +1,5 @@
+SET timezone = 'Europe/Zurich';
+
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     display_name VARCHAR(256) NOT NULL,
@@ -138,6 +140,7 @@ CREATE TABLE IF NOT EXISTS minis (
     name VARCHAR(100) NOT NULL,
     image VARCHAR(100) NOT NULL,
     slug VARCHAR(100) NOT NULL,
+    size INT NOT NULL DEFAULT 1, -- 0 - Small, 1 - Regular, 2 - large
     description TEXT NOT NULL,
     developer_id INT NOT NULL,
     FOREIGN KEY (developer_id) REFERENCES mini_developers(id) ON DELETE CASCADE
@@ -145,4 +148,47 @@ CREATE TABLE IF NOT EXISTS minis (
 
 -- Inserting apps
 INSERT INTO mini_developers (name) VALUES ('Soapbox');
-INSERT INTO minis (name, image, slug, developer_id) VALUES ('Polls', '', '/polls', 1);
+INSERT INTO minis (name, image, slug, size, developer_id) VALUES ('Polls', '', '/polls', 1, 1);
+
+CREATE TABLE IF NOT EXISTS user_room_logs (
+    user_id INT NOT NULL,
+    room VARCHAR(27) NOT NULL,
+    join_time TIMESTAMPTZ,
+    left_time TIMESTAMPTZ,
+    visibility VARCHAR(7),
+    CHECK (visibility IN ('public', 'private')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX idx_user_room_logs_user_join ON user_room_logs (user_id, room, join_time);
+
+CREATE TABLE IF NOT EXISTS user_room_time (
+    user_id INT NOT NULL,
+    seconds INT NOT NULL,
+    visibility VARCHAR(7),
+    CHECK (visibility IN ('public', 'private')),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX idx_user_room_time ON user_room_time (user_id, visibility);
+
+CREATE OR REPLACE FUNCTION update_user_room_time()
+    RETURNS TRIGGER
+    AS $user_room_time$
+    BEGIN
+        -- This inserts or updates the time a user has spent in a specific room type.
+        INSERT INTO user_room_time(user_id, seconds, visibility)
+        VALUES(NEW.user_id, EXTRACT(EPOCH FROM (NEW.left_time - NEW.join_time)), NEW.visibility)
+            ON CONFLICT (user_id, visibility)
+            DO
+                UPDATE SET seconds = user_room_time.seconds + EXTRACT(EPOCH FROM (NEW.left_time - NEW.join_time));
+        RETURN NEW;
+    END;
+    $user_room_time$
+    LANGUAGE PLPGSQL;
+
+CREATE TRIGGER calculate_room_time
+    AFTER INSERT
+    ON user_room_logs
+    FOR EACH ROW
+    EXECUTE PROCEDURE update_user_room_time();

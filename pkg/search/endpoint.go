@@ -175,8 +175,12 @@ func (e *Endpoint) search(index, query string, limit, offset int) (*internal.Res
 		e.client.Search.WithTrackTotalHits(true),
 	}
 
-	if index == "users" && query == "*" {
-		config = append(config, e.client.Search.WithSort("followers:desc"))
+	if index == "users" {
+		if query == "*" {
+			config = append(config, e.client.Search.WithSort("room_time:desc", "followers:desc"))
+		} else {
+			config = append(config, e.client.Search.WithSort("_score:desc"))
+		}
 	}
 
 	res, err := e.client.Search(config...)

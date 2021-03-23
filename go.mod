@@ -50,4 +50,4 @@ require (
 	gopkg.in/ini.v1 v1.62.0 // indirect
 )
 
-replace github.com/pion/ion-sfu => github.com/SoapboxSocial/ion-sfu v1.8.2-0.20210316230018-4e6bcae30062
+replace github.com/pion/ion-sfu => github.com/SoapboxSocial/ion-sfu v1.8.2-0.20210323114406-2b95a30fd24e

@@ -18,6 +18,7 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/groups"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/http/middlewares"
+	"github.com/soapboxsocial/soapbox/pkg/minis"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/redis"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
@@ -104,6 +105,7 @@ func runServer(*cobra.Command, []string) error {
 		groups.NewBackend(db),
 		repository,
 		blocks.NewBackend(db),
+		minis.NewBackend(db),
 	)
 
 	endpoint := rooms.NewEndpoint(repository, server)

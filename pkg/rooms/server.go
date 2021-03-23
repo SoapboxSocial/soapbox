@@ -15,6 +15,7 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/blocks"
 	"github.com/soapboxsocial/soapbox/pkg/groups"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
+	"github.com/soapboxsocial/soapbox/pkg/minis"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/internal"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
@@ -37,6 +38,7 @@ type Server struct {
 	groups  *groups.Backend
 	queue   *pubsub.Queue
 	blocked *blocks.Backend
+	minis   *minis.Backend
 
 	ws          *WelcomeStore
 	currentRoom *CurrentRoomBackend
@@ -54,6 +56,7 @@ func NewServer(
 	groups *groups.Backend,
 	repository *Repository,
 	blocked *blocks.Backend,
+	minis *minis.Backend,
 ) *Server {
 	return &Server{
 		sfu:         sfu,
@@ -65,6 +68,7 @@ func NewServer(
 		groups:      groups,
 		repository:  repository,
 		blocked:     blocked,
+		minis:       minis,
 	}
 }
 
@@ -275,7 +279,7 @@ func (s *Server) getRoom(id string, owner int) (*Room, error) {
 func (s *Server) createRoom(id, name string, owner int, visibility pb.Visibility, group *groups.Group) *Room {
 	session, _ := s.sfu.GetSession(id)
 
-	room := NewRoom(id, name, group, owner, visibility, session, s.queue)
+	room := NewRoom(id, name, group, owner, visibility, session, s.queue, s.minis)
 
 	room.OnDisconnected(func(room string, peer *Member) {
 		r, err := s.repository.Get(room)

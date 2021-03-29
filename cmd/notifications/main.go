@@ -245,7 +245,8 @@ func onRoomCreation(event *pubsub.Event) ([]int, *notifications.PushNotification
 		return nil, nil, err
 	}
 
-	name := event.Params["name"].(string)
+	// Quick fix
+	//name := event.Params["name"].(string)
 	room := event.Params["id"].(string)
 
 	displayName, err := getDisplayName(creator)
@@ -254,11 +255,11 @@ func onRoomCreation(event *pubsub.Event) ([]int, *notifications.PushNotification
 	}
 
 	notification := func() *notifications.PushNotification {
-		if name == "" {
+		//if name == "" {
 			return notifications.NewRoomNotification(room, displayName)
-		}
+		//}
 
-		return notifications.NewRoomNotificationWithName(room, displayName, name)
+		//return notifications.NewRoomNotificationWithName(room, displayName, name)
 	}()
 
 	return targets, notification, nil

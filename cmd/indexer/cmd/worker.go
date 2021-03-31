@@ -25,7 +25,7 @@ var worker = &cobra.Command{
 	RunE:  runWorker,
 }
 
-var noRequestErr = errors.New("no request for event")
+var errNoRequestHandler = errors.New("no request handler for event")
 
 func runWorker(*cobra.Command, []string) error {
 	rdb := redis.NewRedis(config.Redis)
@@ -56,7 +56,7 @@ func runWorker(*cobra.Command, []string) error {
 func handleEvent(event *pubsub.Event) {
 	request, err := requestFor(event)
 	if err != nil {
-		if err == noRequestErr {
+		if err == errNoRequestHandler {
 			return
 		}
 
@@ -81,7 +81,7 @@ func requestFor(event *pubsub.Event) (esapi.Request, error) {
 	case pubsub.EventTypeGroupDelete:
 		return groupDeleteRequest(event)
 	default:
-		return nil, noRequestErr
+		return nil, errNoRequestHandler
 	}
 }
 

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -25,6 +24,8 @@ var worker = &cobra.Command{
 	Short: "runs a index worker",
 	RunE:  runWorker,
 }
+
+var noRequestErr = errors.New("no request for event")
 
 func runWorker(*cobra.Command, []string) error {
 	rdb := redis.NewRedis(config.Redis)
@@ -55,6 +56,10 @@ func runWorker(*cobra.Command, []string) error {
 func handleEvent(event *pubsub.Event) {
 	request, err := requestFor(event)
 	if err != nil {
+		if err == noRequestErr {
+			return
+		}
+
 		log.Printf("failed to create request: %v\n", err)
 		return
 	}
@@ -76,7 +81,7 @@ func requestFor(event *pubsub.Event) (esapi.Request, error) {
 	case pubsub.EventTypeGroupDelete:
 		return groupDeleteRequest(event)
 	default:
-		return nil, fmt.Errorf("no request for event %d", event.Type)
+		return nil, noRequestErr
 	}
 }
 

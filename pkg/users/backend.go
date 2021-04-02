@@ -123,6 +123,8 @@ func (ub *UserBackend) GetUserForSearchEngine(id int) (*SearchUser, error) {
 
 	if roomTime.Valid {
 		profile.RoomTime = int(roomTime.Int64)
+	} else {
+		profile.RoomTime = 0
 	}
 
 	if err != nil {

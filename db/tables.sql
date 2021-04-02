@@ -192,3 +192,11 @@ CREATE TRIGGER calculate_room_time
     ON user_room_logs
     FOR EACH ROW
     EXECUTE PROCEDURE update_user_room_time();
+
+CREATE TABLE IF NOT EXISTS user_active_times (
+    user_id INT NOT NULL,
+    last_active TIMESTAMPTZ,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX idx_user_active_times ON user_active_times (user_id);

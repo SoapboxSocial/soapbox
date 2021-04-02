@@ -1,6 +1,8 @@
 package trackers
 
 import (
+	"time"
+
 	"github.com/soapboxsocial/soapbox/pkg/activeusers"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 )
@@ -20,5 +22,10 @@ func (r *RecentlyActiveTracker) CanTrack(event *pubsub.Event) bool {
 }
 
 func (r *RecentlyActiveTracker) Track(event *pubsub.Event) error {
-	panic("implement me")
+	id, err := event.GetInt("id")
+	if err != nil {
+		return err
+	}
+
+	return r.backend.SetLastActiveTime(id, time.Now())
 }

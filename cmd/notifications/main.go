@@ -256,7 +256,7 @@ func onRoomCreation(event *pubsub.Event) ([]int, *notifications.PushNotification
 
 	notification := func() *notifications.PushNotification {
 		//if name == "" {
-			return notifications.NewRoomNotification(room, displayName)
+		return notifications.NewRoomNotification(room, displayName)
 		//}
 
 		//return notifications.NewRoomNotificationWithName(room, displayName, name)

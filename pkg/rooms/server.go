@@ -88,7 +88,7 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 	}
 
 	peer := sfu.NewPeer(s.sfu)
-	me := NewMember(user.ID, user.DisplayName, user.Image, peer, conn)
+	me := NewMember(user.ID, user.DisplayName, user.Username, user.Image, peer, conn)
 
 	in, err := me.ReceiveMsg()
 	if err != nil {

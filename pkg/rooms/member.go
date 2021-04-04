@@ -17,11 +17,12 @@ import (
 type Member struct {
 	mux sync.RWMutex
 
-	id    int
-	name  string
-	image string
-	muted bool
-	role  pb.RoomState_RoomMember_Role
+	id       int
+	name     string
+	username string
+	image    string
+	muted    bool
+	role     pb.RoomState_RoomMember_Role
 
 	joined time.Time
 
@@ -32,10 +33,11 @@ type Member struct {
 	dataChannel *BufferedDataChannel
 }
 
-func NewMember(id int, name, image string, peer *sfu.Peer, signal signal.Transport) *Member {
+func NewMember(id int, name, username, image string, peer *sfu.Peer, signal signal.Transport) *Member {
 	m := &Member{
 		id:          id,
 		name:        name,
+		username:    username,
 		image:       image,
 		muted:       true,
 		peer:        peer,
@@ -178,6 +180,7 @@ func (m *Member) ToProto() *pb.RoomState_RoomMember {
 	return &pb.RoomState_RoomMember{
 		Id:          int64(m.id),
 		DisplayName: m.name,
+		Username:    m.username,
 		Image:       m.image,
 		Muted:       m.muted,
 		Role:        m.role,

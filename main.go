@@ -60,6 +60,7 @@ type Conf struct {
 	DB     conf.PostgresConf `mapstructure:"db"`
 	GRPC   conf.AddrConf     `mapstructure:"grpc"`
 	Listen conf.AddrConf     `mapstructure:"listen"`
+	Login  login.Config      `mapstructure:"login"`
 }
 
 func parse() (*Conf, error) {
@@ -140,7 +141,7 @@ func main() {
 
 	roomService := pb.NewRoomServiceClient(conn)
 
-	loginEndpoints := login.NewEndpoint(ub, loginState, s, ms, ib, queue, appleClient, roomService)
+	loginEndpoints := login.NewEndpoint(ub, loginState, s, ms, ib, queue, appleClient, roomService, config.Login)
 	loginRouter := loginEndpoints.Router()
 	mount(r, "/v1/login", loginRouter)
 

@@ -284,6 +284,21 @@ func (ub *UserBackend) FindByID(id int) (*User, error) {
 	return user, nil
 }
 
+func (ub *UserBackend) IsRegistered(email string) (bool, error) {
+	stmt, err := ub.db.Prepare("SELECT COUNT(*) FROM users WHERE email = $1;")
+	if err != nil {
+		return false, err
+	}
+
+	var id int
+	err = stmt.QueryRow(email).Scan(&id)
+	if err != nil {
+		return false, err
+	}
+
+	return id == 1, nil
+}
+
 func (ub *UserBackend) FindByEmail(email string) (*User, error) {
 	stmt, err := ub.db.Prepare("SELECT id, display_name, username, image, bio, email FROM users WHERE email = $1;")
 	if err != nil {

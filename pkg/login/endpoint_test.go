@@ -61,6 +61,9 @@ func TestLoginEndpoint_LoginWithTestAccount(t *testing.T) {
 		pubsub.NewQueue(rdb),
 		mocks.NewMockSignInWithApple(ctrl),
 		mocks.NewMockRoomServiceClient(ctrl),
+		login.Config{
+			RegisterWithEmailEnabled: true,
+		},
 	)
 
 	rr := httptest.NewRecorder()
@@ -115,6 +118,9 @@ func TestLoginEndpoint_PinSubmission(t *testing.T) {
 		pubsub.NewQueue(rdb),
 		mocks.NewMockSignInWithApple(ctrl),
 		mocks.NewMockRoomServiceClient(ctrl),
+		login.Config{
+			RegisterWithEmailEnabled: true,
+		},
 	)
 
 	rr := httptest.NewRecorder()
@@ -181,6 +187,9 @@ func TestLoginEndpoint_RegistrationCompleted(t *testing.T) {
 		pubsub.NewQueue(rdb),
 		mocks.NewMockSignInWithApple(ctrl),
 		m,
+		login.Config{
+			RegisterWithEmailEnabled: true,
+		},
 	)
 
 	rr := httptest.NewRecorder()

@@ -80,6 +80,8 @@ func requestFor(event *pubsub.Event) (esapi.Request, error) {
 		return groupUpdateRequest(event)
 	case pubsub.EventTypeGroupDelete:
 		return groupDeleteRequest(event)
+	case pubsub.EventTypeDeleteUser:
+		return userDeleteRequest(event)
 	default:
 		return nil, errNoRequestHandler
 	}
@@ -138,14 +140,27 @@ func userUpdateRequest(event *pubsub.Event) (esapi.Request, error) {
 }
 
 func groupDeleteRequest(event *pubsub.Event) (esapi.Request, error) {
-	id, ok := event.Params["group"].(float64)
-	if !ok {
+	id, err := event.GetInt("group")
+	if err != nil {
 		return nil, errors.New("failed to recover group ID")
 	}
 
 	return esapi.DeleteRequest{
 		Index:      "groups",
-		DocumentID: strconv.Itoa(int(id)),
+		DocumentID: strconv.Itoa(id),
+		Refresh:    "true",
+	}, nil
+}
+
+func userDeleteRequest(event *pubsub.Event) (esapi.Request, error) {
+	id, err := event.GetInt("id")
+	if err != nil {
+		return nil, errors.New("failed to recover group ID")
+	}
+
+	return esapi.DeleteRequest{
+		Index:      "users",
+		DocumentID: strconv.Itoa(id),
 		Refresh:    "true",
 	}, nil
 }

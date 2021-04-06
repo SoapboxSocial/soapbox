@@ -27,6 +27,7 @@ const (
 	ErrorCodeFailedToStoreDevice
 	ErrorCodeNotFound
 	ErrorCodeNotAllowed
+	ErrorCodeEmailRegistrationDisabled
 )
 
 // NotFoundHandler handles 404 responses

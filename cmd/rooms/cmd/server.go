@@ -85,6 +85,7 @@ func runServer(*cobra.Command, []string) error {
 		}
 	}()
 
+	// @TODO ADD LOG
 	plog.SetGlobalOptions(plog.GlobalConfig{V: 1})
 	logger := plog.New()
 

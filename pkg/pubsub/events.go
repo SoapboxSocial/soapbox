@@ -177,7 +177,7 @@ func NewRoomLinkShareEvent(user int, room string) Event {
 	}
 }
 
-func NewRoomOpenMiniEvent(user int, mini, room string) Event {
+func NewRoomOpenMiniEvent(user, mini int, room string) Event {
 	return Event{
 		Type:   EventTypeRoomOpenMini,
 		Params: map[string]interface{}{"id": user, "mini": mini, "room": room},

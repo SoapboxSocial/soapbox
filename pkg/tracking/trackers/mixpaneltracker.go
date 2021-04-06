@@ -220,12 +220,17 @@ func transform(event *pubsub.Event) *tracking.Event {
 			return nil
 		}
 
+		mini, err := event.GetInt("mini")
+		if err != nil {
+			return nil
+		}
+
 		return &tracking.Event{
 			ID:   strconv.Itoa(id),
 			Name: "room_open_mini",
 			Properties: map[string]interface{}{
 				"room_id": event.Params["room"],
-				"mini":    event.Params["mini"],
+				"mini":    mini,
 			},
 		}
 	case pubsub.EventTypeRoomLinkShare:

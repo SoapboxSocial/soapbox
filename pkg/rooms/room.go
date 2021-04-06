@@ -699,7 +699,7 @@ func (r *Room) onOpenMini(from int, mini *pb.Command_OpenMini) {
 
 	_ = r.queue.Publish(
 		pubsub.RoomTopic,
-		pubsub.NewRoomOpenMiniEvent(from, mini.Mini, r.id),
+		pubsub.NewRoomOpenMiniEvent(from, int(mini.Id), r.id),
 	)
 
 	resp, err := r.getMini(mini)

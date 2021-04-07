@@ -1,7 +1,6 @@
 package me
 
 import (
-	"errors"
 	"log"
 	"net/http"
 	"time"
@@ -10,7 +9,6 @@ import (
 	"github.com/dghubble/oauth1"
 	"github.com/gorilla/mux"
 
-	"github.com/soapboxsocial/soapbox/pkg/groups"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/linkedaccounts"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
@@ -21,7 +19,6 @@ import (
 
 type Endpoint struct {
 	users       *users.UserBackend
-	groups      *groups.Backend
 	ns          *notifications.Storage
 	oauthConfig *oauth1.Config
 	la          *linkedaccounts.Backend
@@ -40,19 +37,16 @@ type Me struct {
 // Notification that the API returns.
 // @TODO IN THE FUTURE WE MAY WANT TO BE ABLE TO SEND NOTIFICATIONS WITHOUT A USER, AND OTHER DATA?
 // For example:
-//   - group invites
 //   - terms of service updates?
 type Notification struct {
 	Timestamp int64                              `json:"timestamp"`
 	From      *users.NotificationUser            `json:"from"`
-	Group     *groups.Group                      `json:"group,omitempty"`
 	Room      *string                            `json:"room,omitempty"`
 	Category  notifications.NotificationCategory `json:"category"`
 }
 
 func NewEndpoint(
 	users *users.UserBackend,
-	groups *groups.Backend,
 	ns *notifications.Storage,
 	config *oauth1.Config,
 	la *linkedaccounts.Backend,
@@ -61,7 +55,6 @@ func NewEndpoint(
 ) *Endpoint {
 	return &Endpoint{
 		users:       users,
-		groups:      groups,
 		ns:          ns,
 		oauthConfig: config,
 		la:          la,
@@ -136,22 +129,6 @@ func (m *Endpoint) notifications(w http.ResponseWriter, r *http.Request) {
 		}
 
 		populatedNotification.From = from
-
-		if notification.Category == notifications.GROUP_INVITE {
-			id, err := getId(notification, "group")
-			if err != nil {
-				log.Printf("getId err: %v\n", err)
-				continue
-			}
-
-			group, err := m.groups.FindById(id)
-			if err != nil {
-				log.Printf("users.NotificationUserFor err: %v\n", err)
-				continue
-			}
-
-			populatedNotification.Group = group
-		}
 
 		if notification.Category == notifications.WELCOME_ROOM {
 			room := notification.Arguments["room"].(string)
@@ -272,13 +249,4 @@ func (m *Endpoint) feed(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("failed to write me response: %s\n", err.Error())
 	}
-}
-
-func getId(event *notifications.Notification, field string) (int, error) {
-	creator, ok := event.Arguments[field].(float64)
-	if !ok {
-		return 0, errors.New("failed to recover creator")
-	}
-
-	return int(creator), nil
 }

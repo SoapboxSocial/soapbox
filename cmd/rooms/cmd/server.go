@@ -15,7 +15,6 @@ import (
 
 	"github.com/soapboxsocial/soapbox/pkg/blocks"
 	"github.com/soapboxsocial/soapbox/pkg/conf"
-	"github.com/soapboxsocial/soapbox/pkg/groups"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/http/middlewares"
 	"github.com/soapboxsocial/soapbox/pkg/minis"
@@ -85,6 +84,7 @@ func runServer(*cobra.Command, []string) error {
 		}
 	}()
 
+	// @TODO ADD LOG
 	plog.SetGlobalOptions(plog.GlobalConfig{V: 1})
 	logger := plog.New()
 
@@ -102,7 +102,6 @@ func runServer(*cobra.Command, []string) error {
 		pubsub.NewQueue(rdb),
 		rooms.NewCurrentRoomBackend(db),
 		ws,
-		groups.NewBackend(db),
 		repository,
 		blocks.NewBackend(db),
 		minis.NewBackend(db),

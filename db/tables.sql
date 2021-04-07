@@ -50,46 +50,6 @@ CREATE TABLE IF NOT EXISTS linked_accounts (
 CREATE UNIQUE INDEX idx_profiles ON linked_accounts (provider, profile_id);
 CREATE UNIQUE INDEX idx_provider ON linked_accounts (provider, user_id);
 
-CREATE TABLE IF NOT EXISTS group_types (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(30)
-);
-
-INSERT INTO group_types (name) VALUES ('public'), ('private'), ('restricted');
-
-CREATE TABLE IF NOT EXISTS groups (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(256) NOT NULL,
-    description TEXT NOT NULL DEFAULT '',
-    image VARCHAR(100) NOT NULL DEFAULT '',
-    group_type INT NOT NULL,
-    FOREIGN KEY (group_type) REFERENCES group_types(id) ON DELETE CASCADE
-);
-
-CREATE UNIQUE INDEX idx_group_name ON groups (lower(name));
-
-CREATE TABLE IF NOT EXISTS group_members (
-    group_id INT NOT NULL,
-    user_id INT NOT NULL,
-    role VARCHAR(5) NOT NULL,
-    CHECK (role IN ('admin', 'user')),
-    FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE UNIQUE INDEX idx_group_membership ON group_members (group_id, user_id);
-
-CREATE TABLE IF NOT EXISTS group_invites (
-    group_id INT NOT NULL,
-    from_id INT NOT NULL,
-    user_id INT NOT NULL,
-    FOREIGN KEY (group_id) REFERENCES groups(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (from_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE UNIQUE INDEX idx_group_invites ON group_invites (group_id, user_id);
-
 CREATE TABLE IF NOT EXISTS stories (
     id VARCHAR(256) PRIMARY KEY,
     user_id INT NOT NULL,

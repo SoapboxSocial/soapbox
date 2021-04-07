@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -13,7 +12,6 @@ import (
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/spf13/cobra"
 
-	"github.com/soapboxsocial/soapbox/pkg/groups"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/redis"
 	"github.com/soapboxsocial/soapbox/pkg/sql"
@@ -25,6 +23,8 @@ var worker = &cobra.Command{
 	Short: "runs a index worker",
 	RunE:  runWorker,
 }
+
+var errNoRequestHandler = errors.New("no request handler for event")
 
 func runWorker(*cobra.Command, []string) error {
 	rdb := redis.NewRedis(config.Redis)
@@ -40,10 +40,9 @@ func runWorker(*cobra.Command, []string) error {
 	}
 
 	queue := pubsub.NewQueue(rdb)
-	events := queue.Subscribe(pubsub.UserTopic, pubsub.GroupTopic)
+	events := queue.Subscribe(pubsub.UserTopic)
 
 	userBackend = users.NewUserBackend(db)
-	groupsBackend = groups.NewBackend(db)
 
 	for event := range events {
 		go handleEvent(event)
@@ -55,6 +54,10 @@ func runWorker(*cobra.Command, []string) error {
 func handleEvent(event *pubsub.Event) {
 	request, err := requestFor(event)
 	if err != nil {
+		if err == errNoRequestHandler {
+			return
+		}
+
 		log.Printf("failed to create request: %v\n", err)
 		return
 	}
@@ -71,41 +74,11 @@ func requestFor(event *pubsub.Event) (esapi.Request, error) {
 	switch event.Type {
 	case pubsub.EventTypeUserUpdate, pubsub.EventTypeNewUser, pubsub.EventTypeNewFollower: // @TODO think about unfollows
 		return userUpdateRequest(event)
-	case pubsub.EventTypeNewGroup, pubsub.EventTypeGroupUpdate:
-		return groupUpdateRequest(event)
-	case pubsub.EventTypeGroupDelete:
-		return groupDeleteRequest(event)
+	case pubsub.EventTypeDeleteUser:
+		return userDeleteRequest(event)
 	default:
-		return nil, fmt.Errorf("no request for event %d", event.Type)
+		return nil, errNoRequestHandler
 	}
-}
-
-func groupUpdateRequest(event *pubsub.Event) (esapi.Request, error) {
-	id, ok := event.Params["id"].(float64)
-	if !ok {
-		return nil, errors.New("failed to recover user ID")
-	}
-
-	group, err := groupsBackend.FindById(int(id))
-	if err != nil {
-		return nil, err
-	}
-
-	if group.GroupType == "private" {
-		return nil, errors.New("private group cannot be indexed")
-	}
-
-	body, err := json.Marshal(group)
-	if err != nil {
-		return nil, err
-	}
-
-	return esapi.IndexRequest{
-		Index:      "groups",
-		DocumentID: strconv.Itoa(group.ID),
-		Body:       strings.NewReader(string(body)),
-		Refresh:    "true",
-	}, nil
 }
 
 func userUpdateRequest(event *pubsub.Event) (esapi.Request, error) {
@@ -132,15 +105,15 @@ func userUpdateRequest(event *pubsub.Event) (esapi.Request, error) {
 	}, nil
 }
 
-func groupDeleteRequest(event *pubsub.Event) (esapi.Request, error) {
-	id, ok := event.Params["group"].(float64)
-	if !ok {
-		return nil, errors.New("failed to recover group ID")
+func userDeleteRequest(event *pubsub.Event) (esapi.Request, error) {
+	id, err := event.GetInt("id")
+	if err != nil {
+		return nil, errors.New("failed to recover user ID")
 	}
 
 	return esapi.DeleteRequest{
-		Index:      "groups",
-		DocumentID: strconv.Itoa(int(id)),
+		Index:      "users",
+		DocumentID: strconv.Itoa(id),
 		Refresh:    "true",
 	}, nil
 }

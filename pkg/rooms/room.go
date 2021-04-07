@@ -12,7 +12,6 @@ import (
 	"github.com/pion/webrtc/v3"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/soapboxsocial/soapbox/pkg/groups"
 	"github.com/soapboxsocial/soapbox/pkg/minis"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/internal"
@@ -40,7 +39,6 @@ type Room struct {
 	id         string
 	name       string
 	visibility pb.Visibility
-	group      *groups.Group
 
 	state RoomConnectionState
 
@@ -72,7 +70,6 @@ type Room struct {
 func NewRoom(
 	id,
 	name string,
-	group *groups.Group,
 	owner int,
 	visibility pb.Visibility,
 	session *sfu.Session,
@@ -83,7 +80,6 @@ func NewRoom(
 		id:                   id,
 		name:                 name,
 		visibility:           visibility,
-		group:                group,
 		state:                closed,
 		members:              make(map[int]*Member),
 		adminInvites:         make(map[int]bool),
@@ -131,12 +127,6 @@ func (r *Room) PeerCount() int {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
 	return len(r.members)
-}
-
-func (r *Room) Group() *groups.Group {
-	r.mux.RLock()
-	defer r.mux.RUnlock()
-	return r.group
 }
 
 func (r *Room) Name() string {
@@ -238,21 +228,11 @@ func (r *Room) ToProto() *pb.RoomState {
 		members = append(members, member.ToProto())
 	}
 
-	var group *pb.RoomState_Group
-	if r.group != nil {
-		group = &pb.RoomState_Group{
-			Id:    int64(r.group.ID),
-			Name:  r.group.Name,
-			Image: r.group.Image,
-		}
-	}
-
 	state := &pb.RoomState{
 		Id:         r.id,
 		Name:       r.name,
 		Members:    members,
 		Visibility: r.visibility,
-		Group:      group,
 		Link:       r.link,
 		Mini:       r.mini,
 	}
@@ -699,7 +679,7 @@ func (r *Room) onOpenMini(from int, mini *pb.Command_OpenMini) {
 
 	_ = r.queue.Publish(
 		pubsub.RoomTopic,
-		pubsub.NewRoomOpenMiniEvent(from, mini.Mini, r.id),
+		pubsub.NewRoomOpenMiniEvent(from, int(mini.Id), r.id),
 	)
 
 	resp, err := r.getMini(mini)
@@ -711,6 +691,7 @@ func (r *Room) onOpenMini(from int, mini *pb.Command_OpenMini) {
 		Id:   int64(resp.ID),
 		Slug: resp.Slug,
 		Size: pb.RoomState_Mini_Size(int32(resp.Size)),
+		Name: resp.Name,
 	}
 
 	r.mux.Lock()

@@ -35,6 +35,10 @@ const LoginStateSuccess = "success"
 
 const TestEmail = "test@apple.com"
 
+type Config struct {
+	RegisterWithEmailEnabled bool `mapstructure:"email"`
+}
+
 // @todo better names
 type loginState struct {
 	State     string      `json:"state"`
@@ -58,6 +62,8 @@ type Endpoint struct {
 
 	signInWithApple apple.SignInWithApple
 	roomService     pb.RoomServiceClient
+
+	config Config
 }
 
 func NewEndpoint(
@@ -69,6 +75,7 @@ func NewEndpoint(
 	queue *pubsub.Queue,
 	signInWithApple apple.SignInWithApple,
 	roomService pb.RoomServiceClient,
+	config Config,
 ) Endpoint {
 	return Endpoint{
 		users:           ub,
@@ -79,6 +86,7 @@ func NewEndpoint(
 		queue:           queue,
 		signInWithApple: signInWithApple,
 		roomService:     roomService,
+		config:          config,
 	}
 }
 
@@ -137,6 +145,19 @@ func (e *Endpoint) start(w http.ResponseWriter, r *http.Request) {
 	if isApple {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid authentication method")
 		return
+	}
+
+	if !e.config.RegisterWithEmailEnabled {
+		isRegistered, err := e.users.IsRegistered(email)
+		if err != nil {
+			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+			return
+		}
+
+		if !isRegistered {
+			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeEmailRegistrationDisabled, "register with email disabled")
+			return
+		}
 	}
 
 	err = e.state.SetPinState(token, email, pin)

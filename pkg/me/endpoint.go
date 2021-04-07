@@ -240,12 +240,3 @@ func (m *Endpoint) feed(w http.ResponseWriter, r *http.Request) {
 		log.Printf("failed to write me response: %s\n", err.Error())
 	}
 }
-
-func getId(event *notifications.Notification, field string) (int, error) {
-	creator, ok := event.Arguments[field].(float64)
-	if !ok {
-		return 0, errors.New("failed to recover creator")
-	}
-
-	return int(creator), nil
-}

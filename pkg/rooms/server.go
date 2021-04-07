@@ -255,7 +255,7 @@ func (s *Server) getRoom(id string, owner int) (*Room, error) {
 	}
 
 	// @TODO NAME
-	r = s.createRoom(id, "Welcome!", owner, pb.Visibility_VISIBILITY_PUBLIC, nil)
+	r = s.createRoom(id, "Welcome!", owner, pb.Visibility_VISIBILITY_PUBLIC)
 	s.repository.Set(r)
 
 	r.InviteUser(owner, user)

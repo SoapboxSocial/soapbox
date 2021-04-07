@@ -69,7 +69,7 @@ func main() {
 		t = append(t, rt)
 	}
 
-	events := queue.Subscribe(pubsub.RoomTopic, pubsub.UserTopic, pubsub.GroupTopic, pubsub.StoryTopic)
+	events := queue.Subscribe(pubsub.RoomTopic, pubsub.UserTopic, pubsub.StoryTopic)
 
 	for evt := range events {
 		for _, tracker := range t {

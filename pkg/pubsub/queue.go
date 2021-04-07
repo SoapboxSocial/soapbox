@@ -12,7 +12,6 @@ type Topic string
 const (
 	RoomTopic  Topic = "room"
 	UserTopic  Topic = "user"
-	GroupTopic Topic = "group"
 	StoryTopic Topic = "story"
 )
 

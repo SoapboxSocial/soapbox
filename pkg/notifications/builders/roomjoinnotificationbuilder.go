@@ -62,12 +62,10 @@ func (b *RoomJoinNotificationBuilder) Build(event *pubsub.Event) ([]int, *notifi
 	}
 
 	translation := "join_room_with_"
-	body := "Join a room with "
 	args := make([]string, 0)
 
 	if state.Name != "" {
 		translation = "join_room_name_with_"
-		body = "Join \"" + state.Name + "\" with "
 		args = append(args, state.Name)
 	}
 
@@ -75,19 +73,16 @@ func (b *RoomJoinNotificationBuilder) Build(event *pubsub.Event) ([]int, *notifi
 
 	if count == 1 {
 		translation += "1"
-		body += state.Members[0].DisplayName
 		args = append(args, state.Members[0].DisplayName)
 	}
 
 	if count == 2 {
 		translation += "2"
-		body += state.Members[0].DisplayName + " and " + state.Members[1].DisplayName
 		args = append(args, state.Members[0].DisplayName, state.Members[1].DisplayName)
 	}
 
 	if count == 3 {
 		translation += "3"
-		body += state.Members[0].DisplayName + ", " + state.Members[1].DisplayName + " and " + state.Members[2].DisplayName
 		args = append(args, state.Members[0].DisplayName, state.Members[1].DisplayName, state.Members[2].DisplayName)
 	}
 
@@ -99,14 +94,12 @@ func (b *RoomJoinNotificationBuilder) Build(event *pubsub.Event) ([]int, *notifi
 			return nil, nil, errFailedToSort
 		}
 
-		body += members[0] + ", " + members[1] + ", " + members[2] + " and " + strconv.Itoa(count-3) + " others"
 		args = append(args, members[0], members[1], members[2], strconv.Itoa(count-3))
 	}
 
 	notification := &notifications.PushNotification{
 		Category: notifications.ROOM_JOINED,
 		Alert: notifications.Alert{
-			Body:      body,
 			Key:       translation + "_notification",
 			Arguments: args,
 		},

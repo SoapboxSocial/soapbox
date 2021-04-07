@@ -66,7 +66,6 @@ sudo chown nginx:nginx -R /conf/services
 
 sudo ln -s $GOPATH/src/github.com/soapboxsocial/soapbox/conf/services/ /conf/services
 
-sudo mkdir -p /cdn/images/groups/
 sudo chown nginx:nginx -R /cdn/images
 sudo chmod -R 0777 /cdn/images
 

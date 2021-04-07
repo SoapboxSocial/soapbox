@@ -6,7 +6,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/soapboxsocial/soapbox/pkg/groups"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/redis"
 	"github.com/soapboxsocial/soapbox/pkg/sql"
@@ -29,7 +28,6 @@ func runWriter(*cobra.Command, []string) error {
 
 	queue := pubsub.NewQueue(rdb)
 	userBackend = users.NewUserBackend(db)
-	groupsBackend = groups.NewBackend(db)
 
 	rows, err := db.Query("SELECT id FROM users;")
 	if err != nil {

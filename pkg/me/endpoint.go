@@ -1,7 +1,6 @@
 package me
 
 import (
-	"errors"
 	"log"
 	"net/http"
 	"time"

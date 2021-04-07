@@ -17,7 +17,6 @@ const (
 	EventTypeNewUser
 	EventTypeNewGroup
 	EventTypeGroupInvite
-	EventTypeNewGroupRoom
 	EventTypeGroupUpdate
 	EventTypeGroupJoin
 	EventTypeGroupDelete
@@ -76,13 +75,6 @@ func NewRoomCreationEvent(id string, creator int, visibility RoomVisibility) Eve
 	return Event{
 		Type:   EventTypeNewRoom,
 		Params: map[string]interface{}{"id": id, "creator": creator, "visibility": visibility},
-	}
-}
-
-func NewRoomCreationEventWithGroup(id string, creator, group int, visibility RoomVisibility) Event {
-	return Event{
-		Type:   EventTypeNewGroupRoom,
-		Params: map[string]interface{}{"id": id, "creator": creator, "visibility": visibility, "group": group},
 	}
 }
 

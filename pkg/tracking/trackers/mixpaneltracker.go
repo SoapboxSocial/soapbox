@@ -74,6 +74,8 @@ func transform(event *pubsub.Event) *tracking.Event {
 			return nil
 		}
 
+		// @TODO load metadata?
+
 		return &tracking.Event{
 			ID:   strconv.Itoa(id),
 			Name: "room_new",
@@ -135,21 +137,6 @@ func transform(event *pubsub.Event) *tracking.Event {
 			Properties: map[string]interface{}{
 				"group_id": event.Params["id"],
 				"name":     event.Params["name"],
-			},
-		}
-	case pubsub.EventTypeNewGroupRoom:
-		id, err := event.GetInt("creator")
-		if err != nil {
-			return nil
-		}
-
-		return &tracking.Event{
-			ID:   strconv.Itoa(id),
-			Name: "room_new",
-			Properties: map[string]interface{}{
-				"room_id":    event.Params["id"],
-				"visibility": event.Params["visibility"],
-				"group_id":   event.Params["group"],
 			},
 		}
 	case pubsub.EventTypeNewFollower:

@@ -47,7 +47,6 @@ func TestMixpanelTracker_CanTrack(t *testing.T) {
 		pubsub.EventTypeNewUser,
 		pubsub.EventTypeNewGroup,
 		pubsub.EventTypeGroupJoin,
-		pubsub.EventTypeNewGroupRoom,
 		pubsub.EventTypeNewStory,
 		pubsub.EventTypeStoryReaction,
 		pubsub.EventTypeUserHeartbeat,

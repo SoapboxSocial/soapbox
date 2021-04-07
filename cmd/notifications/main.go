@@ -160,8 +160,6 @@ func getHandler(eventType pubsub.EventType) handlerFunc {
 		return onRoomInvite
 	case pubsub.EventTypeGroupInvite:
 		return onGroupInvite
-	case pubsub.EventTypeNewGroupRoom:
-		return onGroupRoomCreation
 	case pubsub.EventTypeWelcomeRoom:
 		return onWelcomeRoom
 	default:

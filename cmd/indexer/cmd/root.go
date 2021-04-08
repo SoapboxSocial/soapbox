@@ -15,8 +15,8 @@ var (
 	config *Conf
 
 	// Used by some of the commands.
-	client        *elasticsearch.Client
-	userBackend   *users.UserBackend
+	client      *elasticsearch.Client
+	userBackend *users.UserBackend
 
 	rootCmd = &cobra.Command{
 		Use:   "indexer",

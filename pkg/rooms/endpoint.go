@@ -11,10 +11,10 @@ import (
 )
 
 type RoomState struct {
-	ID         string        `json:"id"`
-	Name       string        `json:"name"`
-	Visibility string        `json:"visibility"`
-	Members    []RoomMember  `json:"members"`
+	ID         string       `json:"id"`
+	Name       string       `json:"name"`
+	Visibility string       `json:"visibility"`
+	Members    []RoomMember `json:"members"`
 }
 
 type RoomMember struct {

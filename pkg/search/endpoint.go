@@ -22,11 +22,11 @@ import (
 
 // @TODO maybe do a type?
 const (
-	usersIndex  = "users"
+	usersIndex = "users"
 )
 
 type Response struct {
-	Users  []*users.User   `json:"users,omitempty"`
+	Users []*users.User `json:"users,omitempty"`
 }
 
 type Endpoint struct {

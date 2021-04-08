@@ -335,7 +335,7 @@ func (s *Server) createRoom(id, name string, owner int, visibility pb.Visibility
 
 		err = s.currentRoom.SetCurrentRoomForUser(me.id, room.id)
 		if err != nil {
-			log.Printf("failed to set current room err: %v", err)
+			log.Printf("failed to set current room err: %v user: %d", err, me.id)
 		}
 	})
 

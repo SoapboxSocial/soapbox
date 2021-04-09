@@ -6,7 +6,7 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-var timeout = "timeout"
+const timeout = "timeout"
 
 type TimeoutStore struct {
 	rdb *redis.Client

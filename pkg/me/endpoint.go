@@ -219,7 +219,7 @@ func (m *Endpoint) activeUsers(w http.ResponseWriter, r *http.Request) {
 
 	au, err := m.actives.GetActiveUsersForFollower(id)
 	if err != nil {
-		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, err.Error())
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}
 

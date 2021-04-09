@@ -21,5 +21,6 @@ func (b *Backend) SetLastActiveTime(user int, time time.Time) error {
 		return err
 	}
 
-	_, err = stmt.Exec(user,time)
-	return err}
+	_, err = stmt.Exec(user, time)
+	return err
+}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/dukex/mixpanel"
 
+	"github.com/soapboxsocial/soapbox/pkg/activeusers"
 	"github.com/soapboxsocial/soapbox/pkg/conf"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/redis"
@@ -18,6 +19,7 @@ type Conf struct {
 	Trackers struct {
 		RoomTimeLog bool `mapstructure:"roomtimelog"`
 		Mixpanel    bool `mapstructure:"mixpanel"`
+		LastActive  bool `mapstructure:"lastactive"`
 	} `mapstructure:"trackers"`
 	Mixpanel struct {
 		Token string `mapstructure:"token"`
@@ -50,6 +52,11 @@ func main() {
 	rdb := redis.NewRedis(config.Redis)
 	queue := pubsub.NewQueue(rdb)
 
+	db, err := sql.Open(config.DB)
+	if err != nil {
+		log.Fatalf("failed to open db: %s", err)
+	}
+
 	t := make([]trackers.Tracker, 0)
 
 	if config.Trackers.Mixpanel {
@@ -59,14 +66,15 @@ func main() {
 	}
 
 	if config.Trackers.RoomTimeLog {
-		db, err := sql.Open(config.DB)
-		if err != nil {
-			log.Fatalf("failed to open db: %s", err)
-		}
-
 		backend := backends.NewUserRoomLogBackend(db)
 		rt := trackers.NewUserRoomLogTracker(backend, queue)
 		t = append(t, rt)
+	}
+
+	if config.Trackers.LastActive {
+		backend := activeusers.NewBackend(db)
+		at := trackers.NewRecentlyActiveTracker(backend)
+		t = append(t, at)
 	}
 
 	events := queue.Subscribe(pubsub.RoomTopic, pubsub.UserTopic, pubsub.StoryTopic)

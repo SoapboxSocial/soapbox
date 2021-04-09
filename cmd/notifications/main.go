@@ -14,7 +14,6 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/conf"
 	"github.com/soapboxsocial/soapbox/pkg/devices"
 	"github.com/soapboxsocial/soapbox/pkg/followers"
-	"github.com/soapboxsocial/soapbox/pkg/groups"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/notifications/builders"
 	"github.com/soapboxsocial/soapbox/pkg/notifications/limiter"
@@ -36,7 +35,6 @@ var (
 	devicesBackend      *devices.Backend
 	userBackend         *users.UserBackend
 	followersBackend    *followers.FollowersBackend
-	groupsBackend       *groups.Backend
 	service             *notifications.Service
 	notificationLimiter *limiter.Limiter
 	notificationStorage *notifications.Storage
@@ -87,7 +85,6 @@ func main() {
 	currentRoom := rooms.NewCurrentRoomBackend(db)
 	notificationLimiter = limiter.NewLimiter(rdb, currentRoom)
 	notificationStorage = notifications.NewStorage(rdb)
-	groupsBackend = groups.NewBackend(db)
 
 	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", config.GRPC.Host, config.GRPC.Port), grpc.WithInsecure())
 	if err != nil {
@@ -115,7 +112,7 @@ func main() {
 
 	service = notifications.NewService(config.APNS.Bundle, client)
 
-	events := queue.Subscribe(pubsub.RoomTopic, pubsub.UserTopic, pubsub.GroupTopic)
+	events := queue.Subscribe(pubsub.RoomTopic, pubsub.UserTopic)
 
 	for event := range events {
 		go handleEvent(event)
@@ -158,10 +155,6 @@ func getHandler(eventType pubsub.EventType) handlerFunc {
 		return joinRoomNotificationBuilder.Build
 	case pubsub.EventTypeRoomInvite:
 		return onRoomInvite
-	case pubsub.EventTypeGroupInvite:
-		return onGroupInvite
-	case pubsub.EventTypeNewGroupRoom:
-		return onGroupRoomCreation
 	case pubsub.EventTypeWelcomeRoom:
 		return onWelcomeRoom
 	default:
@@ -206,13 +199,6 @@ func getNotificationForStore(notification *notifications.PushNotification) *noti
 			Timestamp: time.Now().Unix(),
 			From:      notification.Arguments["id"].(int),
 			Category:  notification.Category,
-		}
-	case notifications.GROUP_INVITE:
-		return &notifications.Notification{
-			Timestamp: time.Now().Unix(),
-			From:      notification.Arguments["from"].(int),
-			Category:  notification.Category,
-			Arguments: map[string]interface{}{"group": notification.Arguments["id"].(int)},
 		}
 	case notifications.WELCOME_ROOM:
 		return &notifications.Notification{
@@ -264,62 +250,6 @@ func onRoomCreation(event *pubsub.Event) ([]int, *notifications.PushNotification
 
 	return targets, notification, nil
 }
-func onGroupRoomCreation(event *pubsub.Event) ([]int, *notifications.PushNotification, error) {
-	creator, err := event.GetInt("creator")
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if creator == TEST_ACCOUNT_ID {
-		return nil, nil, nil
-	}
-
-	groupId, err := event.GetInt("group")
-	if err != nil {
-		return nil, nil, err
-	}
-
-	group, err := groupsBackend.FindById(groupId)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	targets := make([]int, 0)
-
-	if group.GroupType == "public" {
-		followerIDs, err := followersBackend.GetAllFollowerIDsFor(creator)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		targets = append(targets, followerIDs...)
-	}
-
-	memberIDs, err := groupsBackend.GetAllMemberIds(groupId, creator)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	targets = append(targets, memberIDs...)
-
-	name := event.Params["name"].(string)
-	room := event.Params["id"].(string)
-
-	displayName, err := getDisplayName(creator)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	notification := func() *notifications.PushNotification {
-		if name == "" {
-			return notifications.NewRoomWithGroupNotification(room, displayName, group.Name)
-		}
-
-		return notifications.NewRoomWithGroupAndNameNotification(room, displayName, group.Name, name)
-	}()
-
-	return targets, notification, nil
-}
 
 func onNewFollower(event *pubsub.Event) ([]int, *notifications.PushNotification, error) {
 	creator, err := event.GetInt("follower")
@@ -338,35 +268,6 @@ func onNewFollower(event *pubsub.Event) ([]int, *notifications.PushNotification,
 	}
 
 	return []int{int(targetID)}, notifications.NewFollowerNotification(creator, displayName), nil
-}
-
-func onGroupInvite(event *pubsub.Event) ([]int, *notifications.PushNotification, error) {
-	creator, err := event.GetInt("from")
-	if err != nil {
-		return nil, nil, err
-	}
-
-	targetID, err := event.GetInt("id")
-	if err != nil {
-		return nil, nil, err
-	}
-
-	groupId, err := event.GetInt("group")
-	if err != nil {
-		return nil, nil, err
-	}
-
-	displayName, err := getDisplayName(creator)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	group, err := getGroupName(groupId)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return []int{targetID}, notifications.NewGroupInviteNotification(groupId, creator, displayName, group), nil
 }
 
 func onRoomInvite(event *pubsub.Event) ([]int, *notifications.PushNotification, error) {
@@ -425,13 +326,4 @@ func getDisplayName(id int) (string, error) {
 	}
 
 	return user.DisplayName, nil
-}
-
-func getGroupName(id int) (string, error) {
-	group, err := groupsBackend.FindById(id)
-	if err != nil {
-		return "", err
-	}
-
-	return group.Name, nil
 }

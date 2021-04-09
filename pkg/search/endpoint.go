@@ -15,7 +15,6 @@ import (
 	"github.com/elastic/go-elasticsearch/v7/esapi"
 	"github.com/gorilla/mux"
 
-	"github.com/soapboxsocial/soapbox/pkg/groups"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/search/internal"
 	"github.com/soapboxsocial/soapbox/pkg/users"
@@ -23,13 +22,11 @@ import (
 
 // @TODO maybe do a type?
 const (
-	usersIndex  = "users"
-	groupsIndex = "groups"
+	usersIndex = "users"
 )
 
 type Response struct {
-	Users  []*users.User   `json:"users,omitempty"`
-	Groups []*groups.Group `json:"groups,omitempty"`
+	Users []*users.User `json:"users,omitempty"`
 }
 
 type Endpoint struct {
@@ -83,22 +80,6 @@ func (e *Endpoint) Search(w http.ResponseWriter, r *http.Request) {
 				wg.Done()
 			}()
 		}
-
-		if index == "groups" {
-			wg.Add(1)
-
-			go func() {
-				list, err := e.searchGroups(query, limit, offset)
-				if err != nil {
-					log.Printf("failed to search groups: %s\n", err.Error())
-					wg.Done()
-					return
-				}
-
-				response.Groups = list
-				wg.Done()
-			}()
-		}
 	}
 
 	wg.Wait()
@@ -117,7 +98,7 @@ func types(query url.Values) ([]string, error) {
 
 	vals := strings.Split(indexes, ",")
 	for _, val := range vals {
-		if val != usersIndex && val != groupsIndex {
+		if val != usersIndex {
 			return nil, fmt.Errorf("invalid index %s", vals)
 		}
 	}
@@ -140,26 +121,6 @@ func (e *Endpoint) searchUsers(query string, limit, offset int) ([]*users.User, 
 		}
 
 		data = append(data, user)
-	}
-
-	return data, nil
-}
-
-func (e *Endpoint) searchGroups(query string, limit, offset int) ([]*groups.Group, error) {
-	res, err := e.search("groups", query, limit, offset)
-	if err != nil {
-		return nil, err
-	}
-
-	data := make([]*groups.Group, 0)
-	for _, hit := range res.Hits.Hits {
-		group := &groups.Group{}
-		err := json.Unmarshal(hit.Source, group)
-		if err != nil {
-			continue
-		}
-
-		data = append(data, group)
 	}
 
 	return data, nil

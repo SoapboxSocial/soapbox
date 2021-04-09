@@ -9,7 +9,6 @@ const (
 	NEW_FOLLOWER NotificationCategory = "NEW_FOLLOWER"
 	ROOM_INVITE  NotificationCategory = "ROOM_INVITE"
 	ROOM_JOINED  NotificationCategory = "ROOM_JOINED"
-	GROUP_INVITE NotificationCategory = "GROUP_INVITE"
 	WELCOME_ROOM NotificationCategory = "WELCOME_ROOM"
 )
 
@@ -59,32 +58,6 @@ func NewRoomNotificationWithName(id, creator, name string) *PushNotification {
 	}
 }
 
-func NewRoomWithGroupNotification(id, creator, group string) *PushNotification {
-	return &PushNotification{
-		Category: NEW_ROOM,
-		Alert: Alert{
-			Key:       "new_room_with_group_notification",
-			Body:      fmt.Sprintf("%s created a room in \"%s\", why not join them?", creator, group),
-			Arguments: []string{creator, group},
-		},
-		Arguments:  map[string]interface{}{"id": id},
-		CollapseID: id,
-	}
-}
-
-func NewRoomWithGroupAndNameNotification(id, creator, group, name string) *PushNotification {
-	return &PushNotification{
-		Category: NEW_ROOM,
-		Alert: Alert{
-			Key:       "new_room_with_group_and_name_notification",
-			Body:      fmt.Sprintf("%s created the room \"%s\" in \"%s\", why not join them?", creator, name, group),
-			Arguments: []string{creator, name, group},
-		},
-		Arguments:  map[string]interface{}{"id": id},
-		CollapseID: id,
-	}
-}
-
 func NewFollowerNotification(id int, follower string) *PushNotification {
 	return &PushNotification{
 		Category: NEW_FOLLOWER,
@@ -116,17 +89,6 @@ func NewRoomInviteNotificationWithName(id, from, room string) *PushNotification 
 		},
 		Arguments:  map[string]interface{}{"id": id},
 		CollapseID: room,
-	}
-}
-
-func NewGroupInviteNotification(groupId, fromId int, from, group string) *PushNotification {
-	return &PushNotification{
-		Category: GROUP_INVITE,
-		Alert: Alert{
-			Key:       "group_invite_notification",
-			Arguments: []string{from, group},
-		},
-		Arguments: map[string]interface{}{"id": groupId, "from": fromId},
 	}
 }
 

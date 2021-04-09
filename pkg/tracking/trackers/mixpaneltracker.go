@@ -26,9 +26,6 @@ func NewMixpanelTracker(client mixpanel.Mixpanel) *MixpanelTracker {
 func (m *MixpanelTracker) CanTrack(event *pubsub.Event) bool {
 	return event.Type != pubsub.EventTypeRoomInvite &&
 		event.Type != pubsub.EventTypeUserUpdate &&
-		event.Type != pubsub.EventTypeGroupInvite &&
-		event.Type != pubsub.EventTypeGroupUpdate &&
-		event.Type != pubsub.EventTypeGroupDelete &&
 		event.Type != pubsub.EventTypeWelcomeRoom
 }
 
@@ -123,35 +120,6 @@ func transform(event *pubsub.Event) *tracking.Event {
 				"username": event.Params["username"],
 			},
 		}
-	case pubsub.EventTypeNewGroup:
-		id, err := event.GetInt("creator")
-		if err != nil {
-			return nil
-		}
-
-		return &tracking.Event{
-			ID:   strconv.Itoa(id),
-			Name: "group_new",
-			Properties: map[string]interface{}{
-				"group_id": event.Params["id"],
-				"name":     event.Params["name"],
-			},
-		}
-	case pubsub.EventTypeNewGroupRoom:
-		id, err := event.GetInt("creator")
-		if err != nil {
-			return nil
-		}
-
-		return &tracking.Event{
-			ID:   strconv.Itoa(id),
-			Name: "room_new",
-			Properties: map[string]interface{}{
-				"room_id":    event.Params["id"],
-				"visibility": event.Params["visibility"],
-				"group_id":   event.Params["group"],
-			},
-		}
 	case pubsub.EventTypeNewFollower:
 		id, err := event.GetInt("follower")
 		if err != nil {
@@ -163,19 +131,6 @@ func transform(event *pubsub.Event) *tracking.Event {
 			Name: "followed",
 			Properties: map[string]interface{}{
 				"following_id": event.Params["id"],
-			},
-		}
-	case pubsub.EventTypeGroupJoin:
-		id, err := event.GetInt("id")
-		if err != nil {
-			return nil
-		}
-
-		return &tracking.Event{
-			ID:   strconv.Itoa(id),
-			Name: "group_join",
-			Properties: map[string]interface{}{
-				"group": event.Params["group"],
 			},
 		}
 	case pubsub.EventTypeNewStory:

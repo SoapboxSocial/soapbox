@@ -22,7 +22,6 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/conf"
 	"github.com/soapboxsocial/soapbox/pkg/devices"
 	"github.com/soapboxsocial/soapbox/pkg/followers"
-	"github.com/soapboxsocial/soapbox/pkg/groups"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/http/middlewares"
 	"github.com/soapboxsocial/soapbox/pkg/images"
@@ -156,9 +155,6 @@ func main() {
 		rooms.NewCurrentRoomBackend(db),
 	)
 
-	groupsBackend := groups.NewBackend(db)
-	groupsEndpoint := groups.NewEndpoint(groupsBackend, ib, queue)
-
 	storiesBackend := stories.NewBackend(db)
 	storiesEndpoint := stories.NewEndpoint(storiesBackend, stories.NewFileBackend(config.CDN.Stories), queue)
 	storiesRouter := storiesEndpoint.Router()
@@ -174,7 +170,6 @@ func main() {
 	userRoutes.HandleFunc("/unfollow", usersEndpoints.UnfollowUser).Methods("POST")
 	userRoutes.HandleFunc("/multi-follow", usersEndpoints.MultiFollowUsers).Methods("POST")
 	userRoutes.HandleFunc("/edit", usersEndpoints.EditUser).Methods("POST")
-	userRoutes.HandleFunc("/{id:[0-9]+}/groups", groupsEndpoint.GetGroupsForUser).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/stories", storiesEndpoint.GetStoriesForUser).Methods("GET")
 
 	userRoutes.Use(amw.Middleware)
@@ -203,15 +198,11 @@ func main() {
 
 	pb := linkedaccounts.NewLinkedAccountsBackend(db)
 
-	meEndpoint := me.NewEndpoint(ub, groupsBackend, ns, oauth, pb, storiesBackend, queue)
+	meEndpoint := me.NewEndpoint(ub, ns, oauth, pb, storiesBackend, queue)
 	meRoutes := meEndpoint.Router()
 
 	meRoutes.Use(amw.Middleware)
 	mount(r, "/v1/me", meRoutes)
-
-	groupsRouter := groupsEndpoint.Router()
-	groupsRouter.Use(amw.Middleware)
-	mount(r, "/v1/groups", groupsRouter)
 
 	searchEndpoint := search.NewEndpoint(client)
 	searchRouter := searchEndpoint.Router()

@@ -13,7 +13,6 @@ import (
 	"github.com/pion/webrtc/v3"
 
 	"github.com/soapboxsocial/soapbox/pkg/blocks"
-	"github.com/soapboxsocial/soapbox/pkg/groups"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/minis"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
@@ -35,7 +34,6 @@ type Server struct {
 	sfu     *sfu.SFU
 	sm      *sessions.SessionManager
 	ub      *users.UserBackend
-	groups  *groups.Backend
 	queue   *pubsub.Queue
 	blocked *blocks.Backend
 	minis   *minis.Backend
@@ -53,7 +51,6 @@ func NewServer(
 	queue *pubsub.Queue,
 	currentRoom *CurrentRoomBackend,
 	ws *WelcomeStore,
-	groups *groups.Backend,
 	repository *Repository,
 	blocked *blocks.Backend,
 	minis *minis.Backend,
@@ -65,7 +62,6 @@ func NewServer(
 		queue:       queue,
 		currentRoom: currentRoom,
 		ws:          ws,
-		groups:      groups,
 		repository:  repository,
 		blocked:     blocked,
 		minis:       minis,
@@ -179,20 +175,11 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 		id := internal.GenerateRoomID()
 		name := internal.TrimRoomNameToLimit(create.Name)
 
-		var group *groups.Group
-		if create.Visibility != pb.Visibility_VISIBILITY_PRIVATE && create.GetGroup() != 0 {
-			group, err = s.getGroup(user.ID, int(create.GetGroup()))
-			if err != nil {
-				fmt.Printf("group err: %v", err)
-			}
-		}
-
 		room = s.createRoom(
 			id,
 			name,
 			me.id,
 			create.Visibility,
-			group,
 		)
 
 		// @TODO SHOULD PROBABLY BE IN A CALLBACK SO WE KNOW THE ROOM IS OPEN
@@ -268,7 +255,7 @@ func (s *Server) getRoom(id string, owner int) (*Room, error) {
 	}
 
 	// @TODO NAME
-	r = s.createRoom(id, "Welcome!", owner, pb.Visibility_VISIBILITY_PUBLIC, nil)
+	r = s.createRoom(id, "Welcome!", owner, pb.Visibility_VISIBILITY_PUBLIC)
 	s.repository.Set(r)
 
 	r.InviteUser(owner, user)
@@ -276,10 +263,10 @@ func (s *Server) getRoom(id string, owner int) (*Room, error) {
 	return r, nil
 }
 
-func (s *Server) createRoom(id, name string, owner int, visibility pb.Visibility, group *groups.Group) *Room {
+func (s *Server) createRoom(id, name string, owner int, visibility pb.Visibility) *Room {
 	session, _ := s.sfu.GetSession(id)
 
-	room := NewRoom(id, name, group, owner, visibility, session, s.queue, s.minis)
+	room := NewRoom(id, name, owner, visibility, session, s.queue, s.minis)
 
 	room.OnDisconnected(func(room string, peer *Member) {
 		r, err := s.repository.Get(room)
@@ -330,14 +317,9 @@ func (s *Server) createRoom(id, name string, owner int, visibility pb.Visibility
 		}
 
 		var event pubsub.Event
-		group := room.Group()
 
 		if isNew {
-			if group == nil {
-				event = pubsub.NewRoomCreationEvent(room.id, me.id, visibility)
-			} else {
-				event = pubsub.NewRoomCreationEventWithGroup(room.id, me.id, group.ID, visibility)
-			}
+			event = pubsub.NewRoomCreationEvent(room.id, me.id, visibility)
 		} else {
 			event = pubsub.NewRoomJoinEvent(room.id, me.id, visibility)
 		}
@@ -351,13 +333,9 @@ func (s *Server) createRoom(id, name string, owner int, visibility pb.Visibility
 			return
 		}
 
-		if group != nil && group.GroupType == "private" {
-			return
-		}
-
 		err = s.currentRoom.SetCurrentRoomForUser(me.id, room.id)
 		if err != nil {
-			log.Printf("failed to set current room err: %v", err)
+			log.Printf("failed to set current room err: %v user: %d", err, me.id)
 		}
 	})
 
@@ -378,30 +356,7 @@ func (s *Server) canJoin(peer int, room *Room) bool {
 		return false
 	}
 
-	group := room.Group()
-	if group == nil {
-		return true
-	}
-
-	if group.GroupType != "private" {
-		return true
-	}
-
-	isMember, err := s.groups.IsGroupMember(peer, group.ID)
-	if err != nil {
-		return false
-	}
-
-	return isMember
-}
-
-func (s *Server) getGroup(peer, id int) (*groups.Group, error) {
-	isMember, err := s.groups.IsGroupMember(peer, id)
-	if err != nil || !isMember {
-		return nil, fmt.Errorf("user %d is not member of group %d", peer, id)
-	}
-
-	return s.groups.FindById(id)
+	return true
 }
 
 func (s *Server) userForSession(r *http.Request) (*users.User, error) {

@@ -73,7 +73,7 @@ func main() {
 
 	if config.Trackers.LastActive {
 		backend := activeusers.NewBackend(db)
-		at := trackers.NewRecentlyActiveTracker(backend)
+		at := trackers.NewRecentlyActiveTracker(backend, redis.NewTimeoutStore(rdb))
 		t = append(t, at)
 	}
 

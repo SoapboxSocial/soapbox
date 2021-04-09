@@ -518,6 +518,8 @@ func (r *Room) onRemoveAdmin(from int, cmd *pb.Command_RemoveAdmin) {
 		return
 	}
 
+	delete(r.adminsOnDisconnected, from)
+
 	member.SetRole(pb.RoomState_RoomMember_ROLE_ADMIN)
 
 	r.notify(&pb.Event{

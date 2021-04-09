@@ -27,5 +27,7 @@ func (r *RecentlyActiveTracker) Track(event *pubsub.Event) error {
 		return err
 	}
 
+	// @TODO WE WANT A COOLDOWN HERE
+
 	return r.backend.SetLastActiveTime(id, time.Now())
 }

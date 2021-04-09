@@ -16,5 +16,10 @@ func NewBackend(db *sql.DB) *Backend {
 }
 
 func (b *Backend) SetLastActiveTime(user int, time time.Time) error {
-	return nil
-}
+	stmt, err := b.db.Prepare("SELECT update_user_active_times($1, $2);")
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(user,time)
+	return err}

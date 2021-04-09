@@ -9,6 +9,7 @@ import (
 	"github.com/dghubble/oauth1"
 	"github.com/gorilla/mux"
 
+	"github.com/soapboxsocial/soapbox/pkg/activeusers"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/linkedaccounts"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
@@ -24,6 +25,7 @@ type Endpoint struct {
 	la          *linkedaccounts.Backend
 	stories     *stories.Backend
 	queue       *pubsub.Queue
+	actives     *activeusers.Backend
 }
 
 // Me is returned to the user calling the `/me` endpoint.
@@ -52,6 +54,7 @@ func NewEndpoint(
 	la *linkedaccounts.Backend,
 	backend *stories.Backend,
 	queue *pubsub.Queue,
+	actives *activeusers.Backend,
 ) *Endpoint {
 	return &Endpoint{
 		users:       users,
@@ -60,6 +63,7 @@ func NewEndpoint(
 		la:          la,
 		stories:     backend,
 		queue:       queue,
+		actives: actives,
 	}
 }
 
@@ -207,13 +211,22 @@ func (m *Endpoint) removeTwitter(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Endpoint) activeUsers(w http.ResponseWriter, r *http.Request) {
-	_, ok := httputil.GetUserIDFromContext(r.Context())
+	id, ok := httputil.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "unauthorized")
 		return
 	}
 
-	//`SELECT * FROM users WHERE id = ()`
+	au, err := m.actives.GetActiveUsersForFollower(id)
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	err = httputil.JsonEncode(w, au)
+	if err != nil {
+		log.Printf("httputil.JsonEncode err: %s", err)
+	}
 }
 
 func (m *Endpoint) feed(w http.ResponseWriter, r *http.Request) {

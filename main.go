@@ -16,6 +16,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/soapboxsocial/soapbox/pkg/account"
+	"github.com/soapboxsocial/soapbox/pkg/activeusers"
 	usersapi "github.com/soapboxsocial/soapbox/pkg/api/users"
 	"github.com/soapboxsocial/soapbox/pkg/apple"
 	"github.com/soapboxsocial/soapbox/pkg/blocks"
@@ -198,7 +199,7 @@ func main() {
 
 	pb := linkedaccounts.NewLinkedAccountsBackend(db)
 
-	meEndpoint := me.NewEndpoint(ub, ns, oauth, pb, storiesBackend, queue)
+	meEndpoint := me.NewEndpoint(ub, ns, oauth, pb, storiesBackend, queue, activeusers.NewBackend(db))
 	meRoutes := meEndpoint.Router()
 
 	meRoutes.Use(amw.Middleware)

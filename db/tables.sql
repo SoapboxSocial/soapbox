@@ -152,3 +152,25 @@ CREATE TRIGGER calculate_room_time
     ON user_room_logs
     FOR EACH ROW
     EXECUTE PROCEDURE update_user_room_time();
+
+CREATE TABLE IF NOT EXISTS user_active_times (
+    user_id INT NOT NULL,
+    last_active TIMESTAMPTZ,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE UNIQUE INDEX idx_user_active_times ON user_active_times (user_id);
+
+CREATE OR REPLACE FUNCTION update_user_active_times(id INT, active TIMESTAMPTZ)
+    RETURNS VOID
+    AS $user_active_times$
+    BEGIN
+        -- This inserts or updates the time a user has spent in a specific room type.
+        INSERT INTO user_active_times(user_id, last_active)
+        VALUES(id, active)
+            ON CONFLICT (user_id)
+            DO
+                UPDATE SET last_active = active;
+    END;
+    $user_active_times$
+    LANGUAGE PLPGSQL;

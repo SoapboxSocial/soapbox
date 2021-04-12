@@ -32,7 +32,7 @@ func (b *CurrentRoomBackend) GetCurrentRoomForUser(id int) (string, error) {
 }
 
 func (b *CurrentRoomBackend) SetCurrentRoomForUser(user int, room string) error {
-	stmt, err := b.db.Prepare("INSERT INTO current_rooms (user_id, room) VALUES ($1, $2);")
+	stmt, err := b.db.Prepare("SELECT update_current_rooms($1, $2);")
 	if err != nil {
 		return err
 	}

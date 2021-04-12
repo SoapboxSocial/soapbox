@@ -95,6 +95,20 @@ CREATE TABLE IF NOT EXISTS current_rooms (
 CREATE INDEX idx_current_rooms ON current_rooms (room);
 CREATE UNIQUE INDEX idx_current_rooms_user_id ON current_rooms (user_id, room);
 
+CREATE OR REPLACE FUNCTION update_current_rooms(id INT, room_id VARCHAR(27))
+    RETURNS VOID
+    AS $current_rooms$
+    BEGIN
+        -- This inserts or updates the time a user has spent in a specific room type.
+        INSERT INTO current_rooms(user_id, room)
+        VALUES(id, room_id)
+            ON CONFLICT (user_id)
+            DO
+                UPDATE SET room = room_id;
+    END;
+    $current_rooms$
+    LANGUAGE PLPGSQL;
+
 CREATE TABLE IF NOT EXISTS minis (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,

@@ -99,7 +99,7 @@ CREATE OR REPLACE FUNCTION update_current_rooms(id INT, room_id VARCHAR(27))
     RETURNS VOID
     AS $current_rooms$
     BEGIN
-        -- This inserts or updates the time a user has spent in a specific room type.
+        -- This inserts or updates the room id a user is in.
         INSERT INTO current_rooms(user_id, room)
         VALUES(id, room_id)
             ON CONFLICT (user_id)

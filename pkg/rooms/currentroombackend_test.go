@@ -48,7 +48,7 @@ func TestCurrentRoomBackend_SetCurrentRoomForUser(t *testing.T) {
 	room := "foo"
 
 	mock.
-		ExpectPrepare("INSERT INTO current_rooms").
+		ExpectPrepare("SELECT").
 		ExpectExec().
 		WithArgs(user, room).
 		WillReturnResult(sqlmock.NewResult(1, 1))

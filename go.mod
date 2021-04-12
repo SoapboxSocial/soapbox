@@ -22,7 +22,7 @@ require (
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/pelletier/go-toml v1.9.0 // indirect
-	github.com/pion/dtls/v2 v2.0.9 // indirect
+	github.com/pion/ice/v2 v2.0.17 // indirect
 	github.com/pion/ion-log v1.0.1 // indirect
 	github.com/pion/ion-sfu v1.9.8
 	github.com/pion/webrtc/v3 v3.0.21
@@ -44,7 +44,6 @@ require (
 	github.com/yuin/gopher-lua v0.0.0-20200816102855-ee81675732da // indirect
 	golang.org/x/net v0.0.0-20210410081132-afb366fc7cd1 // indirect
 	golang.org/x/sys v0.0.0-20210403161142-5e06dd20ab57 // indirect
-	golang.org/x/text v0.3.6 // indirect
 	google.golang.org/genproto v0.0.0-20210406143921-e86de6bf7a46 // indirect
 	google.golang.org/grpc v1.37.0
 	google.golang.org/protobuf v1.26.0

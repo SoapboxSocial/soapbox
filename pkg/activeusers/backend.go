@@ -28,7 +28,7 @@ func (b *Backend) SetLastActiveTime(user int, time time.Time) error {
 func (b *Backend) GetActiveUsersForFollower(user int) ([]ActiveUser, error) {
 	query := `SELECT users.id, users.display_name, users.username, users.image, active.room FROM users
 		INNER JOIN (SELECT * FROM current_rooms UNION (SELECT user_id, '' FROM user_active_times WHERE last_active > (NOW() - INTERVAL '30 MINUTE'))) active ON users.id = active.user_id
-		INNER JOIN followers ON (active.user_id = followers.user_id) WHERE followers.follower = $1;`
+		INNER JOIN followers ON (active.user_id = followers.user_id) WHERE followers.follower = $1;` // @TODO SCOPE THIS QUERY TO FRIENDS?
 
 	stmt, err := b.db.Prepare(query)
 	if err != nil {

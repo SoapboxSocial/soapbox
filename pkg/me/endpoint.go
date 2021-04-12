@@ -63,7 +63,7 @@ func NewEndpoint(
 		la:          la,
 		stories:     backend,
 		queue:       queue,
-		actives: actives,
+		actives:     actives,
 	}
 }
 

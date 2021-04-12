@@ -35,7 +35,7 @@ func TestTimeoutStore(t *testing.T) {
 		t.Fatal("should not be on timeout")
 	}
 
-	err = ts.SetTimeout(key, 5 *time.Minute)
+	err = ts.SetTimeout(key, 5*time.Minute)
 	if err != nil {
 		t.Fatal(err)
 	}

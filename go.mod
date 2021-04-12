@@ -24,8 +24,8 @@ require (
 	github.com/pelletier/go-toml v1.9.0 // indirect
 	github.com/pion/dtls/v2 v2.0.9 // indirect
 	github.com/pion/ion-log v1.0.1 // indirect
-	github.com/pion/ion-sfu v1.9.7
-	github.com/pion/webrtc/v3 v3.0.20
+	github.com/pion/ion-sfu v1.9.8
+	github.com/pion/webrtc/v3 v3.0.21
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.10.0 // indirect
 	github.com/prometheus/common v0.20.0 // indirect
@@ -42,11 +42,11 @@ require (
 	github.com/tideland/golib v4.24.2+incompatible // indirect
 	github.com/tideland/gorest v2.15.5+incompatible // indirect
 	github.com/yuin/gopher-lua v0.0.0-20200816102855-ee81675732da // indirect
-	golang.org/x/net v0.0.0-20210405180319-a5a99cb37ef4 // indirect
+	golang.org/x/net v0.0.0-20210410081132-afb366fc7cd1 // indirect
 	golang.org/x/sys v0.0.0-20210403161142-5e06dd20ab57 // indirect
 	golang.org/x/text v0.3.6 // indirect
 	google.golang.org/genproto v0.0.0-20210406143921-e86de6bf7a46 // indirect
-	google.golang.org/grpc v1.36.1
+	google.golang.org/grpc v1.37.0
 	google.golang.org/protobuf v1.26.0
 	gopkg.in/ini.v1 v1.62.0 // indirect
 )

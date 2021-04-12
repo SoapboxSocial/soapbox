@@ -94,6 +94,7 @@ CREATE TABLE IF NOT EXISTS current_rooms (
 
 CREATE INDEX idx_current_rooms ON current_rooms (room);
 CREATE UNIQUE INDEX idx_current_rooms_user_id ON current_rooms (user_id, room);
+CREATE UNIQUE INDEX idx_current_rooms_user ON current_rooms (user_id);
 
 CREATE OR REPLACE FUNCTION update_current_rooms(id INT, room_id VARCHAR(27))
     RETURNS VOID

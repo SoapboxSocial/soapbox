@@ -276,14 +276,17 @@ func (s *Server) createRoom(id, name string, owner int, visibility pb.Visibility
 		}
 
 		go func() {
-			_ = s.currentRoom.RemoveCurrentRoomForUser(peer.id)
+			err := s.currentRoom.RemoveCurrentRoomForUser(peer.id)
+			if err != nil {
+				log.Printf("failed to remove current room for user %d, err: %s", peer.id, err)
+			}
 
 			visibility := pubsub.Public
 			if r.Visibility() == pb.Visibility_VISIBILITY_PRIVATE {
 				visibility = pubsub.Private
 			}
 
-			err := s.queue.Publish(pubsub.RoomTopic, pubsub.NewRoomLeftEvent(room, peer.id, visibility, peer.joined))
+			err = s.queue.Publish(pubsub.RoomTopic, pubsub.NewRoomLeftEvent(room, peer.id, visibility, peer.joined))
 			if err != nil {
 				log.Printf("queue.Publish err: %v\n", err)
 			}

@@ -44,15 +44,15 @@ func (b *Backend) GetActiveUsersForFollower(user int) ([]ActiveUser, error) {
 
 	for rows.Next() {
 		user := ActiveUser{}
-		var room string
+		var room sql.NullString
 
 		err := rows.Scan(&user.ID, &user.DisplayName, &user.Username, &user.Image, &room)
 		if err != nil {
 			continue
 		}
 
-		if room != "" {
-			user.Room = &room
+		if room.Valid {
+			user.Room = &room.String
 		}
 
 		result = append(result, user)

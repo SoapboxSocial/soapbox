@@ -269,20 +269,19 @@ func (s *Server) createRoom(id, name string, owner int, visibility pb.Visibility
 	room := NewRoom(id, name, owner, visibility, session, s.queue, s.minis)
 
 	room.OnDisconnected(func(room string, peer *Member) {
-		r, err := s.repository.Get(room)
-		if err != nil {
-			fmt.Printf("failed to get room %v\n", err)
-			return
-		}
-
 		go func() {
 			err := s.currentRoom.RemoveCurrentRoomForUser(peer.id)
 			if err != nil {
 				log.Printf("failed to remove current room for user %d, err: %s", peer.id, err)
 			}
 
+			r, err := s.repository.Get(room)
+			if err != nil {
+				fmt.Printf("failed to get room %v\n", err)
+			}
+
 			visibility := pubsub.Public
-			if r.Visibility() == pb.Visibility_VISIBILITY_PRIVATE {
+			if r != nil && r.Visibility() == pb.Visibility_VISIBILITY_PRIVATE {
 				visibility = pubsub.Private
 			}
 
@@ -290,13 +289,18 @@ func (s *Server) createRoom(id, name string, owner int, visibility pb.Visibility
 			if err != nil {
 				log.Printf("queue.Publish err: %v\n", err)
 			}
+
+			if r == nil {
+				return
+			}
+
+			if r.PeerCount() > 0 {
+				return
+			}
+
+			s.repository.Remove(room)
 		}()
 
-		if r.PeerCount() > 0 {
-			return
-		}
-
-		s.repository.Remove(room)
 
 		log.Printf("room \"%s\" was closed", room)
 	})

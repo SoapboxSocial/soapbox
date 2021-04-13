@@ -18,6 +18,7 @@ import (
 func TestRecentlyActiveTracker_CanTrack(t *testing.T) {
 	tests := []pubsub.EventType{
 		pubsub.EventTypeUserHeartbeat,
+		pubsub.EventTypeRoomLeft,
 	}
 
 	db, _, err := sqlmock.New()

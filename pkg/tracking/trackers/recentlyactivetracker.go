@@ -23,7 +23,8 @@ func NewRecentlyActiveTracker(backend *activeusers.Backend, timeout *redis.Timeo
 }
 
 func (r *RecentlyActiveTracker) CanTrack(event *pubsub.Event) bool {
-	return event.Type == pubsub.EventTypeUserHeartbeat
+	return event.Type == pubsub.EventTypeUserHeartbeat ||
+		event.Type == pubsub.EventTypeRoomLeft
 }
 
 func (r *RecentlyActiveTracker) Track(event *pubsub.Event) error {

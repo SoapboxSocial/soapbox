@@ -413,6 +413,8 @@ func (r *Room) onMessage(from int, command *pb.Command) {
 		r.onOpenMini(from, command.GetOpenMini())
 	case *pb.Command_CloseMini_:
 		r.onCloseMini(from)
+	case *pb.Command_RequestMini_:
+		r.onRequestMini(from, command.GetRequestMini())
 	}
 }
 
@@ -718,6 +720,46 @@ func (r *Room) onCloseMini(from int) {
 	r.notify(&pb.Event{
 		From:    int64(from),
 		Payload: &pb.Event_ClosedMini_{ClosedMini: &pb.Event_ClosedMini{}},
+	})
+}
+
+func (r *Room) onRequestMini(from int, cmd *pb.Command_RequestMini) {
+	id := cmd.GetId()
+	if id == 0 {
+		return
+	}
+
+	mini, err := r.minis.GetMiniWithID(int(id))
+	if err != nil {
+		log.Printf("failed to get mini: %d err: %s", id, err)
+		return
+	}
+
+	msg := &pb.Event{From: int64(from), Payload: &pb.Event_RequestedMini_{
+		RequestedMini: &pb.Event_RequestedMini{
+			Mini: &pb.RoomState_Mini{
+				Id:   int64(mini.ID),
+				Name: mini.Name,
+			},
+		},
+	},
+	}
+
+	raw, err := proto.Marshal(msg)
+	if err != nil {
+		log.Printf("failed to marshal err: %s", err)
+		return
+	}
+
+	r.MapMembers(func(member *Member) {
+		if member.Role() != pb.RoomState_RoomMember_ROLE_ADMIN {
+			return
+		}
+
+		err := member.Notify(raw)
+		if err != nil {
+			log.Printf("member.Notify err: %s", err)
+		}
 	})
 }
 

@@ -742,6 +742,7 @@ func (r *Room) onRequestMini(from int, cmd *pb.Command_RequestMini) {
 				Mini: &pb.RoomState_Mini{
 					Id:   int64(mini.ID),
 					Name: mini.Name,
+					Slug: mini.Slug,
 				},
 			},
 		},

@@ -735,14 +735,16 @@ func (r *Room) onRequestMini(from int, cmd *pb.Command_RequestMini) {
 		return
 	}
 
-	msg := &pb.Event{From: int64(from), Payload: &pb.Event_RequestedMini_{
-		RequestedMini: &pb.Event_RequestedMini{
-			Mini: &pb.RoomState_Mini{
-				Id:   int64(mini.ID),
-				Name: mini.Name,
+	msg := &pb.Event{
+		From: int64(from),
+		Payload: &pb.Event_RequestedMini_{
+			RequestedMini: &pb.Event_RequestedMini{
+				Mini: &pb.RoomState_Mini{
+					Id:   int64(mini.ID),
+					Name: mini.Name,
+				},
 			},
 		},
-	},
 	}
 
 	raw, err := proto.Marshal(msg)

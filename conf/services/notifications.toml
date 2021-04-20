@@ -1,0 +1,22 @@
+[redis]
+host = "localhost"
+port = 6379
+database = 0
+
+[db]
+host = "127.0.0.1"
+port = 5432
+user = "voicely"
+password = "voicely"
+database = "voicely"
+ssl = "disable"
+
+[apns]
+path = "/conf/authkey.p8"
+key = "9U8K3MKG2K"
+team = "Z9LC5GZ33U"
+bundle = "app.social.soapbox"
+
+[grpc]
+host = "127.0.0.1"
+port = "50052"

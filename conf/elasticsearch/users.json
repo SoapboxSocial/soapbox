@@ -1,8 +1,8 @@
 {
   "settings": {
     "index": {
-      "sort.field": "followers",
-      "sort.order": "desc"
+      "sort.field": ["room_time", "followers"],
+      "sort.order": ["desc", "desc"]
     },
     "analysis": {
       "filter": {
@@ -40,6 +40,9 @@
         "type": "text"
       },
       "followers": {
+        "type": "long"
+      },
+      "room_time": {
         "type": "long"
       },
       "id": {

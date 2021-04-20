@@ -1,273 +1,342 @@
 package rooms
 
 import (
-	"encoding/binary"
-	"encoding/json"
+	"context"
 	"errors"
 	"io"
 	"log"
 	"sync"
 
-	sfu "github.com/pion/ion-sfu/pkg"
+	"github.com/gorilla/websocket"
+	"github.com/pion/ion-sfu/pkg/sfu"
 	"github.com/pion/webrtc/v3"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 
-	"github.com/soapboxsocial/soapbox/pkg/groups"
+	"github.com/soapboxsocial/soapbox/pkg/minis"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/internal"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 )
 
-type PeerRole string
+const CHANNEL = "soapbox"
+
+type RoomConnectionState int
 
 const (
-	ADMIN    PeerRole = "admin"
-	SPEAKER  PeerRole = "speaker"
-	AUDIENCE PeerRole = "audience"
+	open RoomConnectionState = iota
+	closed
 )
 
-// member is used to communicate what peers are part of the chat
-type member struct {
-	ID          int      `json:"id"`
-	DisplayName string   `json:"display_name"`
-	Image       string   `json:"image"`
-	Role        PeerRole `json:"role"`
-	IsMuted     bool     `json:"is_muted"`
-	SSRC        uint32   `json:"ssrc"`
-}
-
-type payload struct {
-	ID      int      `json:"id"`
-	Name    string   `json:"name,omitempty"`
-	Members []member `json:"members"`
-}
-
-type peer struct {
-	me     *member
-	stream pb.RoomService_SignalServer
-	rtc    *sfu.WebRTCTransport
-}
-
-type OnJoinHandler func(isNew bool, peer int, room *Room)
+type (
+	JoinHandlerFunc         func(room *Room, me *Member, isNew bool)
+	InviteHandlerFunc       func(room string, from, to int)
+	DisconnectedHandlerFunc func(room string, peer *Member)
+)
 
 type Room struct {
 	mux sync.RWMutex
 
-	id    int
-	name  string
-	group *groups.Group
+	id         string
+	name       string
+	visibility pb.Visibility
 
-	members map[int]*peer
+	state RoomConnectionState
 
-	onDisconnectedHandlerFunc func(room, peer int)
+	members map[int]*Member
+
+	adminInvites map[int]bool
+	kicked       map[int]bool
+	invited      map[int]bool
+
+	// users that were admins when they disconnected.
+	adminsOnDisconnected map[int]bool
+
+	link string
+	mini *pb.RoomState_Mini
+
+	minis *minis.Backend
+
+	peerToMember map[string]int
+
+	onDisconnectedHandlerFunc DisconnectedHandlerFunc
+	onInviteHandlerFunc       InviteHandlerFunc
+	onJoinHandlerFunc         JoinHandlerFunc
+
+	session *sfu.Session
 
 	queue *pubsub.Queue
-
-	isPrivate bool
-	invited   map[int]bool
-	kicked    map[int]bool
-
-	onJoin OnJoinHandler
 }
 
 func NewRoom(
-	id int,
+	id,
 	name string,
-	queue *pubsub.Queue,
-	isPrivate bool,
 	owner int,
-	group *groups.Group,
-	invites []int64,
-	onJoin OnJoinHandler,
+	visibility pb.Visibility,
+	session *sfu.Session,
+	queue *pubsub.Queue,
+	backend *minis.Backend,
 ) *Room {
 	r := &Room{
-		mux:       sync.RWMutex{},
-		id:        id,
-		name:      name,
-		members:   make(map[int]*peer),
-		queue:     queue,
-		isPrivate: isPrivate,
-		invited:   make(map[int]bool),
-		kicked:    make(map[int]bool),
-		group:     group,
-		onJoin:    onJoin,
+		id:                   id,
+		name:                 name,
+		visibility:           visibility,
+		state:                closed,
+		members:              make(map[int]*Member),
+		adminInvites:         make(map[int]bool),
+		kicked:               make(map[int]bool),
+		invited:              make(map[int]bool),
+		peerToMember:         make(map[string]int),
+		adminsOnDisconnected: make(map[int]bool),
+		session:              session,
+		queue:                queue,
+		minis:                backend,
 	}
 
 	r.invited[owner] = true
 
-	if isPrivate {
-		go func() {
-			for _, id := range invites {
-				r.inviteUser(owner, int(id))
-			}
-		}()
-	}
+	dc := sfu.NewDataChannel(CHANNEL)
+	dc.OnMessage(func(ctx context.Context, args sfu.ProcessArgs) {
+		m := &pb.Command{}
+		err := proto.Unmarshal(args.Message.Data, m)
+		if err != nil {
+			log.Printf("error unmarshalling: %v", err)
+			return
+		}
+
+		r.mux.RLock()
+		user, ok := r.peerToMember[args.Peer.ID()]
+		r.mux.RUnlock()
+
+		if !ok {
+			return
+		}
+
+		r.onMessage(user, m)
+	})
+
+	session.AddDataChannel(dc)
 
 	return r
 }
 
-func (r *Room) ID() int {
+func (r *Room) ID() string {
 	return r.id
 }
 
-func (r *Room) Group() *groups.Group {
-	return r.group
+func (r *Room) PeerCount() int {
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+	return len(r.members)
 }
 
-func (r *Room) IsPrivate() bool {
-	return r.isPrivate
+func (r *Room) Name() string {
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+	return r.name
+}
+
+func (r *Room) WasAdminOnDisconnect(id int) bool {
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+
+	return r.adminsOnDisconnected[id]
+}
+
+func (r *Room) ConnectionState() RoomConnectionState {
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+	return r.state
+}
+
+func (r *Room) SetConnectionState(state RoomConnectionState) {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+
+	r.state = state
+}
+
+func (r *Room) Visibility() pb.Visibility {
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+	return r.visibility
 }
 
 func (r *Room) CanJoin(id int) bool {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
 
-	if r.isPrivate {
+	if r.visibility == pb.Visibility_VISIBILITY_PRIVATE {
 		return r.invited[id]
 	}
 
 	return !r.kicked[id]
 }
 
-func (r *Room) Name() string {
+func (r *Room) isAdmin(id int) bool {
+	member := r.member(id)
+	if member == nil {
+		return false
+	}
+
+	return member.Role() == pb.RoomState_RoomMember_ROLE_ADMIN
+}
+
+func (r *Room) isInvitedToBeAdmin(id int) bool {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
 
-	return r.name
+	return r.adminInvites[id]
 }
 
-func (r *Room) PeerCount() int {
+func (r *Room) MapMembers(f func(member *Member)) {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
 
-	return len(r.members)
+	for _, member := range r.members {
+		f(member)
+	}
 }
 
-func (r *Room) OnDisconnected(f func(room, peer int)) {
+func (r *Room) OnDisconnected(f DisconnectedHandlerFunc) {
+	r.mux.Lock()
+	defer r.mux.Unlock()
+
 	r.onDisconnectedHandlerFunc = f
 }
 
-func (r *Room) Handle(me *member, stream pb.RoomService_SignalServer, rtc *sfu.WebRTCTransport, isNew bool) error {
-	id := me.ID
-
-	log.Printf("peer %d joined %d", id, r.id)
-
+func (r *Room) OnInvite(f InviteHandlerFunc) {
 	r.mux.Lock()
-	_, ok := r.members[id]
-	if ok {
-		r.mux.Unlock()
-		return errors.New("user tried to double enter")
-	}
-	r.mux.Unlock()
+	defer r.mux.Unlock()
 
-	if r.PeerCount() == 0 {
-		me.Role = ADMIN
-	}
-
-	r.mux.Lock()
-	r.members[id] = &peer{
-		me:     me,
-		stream: stream,
-		rtc:    rtc,
-	}
-	r.mux.Unlock()
-
-	done := make(chan bool)
-	rtc.OnConnectionStateChange(func(s webrtc.PeerConnectionState) {
-		if s == webrtc.PeerConnectionStateClosed || s == webrtc.PeerConnectionStateFailed {
-			r.onDisconnected(id)
-			done <- true
-		}
-	})
-
-	rtc.OnTrack(func(track *webrtc.Track, receiver *webrtc.RTPReceiver) {
-		r.mux.Lock()
-		r.members[id].me.SSRC = track.SSRC()
-		r.mux.Unlock()
-
-		r.mux.RLock()
-		me := r.members[id]
-		r.mux.RUnlock()
-
-		data, err := json.Marshal(me.me)
-		if err != nil {
-			log.Printf("failed to encode: %s\n", err.Error())
-		}
-
-		r.notify(&pb.SignalReply_Event{
-			Type: pb.SignalReply_Event_JOINED,
-			From: int64(id),
-			Data: data,
-		})
-
-		go r.onJoin(isNew, id, r)
-	})
-
-	for {
-		select {
-		case <-done:
-			return nil
-		default:
-			in, err := stream.Recv()
-			if err != nil {
-				r.onDisconnected(id)
-
-				if err == io.EOF {
-					return nil
-				}
-
-				errStatus, _ := status.FromError(err)
-				if errStatus.Code() == codes.Canceled {
-					return nil
-				}
-
-				log.Printf("signal error %v %v\n", errStatus.Message(), errStatus.Code())
-				return err
-			}
-
-			err = r.onPayload(id, in)
-			if err != nil {
-				return err
-			}
-		}
-	}
+	r.onInviteHandlerFunc = f
 }
 
-func (r *Room) onDisconnected(peer int) {
-	r.mux.RLock()
-	p, ok := r.members[peer]
-	r.mux.RUnlock()
+func (r *Room) OnJoin(f JoinHandlerFunc) {
+	r.mux.Lock()
+	defer r.mux.Unlock()
 
-	if !ok {
+	r.onJoinHandlerFunc = f
+}
+
+func (r *Room) ToProto() *pb.RoomState {
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+
+	members := make([]*pb.RoomState_RoomMember, 0)
+
+	for _, member := range r.members {
+		members = append(members, member.ToProto())
+	}
+
+	state := &pb.RoomState{
+		Id:         r.id,
+		Name:       r.name,
+		Members:    members,
+		Visibility: r.visibility,
+		Link:       r.link,
+		Mini:       r.mini,
+	}
+
+	if r.mini != nil {
+		state.MiniOld = r.mini.Slug
+	}
+
+	return state
+}
+
+func (r *Room) Handle(me *Member) {
+	r.mux.Lock()
+	r.peerToMember[me.peer.ID()] = me.id
+	r.mux.Unlock()
+
+	isNew := r.ConnectionState() == closed
+	if isNew {
+		me.SetRole(pb.RoomState_RoomMember_ROLE_ADMIN)
+	}
+
+	if r.member(me.id) != nil {
+		_ = me.Close()
 		return
 	}
 
-	go r.notify(&pb.SignalReply_Event{
-		Type: pb.SignalReply_Event_LEFT,
-		From: int64(peer),
-	})
+	r.mux.Lock()
+	delete(r.adminsOnDisconnected, me.id)
+	r.mux.Unlock()
 
-	err := p.rtc.Close()
+	me.StartChannel(CHANNEL)
+
+	r.mux.Lock()
+	r.members[me.id] = me
+	r.mux.Unlock()
+
+	me.peer.OnICEConnectionStateChange = func(state webrtc.ICEConnectionState) {
+		log.Printf("connection state changed %d", state)
+
+		switch state {
+		case webrtc.ICEConnectionStateConnected:
+			r.onJoinHandlerFunc(r, me, isNew)
+			r.SetConnectionState(open)
+
+			r.notify(&pb.Event{
+				From: int64(me.id),
+				Payload: &pb.Event_Joined_{
+					Joined: &pb.Event_Joined{User: me.ToProto()},
+				},
+			})
+		case webrtc.ICEConnectionStateClosed, webrtc.ICEConnectionStateFailed:
+			r.onDisconnected(int64(me.id))
+		}
+	}
+
+	err := me.RunSignal()
+	if err != nil {
+		_, ok := err.(*websocket.CloseError)
+		if ok {
+			r.onDisconnected(int64(me.id))
+			return
+		}
+
+		log.Printf("me.Signal err: %v", err)
+	}
+}
+
+func (r *Room) onDisconnected(id int64) {
+	log.Printf("disconnected %d", id)
+
+	peer := r.member(int(id))
+	if peer == nil {
+		return
+	}
+
+	err := peer.Close()
 	if err != nil {
 		log.Printf("rtc.Close error %v\n", err)
 	}
 
 	r.mux.Lock()
-	delete(r.members, peer)
+	if peer.Role() == pb.RoomState_RoomMember_ROLE_ADMIN {
+		r.adminsOnDisconnected[int(id)] = true
+	}
+
+	delete(r.members, int(id))
 	r.mux.Unlock()
 
-	r.electRandomAdmin(peer)
+	r.notify(&pb.Event{
+		From:    id,
+		Payload: &pb.Event_Left_{},
+	})
+
+	r.electRandomAdmin(id)
 
 	r.onDisconnectedHandlerFunc(r.id, peer)
 }
 
-func (r *Room) electRandomAdmin(previous int) {
+func (r *Room) electRandomAdmin(previous int64) {
 	r.mux.Lock()
 	defer r.mux.Unlock()
 
-	hasAdmin := has(r.members, func(p *peer) bool {
-		return p.me.Role == ADMIN
+	hasAdmin := has(r.members, func(me *Member) bool {
+		return me.Role() == pb.RoomState_RoomMember_ROLE_ADMIN
 	})
 
 	if hasAdmin {
@@ -275,378 +344,34 @@ func (r *Room) electRandomAdmin(previous int) {
 	}
 
 	for k := range r.members {
-		r.members[k].me.Role = ADMIN
+		r.members[k].SetRole(pb.RoomState_RoomMember_ROLE_ADMIN)
 
-		go r.notify(&pb.SignalReply_Event{
-			Type: pb.SignalReply_Event_ADDED_ADMIN,
-			From: int64(previous),
-			Data: intToBytes(k),
+		go r.notify(&pb.Event{
+			From:    previous,
+			Payload: &pb.Event_AddedAdmin_{AddedAdmin: &pb.Event_AddedAdmin{Id: int64(k)}},
 		})
 		break
 	}
 }
 
-func (r *Room) onPayload(from int, in *pb.SignalRequest) error {
-	switch payload := in.Payload.(type) {
-	case *pb.SignalRequest_Negotiate:
-		if payload.Negotiate.Type != "answer" {
-			// @todo
-			return nil
-		}
-
-		r.mux.RLock()
-		peer, ok := r.members[from]
-		r.mux.RUnlock()
-
-		if !ok {
-			return status.Errorf(codes.Internal, "peer not found")
-		}
-
-		err := peer.rtc.SetRemoteDescription(webrtc.SessionDescription{
-			Type: webrtc.SDPTypeAnswer,
-			SDP:  string(payload.Negotiate.Sdp),
-		})
-
-		if err != nil {
-			return status.Errorf(codes.Internal, "%s", err)
-		}
-	case *pb.SignalRequest_Trickle:
-		var candidate webrtc.ICECandidateInit
-		err := json.Unmarshal([]byte(payload.Trickle.Init), &candidate)
-		if err != nil {
-			log.Printf("error parsing ice candidate: %v", err)
-		}
-
-		r.mux.RLock()
-		peer, ok := r.members[from]
-		r.mux.RUnlock()
-		if !ok {
-			return status.Errorf(codes.Internal, "peer not found")
-		}
-
-		err = peer.rtc.AddICECandidate(candidate)
-		if err != nil {
-			return status.Errorf(codes.Internal, "error adding ice candidate")
-		}
-	case *pb.SignalRequest_Command_:
-		return r.onCommand(from, payload.Command)
-	case *pb.SignalRequest_Invite:
-		return r.onInvite(from, payload.Invite)
-	case *pb.SignalRequest_Kick:
-		return r.onKick(from, payload.Kick)
-	case *pb.SignalRequest_ScreenRecorded:
-		return r.onScreenRecord(from)
-	case *pb.SignalRequest_MuteUser:
-		return r.onMuteUser(from, payload.MuteUser)
-	}
-
-	return nil
-}
-
-func (r *Room) onCommand(from int, cmd *pb.SignalRequest_Command) error {
-	switch cmd.Type {
-	case pb.SignalRequest_Command_ADD_SPEAKER:
-		// @TODO IN DEVELOPMENT
-		break
-	case pb.SignalRequest_Command_REMOVE_SPEAKER:
-		// @TODO IN DEVELOPMENT
-		break
-	case pb.SignalRequest_Command_MUTE_SPEAKER:
-		r.onMute(from)
-	case pb.SignalRequest_Command_UNMUTE_SPEAKER:
-		r.mux.Lock()
-		_, ok := r.members[from]
-		if ok {
-			r.members[from].me.IsMuted = false
-		}
-		r.mux.Unlock()
-
-		go r.notify(&pb.SignalReply_Event{
-			Type: pb.SignalReply_Event_UNMUTED_SPEAKER,
-			From: int64(from),
-		})
-	case pb.SignalRequest_Command_REACTION:
-		go r.notify(&pb.SignalReply_Event{
-			Type: pb.SignalReply_Event_REACTED,
-			From: int64(from),
-			Data: cmd.Data,
-		})
-	case pb.SignalRequest_Command_LINK_SHARE:
-		r.mux.RLock()
-		peer, ok := r.members[from]
-		r.mux.RUnlock()
-
-		if !ok {
-			return nil
-		}
-
-		if peer.me.Role == AUDIENCE {
-			return nil
-		}
-
-		// @TODO Rate limiting?
-
-		go r.notify(&pb.SignalReply_Event{
-			Type: pb.SignalReply_Event_LINK_SHARED,
-			From: int64(from),
-			Data: cmd.Data,
-		})
-	case pb.SignalRequest_Command_ADD_ADMIN:
-		r.onAddAdmin(from, cmd)
-	case pb.SignalRequest_Command_REMOVE_ADMIN:
-		r.onRemoveAdmin(from, cmd)
-	case pb.SignalRequest_Command_RENAME_ROOM:
-		r.onRoomRename(from, cmd)
-	}
-
-	return nil
-}
-
-func (r *Room) onInvite(from int, invite *pb.Invite) error {
-	r.mux.Lock()
-	defer r.mux.Unlock()
-
-	peer := r.members[from]
-	if peer == nil {
-		return nil
-	}
-
-	if r.isPrivate && peer.me.Role != ADMIN {
-		return nil
-	}
-
-	r.inviteUser(from, int(invite.Id))
-
-	return nil
-}
-
-func (r *Room) onKick(from int, kick *pb.Kick) error {
-	if !r.isAdmin(from) {
-		return nil
-	}
-
-	r.mux.Lock()
-	defer r.mux.Unlock()
-	r.kicked[int(kick.Id)] = true
-	err := r.members[int(kick.Id)].rtc.Close()
-	if err != nil {
-		log.Printf("rtc.Close error %v\n", err)
-	}
-
-	return nil
-}
-
-func (r *Room) onScreenRecord(from int) error {
-	go r.notify(&pb.SignalReply_Event{
-		Type: pb.SignalReply_Event_RECORDED_SCREEN,
-		From: int64(from),
-	})
-
-	return nil
-}
-
-func (r *Room) onMuteUser(from int, cmd *pb.MuteUser) error {
-	if !r.isAdmin(from) {
-		return nil
-	}
-
-	r.onMute(int(cmd.Id))
-
-	r.mux.Lock()
-	p, ok := r.members[int(cmd.Id)]
-	r.mux.Unlock()
-
-	if !ok {
-		return nil
-	}
-
-	err := p.stream.Send(&pb.SignalReply{
-		Payload: &pb.SignalReply_Event_{
-			Event: &pb.SignalReply_Event{
-				Type: pb.SignalReply_Event_MUTED_BY_ADMIN,
-				From: int64(from),
-			},
-		},
-	})
-
-	if err != nil {
-		log.Printf("failed to write to data channel: %s\n", err.Error())
-	}
-
-	return nil
-}
-
-func (r *Room) onAddAdmin(from int, add *pb.SignalRequest_Command) {
-	if !r.isAdmin(from) {
-		return
-	}
-
-	r.mux.Lock()
-	r.members[bytesToInt(add.Data)].me.Role = ADMIN
-	r.mux.Unlock()
-
-	go r.notify(&pb.SignalReply_Event{
-		Type: pb.SignalReply_Event_ADDED_ADMIN,
-		From: int64(from),
-		Data: add.Data,
-	})
-}
-
-func (r *Room) onRemoveAdmin(from int, remove *pb.SignalRequest_Command) {
-	if !r.isAdmin(from) {
-		return
-	}
-
-	r.mux.Lock()
-	defer r.mux.Unlock()
-
-	r.members[bytesToInt(remove.Data)].me.Role = SPEAKER
-
-	go r.notify(&pb.SignalReply_Event{
-		Type: pb.SignalReply_Event_REMOVED_ADMIN,
-		From: int64(from),
-		Data: remove.Data,
-	})
-}
-
-func (r *Room) onMute(from int) {
-	r.mux.Lock()
-	_, ok := r.members[from]
-	if ok {
-		r.members[from].me.IsMuted = true
-	}
-	r.mux.Unlock()
-
-	go r.notify(&pb.SignalReply_Event{
-		Type: pb.SignalReply_Event_MUTED_SPEAKER,
-		From: int64(from),
-	})
-}
-
-func (r *Room) onRoomRename(from int, rename *pb.SignalRequest_Command) {
-	if !r.isAdmin(from) {
-		return
-	}
-
-	r.mux.Lock()
-	r.name = internal.TrimRoomNameToLimit(string(rename.Data))
-	r.mux.Unlock()
-
-	go r.notify(&pb.SignalReply_Event{
-		Type: pb.SignalReply_Event_RENAMED_ROOM,
-		From: int64(from),
-		Data: rename.Data,
-	})
-}
-
-func (r *Room) isAdmin(peer int) bool {
+func (r *Room) ContainsUsers(users []int) bool {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
 
-	p, ok := r.members[peer]
-	if !ok {
+	return has(r.members, func(me *Member) bool {
+		for _, id := range users {
+			if id == me.id {
+				return true
+			}
+		}
+
 		return false
-	}
-
-	return p.me.Role == ADMIN
+	})
 }
 
-func (r *Room) inviteUser(from, to int) {
-	r.invited[to] = true
-
-	err := r.queue.Publish(pubsub.RoomTopic, pubsub.NewRoomInviteEvent(r.name, r.id, from, to))
-	if err != nil {
-		log.Printf("queue.Publish err: %v\n", err)
-	}
-}
-
-func (r *Room) notify(event *pb.SignalReply_Event) {
-	r.mux.RLock()
-	defer r.mux.RUnlock()
-
-	for id, p := range r.members {
-		if int64(id) == event.From {
-			continue
-		}
-
-		err := p.stream.Send(&pb.SignalReply{
-			Payload: &pb.SignalReply_Event_{
-				Event: event,
-			},
-		})
-
-		if err != nil {
-			// @todo
-			log.Printf("failed to write to data channel: %s\n", err.Error())
-		}
-	}
-}
-
-func (r *Room) MarshalJSON() ([]byte, error) {
-	r.mux.RLock()
-	defer r.mux.RUnlock()
-
-	payload := payload{
-		ID:      r.id,
-		Name:    r.name,
-		Members: make([]member, 0),
-	}
-
-	for _, p := range r.members {
-		payload.Members = append(payload.Members, *p.me)
-	}
-
-	return json.Marshal(payload)
-}
-
-func (r *Room) ToProtoForPeer() *pb.RoomState {
-	r.mux.RLock()
-	defer r.mux.RUnlock()
-
-	members := make([]*pb.RoomState_RoomMember, 0)
-
-	visibility := pb.Visibility_PUBLIC
-	if r.isPrivate {
-		visibility = pb.Visibility_PRIVATE
-	}
-
-	for _, member := range r.members {
-		if member.me.SSRC == 0 {
-			continue
-		}
-
-		members = append(members, &pb.RoomState_RoomMember{
-			Id:          int64(member.me.ID),
-			DisplayName: member.me.DisplayName,
-			Image:       member.me.Image,
-			Role:        string(member.me.Role),
-			Muted:       member.me.IsMuted,
-			Ssrc:        member.me.SSRC,
-		})
-	}
-
-	state := &pb.RoomState{
-		Id:         int64(r.id),
-		Name:       r.name,
-		Role:       string(SPEAKER), // @TODO THIS SHOULD DEPEND ON WHO OWNS THE ROOM ETC
-		Members:    members,
-		Visibility: visibility,
-	}
-
-	if r.group != nil {
-		state.Group = &pb.RoomState_Group{
-			Id:    int64(r.group.ID),
-			Name:  r.group.Name,
-			Image: r.group.Image,
-		}
-	}
-
-	return state
-}
-
-func has(peers map[int]*peer, fn func(*peer) bool) bool {
-	for _, peer := range peers {
-		if fn(peer) {
+func has(members map[int]*Member, fn func(*Member) bool) bool {
+	for _, member := range members {
+		if fn(member) {
 			return true
 		}
 	}
@@ -654,12 +379,442 @@ func has(peers map[int]*peer, fn func(*peer) bool) bool {
 	return false
 }
 
-func intToBytes(val int) []byte {
-	bytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(bytes, uint64(val))
-	return bytes
+func (r *Room) onMessage(from int, command *pb.Command) {
+	switch command.Payload.(type) {
+	case *pb.Command_MuteUpdate_:
+		r.onMuteUpdate(from, command.GetMuteUpdate())
+	case *pb.Command_Reaction_:
+		r.onReaction(from, command.GetReaction())
+	case *pb.Command_LinkShare_:
+		r.onLinkShare(from, command.GetLinkShare())
+	case *pb.Command_InviteAdmin_:
+		r.onInviteAdmin(from, command.GetInviteAdmin())
+	case *pb.Command_AcceptAdmin_:
+		r.onAcceptAdmin(from)
+	case *pb.Command_RemoveAdmin_:
+		r.onRemoveAdmin(from, command.GetRemoveAdmin())
+	case *pb.Command_RenameRoom_:
+		r.onRenameRoom(from, command.GetRenameRoom())
+	case *pb.Command_InviteUser_:
+		r.onInviteUser(from, command.GetInviteUser())
+	case *pb.Command_KickUser_:
+		r.onKickUser(from, command.GetKickUser())
+	case *pb.Command_MuteUser_:
+		r.onMuteUser(from, command.GetMuteUser())
+	case *pb.Command_RecordScreen_:
+		r.onRecordScreen(from)
+	case *pb.Command_VisibilityUpdate_:
+		r.onVisibilityUpdate(from, command.GetVisibilityUpdate())
+	case *pb.Command_PinLink_:
+		r.onPinLink(from, command.GetPinLink())
+	case *pb.Command_UnpinLink_:
+		r.onUnpinLink(from)
+	case *pb.Command_OpenMini_:
+		r.onOpenMini(from, command.GetOpenMini())
+	case *pb.Command_CloseMini_:
+		r.onCloseMini(from)
+	case *pb.Command_RequestMini_:
+		r.onRequestMini(from, command.GetRequestMini())
+	}
 }
 
-func bytesToInt(val []byte) int {
-	return int(binary.LittleEndian.Uint64(val))
+func (r *Room) onMuteUpdate(from int, cmd *pb.Command_MuteUpdate) {
+	member := r.member(from)
+	if member == nil {
+		log.Printf("member %d not found", from)
+		return
+	}
+
+	if cmd.Muted {
+		member.Mute()
+	} else {
+		member.Unmute()
+	}
+
+	r.notify(&pb.Event{
+		From:    int64(from),
+		Payload: &pb.Event_MuteUpdated_{MuteUpdated: &pb.Event_MuteUpdated{IsMuted: cmd.Muted}},
+	})
+}
+
+func (r *Room) onReaction(from int, cmd *pb.Command_Reaction) {
+	r.notify(&pb.Event{
+		From:    int64(from),
+		Payload: &pb.Event_Reacted_{Reacted: &pb.Event_Reacted{Emoji: cmd.Emoji}},
+	})
+}
+
+func (r *Room) onLinkShare(from int, cmd *pb.Command_LinkShare) {
+	_ = r.queue.Publish(
+		pubsub.RoomTopic,
+		pubsub.NewRoomLinkShareEvent(from, r.id),
+	)
+
+	r.notify(&pb.Event{
+		From:    int64(from),
+		Payload: &pb.Event_LinkShared_{LinkShared: &pb.Event_LinkShared{Link: cmd.Link}},
+	})
+}
+
+func (r *Room) onInviteAdmin(from int, cmd *pb.Command_InviteAdmin) {
+	if !r.isAdmin(from) {
+		return
+	}
+
+	member := r.member(int(cmd.Id))
+	if member == nil {
+		return
+	}
+
+	r.mux.Lock()
+	r.adminInvites[int(cmd.Id)] = true
+	r.mux.Unlock()
+
+	event := &pb.Event{
+		From:    int64(from),
+		Payload: &pb.Event_InvitedAdmin_{InvitedAdmin: &pb.Event_InvitedAdmin{Id: cmd.Id}},
+	}
+
+	data, err := proto.Marshal(event)
+	if err != nil {
+		log.Printf("failed to marshal %v", err)
+		return
+	}
+
+	err = member.Notify(data)
+	if err != nil {
+		log.Printf("failed to notify %v", err)
+	}
+}
+
+func (r *Room) onAcceptAdmin(from int) {
+	if !r.isInvitedToBeAdmin(from) {
+		return
+	}
+
+	r.mux.Lock()
+	delete(r.adminInvites, from)
+	r.mux.Unlock()
+
+	member := r.member(from)
+	if member == nil {
+		return
+	}
+
+	member.SetRole(pb.RoomState_RoomMember_ROLE_ADMIN)
+
+	r.notify(&pb.Event{
+		From:    int64(from),
+		Payload: &pb.Event_AddedAdmin_{AddedAdmin: &pb.Event_AddedAdmin{Id: int64(from)}},
+	})
+}
+
+func (r *Room) onRemoveAdmin(from int, cmd *pb.Command_RemoveAdmin) {
+	if !r.isAdmin(from) {
+		return
+	}
+
+	member := r.member(from)
+	if member == nil {
+		log.Printf("member %d not found", from)
+		return
+	}
+
+	delete(r.adminsOnDisconnected, from)
+
+	member.SetRole(pb.RoomState_RoomMember_ROLE_ADMIN)
+
+	r.notify(&pb.Event{
+		From:    int64(from),
+		Payload: &pb.Event_RemovedAdmin_{RemovedAdmin: &pb.Event_RemovedAdmin{Id: cmd.Id}},
+	})
+}
+
+func (r *Room) onRenameRoom(from int, cmd *pb.Command_RenameRoom) {
+	if !r.isAdmin(from) {
+		return
+	}
+
+	r.mux.Lock()
+	r.name = internal.TrimRoomNameToLimit(cmd.Name)
+	r.mux.Unlock()
+
+	r.notify(&pb.Event{
+		From:    int64(from),
+		Payload: &pb.Event_RenamedRoom_{RenamedRoom: &pb.Event_RenamedRoom{Name: r.name}},
+	})
+}
+
+func (r *Room) onInviteUser(from int, cmd *pb.Command_InviteUser) {
+	if r.Visibility() == pb.Visibility_VISIBILITY_PRIVATE && !r.isAdmin(from) {
+		return
+	}
+
+	r.InviteUser(from, int(cmd.Id))
+}
+
+func (r *Room) InviteUser(from, to int) {
+	r.mux.Lock()
+	r.invited[to] = true
+	r.mux.Unlock()
+
+	r.onInviteHandlerFunc(r.id, from, to)
+}
+
+func (r *Room) onKickUser(from int, cmd *pb.Command_KickUser) {
+	if !r.isAdmin(from) {
+		return
+	}
+
+	p := r.member(int(cmd.Id))
+	if p == nil {
+		return
+	}
+
+	r.mux.Lock()
+	r.kicked[int(cmd.Id)] = true
+	r.mux.Unlock()
+
+	_ = p.Close()
+}
+
+func (r *Room) onMuteUser(from int, cmd *pb.Command_MuteUser) {
+	if !r.isAdmin(from) {
+		return
+	}
+
+	member := r.member(int(cmd.Id))
+	if member == nil {
+		return
+	}
+
+	event := &pb.Event{
+		From:    int64(from),
+		Payload: &pb.Event_MutedByAdmin_{MutedByAdmin: &pb.Event_MutedByAdmin{Id: cmd.Id}},
+	}
+
+	data, err := proto.Marshal(event)
+	if err != nil {
+		log.Printf("failed to marshal %v", err)
+		return
+	}
+
+	err = member.Notify(data)
+	if err != nil {
+		log.Printf("failed to notify %v", err)
+	}
+}
+
+func (r *Room) onRecordScreen(from int) {
+	r.notify(&pb.Event{
+		From:    int64(from),
+		Payload: &pb.Event_RecordedScreen_{RecordedScreen: &pb.Event_RecordedScreen{}},
+	})
+}
+
+func (r *Room) onVisibilityUpdate(from int, cmd *pb.Command_VisibilityUpdate) {
+	if !r.isAdmin(from) {
+		return
+	}
+
+	r.mux.Lock()
+	r.visibility = cmd.Visibility
+
+	for i := range r.members {
+		r.invited[i] = true
+	}
+
+	r.mux.Unlock()
+
+	r.notify(&pb.Event{
+		From:    int64(from),
+		Payload: &pb.Event_VisibilityUpdated_{VisibilityUpdated: &pb.Event_VisibilityUpdated{Visibility: cmd.Visibility}},
+	})
+}
+
+func (r *Room) onPinLink(from int, cmd *pb.Command_PinLink) {
+	if !r.isAdmin(from) {
+		return
+	}
+
+	r.mux.RLock()
+	link := r.link
+	mini := r.mini
+	r.mux.RUnlock()
+
+	if mini != nil {
+		return
+	}
+
+	// @TODO MAY NEED TO BE BETTER
+	if link != "" {
+		return
+	}
+
+	r.mux.Lock()
+	r.link = cmd.Link
+	r.mux.Unlock()
+
+	r.notify(&pb.Event{
+		From:    int64(from),
+		Payload: &pb.Event_PinnedLink_{PinnedLink: &pb.Event_PinnedLink{Link: cmd.Link}},
+	})
+}
+
+func (r *Room) onUnpinLink(from int) {
+	if !r.isAdmin(from) {
+		return
+	}
+
+	r.mux.Lock()
+	r.link = ""
+	r.mux.Unlock()
+
+	r.notify(&pb.Event{
+		From:    int64(from),
+		Payload: &pb.Event_UnpinnedLink_{UnpinnedLink: &pb.Event_UnpinnedLink{}},
+	})
+}
+
+func (r *Room) onOpenMini(from int, mini *pb.Command_OpenMini) {
+	if !r.isAdmin(from) {
+		return
+	}
+
+	_ = r.queue.Publish(
+		pubsub.RoomTopic,
+		pubsub.NewRoomOpenMiniEvent(from, int(mini.Id), r.id),
+	)
+
+	resp, err := r.getMini(mini)
+	if err != nil {
+		return
+	}
+
+	minipb := &pb.RoomState_Mini{
+		Id:   int64(resp.ID),
+		Slug: resp.Slug,
+		Size: pb.RoomState_Mini_Size(int32(resp.Size)),
+		Name: resp.Name,
+	}
+
+	r.mux.Lock()
+	r.mini = minipb
+	r.mux.Unlock()
+
+	r.notify(&pb.Event{
+		From:    int64(from),
+		Payload: &pb.Event_OpenedMini_{OpenedMini: &pb.Event_OpenedMini{Slug: minipb.Slug, Mini: minipb}},
+	})
+}
+
+func (r *Room) onCloseMini(from int) {
+	if !r.isAdmin(from) {
+		return
+	}
+
+	r.mux.Lock()
+	r.mini = nil
+	r.mux.Unlock()
+
+	r.notify(&pb.Event{
+		From:    int64(from),
+		Payload: &pb.Event_ClosedMini_{ClosedMini: &pb.Event_ClosedMini{}},
+	})
+}
+
+func (r *Room) onRequestMini(from int, cmd *pb.Command_RequestMini) {
+	id := cmd.GetId()
+	if id == 0 {
+		return
+	}
+
+	mini, err := r.minis.GetMiniWithID(int(id))
+	if err != nil {
+		log.Printf("failed to get mini: %d err: %s", id, err)
+		return
+	}
+
+	msg := &pb.Event{
+		From: int64(from),
+		Payload: &pb.Event_RequestedMini_{
+			RequestedMini: &pb.Event_RequestedMini{
+				Mini: &pb.RoomState_Mini{
+					Id:   int64(mini.ID),
+					Name: mini.Name,
+					Slug: mini.Slug,
+					Size: pb.RoomState_Mini_Size(int32(mini.Size)),
+				},
+			},
+		},
+	}
+
+	raw, err := proto.Marshal(msg)
+	if err != nil {
+		log.Printf("failed to marshal err: %s", err)
+		return
+	}
+
+	r.MapMembers(func(member *Member) {
+		if member.Role() != pb.RoomState_RoomMember_ROLE_ADMIN {
+			return
+		}
+
+		err := member.Notify(raw)
+		if err != nil {
+			log.Printf("member.Notify err: %s", err)
+		}
+	})
+}
+
+func (r *Room) getMini(cmd *pb.Command_OpenMini) (*minis.Mini, error) {
+	if cmd.GetId() != 0 {
+		return r.minis.GetMiniWithID(int(cmd.Id))
+	}
+
+	if cmd.GetMini() != "" {
+		return r.minis.GetMiniWithSlug(cmd.Mini)
+	}
+
+	return nil, errors.New("no mini found")
+}
+
+func (r *Room) member(id int) *Member {
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+
+	member, ok := r.members[id]
+	if !ok {
+		return nil
+	}
+
+	return member
+}
+
+func (r *Room) notify(event *pb.Event) {
+	data, err := proto.Marshal(event)
+	if err != nil {
+		log.Printf("failed to marshal: %v", err)
+		return
+	}
+
+	r.mux.RLock()
+	members := r.members
+	r.mux.RUnlock()
+
+	for id, member := range members {
+		if id == int(event.From) {
+			continue
+		}
+
+		err := member.Notify(data)
+		if err != nil {
+			if err == io.EOF {
+				r.onDisconnected(int64(id))
+				continue
+			}
+
+			log.Printf("failed to notify: %v\n", err)
+		}
+	}
 }

@@ -34,7 +34,7 @@ func (s *Storage) Store(user int, notification *Notification) error {
 
 	s.setHasNewNotifications(user)
 
-	return s.rdb.LTrim(s.rdb.Context(), key, 0, 9).Err()
+	return s.rdb.LTrim(s.rdb.Context(), key, 0, 39).Err()
 }
 
 func (s *Storage) GetNotifications(user int) ([]*Notification, error) {

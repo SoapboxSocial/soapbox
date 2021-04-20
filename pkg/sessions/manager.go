@@ -1,7 +1,6 @@
 package sessions
 
 import (
-	"context"
 	"strconv"
 	"time"
 
@@ -19,16 +18,21 @@ func NewSessionManager(db *redis.Client) *SessionManager {
 }
 
 func (sm *SessionManager) NewSession(id string, user users.User, expiration time.Duration) error {
-	return sm.db.Set(context.Background(), generateSessionKey(id), user.ID, expiration).Err() // @todo we may not need more
+	return sm.db.Set(sm.db.Context(), generateSessionKey(id), user.ID, expiration).Err()
 }
 
 func (sm *SessionManager) GetUserIDForSession(id string) (int, error) {
-	str, err := sm.db.Get(context.Background(), generateSessionKey(id)).Result()
+	str, err := sm.db.Get(sm.db.Context(), generateSessionKey(id)).Result()
 	if err != nil {
 		return 0, err
 	}
 
 	return strconv.Atoi(str)
+}
+
+func (sm *SessionManager) CloseSession(id string) error {
+	_, err := sm.db.Del(sm.db.Context(), generateSessionKey(id)).Result()
+	return err
 }
 
 func generateSessionKey(id string) string {

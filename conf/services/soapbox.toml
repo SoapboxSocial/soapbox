@@ -1,0 +1,39 @@
+[twitter]
+key = "nAzgMi6loUf3cl0hIkkXhZSth"
+secret = "sFQEQ2cjJZSJgepUMmNyeTxiGggFXA1EKfSYAXpbARTu3CXBQY"
+
+[sendgrid]
+key = "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"
+
+[cdn]
+images = "/cdn/images"
+stories = "/cdn/stories"
+
+[apple]
+path = "/conf/sign-in-key.p8"
+key = "G9F2GMYU4Y"
+team = "Z9LC5GZ33U"
+bundle = "app.social.soapbox"
+
+[redis]
+host = "localhost"
+port = 6379
+database = 0
+
+[db]
+host = "127.0.0.1"
+port = 5432
+user = "voicely"
+password = "voicely"
+database = "voicely"
+ssl = "disable"
+
+[listen]
+port = 8080
+
+[grpc]
+host = "127.0.0.1"
+port = "50052"
+
+[login]
+email = false

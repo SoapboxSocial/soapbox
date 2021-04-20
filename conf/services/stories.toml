@@ -1,0 +1,10 @@
+[db]
+host = "127.0.0.1"
+port = 5432
+user = "voicely"
+password = "voicely"
+database = "voicely"
+ssl = "disable"
+
+[data]
+path = "/cdn/stories"

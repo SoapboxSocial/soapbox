@@ -10,7 +10,6 @@ import (
 
 	"github.com/gorilla/mux"
 
-	auth "github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	"github.com/soapboxsocial/soapbox/pkg/followers"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/images"
@@ -57,13 +56,38 @@ func (u *UsersEndpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	caller, ok := auth.GetUserIDFromContext(r.Context())
+	u.handleUserRetrieval(id, w, r)
+}
+
+func (u *UsersEndpoint) GetUserByUsername(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	username := params["username"]
+
+	id, err := u.ub.GetIDForUsername(username)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			httputil.JsonError(w, http.StatusNotFound, httputil.ErrorCodeUserNotFound, "user not found")
+			return
+		}
+
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	u.handleUserRetrieval(id, w, r)
+}
+
+func (u *UsersEndpoint) handleUserRetrieval(id int, w http.ResponseWriter, r *http.Request) {
+	caller, ok := httputil.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 		return
 	}
 
 	var user *users.Profile
+	var err error
+
 	if caller == id {
 		user, err = u.ub.GetMyProfile(id)
 	} else {
@@ -80,14 +104,15 @@ func (u *UsersEndpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cr, err := u.currentRoom.GetCurrentRoomForUser(id)
-	if err != nil && err.Error() != "redis: nil" {
-		log.Println("current room retrieval error", err.Error())
-	}
-
-	if cr != 0 {
-		user.CurrentRoom = &cr
-	}
+	// @TODO READD LATER
+	//cr, err := u.currentRoom.GetCurrentRoomForUser(id)
+	//if err != nil && err.Error() != "redis: nil" {
+	//	log.Println("current room retrieval error", err.Error())
+	//}
+	//
+	//if cr != "" {
+	//	user.CurrentRoom = &cr
+	//}
 
 	err = httputil.JsonEncode(w, user)
 	if err != nil {
@@ -144,10 +169,12 @@ func (u *UsersEndpoint) GetFollowedByForUser(w http.ResponseWriter, r *http.Requ
 	}
 }
 
-func (u *UsersEndpoint) GetMyFriends(w http.ResponseWriter, r *http.Request) {
-	id, ok := auth.GetUserIDFromContext(r.Context())
-	if !ok {
-		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+func (u *UsersEndpoint) GetFriends(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	id, err := strconv.Atoi(params["id"])
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 		return
 	}
 
@@ -176,7 +203,7 @@ func (u *UsersEndpoint) FollowUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, ok := auth.GetUserIDFromContext(r.Context())
+	userID, ok := httputil.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 		return
@@ -199,7 +226,7 @@ func (u *UsersEndpoint) MultiFollowUsers(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	userID, ok := auth.GetUserIDFromContext(r.Context())
+	userID, ok := httputil.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 		return
@@ -235,7 +262,7 @@ func (u *UsersEndpoint) UnfollowUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, ok := auth.GetUserIDFromContext(r.Context())
+	userID, ok := httputil.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 		return
@@ -257,7 +284,7 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, ok := auth.GetUserIDFromContext(r.Context())
+	userID, ok := httputil.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 		return
@@ -270,7 +297,7 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	bio := strings.TrimSpace(strings.ReplaceAll(r.Form.Get("bio"), "\n", " "))
-	if len([]rune(bio)) > 300 {
+	if len([]rune(bio)) > 150 {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}

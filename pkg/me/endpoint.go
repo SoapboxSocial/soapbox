@@ -1,7 +1,6 @@
 package me
 
 import (
-	"errors"
 	"log"
 	"net/http"
 	"time"
@@ -10,22 +9,23 @@ import (
 	"github.com/dghubble/oauth1"
 	"github.com/gorilla/mux"
 
-	auth "github.com/soapboxsocial/soapbox/pkg/api/middleware"
-	"github.com/soapboxsocial/soapbox/pkg/groups"
+	"github.com/soapboxsocial/soapbox/pkg/activeusers"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/linkedaccounts"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
+	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/stories"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
 type Endpoint struct {
 	users       *users.UserBackend
-	groups      *groups.Backend
 	ns          *notifications.Storage
 	oauthConfig *oauth1.Config
 	la          *linkedaccounts.Backend
 	stories     *stories.Backend
+	queue       *pubsub.Queue
+	actives     *activeusers.Backend
 }
 
 // Me is returned to the user calling the `/me` endpoint.
@@ -39,23 +39,31 @@ type Me struct {
 // Notification that the API returns.
 // @TODO IN THE FUTURE WE MAY WANT TO BE ABLE TO SEND NOTIFICATIONS WITHOUT A USER, AND OTHER DATA?
 // For example:
-//   - group invites
 //   - terms of service updates?
 type Notification struct {
 	Timestamp int64                              `json:"timestamp"`
 	From      *users.NotificationUser            `json:"from"`
-	Group     *groups.Group                      `json:"group,omitempty"`
+	Room      *string                            `json:"room,omitempty"`
 	Category  notifications.NotificationCategory `json:"category"`
 }
 
-func NewEndpoint(users *users.UserBackend, groups *groups.Backend, ns *notifications.Storage, config *oauth1.Config, la *linkedaccounts.Backend, backend *stories.Backend) *Endpoint {
+func NewEndpoint(
+	users *users.UserBackend,
+	ns *notifications.Storage,
+	config *oauth1.Config,
+	la *linkedaccounts.Backend,
+	backend *stories.Backend,
+	queue *pubsub.Queue,
+	actives *activeusers.Backend,
+) *Endpoint {
 	return &Endpoint{
 		users:       users,
-		groups:      groups,
 		ns:          ns,
 		oauthConfig: config,
 		la:          la,
 		stories:     backend,
+		queue:       queue,
+		actives:     actives,
 	}
 }
 
@@ -67,12 +75,13 @@ func (m *Endpoint) Router() *mux.Router {
 	r.HandleFunc("/profiles/twitter", m.addTwitter).Methods("POST")
 	r.HandleFunc("/profiles/twitter", m.removeTwitter).Methods("DELETE")
 	r.HandleFunc("/feed", m.feed).Methods("GET")
+	r.HandleFunc("/feed/actives", m.activeUsers).Methods("GET")
 
 	return r
 }
 
 func (m *Endpoint) me(w http.ResponseWriter, r *http.Request) {
-	id, ok := auth.GetUserIDFromContext(r.Context())
+	id, ok := httputil.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 		return
@@ -87,6 +96,13 @@ func (m *Endpoint) me(w http.ResponseWriter, r *http.Request) {
 	has := m.ns.HasNewNotifications(id)
 	me := &Me{user, has}
 
+	go func() {
+		err := m.queue.Publish(pubsub.UserTopic, pubsub.NewUserHeartbeatEvent(id))
+		if err != nil {
+			log.Printf("queue.Publish err %v", err)
+		}
+	}()
+
 	err = httputil.JsonEncode(w, me)
 	if err != nil {
 		log.Printf("failed to write me response: %s\n", err.Error())
@@ -94,7 +110,7 @@ func (m *Endpoint) me(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Endpoint) notifications(w http.ResponseWriter, r *http.Request) {
-	id, ok := auth.GetUserIDFromContext(r.Context())
+	id, ok := httputil.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 		return
@@ -118,20 +134,9 @@ func (m *Endpoint) notifications(w http.ResponseWriter, r *http.Request) {
 
 		populatedNotification.From = from
 
-		if notification.Category == notifications.GROUP_INVITE {
-			id, err := getId(notification, "group")
-			if err != nil {
-				log.Printf("getId err: %v\n", err)
-				continue
-			}
-
-			group, err := m.groups.FindById(id)
-			if err != nil {
-				log.Printf("users.NotificationUserFor err: %v\n", err)
-				continue
-			}
-
-			populatedNotification.Group = group
+		if notification.Category == notifications.WELCOME_ROOM {
+			room := notification.Arguments["room"].(string)
+			populatedNotification.Room = &room
 		}
 
 		populated = append(populated, populatedNotification)
@@ -152,7 +157,7 @@ func (m *Endpoint) addTwitter(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, ok := auth.GetUserIDFromContext(r.Context())
+	id, ok := httputil.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "unauthorized")
 		return
@@ -190,7 +195,7 @@ func (m *Endpoint) addTwitter(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *Endpoint) removeTwitter(w http.ResponseWriter, r *http.Request) {
-	id, ok := auth.GetUserIDFromContext(r.Context())
+	id, ok := httputil.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "unauthorized")
 		return
@@ -205,8 +210,27 @@ func (m *Endpoint) removeTwitter(w http.ResponseWriter, r *http.Request) {
 	httputil.JsonSuccess(w)
 }
 
+func (m *Endpoint) activeUsers(w http.ResponseWriter, r *http.Request) {
+	id, ok := httputil.GetUserIDFromContext(r.Context())
+	if !ok {
+		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "unauthorized")
+		return
+	}
+
+	au, err := m.actives.GetActiveUsersForFollower(id)
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	err = httputil.JsonEncode(w, au)
+	if err != nil {
+		log.Printf("httputil.JsonEncode err: %s", err)
+	}
+}
+
 func (m *Endpoint) feed(w http.ResponseWriter, r *http.Request) {
-	id, ok := auth.GetUserIDFromContext(r.Context())
+	id, ok := httputil.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "unauthorized")
 		return
@@ -238,13 +262,4 @@ func (m *Endpoint) feed(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("failed to write me response: %s\n", err.Error())
 	}
-}
-
-func getId(event *notifications.Notification, field string) (int, error) {
-	creator, ok := event.Arguments[field].(float64)
-	if !ok {
-		return 0, errors.New("failed to recover creator")
-	}
-
-	return int(creator), nil
 }

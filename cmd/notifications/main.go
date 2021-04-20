@@ -1,63 +1,103 @@
 package main
 
 import (
-	"database/sql"
 	"errors"
+	"flag"
+	"fmt"
 	"log"
 	"time"
 
-	"github.com/go-redis/redis/v8"
-	_ "github.com/lib/pq"
 	"github.com/sideshow/apns2"
 	"github.com/sideshow/apns2/token"
+	"google.golang.org/grpc"
 
+	"github.com/soapboxsocial/soapbox/pkg/conf"
 	"github.com/soapboxsocial/soapbox/pkg/devices"
 	"github.com/soapboxsocial/soapbox/pkg/followers"
-	"github.com/soapboxsocial/soapbox/pkg/groups"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
+	"github.com/soapboxsocial/soapbox/pkg/notifications/builders"
 	"github.com/soapboxsocial/soapbox/pkg/notifications/limiter"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
+	"github.com/soapboxsocial/soapbox/pkg/redis"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
+	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
+	"github.com/soapboxsocial/soapbox/pkg/sql"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
+
+const TEST_ACCOUNT_ID = 19
 
 var (
 	errRoomPrivate = errors.New("room is private")
 )
 
-var devicesBackend *devices.Backend
-var userBackend *users.UserBackend
-var followersBackend *followers.FollowersBackend
-var groupsBackend *groups.Backend
-var service *notifications.Service
-var notificationLimiter *limiter.Limiter
-var notificationStorage *notifications.Storage
+var (
+	devicesBackend      *devices.Backend
+	userBackend         *users.UserBackend
+	followersBackend    *followers.FollowersBackend
+	service             *notifications.Service
+	notificationLimiter *limiter.Limiter
+	notificationStorage *notifications.Storage
+
+	joinRoomNotificationBuilder *builders.RoomJoinNotificationBuilder
+)
 
 type handlerFunc func(*pubsub.Event) ([]int, *notifications.PushNotification, error)
 
-func main() {
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
+type Conf struct {
+	APNS  conf.AppleConf    `mapstructure:"apns"`
+	Redis conf.RedisConf    `mapstructure:"redis"`
+	DB    conf.PostgresConf `mapstructure:"db"`
+	GRPC  conf.AddrConf     `mapstructure:"grpc"`
+}
 
+func parse() (*Conf, error) {
+	var file string
+	flag.StringVar(&file, "c", "config.toml", "config file")
+	flag.Parse()
+
+	config := &Conf{}
+	err := conf.Load(file, config)
+	if err != nil {
+		return nil, err
+	}
+
+	return config, nil
+}
+
+func main() {
+	config, err := parse()
+	if err != nil {
+		log.Fatal("failed to parse config")
+	}
+
+	rdb := redis.NewRedis(config.Redis)
 	queue := pubsub.NewQueue(rdb)
 
-	db, err := sql.Open("postgres", "host=127.0.0.1 port=5432 user=voicely password=voicely dbname=voicely sslmode=disable")
+	db, err := sql.Open(config.DB)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to open db: %s", err)
 	}
 
 	devicesBackend = devices.NewBackend(db)
 	userBackend = users.NewUserBackend(db)
 	followersBackend = followers.NewFollowersBackend(db)
-	currentRoom := rooms.NewCurrentRoomBackend(rdb)
+	currentRoom := rooms.NewCurrentRoomBackend(db)
 	notificationLimiter = limiter.NewLimiter(rdb, currentRoom)
 	notificationStorage = notifications.NewStorage(rdb)
-	groupsBackend = groups.NewBackend(db)
 
-	authKey, err := token.AuthKeyFromFile("/conf/authkey.p8")
+	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", config.GRPC.Host, config.GRPC.Port), grpc.WithInsecure())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer conn.Close()
+
+	metadata := pb.NewRoomServiceClient(conn)
+
+	joinRoomNotificationBuilder = builders.NewRoomJoinNotificationBuilder(followersBackend, metadata)
+
+	authKey, err := token.AuthKeyFromFile(config.APNS.Path)
 	if err != nil {
 		panic(err)
 	}
@@ -66,13 +106,13 @@ func main() {
 
 	client := apns2.NewTokenClient(&token.Token{
 		AuthKey: authKey,
-		KeyID:   "9U8K3MKG2K", // @todo these should be in config files
-		TeamID:  "Z9LC5GZ33U",
+		KeyID:   config.APNS.KeyID,
+		TeamID:  config.APNS.TeamID,
 	}).Production()
 
-	service = notifications.NewService("app.social.soapbox", client)
+	service = notifications.NewService(config.APNS.Bundle, client)
 
-	events := queue.Subscribe(pubsub.RoomTopic, pubsub.UserTopic, pubsub.GroupTopic)
+	events := queue.Subscribe(pubsub.RoomTopic, pubsub.UserTopic)
 
 	for event := range events {
 		go handleEvent(event)
@@ -112,13 +152,11 @@ func getHandler(eventType pubsub.EventType) handlerFunc {
 	case pubsub.EventTypeNewFollower:
 		return onNewFollower
 	case pubsub.EventTypeRoomJoin:
-		return onRoomJoined
+		return joinRoomNotificationBuilder.Build
 	case pubsub.EventTypeRoomInvite:
 		return onRoomInvite
-	case pubsub.EventTypeGroupInvite:
-		return onGroupInvite
-	case pubsub.EventTypeNewGroupRoom:
-		return onGroupRoomCreation
+	case pubsub.EventTypeWelcomeRoom:
+		return onWelcomeRoom
 	default:
 		return nil
 	}
@@ -162,12 +200,12 @@ func getNotificationForStore(notification *notifications.PushNotification) *noti
 			From:      notification.Arguments["id"].(int),
 			Category:  notification.Category,
 		}
-	case notifications.GROUP_INVITE:
+	case notifications.WELCOME_ROOM:
 		return &notifications.Notification{
 			Timestamp: time.Now().Unix(),
 			From:      notification.Arguments["from"].(int),
 			Category:  notification.Category,
-			Arguments: map[string]interface{}{"group": notification.Arguments["id"].(int)},
+			Arguments: map[string]interface{}{"room": notification.Arguments["id"]},
 		}
 	default:
 		return nil
@@ -179,9 +217,13 @@ func onRoomCreation(event *pubsub.Event) ([]int, *notifications.PushNotification
 		return nil, nil, errRoomPrivate
 	}
 
-	creator, err := getCreatorId(event)
+	creator, err := event.GetInt("creator")
 	if err != nil {
 		return nil, nil, err
+	}
+
+	if creator == TEST_ACCOUNT_ID {
+		return nil, nil, nil
 	}
 
 	targets, err := followersBackend.GetAllFollowerIDsFor(creator)
@@ -189,11 +231,9 @@ func onRoomCreation(event *pubsub.Event) ([]int, *notifications.PushNotification
 		return nil, nil, err
 	}
 
-	name := event.Params["name"].(string)
-	room, ok := event.Params["id"].(float64)
-	if !ok {
-		return nil, nil, errors.New("failed to recover room ID")
-	}
+	// Quick fix
+	//name := event.Params["name"].(string)
+	room := event.Params["id"].(string)
 
 	displayName, err := getDisplayName(creator)
 	if err != nil {
@@ -201,110 +241,18 @@ func onRoomCreation(event *pubsub.Event) ([]int, *notifications.PushNotification
 	}
 
 	notification := func() *notifications.PushNotification {
-		if name == "" {
-			return notifications.NewRoomNotification(int(room), displayName)
-		}
+		//if name == "" {
+		return notifications.NewRoomNotification(room, displayName)
+		//}
 
-		return notifications.NewRoomNotificationWithName(int(room), displayName, name)
-	}()
-
-	return targets, notification, nil
-}
-func onGroupRoomCreation(event *pubsub.Event) ([]int, *notifications.PushNotification, error) {
-	creator, err := getCreatorId(event)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	groupId, err := getId(event, "group")
-	if err != nil {
-		return nil, nil, err
-	}
-
-	group, err := groupsBackend.FindById(groupId)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	targets := make([]int, 0)
-
-	if group.GroupType == "public" {
-		followerIDs, err := followersBackend.GetAllFollowerIDsFor(creator)
-		if err != nil {
-			return nil, nil, err
-		}
-
-		targets = append(targets, followerIDs...)
-	}
-
-	memberIDs, err := groupsBackend.GetAllMemberIds(groupId, creator)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	targets = append(targets, memberIDs...)
-
-	name := event.Params["name"].(string)
-	room, ok := event.Params["id"].(float64)
-	if !ok {
-		return nil, nil, errors.New("failed to recover room ID")
-	}
-
-	displayName, err := getDisplayName(creator)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	notification := func() *notifications.PushNotification {
-		if name == "" {
-			return notifications.NewRoomWithGroupNotification(int(room), displayName, group.Name)
-		}
-
-		return notifications.NewRoomWithGroupAndNameNotification(int(room), displayName, group.Name, name)
-	}()
-
-	return targets, notification, nil
-}
-
-func onRoomJoined(event *pubsub.Event) ([]int, *notifications.PushNotification, error) {
-	if pubsub.RoomVisibility(event.Params["visibility"].(string)) == pubsub.Private {
-		return nil, nil, errRoomPrivate
-	}
-
-	creator, err := getCreatorId(event)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	targets, err := followersBackend.GetAllFollowerIDsFor(creator)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	name := event.Params["name"].(string)
-	room, ok := event.Params["id"].(float64)
-	if !ok {
-		return nil, nil, errors.New("failed to recover room ID")
-	}
-
-	displayName, err := getDisplayName(creator)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	notification := func() *notifications.PushNotification {
-		if name == "" {
-			return notifications.NewRoomJoinedNotification(int(room), displayName)
-		}
-
-		return notifications.NewRoomJoinedNotificationWithName(int(room), displayName, name)
+		//return notifications.NewRoomNotificationWithName(room, displayName, name)
 	}()
 
 	return targets, notification, nil
 }
 
 func onNewFollower(event *pubsub.Event) ([]int, *notifications.PushNotification, error) {
-	creator, err := getId(event, "follower")
+	creator, err := event.GetInt("follower")
 	if err != nil {
 		return nil, nil, err
 	}
@@ -322,37 +270,8 @@ func onNewFollower(event *pubsub.Event) ([]int, *notifications.PushNotification,
 	return []int{int(targetID)}, notifications.NewFollowerNotification(creator, displayName), nil
 }
 
-func onGroupInvite(event *pubsub.Event) ([]int, *notifications.PushNotification, error) {
-	creator, err := getId(event, "from")
-	if err != nil {
-		return nil, nil, err
-	}
-
-	targetID, err := getId(event, "id")
-	if err != nil {
-		return nil, nil, err
-	}
-
-	groupId, err := getId(event, "group")
-	if err != nil {
-		return nil, nil, err
-	}
-
-	displayName, err := getDisplayName(creator)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	group, err := getGroupName(groupId)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return []int{targetID}, notifications.NewGroupInviteNotification(groupId, creator, displayName, group), nil
-}
-
 func onRoomInvite(event *pubsub.Event) ([]int, *notifications.PushNotification, error) {
-	creator, err := getId(event, "from")
+	creator, err := event.GetInt("from")
 	if err != nil {
 		return nil, nil, err
 	}
@@ -363,10 +282,7 @@ func onRoomInvite(event *pubsub.Event) ([]int, *notifications.PushNotification, 
 	}
 
 	name := event.Params["name"].(string)
-	room, ok := event.Params["room"].(float64)
-	if !ok {
-		return nil, nil, errors.New("failed to recover room ID")
-	}
+	room := event.Params["room"].(string)
 
 	displayName, err := getDisplayName(creator)
 	if err != nil {
@@ -375,26 +291,32 @@ func onRoomInvite(event *pubsub.Event) ([]int, *notifications.PushNotification, 
 
 	notification := func() *notifications.PushNotification {
 		if name == "" {
-			return notifications.NewRoomInviteNotification(int(room), displayName)
+			return notifications.NewRoomInviteNotification(room, displayName)
 		}
 
-		return notifications.NewRoomInviteNotificationWithName(int(room), displayName, name)
+		return notifications.NewRoomInviteNotificationWithName(room, displayName, name)
 	}()
 
 	return []int{int(targetID)}, notification, nil
 }
 
-func getId(event *pubsub.Event, field string) (int, error) {
-	creator, ok := event.Params[field].(float64)
-	if !ok {
-		return 0, errors.New("failed to recover creator")
+func onWelcomeRoom(event *pubsub.Event) ([]int, *notifications.PushNotification, error) {
+	creator, err := event.GetInt("id")
+	if err != nil {
+		return nil, nil, err
 	}
 
-	return int(creator), nil
-}
+	room := event.Params["room"].(string)
 
-func getCreatorId(event *pubsub.Event) (int, error) {
-	return getId(event, "creator")
+	displayName, err := getDisplayName(creator)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	staticTargets := []int{1, 75, 962, 13, 6}
+
+	notification := notifications.NewWelcomeRoomNotification(displayName, room, creator)
+	return staticTargets, notification, nil
 }
 
 func getDisplayName(id int) (string, error) {
@@ -404,13 +326,4 @@ func getDisplayName(id int) (string, error) {
 	}
 
 	return user.DisplayName, nil
-}
-
-func getGroupName(id int) (string, error) {
-	group, err := groupsBackend.FindById(id)
-	if err != nil {
-		return "", err
-	}
-
-	return group.Name, nil
 }

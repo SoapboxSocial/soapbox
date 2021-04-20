@@ -12,8 +12,8 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 
-	auth "github.com/soapboxsocial/soapbox/pkg/api/middleware"
 	"github.com/soapboxsocial/soapbox/pkg/devices"
+	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 )
 
 func TestMain(m *testing.M) {
@@ -31,7 +31,7 @@ func TestDevicesEndpoint_AddDevice(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	req := r.WithContext(auth.WithUserID(r.Context(), session))
+	req := r.WithContext(httputil.WithUserID(r.Context(), session))
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
@@ -93,7 +93,7 @@ func TestDevicesEndpoint_AddDeviceWithBackendError(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	req := r.WithContext(auth.WithUserID(r.Context(), session))
+	req := r.WithContext(httputil.WithUserID(r.Context(), session))
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 

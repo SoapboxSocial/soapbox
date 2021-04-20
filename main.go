@@ -1,57 +1,95 @@
 package main
 
 import (
-	"database/sql"
+	"flag"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
 
+	signinwithapple "github.com/Timothylock/go-signin-with-apple/apple"
 	"github.com/dghubble/oauth1"
 	"github.com/elastic/go-elasticsearch/v7"
-	"github.com/go-redis/redis/v8"
-	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
-	_ "github.com/lib/pq"
 	"github.com/sendgrid/sendgrid-go"
+	"google.golang.org/grpc"
 
-	"github.com/soapboxsocial/soapbox/pkg/api/middleware"
+	"github.com/soapboxsocial/soapbox/pkg/account"
+	"github.com/soapboxsocial/soapbox/pkg/activeusers"
 	usersapi "github.com/soapboxsocial/soapbox/pkg/api/users"
+	"github.com/soapboxsocial/soapbox/pkg/apple"
+	"github.com/soapboxsocial/soapbox/pkg/blocks"
+	"github.com/soapboxsocial/soapbox/pkg/conf"
 	"github.com/soapboxsocial/soapbox/pkg/devices"
 	"github.com/soapboxsocial/soapbox/pkg/followers"
-	"github.com/soapboxsocial/soapbox/pkg/groups"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
+	"github.com/soapboxsocial/soapbox/pkg/http/middlewares"
 	"github.com/soapboxsocial/soapbox/pkg/images"
 	"github.com/soapboxsocial/soapbox/pkg/linkedaccounts"
 	"github.com/soapboxsocial/soapbox/pkg/login"
 	"github.com/soapboxsocial/soapbox/pkg/mail"
 	"github.com/soapboxsocial/soapbox/pkg/me"
+	"github.com/soapboxsocial/soapbox/pkg/minis"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
+	"github.com/soapboxsocial/soapbox/pkg/redis"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
+	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 	"github.com/soapboxsocial/soapbox/pkg/search"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
+	"github.com/soapboxsocial/soapbox/pkg/sql"
 	"github.com/soapboxsocial/soapbox/pkg/stories"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
-// @todo do this in config
-const sendgrid_api = "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"
+type Conf struct {
+	Twitter struct {
+		Key    string `mapstructure:"key"`
+		Secret string `mapstructure:"secret"`
+	} `mapstructure:"twitter"`
+	Sendgrid struct {
+		Key string `mapstructure:"key"`
+	} `mapstructure:"sendgrid"`
+	CDN struct {
+		Images  string `mapstructure:"images"`
+		Stories string `mapstructure:"stories"`
+	} `mapstructure:"cdn"`
+	Apple  conf.AppleConf    `mapstructure:"apple"`
+	Redis  conf.RedisConf    `mapstructure:"redis"`
+	DB     conf.PostgresConf `mapstructure:"db"`
+	GRPC   conf.AddrConf     `mapstructure:"grpc"`
+	Listen conf.AddrConf     `mapstructure:"listen"`
+	Login  login.Config      `mapstructure:"login"`
+}
 
-// @TODO: THINK ABOUT CHANGING QUEUES TO REDIS PUBSUB
+func parse() (*Conf, error) {
+	var file string
+	flag.StringVar(&file, "c", "config.toml", "config file")
+	flag.Parse()
 
-func main() {
-	db, err := sql.Open("postgres", "host=127.0.0.1 port=5432 user=voicely password=voicely dbname=voicely sslmode=disable")
+	config := &Conf{}
+	err := conf.Load(file, config)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-	})
+	return config, nil
+}
 
+func main() {
+	config, err := parse()
+	if err != nil {
+		log.Fatalf("failed to parse config err: %v", err)
+	}
+
+	rdb := redis.NewRedis(config.Redis)
 	queue := pubsub.NewQueue(rdb)
+
+	db, err := sql.Open(config.DB)
+	if err != nil {
+		log.Fatalf("failed to open db: %s", err)
+	}
 
 	s := sessions.NewSessionManager(rdb)
 	ub := users.NewUserBackend(db)
@@ -65,17 +103,45 @@ func main() {
 
 	devicesBackend := devices.NewBackend(db)
 
-	amw := middleware.NewAuthenticationMiddleware(s)
+	amw := middlewares.NewAuthenticationMiddleware(s)
 
 	r := mux.NewRouter()
 
 	r.MethodNotAllowedHandler = http.HandlerFunc(httputil.NotAllowedHandler)
 	r.NotFoundHandler = http.HandlerFunc(httputil.NotFoundHandler)
 
-	ib := images.NewImagesBackend("/cdn/images")
-	ms := mail.NewMailService(sendgrid.NewSendClient(sendgrid_api))
+	ib := images.NewImagesBackend(config.CDN.Images)
+	ms := mail.NewMailService(sendgrid.NewSendClient(config.Sendgrid.Key))
 
-	loginEndpoints := login.NewEndpoint(ub, s, ms, ib, queue)
+	loginState := login.NewStateManager(rdb)
+
+	secret, err := ioutil.ReadFile(config.Apple.Path)
+	if err != nil {
+		panic(err)
+	}
+
+	appleClient, err := apple.NewSignInWithAppleAppValidation(
+		signinwithapple.New(),
+		config.Apple.TeamID,
+		config.Apple.Bundle,
+		config.Apple.KeyID,
+		string(secret),
+	)
+
+	if err != nil {
+		panic(err)
+	}
+
+	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", config.GRPC.Host, config.GRPC.Port), grpc.WithInsecure())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer conn.Close()
+
+	roomService := pb.NewRoomServiceClient(conn)
+
+	loginEndpoints := login.NewEndpoint(ub, loginState, s, ms, ib, queue, appleClient, roomService, config.Login)
 	loginRouter := loginEndpoints.Router()
 	mount(r, "/v1/login", loginRouter)
 
@@ -87,27 +153,24 @@ func main() {
 		s,
 		ib,
 		queue,
-		rooms.NewCurrentRoomBackend(rdb),
+		rooms.NewCurrentRoomBackend(db),
 	)
 
-	groupsBackend := groups.NewBackend(db)
-	groupsEndpoint := groups.NewEndpoint(groupsBackend, ib, queue)
-
 	storiesBackend := stories.NewBackend(db)
-	storiesEndpoint := stories.NewEndpoint(storiesBackend, stories.NewFileBackend("/cdn/stories"), queue)
+	storiesEndpoint := stories.NewEndpoint(storiesBackend, stories.NewFileBackend(config.CDN.Stories), queue)
 	storiesRouter := storiesEndpoint.Router()
 	storiesRouter.Use(amw.Middleware)
 	mount(r, "/v1/stories", storiesRouter)
 
 	userRoutes.HandleFunc("/{id:[0-9]+}", usersEndpoints.GetUserByID).Methods("GET")
+	userRoutes.HandleFunc("/{username:[a-z0-9_]+}", usersEndpoints.GetUserByUsername).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/followers", usersEndpoints.GetFollowersForUser).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/following", usersEndpoints.GetFollowedByForUser).Methods("GET")
-	userRoutes.HandleFunc("/friends", usersEndpoints.GetMyFriends).Methods("GET")
+	userRoutes.HandleFunc("/{id:[0-9]+}/friends", usersEndpoints.GetFriends).Methods("GET")
 	userRoutes.HandleFunc("/follow", usersEndpoints.FollowUser).Methods("POST")
 	userRoutes.HandleFunc("/unfollow", usersEndpoints.UnfollowUser).Methods("POST")
 	userRoutes.HandleFunc("/multi-follow", usersEndpoints.MultiFollowUsers).Methods("POST")
 	userRoutes.HandleFunc("/edit", usersEndpoints.EditUser).Methods("POST")
-	userRoutes.HandleFunc("/{id:[0-9]+}/groups", groupsEndpoint.GetGroupsForUser).Methods("GET")
 	userRoutes.HandleFunc("/{id:[0-9]+}/stories", storiesEndpoint.GetStoriesForUser).Methods("GET")
 
 	userRoutes.Use(amw.Middleware)
@@ -117,42 +180,47 @@ func main() {
 	devicesRoutes.Use(amw.Middleware)
 	mount(r, "/v1/devices", devicesRoutes)
 
+	accountEndpoint := account.NewEndpoint(account.NewBackend(db), queue, s)
+	accountRouter := accountEndpoint.Router()
+	accountRouter.Use(amw.Middleware)
+	mount(r, "/v1/account", accountRouter)
+
+	blocksBackend := blocks.NewBackend(db)
+	blocksEndpoint := blocks.NewEndpoint(blocksBackend)
+	blocksRouter := blocksEndpoint.Router()
+	blocksRouter.Use(amw.Middleware)
+	mount(r, "/v1/blocks", blocksRouter)
+
 	// twitter oauth config
 	oauth := oauth1.NewConfig(
-		"nAzgMi6loUf3cl0hIkkXhZSth",
-		"sFQEQ2cjJZSJgepUMmNyeTxiGggFXA1EKfSYAXpbARTu3CXBQY",
+		config.Twitter.Key,
+		config.Twitter.Secret,
 	)
 
 	pb := linkedaccounts.NewLinkedAccountsBackend(db)
 
-	meEndpoint := me.NewEndpoint(ub, groupsBackend, ns, oauth, pb, storiesBackend)
+	meEndpoint := me.NewEndpoint(ub, ns, oauth, pb, storiesBackend, queue, activeusers.NewBackend(db))
 	meRoutes := meEndpoint.Router()
 
 	meRoutes.Use(amw.Middleware)
 	mount(r, "/v1/me", meRoutes)
-
-	groupsRouter := groupsEndpoint.Router()
-	groupsRouter.Use(amw.Middleware)
-	mount(r, "/v1/groups", groupsRouter)
 
 	searchEndpoint := search.NewEndpoint(client)
 	searchRouter := searchEndpoint.Router()
 	searchRouter.Use(amw.Middleware)
 	mount(r, "/v1/search", searchRouter)
 
-	headersOk := handlers.AllowedHeaders([]string{
-		"Content-Type",
-		"X-Requested-With",
-		"Accept",
-		"Accept-Language",
-		"Accept-Encoding",
-		"Content-Language",
-		"Origin",
-	})
-	originsOk := handlers.AllowedOrigins([]string{"*"})
-	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "OPTIONS", "DELETE"})
+	minisBackend := minis.NewBackend(db)
+	minisEndpoint := minis.NewEndpoint(minisBackend)
 
-	log.Fatal(http.ListenAndServe(":8080", handlers.CORS(originsOk, headersOk, methodsOk)(r)))
+	minisRouter := minisEndpoint.Router()
+	minisRouter.Use(amw.Middleware)
+	mount(r, "/v1/minis", minisRouter)
+
+	err = http.ListenAndServe(fmt.Sprintf(":%d", config.Listen.Port), httputil.CORS(r))
+	if err != nil {
+		log.Print(err)
+	}
 }
 
 func mount(r *mux.Router, path string, handler http.Handler) {

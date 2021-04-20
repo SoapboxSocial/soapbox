@@ -15,7 +15,6 @@ var (
 	roomInviteCooldown = 5 * time.Minute
 	roomMemberCooldown = 5 * time.Minute
 	roomCooldown       = 10 * time.Minute
-	groupRoomCooldown  = 10 * time.Minute
 )
 
 type Limiter struct {
@@ -32,12 +31,6 @@ func NewLimiter(rdb *redis.Client, currentRoom *rooms.CurrentRoomBackend) *Limit
 
 func (l *Limiter) ShouldSendNotification(target int, event *pubsub.Event) bool {
 	switch event.Type {
-	case pubsub.EventTypeNewGroupRoom:
-		if l.isLimited(limiterKeyForGroupRoom(target, event)) {
-			return false
-		}
-
-		fallthrough
 	case pubsub.EventTypeNewRoom, pubsub.EventTypeRoomJoin:
 		// 30 minutes for any notification with the same room ID
 		if l.isLimited(limiterKeyForRoom(target, event)) {
@@ -58,8 +51,8 @@ func (l *Limiter) ShouldSendNotification(target int, event *pubsub.Event) bool {
 		return !l.isLimited(limiterKeyForRoomInvite(target, event))
 	case pubsub.EventTypeNewFollower:
 		return !l.isLimited(limiterKeyForFollowerEvent(target, event))
-	case pubsub.EventTypeGroupInvite:
-		return true
+	case pubsub.EventTypeWelcomeRoom:
+		return true // @TODO
 	default:
 		return false
 	}
@@ -67,10 +60,9 @@ func (l *Limiter) ShouldSendNotification(target int, event *pubsub.Event) bool {
 
 func (l *Limiter) SentNotification(target int, event *pubsub.Event) {
 	switch event.Type {
-	case pubsub.EventTypeNewGroupRoom:
-		l.limit(limiterKeyForGroupRoom(target, event), groupRoomCooldown)
-		fallthrough
-	case pubsub.EventTypeNewRoom, pubsub.EventTypeRoomJoin:
+	case pubsub.EventTypeNewRoom:
+		l.limit(limiterKeyForRoomMember(target, event), roomMemberCooldown)
+	case pubsub.EventTypeRoomJoin:
 		l.limit(limiterKeyForRoomMember(target, event), roomMemberCooldown)
 		l.limit(limiterKeyForRoom(target, event), roomCooldown)
 	case pubsub.EventTypeRoomInvite:
@@ -93,20 +85,13 @@ func (l *Limiter) limit(key string, duration time.Duration) {
 
 func (l *Limiter) isUserInRoom(user int, event *pubsub.Event) bool {
 	room, _ := l.currentRoom.GetCurrentRoomForUser(user)
-	if room == 0 {
+	if room == "" {
 		return false
 	}
 
-	id, err := getInt(event, "id")
-	if err != nil {
-		return false
-	}
+	id := event.Params["id"].(string)
 
 	return id == room
-}
-
-func limiterKeyForGroupRoom(target int, event *pubsub.Event) string {
-	return fmt.Sprintf("notifications_limit_%d_room_in_group_%v", target, event.Params["group"])
 }
 
 func limiterKeyForRoom(target int, event *pubsub.Event) string {
@@ -123,13 +108,4 @@ func limiterKeyForRoomInvite(target int, event *pubsub.Event) string {
 
 func limiterKeyForFollowerEvent(target int, event *pubsub.Event) string {
 	return fmt.Sprintf("notifications_limit_%d_follower_%v", target, event.Params["follower"])
-}
-
-func getInt(event *pubsub.Event, value string) (int, error) {
-	id, ok := event.Params[value].(float64)
-	if !ok {
-		return 0, fmt.Errorf("failed to recover %s", value)
-	}
-
-	return int(id), nil
 }

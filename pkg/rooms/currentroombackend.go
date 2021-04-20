@@ -1,37 +1,52 @@
 package rooms
 
 import (
-	"strconv"
-
-	"github.com/go-redis/redis/v8"
+	"database/sql"
 )
 
-const hashName = "current_room"
-
 type CurrentRoomBackend struct {
-	db *redis.Client
+	db *sql.DB
 }
 
-func NewCurrentRoomBackend(db *redis.Client) *CurrentRoomBackend {
+func NewCurrentRoomBackend(db *sql.DB) *CurrentRoomBackend {
 	return &CurrentRoomBackend{
 		db: db,
 	}
 }
 
-func (b *CurrentRoomBackend) GetCurrentRoomForUser(id int) (int, error) {
-	val, err := b.db.HGet(b.db.Context(), hashName, strconv.Itoa(id)).Result()
+func (b *CurrentRoomBackend) GetCurrentRoomForUser(id int) (string, error) {
+	stmt, err := b.db.Prepare("SELECT room FROM current_rooms WHERE user_id = $1;")
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 
-	return strconv.Atoi(val)
+	row := stmt.QueryRow(id)
+
+	var room string
+	err = row.Scan(&room)
+	if err != nil {
+		return "", err
+	}
+
+	return room, nil
 }
 
-func (b *CurrentRoomBackend) SetCurrentRoomForUser(user, room int) error {
-	_, err := b.db.HSet(b.db.Context(), hashName, strconv.Itoa(user), strconv.Itoa(room)).Result()
+func (b *CurrentRoomBackend) SetCurrentRoomForUser(user int, room string) error {
+	stmt, err := b.db.Prepare("SELECT update_current_rooms($1, $2);")
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(user, room)
 	return err
 }
 
-func (b *CurrentRoomBackend) RemoveCurrentRoomForUser(user int) {
-	b.db.HDel(b.db.Context(), hashName, strconv.Itoa(user))
+func (b *CurrentRoomBackend) RemoveCurrentRoomForUser(user int) error {
+	stmt, err := b.db.Prepare("DELETE FROM current_rooms WHERE user_id = $1")
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(user)
+	return err
 }

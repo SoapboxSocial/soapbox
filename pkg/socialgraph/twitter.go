@@ -29,7 +29,7 @@ func (t *Twitter) FindFriendsFor(user int) ([]int, error) {
 		return nil, err
 	}
 
-	parts := chunkAccounts(accounts)
+	parts := chunkAccounts(accounts, 100)
 
 	client := twitter.NewClient(httpClient)
 

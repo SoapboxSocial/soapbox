@@ -49,5 +49,9 @@ func (pb *Backend) UnlinkTwitterProfile(user int) error {
 }
 
 func (pb *Backend) GetTwitterProfileFor(user int) (*LinkedAccount, error) {
-	return nil
+	return nil, nil
+}
+
+func (pb *Backend) GetAllTwitterProfiles(except int) ([]LinkedAccount, error) {
+	return nil, nil,
 }

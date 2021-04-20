@@ -51,3 +51,5 @@ require (
 )
 
 replace github.com/pion/ion-sfu => github.com/SoapboxSocial/ion-sfu v1.8.2-0.20210323114406-2b95a30fd24e
+
+replace github.com/dghubble/go-twitter => github.com/soapboxsocial/go-twitter v0.0.0-20210420133809-a2bf09574cbe

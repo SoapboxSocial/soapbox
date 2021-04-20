@@ -53,5 +53,5 @@ func (pb *Backend) GetTwitterProfileFor(user int) (*LinkedAccount, error) {
 }
 
 func (pb *Backend) GetAllTwitterProfilesForUsersNotFollowedBy(user int) ([]LinkedAccount, error) {
-	return nil, nil,
+	return nil, nil
 }

@@ -33,20 +33,30 @@ func (t *Twitter) FindFriendsFor(user int) ([]int, error) {
 
 	client := twitter.NewClient(httpClient)
 
-	// @TODO DO THE REQUESTS, probably go func it with a wait group
+	for _, part := range parts {
+		go request(client, part)
+	}
 
-	res, _, err := client.Friendships.Lookup(nil) // @Todo
+
+	//client.Friendships.()
+
+	return nil, nil
+}
+
+func request(client *twitter.Client, accounts []linkedaccounts.LinkedAccount) {
+	ids := make([]int64, 0)
+	for _, account := range accounts {
+		ids = append(ids, account.ProfileID)
+	}
+
+	res, _, err := client.Friendships.Lookup(&twitter.FriendshipLookupParams{UserID: ids}) // @Todo
 	if err != nil {
-		return nil, err
+		return // @TODO
 	}
 
 	for _, resp := range res {
 
 	}
-
-	//client.Friendships.()
-
-	return nil, nil
 }
 
 func chunkAccounts(accounts []linkedaccounts.LinkedAccount, chunkSize int) [][]linkedaccounts.LinkedAccount {

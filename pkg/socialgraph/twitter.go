@@ -24,7 +24,7 @@ func (t *Twitter) FindFriendsFor(user int) ([]int, error) {
 
 	// @TODO paginate
 
-	accounts, err := t.backend.GetAllTwitterProfiles(user)
+	accounts, err := t.backend.GetAllTwitterProfilesForUsersNotFollowedBy(user)
 	if err != nil {
 		return nil, err
 	}

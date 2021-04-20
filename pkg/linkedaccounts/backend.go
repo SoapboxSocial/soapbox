@@ -2,6 +2,14 @@ package linkedaccounts
 
 import "database/sql"
 
+type LinkedAccount struct {
+	Provider  string
+	ProfileID int64
+	Token     string
+	Secret    string
+	Username  string
+}
+
 type Backend struct {
 	db *sql.DB
 }
@@ -37,5 +45,9 @@ func (pb *Backend) UnlinkTwitterProfile(user int) error {
 		return err
 	}
 
+	return nil
+}
+
+func (pb *Backend) GetTwitterProfileFor(user int) (*LinkedAccount, error) {
 	return nil
 }

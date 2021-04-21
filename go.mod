@@ -11,7 +11,7 @@ require (
 	github.com/dghubble/oauth1 v0.7.0
 	github.com/dukex/mixpanel v0.0.0-20180925151559-f8d5594f958e
 	github.com/elastic/go-elasticsearch/v7 v7.12.0
-	github.com/go-redis/redis/v8 v8.8.0
+	github.com/go-redis/redis/v8 v8.8.2
 	github.com/golang/mock v1.5.0
 	github.com/gomodule/redigo v1.8.4 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
@@ -22,13 +22,13 @@ require (
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/pelletier/go-toml v1.9.0 // indirect
-	github.com/pion/ice/v2 v2.1.0 // indirect
+	github.com/pion/ice/v2 v2.1.4 // indirect
 	github.com/pion/ion-log v1.0.1 // indirect
 	github.com/pion/ion-sfu v1.9.8
-	github.com/pion/webrtc/v3 v3.0.21
+	github.com/pion/webrtc/v3 v3.0.22
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.10.0 // indirect
-	github.com/prometheus/common v0.20.0 // indirect
+	github.com/prometheus/common v0.21.0 // indirect
 	github.com/rs/zerolog v1.21.0 // indirect
 	github.com/segmentio/ksuid v1.0.3
 	github.com/sendgrid/rest v2.6.3+incompatible // indirect
@@ -42,9 +42,10 @@ require (
 	github.com/tideland/golib v4.24.2+incompatible // indirect
 	github.com/tideland/gorest v2.15.5+incompatible // indirect
 	github.com/yuin/gopher-lua v0.0.0-20200816102855-ee81675732da // indirect
-	golang.org/x/net v0.0.0-20210410081132-afb366fc7cd1 // indirect
-	golang.org/x/sys v0.0.0-20210412220455-f1c623a9e750 // indirect
-	google.golang.org/genproto v0.0.0-20210406143921-e86de6bf7a46 // indirect
+	golang.org/x/crypto v0.0.0-20210415154028-4f45737414dc // indirect
+	golang.org/x/net v0.0.0-20210420210106-798c2154c571 // indirect
+	golang.org/x/sys v0.0.0-20210420205809-ac73e9fd8988 // indirect
+	google.golang.org/genproto v0.0.0-20210420162539-3c870d7478d2 // indirect
 	google.golang.org/grpc v1.37.0
 	google.golang.org/protobuf v1.26.0
 	gopkg.in/ini.v1 v1.62.0 // indirect

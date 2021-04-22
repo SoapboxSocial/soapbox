@@ -71,17 +71,18 @@ func NewRoomInviteNotification(id, from string) *PushNotification {
 			Arguments: []string{from},
 		},
 		Arguments: map[string]interface{}{"id": id},
+		CollapseID: id,
 	}
 }
 
 func NewRoomInviteNotificationWithName(id, from, room string) *PushNotification {
 	return &PushNotification{
-		Category: ROOM_JOINED,
+		Category: ROOM_INVITE,
 		Alert: Alert{
 			Key:       "room_invite_with_name_notification",
 			Arguments: []string{from, room},
 		},
 		Arguments:  map[string]interface{}{"id": id},
-		CollapseID: room,
+		CollapseID: id,
 	}
 }

@@ -1,11 +1,10 @@
-package builders
+package handlers
 
 import (
 	"context"
 	"errors"
 	"strconv"
 
-	"github.com/soapboxsocial/soapbox/pkg/followers"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
@@ -18,47 +17,60 @@ var (
 	errEmptyResponse = errors.New("empty response")
 )
 
-type RoomJoinNotificationBuilder struct {
-	followersBackend *followers.FollowersBackend
-	metadata         pb.RoomServiceClient
+type RoomJoinNotificationHandler struct {
+	metadata pb.RoomServiceClient
+	targets  *notifications.Targets
 }
 
-func NewRoomJoinNotificationBuilder(backend *followers.FollowersBackend, metadata pb.RoomServiceClient) *RoomJoinNotificationBuilder {
-	return &RoomJoinNotificationBuilder{
-		followersBackend: backend,
-		metadata:         metadata,
+func NewRoomJoinNotificationHandler(targets *notifications.Targets, metadata pb.RoomServiceClient) *RoomJoinNotificationHandler {
+	return &RoomJoinNotificationHandler{
+		targets:  targets,
+		metadata: metadata,
 	}
 }
 
-func (b *RoomJoinNotificationBuilder) Build(event *pubsub.Event) ([]int, *notifications.PushNotification, error) {
+func (r RoomJoinNotificationHandler) Type() pubsub.EventType {
+	return pubsub.EventTypeRoomJoin
+}
+
+func (r RoomJoinNotificationHandler) Targets(event *pubsub.Event) ([]notifications.Target, error) {
+	creator, err := event.GetInt("creator")
+	if err != nil {
+		return nil, err
+	}
+
+	targets, err := r.targets.GetTargetsFollowingUser(creator)
+	if err != nil {
+		return nil, err
+	}
+
+	return targets, nil
+}
+
+func (r RoomJoinNotificationHandler) Build(event *pubsub.Event) (*notifications.PushNotification, error) {
 	if pubsub.RoomVisibility(event.Params["visibility"].(string)) == pubsub.Private {
-		return nil, nil, errRoomPrivate
+		return nil, errRoomPrivate
 	}
 
 	creator, err := event.GetInt("creator")
 	if err != nil {
-		return nil, nil, err
-	}
-
-	targets, err := b.followersBackend.GetAllFollowerIDsFor(creator)
-	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	room := event.Params["id"].(string)
-	response, err := b.metadata.GetRoom(context.Background(), &pb.GetRoomRequest{Id: room})
+	response, err := r.metadata.GetRoom(context.Background(), &pb.GetRoomRequest{Id: room})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	if response == nil || response.State == nil {
-		return nil, nil, errEmptyResponse
+		return nil, errEmptyResponse
 	}
 
 	state := response.State
 
 	if len(state.Members) == 0 {
-		return nil, nil, errNoRoomMembers
+		return nil, errNoRoomMembers
 	}
 
 	translation := "join_room_with_"
@@ -91,7 +103,7 @@ func (b *RoomJoinNotificationBuilder) Build(event *pubsub.Event) ([]int, *notifi
 
 		members := members(state.Members, creator)
 		if len(members) < 3 {
-			return nil, nil, errFailedToSort
+			return nil, errFailedToSort
 		}
 
 		args = append(args, members[0], members[1], members[2], strconv.Itoa(count-3))
@@ -107,7 +119,7 @@ func (b *RoomJoinNotificationBuilder) Build(event *pubsub.Event) ([]int, *notifi
 		Arguments:  map[string]interface{}{"id": room},
 	}
 
-	return targets, notification, nil
+	return notification, nil
 }
 
 func members(members []*pb.RoomState_RoomMember, first int) []string {

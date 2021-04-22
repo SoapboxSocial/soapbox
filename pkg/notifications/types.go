@@ -1,7 +1,5 @@
 package notifications
 
-import "fmt"
-
 type NotificationCategory string
 
 const (
@@ -11,6 +9,13 @@ const (
 	ROOM_JOINED  NotificationCategory = "ROOM_JOINED"
 	WELCOME_ROOM NotificationCategory = "WELCOME_ROOM"
 )
+
+// Target represents the notification target and their settings.
+type Target struct {
+	ID        int
+	Frequency int
+	Follows   bool
+}
 
 type Alert struct {
 	Body      string   `json:"body,omitempty"`
@@ -58,17 +63,6 @@ func NewRoomNotificationWithName(id, creator, name string) *PushNotification {
 	}
 }
 
-func NewFollowerNotification(id int, follower string) *PushNotification {
-	return &PushNotification{
-		Category: NEW_FOLLOWER,
-		Alert: Alert{
-			Key:       "new_follower_notification",
-			Arguments: []string{follower},
-		},
-		Arguments: map[string]interface{}{"id": id},
-	}
-}
-
 func NewRoomInviteNotification(id, from string) *PushNotification {
 	return &PushNotification{
 		Category: ROOM_INVITE,
@@ -88,19 +82,6 @@ func NewRoomInviteNotificationWithName(id, from, room string) *PushNotification 
 			Arguments: []string{from, room},
 		},
 		Arguments:  map[string]interface{}{"id": id},
-		CollapseID: room,
-	}
-}
-
-func NewWelcomeRoomNotification(user, room string, from int) *PushNotification {
-	return &PushNotification{
-		Category: WELCOME_ROOM,
-		Alert: Alert{
-			Key:       "welcome_room_notification",
-			Body:      fmt.Sprintf("%s just signed up, why not welcome them?", user),
-			Arguments: []string{user},
-		},
-		Arguments:  map[string]interface{}{"id": room, "from": from},
 		CollapseID: room,
 	}
 }

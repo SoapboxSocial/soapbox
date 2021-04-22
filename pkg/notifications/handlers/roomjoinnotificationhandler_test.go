@@ -1,4 +1,4 @@
-package builders
+package handlers_test
 
 import (
 	"encoding/json"
@@ -10,8 +10,8 @@ import (
 	"github.com/golang/mock/gomock"
 
 	"github.com/soapboxsocial/soapbox/mocks"
-	"github.com/soapboxsocial/soapbox/pkg/followers"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
+	"github.com/soapboxsocial/soapbox/pkg/notifications/handlers"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 )
@@ -101,7 +101,7 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 
 	for i, tt := range tests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			db, mock, err := sqlmock.New()
+			db, _, err := sqlmock.New()
 			if err != nil {
 				t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
 			}
@@ -112,13 +112,10 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 
 			m := mocks.NewMockRoomServiceClient(ctrl)
 
-			builder := NewRoomJoinNotificationBuilder(
-				followers.NewFollowersBackend(db),
+			handler := handlers.NewRoomJoinNotificationHandler(
+				notifications.NewTargets(db),
 				m,
 			)
-
-			mock.ExpectPrepare("^SELECT (.+)").ExpectQuery().
-				WillReturnRows(mock.NewRows([]string{"follower"}).FromCSVString("2"))
 
 			m.EXPECT().GetRoom(gomock.Any(), gomock.Any(), gomock.Any()).Return(&pb.GetRoomResponse{State: tt.state}, nil)
 
@@ -127,7 +124,7 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			_, n, err := builder.Build(event)
+			n, err := handler.Build(event)
 			if err != nil {
 				t.Fatal(err)
 			}

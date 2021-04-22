@@ -65,6 +65,7 @@ func (l *Limiter) ShouldSendNotification(target notifications.Target, event *pub
 	}
 }
 
+// @TODO ADD IN MODIFIERS
 func (l *Limiter) SentNotification(target notifications.Target, event *pubsub.Event) {
 	switch event.Type {
 	case pubsub.EventTypeNewRoom:

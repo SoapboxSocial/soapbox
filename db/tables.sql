@@ -199,3 +199,25 @@ CREATE TABLE IF NOT EXISTS notification_subscriptions (
 );
 
 CREATE UNIQUE INDEX idx_notification_subscriptions ON notification_subscriptions (subscriber, user_id);
+
+CREATE TABLE IF NOT EXISTS notification_settings (
+    user_id INT NOT NULL,
+    room_frequency INT NOT NULL DEFAULT 2,
+    follow BOOLEAN NOT NULL DEFAULT true,
+    CHECK (room_frequency IN (0, 1, 2, 3)), -- 0 = off, 1 - infrequent, 2 - normal, 3 - frequent
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE OR REPLACE FUNCTION insert_notification_settings() RETURNS TRIGGER AS
+    $notification_settings$
+    BEGIN
+        INSERT INTO notification_settings(id) VALUES(new.id);
+        RETURN new;
+    END;
+    $notification_settings$
+    language plpgsql;
+
+CREATE TRIGGER insert_notification_settings_trigger
+    AFTER INSERT ON users
+    FOR EACH ROW
+    EXECUTE PROCEDURE insert_notification_settings();

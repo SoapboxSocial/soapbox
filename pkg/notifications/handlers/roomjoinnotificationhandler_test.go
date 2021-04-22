@@ -44,7 +44,7 @@ func TestRoomJoinNotificationHandler_Targets(t *testing.T) {
 	}
 
 	expected := []notifications.Target{
-		{ID: 1, Frequency: 2, Follows: false},
+		{ID: 1, RoomFrequency: 2, Follows: false},
 	}
 
 	if !reflect.DeepEqual(target, expected) {

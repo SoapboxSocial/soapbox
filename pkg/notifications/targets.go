@@ -19,7 +19,7 @@ func (s *Targets) GetTargetFor(user int) (*Target, error) {
 	row := stmt.QueryRow(user)
 
 	target := &Target{}
-	err = row.Scan(&target.ID, &target.Frequency, &target.Follows)
+	err = row.Scan(&target.ID, &target.RoomFrequency, &target.Follows)
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +41,7 @@ func (s *Targets) GetTargetsFollowingUser(user int) ([]Target, error) {
 	targets := make([]Target, 0)
 	for rows.Next() {
 		target := Target{}
-		err = rows.Scan(&target.ID, &target.Frequency, &target.Follows)
+		err = rows.Scan(&target.ID, &target.RoomFrequency, &target.Follows)
 		if err != nil {
 			continue
 		}

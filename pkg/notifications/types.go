@@ -10,11 +10,20 @@ const (
 	WELCOME_ROOM NotificationCategory = "WELCOME_ROOM"
 )
 
+type Frequency int
+
+const (
+	FrequencyOff = iota
+	Infrequent
+	Normal
+	Frequent
+)
+
 // Target represents the notification target and their settings.
 type Target struct {
-	ID        int
-	Frequency int
-	Follows   bool
+	ID            int
+	RoomFrequency Frequency
+	Follows       bool
 }
 
 type Alert struct {

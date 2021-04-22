@@ -6,13 +6,14 @@ import (
 
 	"github.com/go-redis/redis/v8"
 
+	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
 )
 
 var (
 	followerCooldown   = 15 * time.Minute
-	roomInviteCooldown = 5 * time.Minute
+	roomInviteCooldown = 3 * time.Minute
 	roomMemberCooldown = 5 * time.Minute
 	roomCooldown       = 10 * time.Minute
 )
@@ -29,28 +30,34 @@ func NewLimiter(rdb *redis.Client, currentRoom *rooms.CurrentRoomBackend) *Limit
 	}
 }
 
-func (l *Limiter) ShouldSendNotification(target int, event *pubsub.Event) bool {
+func (l *Limiter) ShouldSendNotification(target notifications.Target, event *pubsub.Event) bool {
 	switch event.Type {
 	case pubsub.EventTypeNewRoom, pubsub.EventTypeRoomJoin:
-		// 30 minutes for any notification with the same room ID
-		if l.isLimited(limiterKeyForRoom(target, event)) {
+		if target.RoomFrequency == notifications.FrequencyOff {
 			return false
 		}
 
-		// 5 minutes for any notification with the same room member
-		if l.isLimited(limiterKeyForRoomMember(target, event)) {
+		if l.isLimited(limiterKeyForRoom(target.ID, event)) {
 			return false
 		}
 
-		if l.isUserInRoom(target, event) {
+		if l.isLimited(limiterKeyForRoomMember(target.ID, event)) {
+			return false
+		}
+
+		if l.isUserInRoom(target.ID, event) {
 			return false
 		}
 
 		return true
 	case pubsub.EventTypeRoomInvite:
-		return !l.isLimited(limiterKeyForRoomInvite(target, event))
+		return !l.isLimited(limiterKeyForRoomInvite(target.ID, event))
 	case pubsub.EventTypeNewFollower:
-		return !l.isLimited(limiterKeyForFollowerEvent(target, event))
+		if !target.Follows {
+			return false
+		}
+
+		return !l.isLimited(limiterKeyForFollowerEvent(target.ID, event))
 	case pubsub.EventTypeWelcomeRoom:
 		return true // @TODO
 	default:
@@ -58,17 +65,17 @@ func (l *Limiter) ShouldSendNotification(target int, event *pubsub.Event) bool {
 	}
 }
 
-func (l *Limiter) SentNotification(target int, event *pubsub.Event) {
+func (l *Limiter) SentNotification(target notifications.Target, event *pubsub.Event) {
 	switch event.Type {
 	case pubsub.EventTypeNewRoom:
-		l.limit(limiterKeyForRoomMember(target, event), roomMemberCooldown)
+		l.limit(limiterKeyForRoomMember(target.ID, event), roomMemberCooldown)
 	case pubsub.EventTypeRoomJoin:
-		l.limit(limiterKeyForRoomMember(target, event), roomMemberCooldown)
-		l.limit(limiterKeyForRoom(target, event), roomCooldown)
+		l.limit(limiterKeyForRoomMember(target.ID, event), roomMemberCooldown)
+		l.limit(limiterKeyForRoom(target.ID, event), roomCooldown)
 	case pubsub.EventTypeRoomInvite:
-		l.limit(limiterKeyForRoomInvite(target, event), roomInviteCooldown)
+		l.limit(limiterKeyForRoomInvite(target.ID, event), roomInviteCooldown)
 	case pubsub.EventTypeNewFollower:
-		l.limit(limiterKeyForFollowerEvent(target, event), followerCooldown)
+		l.limit(limiterKeyForFollowerEvent(target.ID, event), followerCooldown)
 	}
 }
 

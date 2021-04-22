@@ -70,7 +70,7 @@ func NewRoomInviteNotification(id, from string) *PushNotification {
 			Key:       "room_invite_notification",
 			Arguments: []string{from},
 		},
-		Arguments: map[string]interface{}{"id": id},
+		Arguments:  map[string]interface{}{"id": id},
 		CollapseID: id,
 	}
 }

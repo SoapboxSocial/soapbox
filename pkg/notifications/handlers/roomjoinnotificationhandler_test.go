@@ -1,7 +1,6 @@
 package handlers_test
 
 import (
-	"encoding/json"
 	"reflect"
 	"strconv"
 	"testing"
@@ -134,19 +133,4 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 			}
 		})
 	}
-}
-
-func getRawEvent(event *pubsub.Event) (*pubsub.Event, error) {
-	data, err := json.Marshal(event)
-	if err != nil {
-		return nil, err
-	}
-
-	evt := &pubsub.Event{}
-	err = json.Unmarshal(data, evt)
-	if err != nil {
-		return nil, err
-	}
-
-	return evt, nil
 }

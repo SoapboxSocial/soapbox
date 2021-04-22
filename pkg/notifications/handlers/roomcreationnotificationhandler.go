@@ -51,7 +51,7 @@ func (r RoomCreationNotificationHandler) Build(event *pubsub.Event) (*notificati
 	}
 
 	if creator == testAccountID {
-		return nil, nil
+		return nil, errors.New("test account started room")
 	}
 
 	// Quick fix

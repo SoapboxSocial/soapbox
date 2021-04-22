@@ -15,6 +15,43 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 )
 
+func TestRoomJoinNotificationHandler_Targets(t *testing.T) {
+	raw := pubsub.NewRoomJoinEvent("id", 12, pubsub.Public)
+	event, err := getRawEvent(&raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	handler := handlers.NewRoomJoinNotificationHandler(
+		notifications.NewTargets(db),
+		nil,
+	)
+
+	mock.
+		ExpectPrepare("SELECT").
+		ExpectQuery().
+		WillReturnRows(mock.NewRows([]string{"user_id", "room_frequency", "follows"}).FromCSVString("1,2,false"))
+
+	target, err := handler.Targets(event)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := []notifications.Target{
+		{ID: 1, Frequency: 2, Follows: false},
+	}
+
+	if !reflect.DeepEqual(target, expected) {
+		t.Fatalf("expected %v actual %v", expected, target)
+	}
+}
+
 func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 	var tests = []struct {
 		event        pubsub.Event
@@ -100,19 +137,13 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 
 	for i, tt := range tests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			db, _, err := sqlmock.New()
-			if err != nil {
-				t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-			}
-			defer db.Close()
-
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
 			m := mocks.NewMockRoomServiceClient(ctrl)
 
 			handler := handlers.NewRoomJoinNotificationHandler(
-				notifications.NewTargets(db),
+				notifications.NewTargets(nil),
 				m,
 			)
 

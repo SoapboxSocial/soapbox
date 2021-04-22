@@ -1,6 +1,7 @@
 package main
 
 import (
+	sqldb "database/sql"
 	"flag"
 	"fmt"
 	"log"
@@ -10,7 +11,6 @@ import (
 	"github.com/sideshow/apns2/token"
 	"google.golang.org/grpc"
 
-	sqldb "database/sql"
 	"github.com/soapboxsocial/soapbox/pkg/conf"
 	"github.com/soapboxsocial/soapbox/pkg/devices"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"

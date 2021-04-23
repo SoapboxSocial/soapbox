@@ -122,7 +122,7 @@ func main() {
 }
 
 func pushNotification(target notifications.Target, event *pubsub.Event, notification *notifications.PushNotification) {
-	if !notificationLimiter.ShouldSendNotification(target.ID, event) {
+	if !notificationLimiter.ShouldSendNotification(target, event) {
 		return
 	}
 
@@ -138,7 +138,7 @@ func pushNotification(target notifications.Target, event *pubsub.Event, notifica
 		}
 	}
 
-	notificationLimiter.SentNotification(target.ID, event)
+	notificationLimiter.SentNotification(target, event)
 
 	store := getNotificationForStore(notification)
 	if store == nil {

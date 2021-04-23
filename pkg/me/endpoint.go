@@ -27,7 +27,7 @@ type Endpoint struct {
 	stories     *stories.Backend
 	queue       *pubsub.Queue
 	actives     *activeusers.Backend
-	targets     *notifications.Targets
+	targets     *notifications.Settings
 }
 
 // Settings represents a users settings
@@ -62,7 +62,7 @@ func NewEndpoint(
 	backend *stories.Backend,
 	queue *pubsub.Queue,
 	actives *activeusers.Backend,
-	targets     *notifications.Targets,
+	targets *notifications.Settings,
 ) *Endpoint {
 	return &Endpoint{
 		users:       users,
@@ -72,7 +72,7 @@ func NewEndpoint(
 		stories:     backend,
 		queue:       queue,
 		actives:     actives,
-		targets: targets,
+		targets:     targets,
 	}
 }
 
@@ -281,7 +281,7 @@ func (m *Endpoint) settings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	target, err := m.targets.GetTargetFor(id)
+	target, err := m.targets.GetSettingsFor(id)
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
 		return
@@ -317,4 +317,12 @@ func (m *Endpoint) updateNotificationSettings(w http.ResponseWriter, r *http.Req
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}
+
+	err = m.targets.UpdateSettingsFor(id, notifications.Frequency(frequency), follows)
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	httputil.JsonSuccess(w)
 }

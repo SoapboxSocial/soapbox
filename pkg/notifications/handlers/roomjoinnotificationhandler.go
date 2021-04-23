@@ -19,10 +19,10 @@ var (
 
 type RoomJoinNotificationHandler struct {
 	metadata pb.RoomServiceClient
-	targets  *notifications.Targets
+	targets  *notifications.Settings
 }
 
-func NewRoomJoinNotificationHandler(targets *notifications.Targets, metadata pb.RoomServiceClient) *RoomJoinNotificationHandler {
+func NewRoomJoinNotificationHandler(targets *notifications.Settings, metadata pb.RoomServiceClient) *RoomJoinNotificationHandler {
 	return &RoomJoinNotificationHandler{
 		targets:  targets,
 		metadata: metadata,
@@ -39,7 +39,7 @@ func (r RoomJoinNotificationHandler) Targets(event *pubsub.Event) ([]notificatio
 		return nil, err
 	}
 
-	targets, err := r.targets.GetTargetsFollowingUser(creator)
+	targets, err := r.targets.GetSettingsFollowingUser(creator)
 	if err != nil {
 		return nil, err
 	}

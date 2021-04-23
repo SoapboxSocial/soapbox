@@ -29,7 +29,7 @@ func TestRoomJoinNotificationHandler_Targets(t *testing.T) {
 	defer db.Close()
 
 	handler := handlers.NewRoomJoinNotificationHandler(
-		notifications.NewTargets(db),
+		notifications.NewSettings(db),
 		nil,
 	)
 
@@ -143,7 +143,7 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 			m := mocks.NewMockRoomServiceClient(ctrl)
 
 			handler := handlers.NewRoomJoinNotificationHandler(
-				notifications.NewTargets(nil),
+				notifications.NewSettings(nil),
 				m,
 			)
 

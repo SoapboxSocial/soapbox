@@ -2,15 +2,15 @@ package notifications
 
 import "database/sql"
 
-type Targets struct {
+type Settings struct {
 	db *sql.DB
 }
 
-func NewTargets(db *sql.DB) *Targets {
-	return &Targets{db: db}
+func NewSettings(db *sql.DB) *Settings {
+	return &Settings{db: db}
 }
 
-func (s *Targets) GetTargetFor(user int) (*Target, error) {
+func (s *Settings) GetSettingsFor(user int) (*Target, error) {
 	stmt, err := s.db.Prepare("SELECT user_id, room_frequency, follows FROM notification_settings WHERE user_id = $1;")
 	if err != nil {
 		return nil, err
@@ -27,7 +27,7 @@ func (s *Targets) GetTargetFor(user int) (*Target, error) {
 	return target, nil
 }
 
-func (s *Targets) GetTargetsFollowingUser(user int) ([]Target, error) {
+func (s *Settings) GetSettingsFollowingUser(user int) ([]Target, error) {
 	stmt, err := s.db.Prepare("SELECT user_id, room_frequency, follows FROM notification_settings INNER JOIN followers ON (notification_settings.user_id = followers.follower) WHERE followers.user_id = $1")
 	if err != nil {
 		return nil, err
@@ -50,4 +50,14 @@ func (s *Targets) GetTargetsFollowingUser(user int) ([]Target, error) {
 	}
 
 	return targets, nil
+}
+
+func (s *Settings) UpdateSettingsFor(user int, frequency Frequency, follows bool) error {
+	stmt, err := s.db.Prepare("UPDATE notification_settings SET room_frequency = $1, follows = $2 WHERE user_id = $3;")
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(frequency, follows, user)
+	return err
 }

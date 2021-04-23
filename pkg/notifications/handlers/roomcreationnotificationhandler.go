@@ -11,11 +11,11 @@ import (
 const testAccountID = 19
 
 type RoomCreationNotificationHandler struct {
-	targets *notifications.Targets
+	targets *notifications.Settings
 	users   *users.UserBackend
 }
 
-func NewRoomCreationNotificationHandler(targets *notifications.Targets, u *users.UserBackend) *RoomCreationNotificationHandler {
+func NewRoomCreationNotificationHandler(targets *notifications.Settings, u *users.UserBackend) *RoomCreationNotificationHandler {
 	return &RoomCreationNotificationHandler{
 		targets: targets,
 		users:   u,
@@ -32,7 +32,7 @@ func (r RoomCreationNotificationHandler) Targets(event *pubsub.Event) ([]notific
 		return nil, err
 	}
 
-	targets, err := r.targets.GetTargetsFollowingUser(creator)
+	targets, err := r.targets.GetSettingsFollowingUser(creator)
 	if err != nil {
 		return nil, err
 	}

@@ -28,7 +28,7 @@ func TestRoomInviteNotificationHandler_Targets(t *testing.T) {
 	defer db.Close()
 
 	handler := handlers.NewRoomInviteNotificationHandler(
-		notifications.NewTargets(db),
+		notifications.NewSettings(db),
 		nil,
 	)
 
@@ -94,7 +94,7 @@ func TestRoomInviteNotificationHandler_Build(t *testing.T) {
 			defer ctrl.Finish()
 
 			handler := handlers.NewRoomInviteNotificationHandler(
-				notifications.NewTargets(db),
+				notifications.NewSettings(db),
 				users.NewUserBackend(db),
 			)
 

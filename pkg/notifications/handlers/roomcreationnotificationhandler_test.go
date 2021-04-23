@@ -26,7 +26,7 @@ func TestRoomCreationNotificationHandler_Targets(t *testing.T) {
 	defer db.Close()
 
 	handler := handlers.NewRoomCreationNotificationHandler(
-		notifications.NewTargets(db),
+		notifications.NewSettings(db),
 		nil,
 	)
 
@@ -56,7 +56,7 @@ func TestRoomCreationNotificationHandler_Build(t *testing.T) {
 	}
 	defer db.Close()
 
-	handler := handlers.NewRoomCreationNotificationHandler(notifications.NewTargets(nil), users.NewUserBackend(db))
+	handler := handlers.NewRoomCreationNotificationHandler(notifications.NewSettings(nil), users.NewUserBackend(db))
 
 	displayName := "foo"
 	user := 12

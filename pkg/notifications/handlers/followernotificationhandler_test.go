@@ -26,7 +26,7 @@ func TestFollowerNotificationHandler_Targets(t *testing.T) {
 	defer db.Close()
 
 	handler := handlers.NewFollowerNotificationHandler(
-		notifications.NewTargets(db),
+		notifications.NewSettings(db),
 		nil,
 	)
 
@@ -56,7 +56,7 @@ func TestFollowerNotificationHandler_Build(t *testing.T) {
 	}
 	defer db.Close()
 
-	handler := handlers.NewFollowerNotificationHandler(notifications.NewTargets(nil), users.NewUserBackend(db))
+	handler := handlers.NewFollowerNotificationHandler(notifications.NewSettings(nil), users.NewUserBackend(db))
 
 	displayName := "foo"
 	user := 12

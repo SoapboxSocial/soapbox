@@ -7,11 +7,11 @@ import (
 )
 
 type RoomInviteNotificationHandler struct {
-	targets *notifications.Targets
+	targets *notifications.Settings
 	users   *users.UserBackend
 }
 
-func NewRoomInviteNotificationHandler(targets *notifications.Targets, u *users.UserBackend) *RoomInviteNotificationHandler {
+func NewRoomInviteNotificationHandler(targets *notifications.Settings, u *users.UserBackend) *RoomInviteNotificationHandler {
 	return &RoomInviteNotificationHandler{
 		targets: targets,
 		users:   u,
@@ -28,7 +28,7 @@ func (r RoomInviteNotificationHandler) Targets(event *pubsub.Event) ([]notificat
 		return nil, err
 	}
 
-	target, err := r.targets.GetTargetFor(targetID)
+	target, err := r.targets.GetSettingsFor(targetID)
 	if err != nil {
 		return nil, err
 	}

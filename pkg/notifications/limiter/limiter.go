@@ -69,10 +69,10 @@ func (l *Limiter) ShouldSendNotification(target notifications.Target, event *pub
 func (l *Limiter) SentNotification(target notifications.Target, event *pubsub.Event) {
 	switch event.Type {
 	case pubsub.EventTypeNewRoom:
-		l.limit(limiterKeyForRoomMember(target.ID, event), getLimitForFrequency(target.RoomFrequency, roomMemberCooldown))
+		l.limit(limiterKeyForRoomMember(target.ID, event), getLimitForRoomFrequency(target.RoomFrequency, roomMemberCooldown))
 	case pubsub.EventTypeRoomJoin:
-		l.limit(limiterKeyForRoomMember(target.ID, event), getLimitForFrequency(target.RoomFrequency, roomMemberCooldown))
-		l.limit(limiterKeyForRoom(target.ID, event), getLimitForFrequency(target.RoomFrequency, roomCooldown))
+		l.limit(limiterKeyForRoomMember(target.ID, event), getLimitForRoomFrequency(target.RoomFrequency, roomMemberCooldown))
+		l.limit(limiterKeyForRoom(target.ID, event), getLimitForRoomFrequency(target.RoomFrequency, roomCooldown))
 	case pubsub.EventTypeRoomInvite:
 		l.limit(limiterKeyForRoomInvite(target.ID, event), roomInviteCooldown)
 	case pubsub.EventTypeNewFollower:
@@ -118,7 +118,7 @@ func limiterKeyForFollowerEvent(target int, event *pubsub.Event) string {
 	return fmt.Sprintf("notifications_limit_%d_follower_%v", target, event.Params["follower"])
 }
 
-func getLimitForFrequency(frequency notifications.Frequency, base time.Duration) time.Duration {
+func getLimitForRoomFrequency(frequency notifications.Frequency, base time.Duration) time.Duration {
 
 	// @TODO think about this frequency
 	switch frequency {

@@ -61,6 +61,7 @@ func NewEndpoint(
 	backend *stories.Backend,
 	queue *pubsub.Queue,
 	actives *activeusers.Backend,
+	targets     *notifications.Targets,
 ) *Endpoint {
 	return &Endpoint{
 		users:       users,
@@ -70,6 +71,7 @@ func NewEndpoint(
 		stories:     backend,
 		queue:       queue,
 		actives:     actives,
+		targets: targets,
 	}
 }
 

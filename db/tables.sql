@@ -118,6 +118,7 @@ CREATE TABLE IF NOT EXISTS minis (
     size INT NOT NULL DEFAULT 1, -- 0 - Small, 1 - Regular, 2 - large
     description TEXT NOT NULL,
     developer_id INT NOT NULL,
+    weight INT NOT NULL DEFAULT 0,
     FOREIGN KEY (developer_id) REFERENCES mini_developers(id) ON DELETE CASCADE
 );
 

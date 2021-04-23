@@ -212,7 +212,7 @@ CREATE TABLE IF NOT EXISTS notification_settings (
 CREATE OR REPLACE FUNCTION insert_notification_settings() RETURNS TRIGGER AS
     $notification_settings$
     BEGIN
-        INSERT INTO notification_settings(id) VALUES(new.id);
+        INSERT INTO notification_settings(user_id) VALUES(new.id);
         RETURN new;
     END;
     $notification_settings$

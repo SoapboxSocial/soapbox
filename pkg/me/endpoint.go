@@ -86,6 +86,7 @@ func (m *Endpoint) Router() *mux.Router {
 	r.HandleFunc("/feed", m.feed).Methods("GET")
 	r.HandleFunc("/feed/actives", m.activeUsers).Methods("GET")
 	r.HandleFunc("/settings", m.settings).Methods("GET")
+	r.HandleFunc("/settings/notifications", m.updateNotificationSettings).Methods("POST")
 
 	return r
 }

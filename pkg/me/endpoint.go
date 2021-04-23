@@ -3,6 +3,7 @@ package me
 import (
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/dghubble/go-twitter/twitter"
@@ -289,5 +290,36 @@ func (m *Endpoint) settings(w http.ResponseWriter, r *http.Request) {
 	err = httputil.JsonEncode(w, &Settings{Notifications: *target})
 	if err != nil {
 		log.Printf("httputil.JsonEncode err: %s", err)
+	}
+}
+
+func (m *Endpoint) updateNotificationSettings(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	id, ok := httputil.GetUserIDFromContext(r.Context())
+	if !ok {
+		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "unauthorized")
+		return
+	}
+
+	frequency, err := strconv.Atoi(r.Form.Get("frequency"))
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	followsRaw := r.Form.Get("follows")
+	if followsRaw == "" {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	var follows = true
+	if followsRaw == "false" {
+		follows = false
 	}
 }

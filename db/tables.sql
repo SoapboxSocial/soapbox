@@ -191,16 +191,6 @@ CREATE OR REPLACE FUNCTION update_user_active_times(id INT, active TIMESTAMPTZ)
     $user_active_times$
     LANGUAGE PLPGSQL;
 
--- @TODO BETTER NAME
-CREATE TABLE IF NOT EXISTS notification_subscriptions (
-    subscriber INT NOT NULL,
-    user_id INT NOT NULL,
-    FOREIGN KEY (subscriber) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE UNIQUE INDEX idx_notification_subscriptions ON notification_subscriptions (subscriber, user_id);
-
 CREATE TABLE IF NOT EXISTS notification_settings (
     user_id INT NOT NULL,
     room_frequency INT NOT NULL DEFAULT 2,

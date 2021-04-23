@@ -119,9 +119,11 @@ func limiterKeyForFollowerEvent(target int, event *pubsub.Event) string {
 }
 
 func getLimitForFrequency(frequency notifications.Frequency, base time.Duration) time.Duration {
+
+	// @TODO think about this frequency
 	switch frequency {
 	case notifications.Infrequent:
-		return base * 5 // @TODO think about this
+		return base * 5
 	case notifications.Normal:
 		return base
 	case notifications.Frequent:

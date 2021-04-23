@@ -312,14 +312,9 @@ func (m *Endpoint) updateNotificationSettings(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	followsRaw := r.Form.Get("follows")
-	if followsRaw == "" {
+	follows, err := strconv.ParseBool(r.Form.Get("follows"))
+	if err != nil {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
 		return
-	}
-
-	var follows = true
-	if followsRaw == "false" {
-		follows = false
 	}
 }

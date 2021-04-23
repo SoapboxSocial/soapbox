@@ -21,7 +21,7 @@ const (
 
 // Target represents the notification target and their settings.
 type Target struct {
-	ID            int       `json:"id"`
+	ID            int       `json:"-"`
 	RoomFrequency Frequency `json:"room_frequency"`
 	Follows       bool      `json:"follows"`
 }

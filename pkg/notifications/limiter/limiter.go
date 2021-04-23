@@ -69,10 +69,10 @@ func (l *Limiter) ShouldSendNotification(target notifications.Target, event *pub
 func (l *Limiter) SentNotification(target notifications.Target, event *pubsub.Event) {
 	switch event.Type {
 	case pubsub.EventTypeNewRoom:
-		l.limit(limiterKeyForRoomMember(target.ID, event), roomMemberCooldown)
+		l.limit(limiterKeyForRoomMember(target.ID, event), getLimitForFrequency(target.RoomFrequency, roomMemberCooldown))
 	case pubsub.EventTypeRoomJoin:
-		l.limit(limiterKeyForRoomMember(target.ID, event), roomMemberCooldown)
-		l.limit(limiterKeyForRoom(target.ID, event), roomCooldown)
+		l.limit(limiterKeyForRoomMember(target.ID, event), getLimitForFrequency(target.RoomFrequency, roomMemberCooldown))
+		l.limit(limiterKeyForRoom(target.ID, event), getLimitForFrequency(target.RoomFrequency, roomCooldown))
 	case pubsub.EventTypeRoomInvite:
 		l.limit(limiterKeyForRoomInvite(target.ID, event), roomInviteCooldown)
 	case pubsub.EventTypeNewFollower:
@@ -116,4 +116,17 @@ func limiterKeyForRoomInvite(target int, event *pubsub.Event) string {
 
 func limiterKeyForFollowerEvent(target int, event *pubsub.Event) string {
 	return fmt.Sprintf("notifications_limit_%d_follower_%v", target, event.Params["follower"])
+}
+
+func getLimitForFrequency(frequency notifications.Frequency, base time.Duration) time.Duration {
+	switch frequency {
+	case notifications.Infrequent:
+		return base * 5 // @TODO think about this
+	case notifications.Normal:
+		return base
+	case notifications.Frequent:
+		return base / 2
+	}
+
+	return 0
 }

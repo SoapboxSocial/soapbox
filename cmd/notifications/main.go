@@ -140,6 +140,7 @@ func pushNotification(target notifications.Target, event *pubsub.Event, notifica
 		}
 
 		if err == notifications.ErrDeviceUnregistered {
+			log.Printf("removing device: %s", device)
 			err = devicesBackend.RemoveDevice(device)
 			if err != nil {
 				log.Printf("failed to remove device err: %s", err)

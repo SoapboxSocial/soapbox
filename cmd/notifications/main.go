@@ -110,12 +110,14 @@ func main() {
 
 			notification, err := h.Build(event)
 			if err != nil {
-				log.Printf("failed to build notiifcation: %s", err)
+				log.Printf("failed to build notifcation: %s", err)
 				return
 			}
 
+			log.Printf("pushing %s to %d targets", notification.Category, len(targets))
+
 			for _, target := range targets {
-				pushNotification(target, event, notification)
+				go pushNotification(target, event, notification)
 			}
 		}(event)
 	}
@@ -191,8 +193,6 @@ func setupHandlers(db *sqldb.DB, roomsAddr conf.AddrConf) map[pubsub.EventType]h
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	defer conn.Close()
 
 	join := handlers.NewRoomJoinNotificationHandler(targets, pb.NewRoomServiceClient(conn))
 	notificationHandlers[join.Type()] = join

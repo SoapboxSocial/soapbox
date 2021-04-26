@@ -174,7 +174,7 @@ func getNotificationForStore(notification *notifications.PushNotification) *noti
 
 func setupHandlers(db *sqldb.DB, roomsAddr conf.AddrConf) map[pubsub.EventType]handlers.Handler {
 	userBackend := users.NewUserBackend(db)
-	targets := &notifications.Settings{}
+	targets := notifications.NewSettings(db)
 
 	notificationHandlers := make(map[pubsub.EventType]handlers.Handler)
 

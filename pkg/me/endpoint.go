@@ -3,6 +3,7 @@ package me
 import (
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/dghubble/go-twitter/twitter"
@@ -26,6 +27,12 @@ type Endpoint struct {
 	stories     *stories.Backend
 	queue       *pubsub.Queue
 	actives     *activeusers.Backend
+	targets     *notifications.Settings
+}
+
+// Settings represents a users settings
+type Settings struct {
+	Notifications notifications.Target `json:"notifications"`
 }
 
 // Me is returned to the user calling the `/me` endpoint.
@@ -55,6 +62,7 @@ func NewEndpoint(
 	backend *stories.Backend,
 	queue *pubsub.Queue,
 	actives *activeusers.Backend,
+	targets *notifications.Settings,
 ) *Endpoint {
 	return &Endpoint{
 		users:       users,
@@ -64,6 +72,7 @@ func NewEndpoint(
 		stories:     backend,
 		queue:       queue,
 		actives:     actives,
+		targets:     targets,
 	}
 }
 
@@ -76,6 +85,8 @@ func (m *Endpoint) Router() *mux.Router {
 	r.HandleFunc("/profiles/twitter", m.removeTwitter).Methods("DELETE")
 	r.HandleFunc("/feed", m.feed).Methods("GET")
 	r.HandleFunc("/feed/actives", m.activeUsers).Methods("GET")
+	r.HandleFunc("/settings", m.settings).Methods("GET")
+	r.HandleFunc("/settings/notifications", m.updateNotificationSettings).Methods("POST")
 
 	return r
 }
@@ -262,4 +273,57 @@ func (m *Endpoint) feed(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("failed to write me response: %s\n", err.Error())
 	}
+}
+
+func (m *Endpoint) settings(w http.ResponseWriter, r *http.Request) {
+	id, ok := httputil.GetUserIDFromContext(r.Context())
+	if !ok {
+		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "unauthorized")
+		return
+	}
+
+	target, err := m.targets.GetSettingsFor(id)
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	err = httputil.JsonEncode(w, &Settings{Notifications: *target})
+	if err != nil {
+		log.Printf("httputil.JsonEncode err: %s", err)
+	}
+}
+
+func (m *Endpoint) updateNotificationSettings(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseForm()
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	id, ok := httputil.GetUserIDFromContext(r.Context())
+	if !ok {
+		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "unauthorized")
+		return
+	}
+
+	frequency, err := strconv.Atoi(r.Form.Get("frequency"))
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	follows, err := strconv.ParseBool(r.Form.Get("follows"))
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	err = m.targets.UpdateSettingsFor(id, notifications.Frequency(frequency), follows)
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	httputil.JsonSuccess(w)
 }

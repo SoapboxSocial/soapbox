@@ -1,7 +1,6 @@
-package builders
+package handlers_test
 
 import (
-	"encoding/json"
 	"reflect"
 	"strconv"
 	"testing"
@@ -10,11 +9,48 @@ import (
 	"github.com/golang/mock/gomock"
 
 	"github.com/soapboxsocial/soapbox/mocks"
-	"github.com/soapboxsocial/soapbox/pkg/followers"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
+	"github.com/soapboxsocial/soapbox/pkg/notifications/handlers"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 )
+
+func TestRoomJoinNotificationHandler_Targets(t *testing.T) {
+	raw := pubsub.NewRoomJoinEvent("id", 12, pubsub.Public)
+	event, err := getRawEvent(&raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	handler := handlers.NewRoomJoinNotificationHandler(
+		notifications.NewSettings(db),
+		nil,
+	)
+
+	mock.
+		ExpectPrepare("SELECT").
+		ExpectQuery().
+		WillReturnRows(mock.NewRows([]string{"user_id", "room_frequency", "follows"}).FromCSVString("1,2,false"))
+
+	target, err := handler.Targets(event)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := []notifications.Target{
+		{ID: 1, RoomFrequency: 2, Follows: false},
+	}
+
+	if !reflect.DeepEqual(target, expected) {
+		t.Fatalf("expected %v actual %v", expected, target)
+	}
+}
 
 func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 	var tests = []struct {
@@ -101,24 +137,15 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 
 	for i, tt := range tests {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
-			db, mock, err := sqlmock.New()
-			if err != nil {
-				t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
-			}
-			defer db.Close()
-
 			ctrl := gomock.NewController(t)
 			defer ctrl.Finish()
 
 			m := mocks.NewMockRoomServiceClient(ctrl)
 
-			builder := NewRoomJoinNotificationBuilder(
-				followers.NewFollowersBackend(db),
+			handler := handlers.NewRoomJoinNotificationHandler(
+				notifications.NewSettings(nil),
 				m,
 			)
-
-			mock.ExpectPrepare("^SELECT (.+)").ExpectQuery().
-				WillReturnRows(mock.NewRows([]string{"follower"}).FromCSVString("2"))
 
 			m.EXPECT().GetRoom(gomock.Any(), gomock.Any(), gomock.Any()).Return(&pb.GetRoomResponse{State: tt.state}, nil)
 
@@ -127,7 +154,7 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			_, n, err := builder.Build(event)
+			n, err := handler.Build(event)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -137,19 +164,4 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 			}
 		})
 	}
-}
-
-func getRawEvent(event *pubsub.Event) (*pubsub.Event, error) {
-	data, err := json.Marshal(event)
-	if err != nil {
-		return nil, err
-	}
-
-	evt := &pubsub.Event{}
-	err = json.Unmarshal(data, evt)
-	if err != nil {
-		return nil, err
-	}
-
-	return evt, nil
 }

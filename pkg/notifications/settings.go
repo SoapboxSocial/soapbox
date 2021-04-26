@@ -28,7 +28,7 @@ func (s *Settings) GetSettingsFor(user int) (*Target, error) {
 }
 
 func (s *Settings) GetSettingsFollowingUser(user int) ([]Target, error) {
-	stmt, err := s.db.Prepare("SELECT user_id, room_frequency, follows FROM notification_settings INNER JOIN followers ON (notification_settings.user_id = followers.follower) WHERE followers.user_id = $1")
+	stmt, err := s.db.Prepare("SELECT notification_settings.user_id, notification_settings.room_frequency, notification_settings.follows FROM notification_settings INNER JOIN followers ON (notification_settings.user_id = followers.follower) WHERE followers.user_id = $1")
 	if err != nil {
 		return nil, err
 	}

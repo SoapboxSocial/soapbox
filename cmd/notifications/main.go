@@ -135,9 +135,19 @@ func pushNotification(target notifications.Target, event *pubsub.Event, notifica
 
 	for _, device := range d {
 		err = service.Send(device, *notification)
-		if err != nil {
-			log.Printf("failed to send to target \"%s\" with error: %s\n", device, err.Error())
+		if err == nil {
+			continue
 		}
+
+		if err == notifications.ErrDeviceUnregistered {
+			err = devicesBackend.RemoveDevice(device)
+			if err != nil {
+				log.Printf("failed to remove device err: %s", err)
+			}
+			continue
+		}
+
+		log.Printf("failed to send to target \"%s\" with error: %s", device, err.Error())
 	}
 
 	notificationLimiter.SentNotification(target, event)

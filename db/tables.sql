@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(100) NOT NULL,
     email VARCHAR(254) NOT NULL,
     image VARCHAR(100) NOT NULL DEFAULT '',
-    bio TEXT NOT NULL DEFAULT ''
+    bio TEXT NOT NULL DEFAULT '',
+    joined TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE UNIQUE INDEX idx_email ON users (email);

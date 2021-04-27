@@ -1,4 +1,4 @@
-package limiter
+package notifications
 
 import (
 	"fmt"
@@ -6,7 +6,6 @@ import (
 
 	"github.com/go-redis/redis/v8"
 
-	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
 )
@@ -30,10 +29,10 @@ func NewLimiter(rdb *redis.Client, currentRoom *rooms.CurrentRoomBackend) *Limit
 	}
 }
 
-func (l *Limiter) ShouldSendNotification(target notifications.Target, event *pubsub.Event) bool {
+func (l *Limiter) ShouldSendNotification(target Target, event *pubsub.Event) bool {
 	switch event.Type {
 	case pubsub.EventTypeNewRoom, pubsub.EventTypeRoomJoin:
-		if target.RoomFrequency == notifications.FrequencyOff {
+		if target.RoomFrequency == FrequencyOff {
 			return false
 		}
 
@@ -65,7 +64,7 @@ func (l *Limiter) ShouldSendNotification(target notifications.Target, event *pub
 	}
 }
 
-func (l *Limiter) SentNotification(target notifications.Target, event *pubsub.Event) {
+func (l *Limiter) SentNotification(target Target, event *pubsub.Event) {
 	switch event.Type {
 	case pubsub.EventTypeNewRoom:
 		l.limit(limiterKeyForRoomMember(target.ID, event), getLimitForRoomFrequency(target.RoomFrequency, roomMemberCooldown))
@@ -79,15 +78,15 @@ func (l *Limiter) SentNotification(target notifications.Target, event *pubsub.Ev
 	}
 }
 
-const placeholder = "placeholder"
+const limitPlaceholder = "placeholder"
 
 func (l *Limiter) isLimited(key string) bool {
 	res, _ := l.rdb.Get(l.rdb.Context(), key).Result()
-	return res == placeholder
+	return res == limitPlaceholder
 }
 
 func (l *Limiter) limit(key string, duration time.Duration) {
-	l.rdb.Set(l.rdb.Context(), key, placeholder, duration)
+	l.rdb.Set(l.rdb.Context(), key, limitPlaceholder, duration)
 }
 
 func (l *Limiter) isUserInRoom(user int, event *pubsub.Event) bool {
@@ -117,15 +116,15 @@ func limiterKeyForFollowerEvent(target int, event *pubsub.Event) string {
 	return fmt.Sprintf("notifications_limit_%d_follower_%v", target, event.Params["follower"])
 }
 
-func getLimitForRoomFrequency(frequency notifications.Frequency, base time.Duration) time.Duration {
+func getLimitForRoomFrequency(frequency Frequency, base time.Duration) time.Duration {
 
 	// @TODO think about this frequency
 	switch frequency {
-	case notifications.Infrequent:
+	case Infrequent:
 		return base * 5
-	case notifications.Normal:
+	case Normal:
 		return base
-	case notifications.Frequent:
+	case Frequent:
 		return base / 2
 	}
 

@@ -1,38 +1,76 @@
 package notifications
 
 import (
-	"encoding/json"
+	"log"
+	"time"
 
-	"github.com/sideshow/apns2"
+	"github.com/soapboxsocial/soapbox/pkg/devices"
+	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 )
 
 type Service struct {
-	topic string
-
-	client *apns2.Client
+	apns    *APNS
+	limiter *Limiter
+	devices *devices.Backend
+	store   *Storage
 }
 
-func NewService(topic string, client *apns2.Client) *Service {
+func NewService(apns *APNS, limiter *Limiter, devices *devices.Backend, store *Storage) *Service {
 	return &Service{
-		topic:  topic,
-		client: client,
+		apns:    apns,
+		limiter: limiter,
+		devices: devices,
+		store:   store,
 	}
 }
 
-func (s *Service) Send(target string, notification PushNotification) error {
-	data, err := json.Marshal(map[string]interface{}{"aps": notification})
+func (s *Service) Send(target Target, event *pubsub.Event, notification *PushNotification) {
+	if !s.limiter.ShouldSendNotification(target, event) {
+		return
+	}
+
+	d, err := s.devices.GetDevicesForUser(target.ID)
 	if err != nil {
-		return err
+		log.Printf("devicesBackend.GetDevicesForUser err: %v\n", err)
 	}
 
-	payload := &apns2.Notification{
-		DeviceToken: target,
-		Topic:       s.topic,
-		Payload:     data,
-		CollapseID:  notification.CollapseID,
+	for _, device := range d {
+		err = s.apns.Send(device, *notification)
+		if err != nil {
+			log.Printf("failed to send to target \"%s\" with error: %s\n", device, err.Error())
+		}
 	}
 
-	// @todo handle response properly
-	_, err = s.client.Push(payload)
-	return err
+	s.limiter.SentNotification(target, event)
+
+	store := getNotificationForStore(notification)
+	if store == nil {
+		return
+	}
+
+	err = s.store.Store(target.ID, store)
+	if err != nil {
+		log.Printf("notificationStorage.Store err: %v\n", err)
+	}
+}
+
+// @TODO MOVE TO HANDLER
+func getNotificationForStore(notification *PushNotification) *Notification {
+	switch notification.Category {
+	case NEW_FOLLOWER:
+		return &Notification{
+			Timestamp: time.Now().Unix(),
+			From:      notification.Arguments["id"].(int),
+			Category:  notification.Category,
+		}
+	case WELCOME_ROOM:
+		return &Notification{
+			Timestamp: time.Now().Unix(),
+			From:      notification.Arguments["from"].(int),
+			Category:  notification.Category,
+			Arguments: map[string]interface{}{"room": notification.Arguments["id"]},
+		}
+	default:
+		return nil
+	}
 }

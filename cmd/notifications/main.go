@@ -5,7 +5,6 @@ import (
 	"flag"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/sideshow/apns2"
 	"github.com/sideshow/apns2/token"
@@ -15,20 +14,12 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/devices"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/notifications/handlers"
-	"github.com/soapboxsocial/soapbox/pkg/notifications/limiter"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/redis"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 	"github.com/soapboxsocial/soapbox/pkg/sql"
 	"github.com/soapboxsocial/soapbox/pkg/users"
-)
-
-var (
-	devicesBackend      *devices.Backend
-	service             *notifications.Service
-	notificationLimiter *limiter.Limiter
-	notificationStorage *notifications.Storage
 )
 
 type Conf struct {
@@ -66,10 +57,7 @@ func main() {
 		log.Fatalf("failed to open db: %s", err)
 	}
 
-	devicesBackend = devices.NewBackend(db)
 	currentRoom := rooms.NewCurrentRoomBackend(db)
-	notificationLimiter = limiter.NewLimiter(rdb, currentRoom)
-	notificationStorage = notifications.NewStorage(rdb)
 
 	authKey, err := token.AuthKeyFromFile(config.APNS.Path)
 	if err != nil {
@@ -84,7 +72,12 @@ func main() {
 		TeamID:  config.APNS.TeamID,
 	}).Production()
 
-	service = notifications.NewService(config.APNS.Bundle, client)
+	service := notifications.NewService(
+		notifications.NewAPNS(config.APNS.Bundle, client),
+		notifications.NewLimiter(rdb, currentRoom),
+		devices.NewBackend(db),
+		notifications.NewStorage(rdb),
+	)
 
 	notificationHandlers := setupHandlers(db, config.GRPC)
 
@@ -117,60 +110,9 @@ func main() {
 			log.Printf("pushing %s to %d targets", notification.Category, len(targets))
 
 			for _, target := range targets {
-				pushNotification(target, event, notification)
+				service.Send(target, event, notification)
 			}
 		}(event)
-	}
-}
-
-func pushNotification(target notifications.Target, event *pubsub.Event, notification *notifications.PushNotification) {
-	if !notificationLimiter.ShouldSendNotification(target, event) {
-		return
-	}
-
-	d, err := devicesBackend.GetDevicesForUser(target.ID)
-	if err != nil {
-		log.Printf("devicesBackend.GetDevicesForUser err: %v\n", err)
-	}
-
-	for _, device := range d {
-		err = service.Send(device, *notification)
-		if err != nil {
-			log.Printf("failed to send to target \"%s\" with error: %s\n", device, err.Error())
-		}
-	}
-
-	notificationLimiter.SentNotification(target, event)
-
-	store := getNotificationForStore(notification)
-	if store == nil {
-		return
-	}
-
-	err = notificationStorage.Store(target.ID, store)
-	if err != nil {
-		log.Printf("notificationStorage.Store err: %v\n", err)
-	}
-}
-
-// @TODO move into handler
-func getNotificationForStore(notification *notifications.PushNotification) *notifications.Notification {
-	switch notification.Category {
-	case notifications.NEW_FOLLOWER:
-		return &notifications.Notification{
-			Timestamp: time.Now().Unix(),
-			From:      notification.Arguments["id"].(int),
-			Category:  notification.Category,
-		}
-	case notifications.WELCOME_ROOM:
-		return &notifications.Notification{
-			Timestamp: time.Now().Unix(),
-			From:      notification.Arguments["from"].(int),
-			Category:  notification.Category,
-			Arguments: map[string]interface{}{"room": notification.Arguments["id"]},
-		}
-	default:
-		return nil
 	}
 }
 

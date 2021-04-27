@@ -9,6 +9,7 @@ endif
 
 mock:
 	mockgen -package=mocks -destination=mocks/signinwithapple_mock.go -source=pkg/apple/signinwithapple.go
+	mockgen -package=mocks -destination=mocks/apns_mock.go -source=pkg/notifications/apns.go
 	mockgen -package=mocks -destination=mocks/roomserviceclient_mock.go -source=pkg/rooms/pb/room_api_grpc.pb.go RoomServiceClient
 .PHONY: mock
 

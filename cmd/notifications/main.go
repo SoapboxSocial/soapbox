@@ -10,6 +10,7 @@ import (
 	"github.com/sideshow/apns2/token"
 	"google.golang.org/grpc"
 
+	"github.com/soapboxsocial/soapbox/pkg/apple"
 	"github.com/soapboxsocial/soapbox/pkg/conf"
 	"github.com/soapboxsocial/soapbox/pkg/devices"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
@@ -73,7 +74,7 @@ func main() {
 	}).Production()
 
 	service := notifications.NewService(
-		notifications.NewAPNS(config.APNS.Bundle, client),
+		apple.NewAPNS(config.APNS.Bundle, client),
 		notifications.NewLimiter(rdb, currentRoom),
 		devices.NewBackend(db),
 		notifications.NewStorage(rdb),

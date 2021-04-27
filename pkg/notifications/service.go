@@ -9,13 +9,13 @@ import (
 )
 
 type Service struct {
-	apns    *APNS
+	apns    APNS
 	limiter *Limiter
 	devices *devices.Backend
 	store   *Storage
 }
 
-func NewService(apns *APNS, limiter *Limiter, devices *devices.Backend, store *Storage) *Service {
+func NewService(apns APNS, limiter *Limiter, devices *devices.Backend, store *Storage) *Service {
 	return &Service{
 		apns:    apns,
 		limiter: limiter,
@@ -32,6 +32,7 @@ func (s *Service) Send(target Target, event *pubsub.Event, notification *PushNot
 	d, err := s.devices.GetDevicesForUser(target.ID)
 	if err != nil {
 		log.Printf("devicesBackend.GetDevicesForUser err: %v\n", err)
+		return
 	}
 
 	for _, device := range d {

@@ -11,7 +11,6 @@ import (
 	"github.com/soapboxsocial/soapbox/mocks"
 	"github.com/soapboxsocial/soapbox/pkg/devices"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
-	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
 )
 
@@ -45,7 +44,10 @@ func TestService_Send(t *testing.T) {
 
 	id := 1
 	device := "1234"
-	notification := notifications.PushNotification{Category: notifications.ROOM_JOINED}
+	notification := notifications.PushNotification{
+		Category: notifications.ROOM_JOINED,
+		Arguments: map[string]interface{}{"creator": 1, "id": "123"},
+	}
 
 	mock.
 		ExpectPrepare("^SELECT (.+)").
@@ -61,10 +63,8 @@ func TestService_Send(t *testing.T) {
 
 	apns.EXPECT().Send(gomock.Eq(device), gomock.Any()).Return(nil)
 
-	event := pubsub.NewRoomJoinEvent("123", 2, pubsub.Public)
 	service.Send(
 		notifications.Target{ID: id, RoomFrequency: notifications.Frequent, Follows: true},
-		&event,
 		&notification,
 	)
 }
@@ -99,7 +99,10 @@ func TestService_Send_WithUnregistered(t *testing.T) {
 
 	id := 1
 	device := "1234"
-	notification := notifications.PushNotification{Category: notifications.ROOM_JOINED}
+	notification := notifications.PushNotification{
+		Category: notifications.ROOM_JOINED,
+		Arguments: map[string]interface{}{"creator": 1, "id": "123"},
+	}
 
 	mock.
 		ExpectPrepare("^SELECT (.+)").
@@ -121,10 +124,8 @@ func TestService_Send_WithUnregistered(t *testing.T) {
 		WithArgs(id).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
-	event := pubsub.NewRoomJoinEvent("123", 2, pubsub.Public)
 	service.Send(
 		notifications.Target{ID: id, RoomFrequency: notifications.Frequent, Follows: true},
-		&event,
 		&notification,
 	)
 }

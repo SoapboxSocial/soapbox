@@ -48,14 +48,14 @@ type Notification struct {
 	Arguments map[string]interface{} `json:"arguments"`
 }
 
-func NewRoomNotification(id, creator string) *PushNotification {
+func NewRoomNotification(id, creator string, creatorID int) *PushNotification {
 	return &PushNotification{
 		Category: NEW_ROOM,
 		Alert: Alert{
 			Key:       "new_room_notification",
 			Arguments: []string{creator},
 		},
-		Arguments:  map[string]interface{}{"id": id},
+		Arguments:  map[string]interface{}{"id": id, "creator": creatorID},
 		CollapseID: id,
 	}
 }

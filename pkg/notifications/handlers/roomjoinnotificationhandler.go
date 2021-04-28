@@ -116,7 +116,7 @@ func (r RoomJoinNotificationHandler) Build(event *pubsub.Event) (*notifications.
 			Arguments: args,
 		},
 		CollapseID: room,
-		Arguments:  map[string]interface{}{"id": room},
+		Arguments:  map[string]interface{}{"id": room, "creator": creator},
 	}
 
 	return notification, nil

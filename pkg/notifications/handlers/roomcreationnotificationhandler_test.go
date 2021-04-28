@@ -85,7 +85,7 @@ func TestRoomCreationNotificationHandler_Build(t *testing.T) {
 			Key:       "new_room_notification",
 			Arguments: []string{displayName},
 		},
-		Arguments:  map[string]interface{}{"id": room},
+		Arguments:  map[string]interface{}{"id": room, "creator": user},
 		CollapseID: room,
 	}
 

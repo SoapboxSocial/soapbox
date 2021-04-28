@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/soapboxsocial/soapbox/pkg/devices"
-	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 )
 
 type Service struct {
@@ -31,8 +30,8 @@ func NewService(apns APNS, limiter *Limiter, devices *devices.Backend, store *St
 	return s
 }
 
-func (s *Service) Send(target Target, event *pubsub.Event, notification *PushNotification) {
-	if !s.limiter.ShouldSendNotification(target, event) {
+func (s *Service) Send(target Target, notification *PushNotification) {
+	if !s.limiter.ShouldSendNotification(target, notification) {
 		return
 	}
 
@@ -55,7 +54,7 @@ func (s *Service) Send(target Target, event *pubsub.Event, notification *PushNot
 		}(device)
 	}
 
-	s.limiter.SentNotification(target, event)
+	s.limiter.SentNotification(target, notification)
 
 	store := getNotificationForStore(notification)
 	if store == nil {

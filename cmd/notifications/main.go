@@ -111,7 +111,7 @@ func main() {
 			log.Printf("pushing %s to %d targets", notification.Category, len(targets))
 
 			for _, target := range targets {
-				service.Send(target, event, notification)
+				service.Send(target, notification)
 			}
 		}(event)
 	}

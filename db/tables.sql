@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(100) NOT NULL,
     email VARCHAR(254) NOT NULL,
     image VARCHAR(100) NOT NULL DEFAULT '',
-    bio TEXT NOT NULL DEFAULT ''
+    bio TEXT NOT NULL DEFAULT '',
+    joined TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE UNIQUE INDEX idx_email ON users (email);
@@ -118,6 +119,7 @@ CREATE TABLE IF NOT EXISTS minis (
     size INT NOT NULL DEFAULT 1, -- 0 - Small, 1 - Regular, 2 - large
     description TEXT NOT NULL,
     developer_id INT NOT NULL,
+    weight INT NOT NULL DEFAULT 0,
     FOREIGN KEY (developer_id) REFERENCES mini_developers(id) ON DELETE CASCADE
 );
 
@@ -189,3 +191,25 @@ CREATE OR REPLACE FUNCTION update_user_active_times(id INT, active TIMESTAMPTZ)
     END;
     $user_active_times$
     LANGUAGE PLPGSQL;
+
+CREATE TABLE IF NOT EXISTS notification_settings (
+    user_id INT NOT NULL,
+    room_frequency INT NOT NULL DEFAULT 2,
+    follows BOOLEAN NOT NULL DEFAULT true,
+    CHECK (room_frequency IN (0, 1, 2, 3)), -- 0 = off, 1 - infrequent, 2 - normal, 3 - frequent
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE OR REPLACE FUNCTION insert_notification_settings() RETURNS TRIGGER AS
+    $notification_settings$
+    BEGIN
+        INSERT INTO notification_settings(user_id) VALUES(new.id);
+        RETURN new;
+    END;
+    $notification_settings$
+    language plpgsql;
+
+CREATE TRIGGER insert_notification_settings_trigger
+    AFTER INSERT ON users
+    FOR EACH ROW
+    EXECUTE PROCEDURE insert_notification_settings();

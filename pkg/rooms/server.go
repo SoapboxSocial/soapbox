@@ -182,13 +182,6 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 			create.Visibility,
 		)
 
-		// @TODO SHOULD PROBABLY BE IN A CALLBACK SO WE KNOW THE ROOM IS OPEN
-		if create.Visibility == pb.Visibility_VISIBILITY_PRIVATE {
-			for _, id := range create.Users {
-				room.InviteUser(me.id, int(id))
-			}
-		}
-
 		err = peer.Join(id, strconv.Itoa(user.ID))
 		if err != nil && (err != sfu.ErrTransportExists && err != sfu.ErrOfferIgnored) {
 			_ = conn.WriteError(in.Id, pb.SignalReply_ERROR_CLOSED)
@@ -230,6 +223,12 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 		}
 
 		s.repository.Set(room)
+
+		if create.Visibility == pb.Visibility_VISIBILITY_PRIVATE {
+			for _, id := range create.Users {
+				room.InviteUser(me.id, int(id))
+			}
+		}
 
 	default:
 		return

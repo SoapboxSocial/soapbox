@@ -1,38 +1,101 @@
 package notifications
 
 import (
-	"encoding/json"
+	"log"
+	"time"
 
-	"github.com/sideshow/apns2"
+	"github.com/soapboxsocial/soapbox/pkg/devices"
+	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 )
 
 type Service struct {
-	topic string
+	apns    APNS
+	limiter *Limiter
+	devices *devices.Backend
+	store   *Storage
 
-	client *apns2.Client
+	unregistered chan string
 }
 
-func NewService(topic string, client *apns2.Client) *Service {
-	return &Service{
-		topic:  topic,
-		client: client,
+func NewService(apns APNS, limiter *Limiter, devices *devices.Backend, store *Storage) *Service {
+	s := &Service{
+		apns:         apns,
+		limiter:      limiter,
+		devices:      devices,
+		store:        store,
+		unregistered: make(chan string, 100),
 	}
+
+	go s.wipeDevices()
+
+	return s
 }
 
-func (s *Service) Send(target string, notification PushNotification) error {
-	data, err := json.Marshal(map[string]interface{}{"aps": notification})
+func (s *Service) Send(target Target, event *pubsub.Event, notification *PushNotification) {
+	if !s.limiter.ShouldSendNotification(target, event) {
+		return
+	}
+
+	d, err := s.devices.GetDevicesForUser(target.ID)
 	if err != nil {
-		return err
+		log.Printf("devicesBackend.GetDevicesForUser err: %v\n", err)
+		return
 	}
 
-	payload := &apns2.Notification{
-		DeviceToken: target,
-		Topic:       s.topic,
-		Payload:     data,
-		CollapseID:  notification.CollapseID,
+	for _, device := range d {
+		go func(device string) {
+			err = s.apns.Send(device, *notification)
+			if err != nil {
+				log.Printf("failed to send to target \"%s\" with error: %s\n", device, err)
+
+				if err == ErrDeviceUnregistered {
+					s.unregistered <- device
+				}
+			}
+		}(device)
 	}
 
-	// @todo handle response properly
-	_, err = s.client.Push(payload)
-	return err
+	s.limiter.SentNotification(target, event)
+
+	store := getNotificationForStore(notification)
+	if store == nil {
+		return
+	}
+
+	err = s.store.Store(target.ID, store)
+	if err != nil {
+		log.Printf("notificationStorage.Store err: %v\n", err)
+	}
+}
+
+func (s *Service) wipeDevices() {
+	for device := range s.unregistered {
+		log.Printf("removing device: %s", device)
+
+		err := s.devices.RemoveDevice(device)
+		if err != nil {
+			log.Printf("failed to remove device err: %s", err)
+		}
+	}
+}
+
+// @TODO MOVE TO HANDLER
+func getNotificationForStore(notification *PushNotification) *Notification {
+	switch notification.Category {
+	case NEW_FOLLOWER:
+		return &Notification{
+			Timestamp: time.Now().Unix(),
+			From:      notification.Arguments["id"].(int),
+			Category:  notification.Category,
+		}
+	case WELCOME_ROOM:
+		return &Notification{
+			Timestamp: time.Now().Unix(),
+			From:      notification.Arguments["from"].(int),
+			Category:  notification.Category,
+			Arguments: map[string]interface{}{"room": notification.Arguments["id"]},
+		}
+	default:
+		return nil
+	}
 }

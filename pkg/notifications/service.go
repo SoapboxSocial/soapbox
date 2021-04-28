@@ -1,46 +1,86 @@
 package notifications
 
 import (
-	"encoding/json"
+	"log"
+	"time"
 
-	"github.com/sideshow/apns2"
+	"github.com/soapboxsocial/soapbox/pkg/devices"
+	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 )
 
 type Service struct {
-	topic string
-
-	client *apns2.Client
+	apns    APNS
+	limiter *Limiter
+	devices *devices.Backend
+	store   *Storage
 }
 
-func NewService(topic string, client *apns2.Client) *Service {
+func NewService(apns APNS, limiter *Limiter, devices *devices.Backend, store *Storage) *Service {
 	return &Service{
-		topic:  topic,
-		client: client,
+		apns:    apns,
+		limiter: limiter,
+		devices: devices,
+		store:   store,
 	}
 }
 
-func (s *Service) Send(target string, notification PushNotification) error {
-	data, err := json.Marshal(map[string]interface{}{"aps": notification})
+func (s *Service) Send(target Target, event *pubsub.Event, notification *PushNotification) {
+	if !s.limiter.ShouldSendNotification(target, event) {
+		return
+	}
+
+	d, err := s.devices.GetDevicesForUser(target.ID)
 	if err != nil {
-		return err
+		log.Printf("devicesBackend.GetDevicesForUser err: %v\n", err)
+		return
 	}
 
-	payload := &apns2.Notification{
-		DeviceToken: target,
-		Topic:       s.topic,
-		Payload:     data,
-		CollapseID:  notification.CollapseID,
+	for _, device := range d {
+		err = s.apns.Send(device, *notification)
+		if err == nil {
+			continue
+		}
+
+		if err == ErrDeviceUnregistered {
+			log.Printf("removing device: %s", device)
+			err = s.devices.RemoveDevice(device)
+			if err != nil {
+				log.Printf("failed to remove device err: %s", err)
+			}
+			continue
+		}
 	}
 
-	// @todo handle response properly
-	resp, err := s.client.Push(payload)
+	s.limiter.SentNotification(target, event)
+
+	store := getNotificationForStore(notification)
+	if store == nil {
+		return
+	}
+
+	err = s.store.Store(target.ID, store)
 	if err != nil {
-		return err
+		log.Printf("notificationStorage.Store err: %v\n", err)
 	}
+}
 
-	if resp.Reason == apns2.ReasonUnregistered {
-		return ErrDeviceUnregistered
+// @TODO MOVE TO HANDLER
+func getNotificationForStore(notification *PushNotification) *Notification {
+	switch notification.Category {
+	case NEW_FOLLOWER:
+		return &Notification{
+			Timestamp: time.Now().Unix(),
+			From:      notification.Arguments["id"].(int),
+			Category:  notification.Category,
+		}
+	case WELCOME_ROOM:
+		return &Notification{
+			Timestamp: time.Now().Unix(),
+			From:      notification.Arguments["from"].(int),
+			Category:  notification.Category,
+			Arguments: map[string]interface{}{"room": notification.Arguments["id"]},
+		}
+	default:
+		return nil
 	}
-
-	return nil
 }

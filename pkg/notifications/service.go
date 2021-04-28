@@ -49,6 +49,8 @@ func (s *Service) Send(target Target, event *pubsub.Event, notification *PushNot
 			}
 			continue
 		}
+
+		log.Printf("failed to send to target \"%s\" with error: %s\n", device, err)
 	}
 
 	s.limiter.SentNotification(target, event)

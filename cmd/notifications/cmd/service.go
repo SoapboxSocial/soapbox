@@ -2,12 +2,13 @@ package cmd
 
 import (
 	sqldb "database/sql"
-	"flag"
 	"fmt"
 	"log"
 
+	"github.com/pkg/errors"
 	"github.com/sideshow/apns2"
 	"github.com/sideshow/apns2/token"
+	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 
 	"github.com/soapboxsocial/soapbox/pkg/apple"
@@ -30,24 +31,23 @@ type Conf struct {
 	GRPC  conf.AddrConf     `mapstructure:"grpc"`
 }
 
-func parse() (*Conf, error) {
-	var file string
-	flag.StringVar(&file, "c", "config.toml", "config file")
-	flag.Parse()
+var service = &cobra.Command{
+	Use:   "service",
+	Short: "runs a notification service",
+	RunE:  runService,
+}
 
+var file string
+
+func init() {
+	service.Flags().StringVarP(&file, "config", "c", "config.toml", "config file")
+}
+
+func runService(*cobra.Command, []string) error {
 	config := &Conf{}
 	err := conf.Load(file, config)
 	if err != nil {
-		return nil, err
-	}
-
-	return config, nil
-}
-
-func main() {
-	config, err := parse()
-	if err != nil {
-		log.Fatal("failed to parse config")
+		return errors.Wrap(err, "failed to parse config")
 	}
 
 	rdb := redis.NewRedis(config.Redis)
@@ -55,14 +55,14 @@ func main() {
 
 	db, err := sql.Open(config.DB)
 	if err != nil {
-		log.Fatalf("failed to open db: %s", err)
+		return errors.Wrap(err, "failed to open db")
 	}
 
 	currentRoom := rooms.NewCurrentRoomBackend(db)
 
 	authKey, err := token.AuthKeyFromFile(config.APNS.Path)
 	if err != nil {
-		log.Fatal(err)
+		return errors.Wrap(err, "failed to load auth key")
 	}
 
 	// @todo add flag for which enviroment
@@ -115,6 +115,8 @@ func main() {
 			}
 		}(event)
 	}
+
+	return nil
 }
 
 func setupHandlers(db *sqldb.DB, roomsAddr conf.AddrConf) map[pubsub.EventType]handlers.Handler {

@@ -53,3 +53,17 @@ func (db *Backend) GetDevicesForUser(id int) ([]string, error) {
 
 	return result, nil
 }
+
+func (db *Backend) RemoveDevice(token string) error {
+	stmt, err := db.db.Prepare("DELETE FROM devices WHERE device = $1;")
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(token)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

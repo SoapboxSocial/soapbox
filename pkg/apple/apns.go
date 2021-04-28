@@ -35,6 +35,14 @@ func (a *APNS) Send(target string, notification notifications.PushNotification) 
 	}
 
 	// @todo handle response properly
-	_, err = a.client.Push(payload)
-	return err
+	resp, err := a.client.Push(payload)
+	if err != nil {
+		return err
+	}
+
+	if resp.Reason == apns2.ReasonUnregistered {
+		return notifications.ErrDeviceUnregistered
+	}
+
+	return nil
 }

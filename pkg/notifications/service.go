@@ -13,15 +13,22 @@ type Service struct {
 	limiter *Limiter
 	devices *devices.Backend
 	store   *Storage
+
+	unregistered chan string
 }
 
 func NewService(apns APNS, limiter *Limiter, devices *devices.Backend, store *Storage) *Service {
-	return &Service{
-		apns:    apns,
-		limiter: limiter,
-		devices: devices,
-		store:   store,
+	s := &Service{
+		apns:         apns,
+		limiter:      limiter,
+		devices:      devices,
+		store:        store,
+		unregistered: make(chan string, 100),
 	}
+
+	go s.wipeDevices()
+
+	return s
 }
 
 func (s *Service) Send(target Target, event *pubsub.Event, notification *PushNotification) {
@@ -36,10 +43,16 @@ func (s *Service) Send(target Target, event *pubsub.Event, notification *PushNot
 	}
 
 	for _, device := range d {
-		err = s.apns.Send(device, *notification)
-		if err != nil {
-			log.Printf("failed to send to target \"%s\" with error: %s\n", device, err.Error())
-		}
+		go func(device string) {
+			err = s.apns.Send(device, *notification)
+			if err != nil {
+				log.Printf("failed to send to target \"%s\" with error: %s\n", device, err)
+
+				if err == ErrDeviceUnregistered {
+					s.unregistered <- device
+				}
+			}
+		}(device)
 	}
 
 	s.limiter.SentNotification(target, event)
@@ -52,6 +65,17 @@ func (s *Service) Send(target Target, event *pubsub.Event, notification *PushNot
 	err = s.store.Store(target.ID, store)
 	if err != nil {
 		log.Printf("notificationStorage.Store err: %v\n", err)
+	}
+}
+
+func (s *Service) wipeDevices() {
+	for device := range s.unregistered {
+		log.Printf("removing device: %s", device)
+
+		err := s.devices.RemoveDevice(device)
+		if err != nil {
+			log.Printf("failed to remove device err: %s", err)
+		}
 	}
 }
 

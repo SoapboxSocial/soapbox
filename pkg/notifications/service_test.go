@@ -68,3 +68,63 @@ func TestService_Send(t *testing.T) {
 		&notification,
 	)
 }
+
+func TestService_Send_WithUnregistered(t *testing.T) {
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	rdb := redis.NewClient(&redis.Options{
+		Addr: mr.Addr(),
+	})
+
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	apns := mocks.NewMockAPNS(ctrl)
+
+	service := notifications.NewService(
+		apns,
+		notifications.NewLimiter(rdb, rooms.NewCurrentRoomBackend(db)),
+		devices.NewBackend(db),
+		notifications.NewStorage(rdb),
+	)
+
+	id := 1
+	device := "1234"
+	notification := notifications.PushNotification{Category: notifications.ROOM_JOINED}
+
+	mock.
+		ExpectPrepare("^SELECT (.+)").
+		ExpectQuery().
+		WithArgs(id).
+		WillReturnRows(mock.NewRows([]string{"room"}).FromCSVString("0"))
+
+	mock.
+		ExpectPrepare("^SELECT (.+)").
+		ExpectQuery().
+		WithArgs(id).
+		WillReturnRows(mock.NewRows([]string{"token"}).FromCSVString(device))
+
+	apns.EXPECT().Send(gomock.Eq(device), gomock.Any()).Return(notifications.ErrDeviceUnregistered)
+
+	mock.
+		ExpectPrepare("^DELETE (.+)").
+		ExpectExec().
+		WithArgs(id).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	event := pubsub.NewRoomJoinEvent("123", 2, pubsub.Public)
+	service.Send(
+		notifications.Target{ID: id, RoomFrequency: notifications.Frequent, Follows: true},
+		&event,
+		&notification,
+	)
+}

@@ -37,9 +37,6 @@ func (t *Twitter) FindFriendsFor(user int) ([]int, error) {
 		go request(client, part)
 	}
 
-
-	//client.Friendships.()
-
 	return nil, nil
 }
 

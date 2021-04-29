@@ -9,19 +9,29 @@ import (
 )
 
 type Config struct {
-	apns    notifications.APNS
-	limiter *notifications.Limiter
-	devices *devices.Backend
-	store   *notifications.Storage
+	APNS    notifications.APNS
+	Limiter *notifications.Limiter
+	Devices *devices.Backend
+	Store   *notifications.Storage
 }
 
 type Worker struct {
-	Work        chan Job
-	WorkerQueue chan chan Job
-	QuitChan    chan bool
+	jobs    chan Job
+	workers chan<- chan Job
+	quit    chan bool
 
 	unregistered chan string
 	config       *Config
+}
+
+func NewWorker(pool chan<- chan Job, config *Config) *Worker {
+	return &Worker{
+		workers:      pool,
+		jobs:         make(chan Job),
+		quit:         make(chan bool),
+		unregistered: make(chan string, 100),
+		config:       config,
+	}
 }
 
 func (w *Worker) Start() {
@@ -30,13 +40,13 @@ func (w *Worker) Start() {
 
 	go func() {
 		for {
-			w.WorkerQueue <- w.Work
+			w.workers <- w.jobs
 
 			select {
-			case job := <-w.Work:
+			case job := <-w.jobs:
 				// Receive a work request.
 				w.handle(job)
-			case <-w.QuitChan:
+			case <-w.quit:
 				// We have been asked to stop.
 				close(w.unregistered)
 				return
@@ -45,12 +55,18 @@ func (w *Worker) Start() {
 	}()
 }
 
+func (w *Worker) Stop() {
+	go func() {
+		w.quit <- true
+	}()
+}
+
 func (w *Worker) handle(job Job) {
-	if !w.config.limiter.ShouldSendNotification(job.Target, job.Notification) {
+	if !w.config.Limiter.ShouldSendNotification(job.Target, job.Notification) {
 		return
 	}
 
-	d, err := w.config.devices.GetDevicesForUser(job.Target.ID)
+	d, err := w.config.Devices.GetDevicesForUser(job.Target.ID)
 	if err != nil {
 		log.Printf("devicesBackend.GetDevicesForUser err: %v\n", err)
 		return
@@ -58,7 +74,7 @@ func (w *Worker) handle(job Job) {
 
 	for _, device := range d {
 		go func(device string) {
-			err = w.config.apns.Send(device, *job.Notification)
+			err = w.config.APNS.Send(device, *job.Notification)
 			if err != nil {
 				log.Printf("failed to send to target \"%s\" with error: %s\n", device, err)
 
@@ -69,14 +85,14 @@ func (w *Worker) handle(job Job) {
 		}(device)
 	}
 
-	w.config.limiter.SentNotification(job.Target, job.Notification)
+	w.config.Limiter.SentNotification(job.Target, job.Notification)
 
 	store := getNotificationForStore(job.Notification)
 	if store == nil {
 		return
 	}
 
-	err = w.config.store.Store(job.Target.ID, store)
+	err = w.config.Store.Store(job.Target.ID, store)
 	if err != nil {
 		log.Printf("notificationStorage.Store err: %v\n", err)
 	}
@@ -86,7 +102,7 @@ func (w *Worker) wipeDevices() {
 	for device := range w.unregistered {
 		log.Printf("removing device: %s", device)
 
-		err := w.config.devices.RemoveDevice(device)
+		err := w.config.Devices.RemoveDevice(device)
 		if err != nil {
 			log.Printf("failed to remove device err: %s", err)
 		}

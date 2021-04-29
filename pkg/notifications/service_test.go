@@ -45,7 +45,7 @@ func TestService_Send(t *testing.T) {
 	id := 1
 	device := "1234"
 	notification := notifications.PushNotification{
-		Category: notifications.ROOM_JOINED,
+		Category:  notifications.ROOM_JOINED,
 		Arguments: map[string]interface{}{"creator": 1, "id": "123"},
 	}
 
@@ -100,7 +100,7 @@ func TestService_Send_WithUnregistered(t *testing.T) {
 	id := 1
 	device := "1234"
 	notification := notifications.PushNotification{
-		Category: notifications.ROOM_JOINED,
+		Category:  notifications.ROOM_JOINED,
 		Arguments: map[string]interface{}{"creator": 1, "id": "123"},
 	}
 

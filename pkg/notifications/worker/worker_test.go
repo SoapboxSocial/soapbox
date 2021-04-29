@@ -1,4 +1,4 @@
-package notifications_test
+package worker_test
 
 import (
 	"testing"
@@ -11,10 +11,11 @@ import (
 	"github.com/soapboxsocial/soapbox/mocks"
 	"github.com/soapboxsocial/soapbox/pkg/devices"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
+	"github.com/soapboxsocial/soapbox/pkg/notifications/worker"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
 )
 
-func TestService_Send(t *testing.T) {
+func TestWorker(t *testing.T) {
 	mr, err := miniredis.Run()
 	if err != nil {
 		t.Fatal(err)
@@ -35,17 +36,21 @@ func TestService_Send(t *testing.T) {
 
 	apns := mocks.NewMockAPNS(ctrl)
 
-	service := notifications.NewService(
-		apns,
-		notifications.NewLimiter(rdb, rooms.NewCurrentRoomBackend(db)),
-		devices.NewBackend(db),
-		notifications.NewStorage(rdb),
+	pool := make(chan chan worker.Job)
+	w := worker.NewWorker(
+		pool,
+		&worker.Config{
+			APNS:    apns,
+			Limiter: notifications.NewLimiter(rdb, rooms.NewCurrentRoomBackend(db)),
+			Devices: devices.NewBackend(db),
+			Store:   notifications.NewStorage(rdb),
+		},
 	)
 
 	id := 1
 	device := "1234"
 	notification := notifications.PushNotification{
-		Category: notifications.ROOM_JOINED,
+		Category:  notifications.ROOM_JOINED,
 		Arguments: map[string]interface{}{"creator": 1, "id": "123"},
 	}
 
@@ -63,13 +68,20 @@ func TestService_Send(t *testing.T) {
 
 	apns.EXPECT().Send(gomock.Eq(device), gomock.Any()).Return(nil)
 
-	service.Send(
-		notifications.Target{ID: id, RoomFrequency: notifications.Frequent, Follows: true},
-		&notification,
-	)
+	w.Start()
+
+	queue := <-pool
+
+	queue <- worker.Job{
+		Target:       notifications.Target{ID: id, RoomFrequency: notifications.Frequent, Follows: true},
+		Notification: &notification,
+	}
+
+	<-pool
 }
 
-func TestService_Send_WithUnregistered(t *testing.T) {
+
+func TestWorker_WithUnregistered(t *testing.T) {
 	mr, err := miniredis.Run()
 	if err != nil {
 		t.Fatal(err)
@@ -90,17 +102,21 @@ func TestService_Send_WithUnregistered(t *testing.T) {
 
 	apns := mocks.NewMockAPNS(ctrl)
 
-	service := notifications.NewService(
-		apns,
-		notifications.NewLimiter(rdb, rooms.NewCurrentRoomBackend(db)),
-		devices.NewBackend(db),
-		notifications.NewStorage(rdb),
+	pool := make(chan chan worker.Job)
+	w := worker.NewWorker(
+		pool,
+		&worker.Config{
+			APNS:    apns,
+			Limiter: notifications.NewLimiter(rdb, rooms.NewCurrentRoomBackend(db)),
+			Devices: devices.NewBackend(db),
+			Store:   notifications.NewStorage(rdb),
+		},
 	)
 
 	id := 1
 	device := "1234"
 	notification := notifications.PushNotification{
-		Category: notifications.ROOM_JOINED,
+		Category:  notifications.ROOM_JOINED,
 		Arguments: map[string]interface{}{"creator": 1, "id": "123"},
 	}
 
@@ -124,8 +140,14 @@ func TestService_Send_WithUnregistered(t *testing.T) {
 		WithArgs(id).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
-	service.Send(
-		notifications.Target{ID: id, RoomFrequency: notifications.Frequent, Follows: true},
-		&notification,
-	)
+	w.Start()
+
+	queue := <-pool
+
+	queue <- worker.Job{
+		Target:       notifications.Target{ID: id, RoomFrequency: notifications.Frequent, Follows: true},
+		Notification: &notification,
+	}
+
+	<-pool
 }

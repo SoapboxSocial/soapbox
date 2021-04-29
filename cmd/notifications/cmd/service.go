@@ -16,6 +16,7 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/devices"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/notifications/handlers"
+	"github.com/soapboxsocial/soapbox/pkg/notifications/worker"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/redis"
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
@@ -73,16 +74,17 @@ func runService(*cobra.Command, []string) error {
 		TeamID:  config.APNS.TeamID,
 	}).Production()
 
-	service := notifications.NewService(
-		apple.NewAPNS(config.APNS.Bundle, client),
-		notifications.NewLimiter(rdb, currentRoom),
-		devices.NewBackend(db),
-		notifications.NewStorage(rdb),
-	)
-
 	notificationHandlers := setupHandlers(db, config.GRPC)
 
 	events := queue.Subscribe(pubsub.RoomTopic, pubsub.UserTopic)
+
+	dispatch := worker.NewDispatcher(5, &worker.Config{
+		APNS:    apple.NewAPNS(config.APNS.Bundle, client),
+		Limiter: notifications.NewLimiter(rdb, currentRoom),
+		Devices: devices.NewBackend(db),
+		Store:   notifications.NewStorage(rdb),
+	})
+	dispatch.Run()
 
 	for event := range events {
 		go func(event *pubsub.Event) {
@@ -111,7 +113,7 @@ func runService(*cobra.Command, []string) error {
 			log.Printf("pushing %s to %d targets", notification.Category, len(targets))
 
 			for _, target := range targets {
-				service.Send(target, notification)
+				dispatch.Dispatch(target, notification)
 			}
 		}(event)
 	}

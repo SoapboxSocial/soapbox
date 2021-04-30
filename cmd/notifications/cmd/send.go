@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/soapboxsocial/soapbox/pkg/notifications/pb"
+	"github.com/soapboxsocial/soapbox/pkg/sql"
 )
 
 var send = &cobra.Command{
@@ -53,7 +54,14 @@ func runSend(*cobra.Command, []string) error {
 		},
 	}
 
-	ids := targets
+	ids, err := getTargets()
+	if err != nil {
+		return err
+	}
+
+	if len(ids) == 0 {
+		return errors.New("no targets")
+	}
 
 	conn, err := grpc.Dial(addr, grpc.WithInsecure())
 	if err != nil {
@@ -66,4 +74,38 @@ func runSend(*cobra.Command, []string) error {
 
 	_, err = client.SendNotification(context.TODO(), &pb.SendNotificationRequest{Targets: ids, Notification: notification})
 	return err
+}
+
+func getTargets() ([]int64, error) {
+	if len(targets) > 0 {
+		return targets, nil
+	}
+
+	if query == "" {
+		return nil, errors.New("query not supplied")
+	}
+
+	db, err := sql.Open(config.DB)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]int64, 0)
+
+	for rows.Next() {
+		var id int64
+		err := rows.Scan(&id)
+		if err != nil {
+			continue
+		}
+
+		result = append(result, id)
+	}
+
+	return result, nil
 }

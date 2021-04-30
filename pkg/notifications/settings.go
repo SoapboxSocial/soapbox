@@ -58,7 +58,7 @@ func (s *Settings) GetSettingsFollowingUser(user int) ([]Target, error) {
 
 func (s *Settings) GetSettingsForUsers(users []int64) ([]Target, error) {
 	query := fmt.Sprintf(
-		"SELECT notification_settings.user_id, notification_settings.room_frequency, notification_settings.follows FROM notification_settings WHERE id IN(%s)",
+		"SELECT notification_settings.user_id, notification_settings.room_frequency, notification_settings.follows FROM notification_settings WHERE user_id IN (%s)",
 		join(users, ","),
 	)
 

@@ -21,10 +21,13 @@ func NewService(dispatch *worker.Dispatcher) *Service {
 }
 
 func (s *Service) SendNotification(_ context.Context, request *pb.SendNotificationRequest) (*pb.SendNotificationResponse, error) {
-	notification := request.GetNotification()
+	notification := request.Notification
 	if notification == nil {
 		return nil, errors.New("empty notification")
 	}
+
+	push := notification.ToPushNotification()
+	targets := request.Targets
 
 	return &pb.SendNotificationResponse{Success: true}, nil
 }

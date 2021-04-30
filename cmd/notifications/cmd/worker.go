@@ -29,7 +29,8 @@ type Conf struct {
 	APNS  conf.AppleConf    `mapstructure:"apns"`
 	Redis conf.RedisConf    `mapstructure:"redis"`
 	DB    conf.PostgresConf `mapstructure:"db"`
-	GRPC  conf.AddrConf     `mapstructure:"grpc"`
+	Rooms conf.AddrConf     `mapstructure:"rooms"`
+	GRPC conf.AddrConf     `mapstructure:"GRPC"`
 }
 
 var workerCmd = &cobra.Command{
@@ -74,7 +75,7 @@ func runWorker(*cobra.Command, []string) error {
 		TeamID:  config.APNS.TeamID,
 	}).Production()
 
-	notificationHandlers := setupHandlers(db, config.GRPC)
+	notificationHandlers := setupHandlers(db, config.Rooms)
 
 	events := queue.Subscribe(pubsub.RoomTopic, pubsub.UserTopic)
 

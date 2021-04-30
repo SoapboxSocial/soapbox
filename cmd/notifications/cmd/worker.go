@@ -79,37 +79,39 @@ func runWorker(*cobra.Command, []string) error {
 	})
 	dispatch.Run()
 
-	for event := range events {
-		go func(event *pubsub.Event) {
-			h := notificationHandlers[event.Type]
-			if h == nil {
-				return
-			}
+	go func() {
+		for event := range events {
+			go func(event *pubsub.Event) {
+				h := notificationHandlers[event.Type]
+				if h == nil {
+					return
+				}
 
-			targets, err := h.Targets(event)
-			if err != nil {
-				log.Printf("failed to get targets: %s", err)
-				return
-			}
+				targets, err := h.Targets(event)
+				if err != nil {
+					log.Printf("failed to get targets: %s", err)
+					return
+				}
 
-			if len(targets) == 0 {
-				log.Printf("no targets for: %d", event.Type)
-				return
-			}
+				if len(targets) == 0 {
+					log.Printf("no targets for: %d", event.Type)
+					return
+				}
 
-			notification, err := h.Build(event)
-			if err != nil {
-				log.Printf("failed to build notifcation: %s", err)
-				return
-			}
+				notification, err := h.Build(event)
+				if err != nil {
+					log.Printf("failed to build notifcation: %s", err)
+					return
+				}
 
-			log.Printf("pushing %s to %d targets", notification.Category, len(targets))
+				log.Printf("pushing %s to %d targets", notification.Category, len(targets))
 
-			for _, target := range targets {
-				dispatch.Dispatch(target, notification)
-			}
-		}(event)
-	}
+				for _, target := range targets {
+					dispatch.Dispatch(target, notification)
+				}
+			}(event)
+		}
+	}()
 
 	return runServer(config.GRPC, dispatch, settings)
 }

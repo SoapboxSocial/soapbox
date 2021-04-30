@@ -8,6 +8,7 @@ const (
 	ROOM_INVITE  NotificationCategory = "ROOM_INVITE"
 	ROOM_JOINED  NotificationCategory = "ROOM_JOINED"
 	WELCOME_ROOM NotificationCategory = "WELCOME_ROOM"
+	TEST         NotificationCategory = "TEST"
 )
 
 type Frequency int

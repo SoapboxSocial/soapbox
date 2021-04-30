@@ -58,6 +58,8 @@ func (l *Limiter) ShouldSendNotification(target Target, notification *PushNotifi
 		return !l.isLimited(limiterKeyForFollowerEvent(target.ID, notification))
 	case WELCOME_ROOM:
 		return true // @TODO
+	case TEST:
+		return target.ID == 1 || target.ID == 75
 	default:
 		return false
 	}

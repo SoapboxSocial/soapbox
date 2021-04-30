@@ -80,7 +80,6 @@ func TestWorker(t *testing.T) {
 	<-pool
 }
 
-
 func TestWorker_WithUnregistered(t *testing.T) {
 	mr, err := miniredis.Run()
 	if err != nil {

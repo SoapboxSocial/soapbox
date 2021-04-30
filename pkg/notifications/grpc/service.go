@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/notifications/pb"
 	"github.com/soapboxsocial/soapbox/pkg/notifications/worker"
 )
@@ -12,11 +13,13 @@ type Service struct {
 	pb.UnimplementedNotificationServiceServer
 
 	dispatch *worker.Dispatcher
+	settings *notifications.Settings
 }
 
-func NewService(dispatch *worker.Dispatcher) *Service {
+func NewService(dispatch *worker.Dispatcher, settings *notifications.Settings) *Service {
 	return &Service{
 		dispatch: dispatch,
+		settings: settings,
 	}
 }
 
@@ -27,7 +30,16 @@ func (s *Service) SendNotification(_ context.Context, request *pb.SendNotificati
 	}
 
 	push := notification.ToPushNotification()
-	targets := request.Targets
+	ids := request.Targets
+
+	targets, err := s.settings.GetSettingsForUsers(ids)
+	if err != nil {
+		return nil, errors.New("failed to get targets")
+	}
+
+	for _, target := range targets {
+		s.dispatch.Dispatch(target, push)
+	}
 
 	return &pb.SendNotificationResponse{Success: true}, nil
 }

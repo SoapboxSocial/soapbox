@@ -10,10 +10,11 @@ import (
 )
 
 var (
-	followerCooldown   = 15 * time.Minute
-	roomInviteCooldown = 3 * time.Minute
-	roomMemberCooldown = 5 * time.Minute
-	roomCooldown       = 10 * time.Minute
+	followerCooldown     = 15 * time.Minute
+	roomInviteCooldown   = 3 * time.Minute
+	roomMemberCooldown   = 5 * time.Minute
+	roomCooldown         = 10 * time.Minute
+	reEngagementCooldown = (24 * time.Hour) * 7
 )
 
 type Limiter struct {
@@ -55,7 +56,9 @@ func (l *Limiter) ShouldSendNotification(target Target, notification *PushNotifi
 			return false
 		}
 
-		return !l.isLimited(limiterKeyForFollowerEvent(target.ID, notification))
+		return !l.isLimited(limiterKeyForFollower(target.ID, notification))
+	case REENGAGEMENT:
+		return !l.isLimited(limiterKeyForFollower(target.ID, notification))
 	case WELCOME_ROOM:
 		return true // @TODO
 	case TEST:
@@ -75,7 +78,9 @@ func (l *Limiter) SentNotification(target Target, notification *PushNotification
 	case ROOM_INVITE:
 		l.limit(limiterKeyForRoomInvite(target.ID, notification), roomInviteCooldown)
 	case NEW_FOLLOWER:
-		l.limit(limiterKeyForFollowerEvent(target.ID, notification), followerCooldown)
+		l.limit(limiterKeyForFollower(target.ID, notification), followerCooldown)
+	case REENGAGEMENT:
+		l.limit(limiterKeyForReEngagement(target.ID), reEngagementCooldown)
 	}
 }
 
@@ -113,8 +118,12 @@ func limiterKeyForRoomInvite(target int, notification *PushNotification) string 
 	return fmt.Sprintf("notifications_limit_%d_room_invite_%v", target, notification.Arguments["id"])
 }
 
-func limiterKeyForFollowerEvent(target int, notification *PushNotification) string {
+func limiterKeyForFollower(target int, notification *PushNotification) string {
 	return fmt.Sprintf("notifications_limit_%d_follower_%v", target, notification.Arguments["id"])
+}
+
+func limiterKeyForReEngagement(target int) string {
+	return fmt.Sprintf("notifications_limit_%d_re_engagement", target)
 }
 
 func getLimitForRoomFrequency(frequency Frequency, base time.Duration) time.Duration {

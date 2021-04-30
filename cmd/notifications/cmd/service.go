@@ -32,19 +32,19 @@ type Conf struct {
 	GRPC  conf.AddrConf     `mapstructure:"grpc"`
 }
 
-var service = &cobra.Command{
-	Use:   "service",
-	Short: "runs a notification service",
-	RunE:  runService,
+var workerCmd = &cobra.Command{
+	Use:   "worker",
+	Short: "runs a notification worker",
+	RunE:  runWorker,
 }
 
 var file string
 
 func init() {
-	service.Flags().StringVarP(&file, "config", "c", "config.toml", "config file")
+	workerCmd.Flags().StringVarP(&file, "config", "c", "config.toml", "config file")
 }
 
-func runService(*cobra.Command, []string) error {
+func runWorker(*cobra.Command, []string) error {
 	config := &Conf{}
 	err := conf.Load(file, config)
 	if err != nil {

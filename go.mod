@@ -12,6 +12,7 @@ require (
 	github.com/dukex/mixpanel v0.0.0-20180925151559-f8d5594f958e
 	github.com/elastic/go-elasticsearch/v7 v7.12.0
 	github.com/felixge/httpsnoop v1.0.2 // indirect
+	github.com/gammazero/deque v0.0.0-20210428094316-be2070954176 // indirect
 	github.com/go-redis/redis/v8 v8.8.2
 	github.com/golang/mock v1.5.0
 	github.com/gomodule/redigo v1.8.4 // indirect
@@ -27,10 +28,10 @@ require (
 	github.com/pion/ion-log v1.0.1 // indirect
 	github.com/pion/ion-sfu v1.9.8
 	github.com/pion/rtp v1.6.5 // indirect
-	github.com/pion/webrtc/v3 v3.0.26
+	github.com/pion/webrtc/v3 v3.0.27
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.10.0 // indirect
-	github.com/prometheus/common v0.21.0 // indirect
+	github.com/prometheus/common v0.23.0 // indirect
 	github.com/rs/zerolog v1.21.0 // indirect
 	github.com/segmentio/ksuid v1.0.3
 	github.com/sendgrid/rest v2.6.3+incompatible // indirect
@@ -46,9 +47,9 @@ require (
 	github.com/yuin/gopher-lua v0.0.0-20200816102855-ee81675732da // indirect
 	go.opentelemetry.io/otel v0.20.0 // indirect
 	golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b // indirect
-	golang.org/x/net v0.0.0-20210423184538-5f58ad60dda6 // indirect
+	golang.org/x/net v0.0.0-20210428140749-89ef3d95e781 // indirect
 	golang.org/x/sys v0.0.0-20210426230700-d19ff857e887 // indirect
-	google.golang.org/genproto v0.0.0-20210426193834-eac7f76ac494 // indirect
+	google.golang.org/genproto v0.0.0-20210429181445-86c259c2b4ab // indirect
 	google.golang.org/grpc v1.37.0
 	google.golang.org/protobuf v1.26.0
 	gopkg.in/ini.v1 v1.62.0 // indirect

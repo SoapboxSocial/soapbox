@@ -42,19 +42,7 @@ var workerCmd = &cobra.Command{
 	RunE:  runWorker,
 }
 
-var file string
-
-func init() {
-	workerCmd.Flags().StringVarP(&file, "config", "c", "config.toml", "config file")
-}
-
 func runWorker(*cobra.Command, []string) error {
-	config := &Conf{}
-	err := conf.Load(file, config)
-	if err != nil {
-		return errors.Wrap(err, "failed to parse config")
-	}
-
 	rdb := redis.NewRedis(config.Redis)
 	queue := pubsub.NewQueue(rdb)
 

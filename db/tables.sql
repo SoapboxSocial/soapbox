@@ -219,7 +219,7 @@ CREATE TABLE IF NOT EXISTS sent_notifications (
     target INT NOT NULL,
     origin INT,
     category TEXT NOT NULL,
-    sent TIMESTAMPTZ,
+    sent TIMESTAMPTZ NOT NULL,
     opened TIMESTAMPTZ,
     FOREIGN KEY (target) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (origin) REFERENCES users(id)

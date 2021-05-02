@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/soapboxsocial/soapbox/pkg/devices"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 )
@@ -90,8 +92,11 @@ func (w *Worker) handle(job Job) {
 
 	log.Printf("pushing %s to %d targets", job.Notification.Category, len(d))
 
+	notification := *job.Notification
+	notification.UUID = uuid.NewString()
+
 	for i := 0; i < w.maxRetries; i++ {
-		d = w.sendNotifications(d, *job.Notification)
+		d = w.sendNotifications(d, notification)
 		if len(d) == 0 {
 			break
 		}

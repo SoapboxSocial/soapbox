@@ -219,8 +219,9 @@ CREATE TABLE IF NOT EXISTS sent_notifications (
     target INT NOT NULL,
     origin INT,
     category TEXT NOT NULL,
-    sent TIMESTAMPTZ NOT NULL,
+    sent TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     opened TIMESTAMPTZ,
+    room VARCHAR(27),
     FOREIGN KEY (target) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (origin) REFERENCES users(id)
 );

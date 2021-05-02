@@ -4,5 +4,5 @@ type Notification struct {
 	ID       string
 	Origin   *int
 	Category string
-	Room    *string
+	Room     *string
 }

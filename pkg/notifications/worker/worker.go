@@ -7,15 +7,17 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/soapboxsocial/soapbox/pkg/analytics"
 	"github.com/soapboxsocial/soapbox/pkg/devices"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 )
 
 type Config struct {
-	APNS    notifications.APNS
-	Limiter *notifications.Limiter
-	Devices *devices.Backend
-	Store   *notifications.Storage
+	APNS      notifications.APNS
+	Limiter   *notifications.Limiter
+	Devices   *devices.Backend
+	Store     *notifications.Storage
+	Analytics *analytics.Backend
 }
 
 type Worker struct {
@@ -103,6 +105,11 @@ func (w *Worker) handle(job Job) {
 	}
 
 	for _, target := range targets {
+		err := w.config.Analytics.AddSentNotification(target.ID, job.Notification.AnalyticsNotification())
+		if err != nil {
+			log.Printf("analytics.AddSentNotification err: %s\n", err)
+		}
+
 		w.config.Limiter.SentNotification(target, job.Notification)
 
 		store := getNotificationForStore(job.Notification)

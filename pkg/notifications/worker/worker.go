@@ -88,7 +88,7 @@ func (w *Worker) handle(job Job) {
 		return
 	}
 
-	log.Printf("pushing %s to %d targets", job.Notification.Category, len(d))
+	log.Printf("pushing %s to %d targets", job.Notification.Category, len(targets))
 
 	for i := 0; i < w.maxRetries; i++ {
 		d = w.sendNotifications(d, *job.Notification)

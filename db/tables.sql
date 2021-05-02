@@ -226,4 +226,4 @@ CREATE TABLE IF NOT EXISTS sent_notifications (
     FOREIGN KEY (origin) REFERENCES users(id)
 );
 
-CREATE UNIQUE INDEX idx_notification_metrics ON notification_metrics (id, target);
+CREATE UNIQUE INDEX idx_sent_notifications ON sent_notifications (id, target);

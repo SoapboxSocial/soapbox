@@ -102,12 +102,8 @@ func NewRoomInviteNotificationWithName(id, from, room string) *PushNotification 
 }
 
 func (n PushNotification) AnalyticsNotification() analytics.Notification {
-	val := analytics.Notification{
+	return analytics.Notification{
 		ID:       n.UUID,
 		Category: string(n.Category),
 	}
-
-	// @TODO SOURCE
-
-	return val
 }

@@ -105,7 +105,12 @@ func (w *Worker) handle(job Job) {
 	}
 
 	for _, target := range targets {
-		err := w.config.Analytics.AddSentNotification(target.ID, job.Notification.AnalyticsNotification())
+		an := job.Notification.AnalyticsNotification()
+		if job.Origin != 0 {
+			an.Origin = &job.Origin
+		}
+
+		err := w.config.Analytics.AddSentNotification(target.ID, an)
 		if err != nil {
 			log.Printf("analytics.AddSentNotification err: %s\n", err)
 		}

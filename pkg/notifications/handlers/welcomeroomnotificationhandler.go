@@ -20,6 +20,10 @@ func (w WelcomeRoomNotificationHandler) Type() pubsub.EventType {
 	return pubsub.EventTypeWelcomeRoom
 }
 
+func (w WelcomeRoomNotificationHandler) Origin(*pubsub.Event) (int, error) {
+	return 0, ErrNoCreator
+}
+
 func (w WelcomeRoomNotificationHandler) Targets(event *pubsub.Event) ([]notifications.Target, error) {
 	return []notifications.Target{
 		{ID: 1},

@@ -30,6 +30,15 @@ func (r RoomCreationNotificationHandler) Type() pubsub.EventType {
 	return pubsub.EventTypeNewRoom
 }
 
+func (r RoomCreationNotificationHandler) Origin(event *pubsub.Event) (int, error) {
+	creator, err := event.GetInt("creator")
+	if err != nil {
+		return 0, err
+	}
+
+	return creator, nil
+}
+
 func (r RoomCreationNotificationHandler) Targets(event *pubsub.Event) ([]notifications.Target, error) {
 	creator, err := event.GetInt("creator")
 	if err != nil {

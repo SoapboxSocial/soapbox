@@ -25,6 +25,15 @@ func (r RoomJoinNotificationHandler) Type() pubsub.EventType {
 	return pubsub.EventTypeRoomJoin
 }
 
+func (r RoomJoinNotificationHandler) Origin(event *pubsub.Event) (int, error) {
+	creator, err := event.GetInt("creator")
+	if err != nil {
+		return 0, err
+	}
+
+	return creator, nil
+}
+
 func (r RoomJoinNotificationHandler) Targets(event *pubsub.Event) ([]notifications.Target, error) {
 	creator, err := event.GetInt("creator")
 	if err != nil {

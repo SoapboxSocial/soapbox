@@ -106,7 +106,14 @@ func runWorker(*cobra.Command, []string) error {
 					return
 				}
 
-				dispatch.Dispatch(targets, notification)
+				id, err := h.Origin(event)
+				if err != nil {
+					if err != handlers.ErrNoCreator {
+						log.Printf("failed to get origin: %s", err)
+					}
+				}
+
+				dispatch.Dispatch(id, targets, notification)
 			}(event)
 		}
 	}()

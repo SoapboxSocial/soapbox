@@ -104,11 +104,7 @@ func runWorker(*cobra.Command, []string) error {
 					return
 				}
 
-				log.Printf("pushing %s to %d targets", notification.Category, len(targets))
-
-				for _, target := range targets {
-					dispatch.Dispatch(target, notification)
-				}
+				dispatch.Dispatch(targets, notification)
 			}(event)
 		}
 	}()

@@ -3,6 +3,6 @@ package worker
 import "github.com/soapboxsocial/soapbox/pkg/notifications"
 
 type Job struct {
-	Target       notifications.Target
+	Targets      []notifications.Target
 	Notification *notifications.PushNotification
 }

@@ -41,8 +41,8 @@ type PushNotification struct {
 	Category   NotificationCategory   `json:"category"`
 	Alert      Alert                  `json:"alert"`
 	Arguments  map[string]interface{} `json:"arguments"`
+	UUID       string                 `json:"uuid"`
 	CollapseID string                 `json:"-"`
-	UUID       string                 `json:"-"`
 }
 
 // Notification is stored in redis for the notification endpoint.

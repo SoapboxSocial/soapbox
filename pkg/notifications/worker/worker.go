@@ -105,7 +105,7 @@ func (w *Worker) handle(job Job) {
 	}
 
 	for _, target := range targets {
-		an := job.Notification.AnalyticsNotification()
+		an := notification.AnalyticsNotification()
 		if job.Origin != 0 {
 			an.Origin = &job.Origin
 		}

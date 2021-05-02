@@ -47,8 +47,8 @@ func (d *Dispatcher) dispatch() {
 	}
 }
 
-func (d *Dispatcher) Dispatch(target notifications.Target, notification *notifications.PushNotification) {
+func (d *Dispatcher) Dispatch(targets []notifications.Target, notification *notifications.PushNotification) {
 	go func() {
-		d.jobs <- Job{Target: target, Notification: notification}
+		d.jobs <- Job{Targets: targets, Notification: notification}
 	}()
 }

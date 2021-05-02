@@ -63,7 +63,6 @@ func TestWorker(t *testing.T) {
 	mock.
 		ExpectPrepare("^SELECT (.+)").
 		ExpectQuery().
-		WithArgs(id).
 		WillReturnRows(mock.NewRows([]string{"token"}).FromCSVString(device))
 
 	apns.EXPECT().Send(gomock.Eq(device), gomock.Any()).Return(nil)
@@ -73,7 +72,7 @@ func TestWorker(t *testing.T) {
 	queue := <-pool
 
 	queue <- worker.Job{
-		Target:       notifications.Target{ID: id, RoomFrequency: notifications.Frequent, Follows: true},
+		Targets:      []notifications.Target{{ID: id, RoomFrequency: notifications.Frequent, Follows: true}},
 		Notification: &notification,
 	}
 
@@ -128,7 +127,6 @@ func TestWorker_WithUnregistered(t *testing.T) {
 	mock.
 		ExpectPrepare("^SELECT (.+)").
 		ExpectQuery().
-		WithArgs(id).
 		WillReturnRows(mock.NewRows([]string{"token"}).FromCSVString(device))
 
 	apns.EXPECT().Send(gomock.Eq(device), gomock.Any()).Return(notifications.ErrDeviceUnregistered)
@@ -144,7 +142,7 @@ func TestWorker_WithUnregistered(t *testing.T) {
 	queue := <-pool
 
 	queue <- worker.Job{
-		Target:       notifications.Target{ID: id, RoomFrequency: notifications.Frequent, Follows: true},
+		Targets:      []notifications.Target{{ID: id, RoomFrequency: notifications.Frequent, Follows: true}},
 		Notification: &notification,
 	}
 

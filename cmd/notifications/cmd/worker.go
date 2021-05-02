@@ -30,6 +30,9 @@ import (
 )
 
 type Conf struct {
+	Notifications struct {
+		Environment string `mapstructure:"environment"`
+	} `mapstructure:"notifications"`
 	APNS  conf.AppleConf    `mapstructure:"apns"`
 	Redis conf.RedisConf    `mapstructure:"redis"`
 	DB    conf.PostgresConf `mapstructure:"db"`
@@ -65,7 +68,16 @@ func runWorker(*cobra.Command, []string) error {
 		AuthKey: authKey,
 		KeyID:   config.APNS.KeyID,
 		TeamID:  config.APNS.TeamID,
-	}).Production()
+	})
+
+	switch config.Notifications.Environment {
+	case "dev":
+		client.Development()
+	case "prod":
+		client.Production()
+	default:
+		return fmt.Errorf("unknown environment \"%s\"", config.Notifications.Environment)
+	}
 
 	settings := notifications.NewSettings(db)
 	notificationHandlers := setupHandlers(db, config.Rooms, settings)

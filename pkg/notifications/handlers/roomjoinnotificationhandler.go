@@ -2,19 +2,11 @@ package handlers
 
 import (
 	"context"
-	"errors"
 	"strconv"
 
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
-)
-
-var (
-	errRoomPrivate   = errors.New("room is private")
-	errNoRoomMembers = errors.New("room is empty")
-	errFailedToSort  = errors.New("failed to sort")
-	errEmptyResponse = errors.New("empty response")
 )
 
 type RoomJoinNotificationHandler struct {

@@ -78,6 +78,10 @@ func (w *Worker) handle(job Job) {
 		targets = append(targets, target)
 	}
 
+	if len(ids) == 0 {
+		return
+	}
+
 	d, err := w.config.Devices.GetDevicesForUsers(ids)
 	if err != nil {
 		log.Printf("devicesBackend.GetDevicesForUsers err: %v\n", err)

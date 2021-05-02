@@ -1,24 +1,28 @@
 package handlers
 
 import (
+	"context"
 	"errors"
 
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
+	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
 const testAccountID = 19
 
 type RoomCreationNotificationHandler struct {
-	targets *notifications.Settings
-	users   *users.UserBackend
+	targets  *notifications.Settings
+	users    *users.UserBackend
+	metadata pb.RoomServiceClient
 }
 
-func NewRoomCreationNotificationHandler(targets *notifications.Settings, u *users.UserBackend) *RoomCreationNotificationHandler {
+func NewRoomCreationNotificationHandler(targets *notifications.Settings, u *users.UserBackend, metadata pb.RoomServiceClient) *RoomCreationNotificationHandler {
 	return &RoomCreationNotificationHandler{
-		targets: targets,
-		users:   u,
+		targets:  targets,
+		users:    u,
+		metadata: metadata,
 	}
 }
 
@@ -54,24 +58,26 @@ func (r RoomCreationNotificationHandler) Build(event *pubsub.Event) (*notificati
 		return nil, errors.New("test account started room")
 	}
 
-	// Quick fix
-	//name := event.Params["name"].(string)
 	room := event.Params["id"].(string)
+	response, err := r.metadata.GetRoom(context.Background(), &pb.GetRoomRequest{Id: room})
+	if err != nil {
+		return nil, err
+	}
+
+	if response == nil || response.State == nil {
+		return nil, errEmptyResponse
+	}
 
 	displayName, err := r.getDisplayName(creator)
 	if err != nil {
 		return nil, err
 	}
 
-	notification := func() *notifications.PushNotification {
-		//if name == "" {
-		return notifications.NewRoomNotification(room, displayName, creator)
-		//}
+	if response.State.Name != "" {
+		return notifications.NewRoomNotificationWithName(room, displayName, response.State.Name), nil
+	}
 
-		//return notifications.NewRoomNotificationWithName(room, displayName, name)
-	}()
-
-	return notification, nil
+	return notifications.NewRoomNotification(room, displayName, creator), nil
 }
 
 func (r RoomCreationNotificationHandler) getDisplayName(id int) (string, error) {

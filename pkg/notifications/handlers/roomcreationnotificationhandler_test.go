@@ -5,10 +5,13 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/golang/mock/gomock"
 
+	"github.com/soapboxsocial/soapbox/mocks"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/notifications/handlers"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
+	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
@@ -25,9 +28,15 @@ func TestRoomCreationNotificationHandler_Targets(t *testing.T) {
 	}
 	defer db.Close()
 
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	m := mocks.NewMockRoomServiceClient(ctrl)
+
 	handler := handlers.NewRoomCreationNotificationHandler(
 		notifications.NewSettings(db),
 		nil,
+		m,
 	)
 
 	mock.
@@ -56,7 +65,12 @@ func TestRoomCreationNotificationHandler_Build(t *testing.T) {
 	}
 	defer db.Close()
 
-	handler := handlers.NewRoomCreationNotificationHandler(notifications.NewSettings(nil), users.NewUserBackend(db))
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	m := mocks.NewMockRoomServiceClient(ctrl)
+
+	handler := handlers.NewRoomCreationNotificationHandler(notifications.NewSettings(nil), users.NewUserBackend(db), m)
 
 	displayName := "foo"
 	user := 12
@@ -68,6 +82,8 @@ func TestRoomCreationNotificationHandler_Build(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	m.EXPECT().GetRoom(gomock.Any(), gomock.Any(), gomock.Any()).Return(&pb.GetRoomResponse{State: &pb.RoomState{Id: "123"}}, nil)
 
 	mock.
 		ExpectPrepare("SELECT").

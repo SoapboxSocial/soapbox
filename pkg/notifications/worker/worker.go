@@ -90,7 +90,7 @@ func (w *Worker) handle(job Job) {
 		return
 	}
 
-	log.Printf("pushing %s to %d targets", job.Notification.Category, len(d))
+	log.Printf("pushing %s to %d targets", job.Notification.Category, len(targets))
 
 	notification := *job.Notification
 	notification.UUID = uuid.NewString()

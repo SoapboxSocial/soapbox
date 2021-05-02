@@ -140,18 +140,20 @@ func setupHandlers(db *sqldb.DB, roomsAddr conf.AddrConf, settings *notification
 	followers := handlers.NewFollowerNotificationHandler(settings, userBackend)
 	notificationHandlers[followers.Type()] = followers
 
-	creation := handlers.NewRoomCreationNotificationHandler(settings, userBackend)
-	notificationHandlers[creation.Type()] = creation
-
-	invite := handlers.NewRoomInviteNotificationHandler(settings, userBackend)
-	notificationHandlers[invite.Type()] = invite
-
 	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", roomsAddr.Host, roomsAddr.Port), grpc.WithInsecure())
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	join := handlers.NewRoomJoinNotificationHandler(settings, roompb.NewRoomServiceClient(conn))
+	metadata := roompb.NewRoomServiceClient(conn)
+
+	creation := handlers.NewRoomCreationNotificationHandler(settings, userBackend, metadata)
+	notificationHandlers[creation.Type()] = creation
+
+	invite := handlers.NewRoomInviteNotificationHandler(settings, userBackend)
+	notificationHandlers[invite.Type()] = invite
+
+	join := handlers.NewRoomJoinNotificationHandler(settings, metadata)
 	notificationHandlers[join.Type()] = join
 
 	welcome := handlers.NewWelcomeRoomNotificationHandler(userBackend)

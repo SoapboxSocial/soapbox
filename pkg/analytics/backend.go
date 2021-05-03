@@ -23,7 +23,7 @@ func (b *Backend) AddSentNotification(user int, notification Notification) error
 }
 
 func (b *Backend) MarkNotificationRead(user int, uuid string) error {
-	stmt, err := b.db.Prepare("UPDATE sent_notifications SET opened = NOW() WHERE user_id = $1 AND id = $2;")
+	stmt, err := b.db.Prepare("UPDATE sent_notifications SET opened = NOW() WHERE target = $1 AND id = $2;")
 	if err != nil {
 		return err
 	}

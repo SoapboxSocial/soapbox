@@ -2,6 +2,7 @@ package apple
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/sideshow/apns2"
@@ -53,6 +54,10 @@ func (a *APNS) Send(target string, notification notifications.PushNotification) 
 
 	if resp.Reason == apns2.ReasonUnregistered {
 		return notifications.ErrDeviceUnregistered
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to send code: %d reason: %s", resp.StatusCode, resp.Reason)
 	}
 
 	return nil

@@ -17,6 +17,7 @@ require (
 	github.com/golang/mock v1.5.0
 	github.com/gomodule/redigo v1.8.4 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/google/uuid v1.2.0
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/websocket v1.4.2
@@ -24,8 +25,6 @@ require (
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/pelletier/go-toml v1.9.0 // indirect
-	github.com/pion/ice/v2 v2.1.7 // indirect
-	github.com/pion/ion-log v1.0.1 // indirect
 	github.com/pion/ion-sfu v1.9.8
 	github.com/pion/rtp v1.6.5 // indirect
 	github.com/pion/webrtc/v3 v3.0.27

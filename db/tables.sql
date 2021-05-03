@@ -213,3 +213,17 @@ CREATE TRIGGER insert_notification_settings_trigger
     AFTER INSERT ON users
     FOR EACH ROW
     EXECUTE PROCEDURE insert_notification_settings();
+
+CREATE TABLE IF NOT EXISTS sent_notifications (
+    id VARCHAR(36) NOT NULL,
+    target INT NOT NULL,
+    origin INT,
+    category TEXT NOT NULL,
+    sent TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    opened TIMESTAMPTZ,
+    room VARCHAR(27),
+    FOREIGN KEY (target) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (origin) REFERENCES users(id)
+);
+
+CREATE UNIQUE INDEX idx_sent_notifications ON sent_notifications (id, target);

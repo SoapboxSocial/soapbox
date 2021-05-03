@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc"
 
+	"github.com/soapboxsocial/soapbox/pkg/analytics"
 	"github.com/soapboxsocial/soapbox/pkg/apple"
 	"github.com/soapboxsocial/soapbox/pkg/conf"
 	"github.com/soapboxsocial/soapbox/pkg/devices"
@@ -84,10 +85,11 @@ func runWorker(*cobra.Command, []string) error {
 	events := queue.Subscribe(pubsub.RoomTopic, pubsub.UserTopic)
 
 	dispatch := worker.NewDispatcher(5, &worker.Config{
-		APNS:    apple.NewAPNS(config.APNS.Bundle, client),
-		Limiter: notifications.NewLimiter(rdb, currentRoom),
-		Devices: devices.NewBackend(db),
-		Store:   notifications.NewStorage(rdb),
+		APNS:      apple.NewAPNS(config.APNS.Bundle, client),
+		Limiter:   notifications.NewLimiter(rdb, currentRoom),
+		Devices:   devices.NewBackend(db),
+		Store:     notifications.NewStorage(rdb),
+		Analytics: analytics.NewBackend(db),
 	})
 	dispatch.Run()
 
@@ -116,7 +118,14 @@ func runWorker(*cobra.Command, []string) error {
 					return
 				}
 
-				dispatch.Dispatch(targets, notification)
+				id, err := h.Origin(event)
+				if err != nil {
+					if err != handlers.ErrNoCreator {
+						log.Printf("failed to get origin: %s", err)
+					}
+				}
+
+				dispatch.Dispatch(id, targets, notification)
 			}(event)
 		}
 	}()

@@ -5,15 +5,19 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
+
+	"github.com/soapboxsocial/soapbox/pkg/analytics"
 	"github.com/soapboxsocial/soapbox/pkg/devices"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 )
 
 type Config struct {
-	APNS    notifications.APNS
-	Limiter *notifications.Limiter
-	Devices *devices.Backend
-	Store   *notifications.Storage
+	APNS      notifications.APNS
+	Limiter   *notifications.Limiter
+	Devices   *devices.Backend
+	Store     *notifications.Storage
+	Analytics *analytics.Backend
 }
 
 type Worker struct {
@@ -90,14 +94,27 @@ func (w *Worker) handle(job Job) {
 
 	log.Printf("pushing %s to %d targets", job.Notification.Category, len(targets))
 
+	notification := *job.Notification
+	notification.UUID = uuid.NewString()
+
 	for i := 0; i < w.maxRetries; i++ {
-		d = w.sendNotifications(d, *job.Notification)
+		d = w.sendNotifications(d, notification)
 		if len(d) == 0 {
 			break
 		}
 	}
 
 	for _, target := range targets {
+		an := notification.AnalyticsNotification()
+		if job.Origin != 0 {
+			an.Origin = &job.Origin
+		}
+
+		err := w.config.Analytics.AddSentNotification(target.ID, an)
+		if err != nil {
+			log.Printf("analytics.AddSentNotification err: %s\n", err)
+		}
+
 		w.config.Limiter.SentNotification(target, job.Notification)
 
 		store := getNotificationForStore(job.Notification)

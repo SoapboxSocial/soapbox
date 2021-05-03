@@ -22,6 +22,15 @@ func (f FollowerNotificationHandler) Type() pubsub.EventType {
 	return pubsub.EventTypeNewFollower
 }
 
+func (f FollowerNotificationHandler) Origin(event *pubsub.Event) (int, error) {
+	follower, err := event.GetInt("follower")
+	if err != nil {
+		return 0, err
+	}
+
+	return follower, nil
+}
+
 func (f FollowerNotificationHandler) Targets(event *pubsub.Event) ([]notifications.Target, error) {
 	targetID, err := event.GetInt("id")
 	if err != nil {

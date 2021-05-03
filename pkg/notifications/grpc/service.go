@@ -37,7 +37,7 @@ func (s *Service) SendNotification(_ context.Context, request *pb.SendNotificati
 		return nil, errors.New("failed to get targets")
 	}
 
-	s.dispatch.Dispatch(targets, push)
+	s.dispatch.Dispatch(0, targets, push)
 
 	return &pb.SendNotificationResponse{Success: true}, nil
 }

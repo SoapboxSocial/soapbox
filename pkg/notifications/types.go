@@ -1,5 +1,7 @@
 package notifications
 
+import "github.com/soapboxsocial/soapbox/pkg/analytics"
+
 type NotificationCategory string
 
 const (
@@ -39,6 +41,7 @@ type PushNotification struct {
 	Category   NotificationCategory   `json:"category"`
 	Alert      Alert                  `json:"alert"`
 	Arguments  map[string]interface{} `json:"arguments"`
+	UUID       string                 `json:"uuid"`
 	CollapseID string                 `json:"-"`
 }
 
@@ -95,5 +98,12 @@ func NewRoomInviteNotificationWithName(id, from, room string) *PushNotification 
 		},
 		Arguments:  map[string]interface{}{"id": id},
 		CollapseID: id,
+	}
+}
+
+func (n PushNotification) AnalyticsNotification() analytics.Notification {
+	return analytics.Notification{
+		ID:       n.UUID,
+		Category: string(n.Category),
 	}
 }

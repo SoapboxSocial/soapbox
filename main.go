@@ -17,6 +17,7 @@ import (
 
 	"github.com/soapboxsocial/soapbox/pkg/account"
 	"github.com/soapboxsocial/soapbox/pkg/activeusers"
+	"github.com/soapboxsocial/soapbox/pkg/analytics"
 	usersapi "github.com/soapboxsocial/soapbox/pkg/api/users"
 	"github.com/soapboxsocial/soapbox/pkg/apple"
 	"github.com/soapboxsocial/soapbox/pkg/blocks"
@@ -216,6 +217,12 @@ func main() {
 	minisRouter := minisEndpoint.Router()
 	minisRouter.Use(amw.Middleware)
 	mount(r, "/v1/minis", minisRouter)
+
+	analyticsBackend := analytics.NewBackend(db)
+	analyticsEndpoint := analytics.NewEndpoint(analyticsBackend)
+	analyticsRouter := analyticsEndpoint.Router()
+	analyticsRouter.Use(amw.Middleware)
+	mount(r, "/v1/analytics", analyticsRouter)
 
 	err = http.ListenAndServe(fmt.Sprintf(":%d", config.Listen.Port), httputil.CORS(r))
 	if err != nil {

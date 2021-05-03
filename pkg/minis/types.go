@@ -1,5 +1,7 @@
 package minis
 
+type Scores map[int]int
+
 type Mini struct {
 	ID          int    `json:"id"`
 	Name        string `json:"name"`

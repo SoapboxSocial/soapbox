@@ -39,3 +39,7 @@ func (e *Endpoint) listMinis(w http.ResponseWriter, r *http.Request) {
 		log.Printf("failed to encode: %v", err)
 	}
 }
+
+func (e *Endpoint) saveScores(w http.ResponseWriter, r *http.Request) {
+
+}

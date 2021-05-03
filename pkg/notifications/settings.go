@@ -56,6 +56,19 @@ func (s *Settings) GetSettingsFollowingUser(user int) ([]Target, error) {
 	return targets, nil
 }
 
+func (s *Settings) GetSettingsForRecentlyActiveUsers() ([]Target, error) {
+	query := `SELECT notification_settings.user_id, notification_settings.room_frequency, notification_settings.follows FROM notification_settings
+		INNER JOIN (
+		    SELECT user_id
+		    FROM (
+		        SELECT user_id FROM current_rooms
+		        UNION
+		        SELECT user_id FROM user_active_times WHERE last_active > (NOW() - INTERVAL '15 MINUTE')
+			) AS foo GROUP BY user_id) active ON notification_settings.user_id = active.user_id`
+
+	return nil, nil
+}
+
 func (s *Settings) GetSettingsForUsers(users []int64) ([]Target, error) {
 	query := fmt.Sprintf(
 		"SELECT notification_settings.user_id, notification_settings.room_frequency, notification_settings.follows FROM notification_settings WHERE user_id IN (%s)",

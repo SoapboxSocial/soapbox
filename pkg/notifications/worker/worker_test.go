@@ -69,6 +69,11 @@ func TestWorker(t *testing.T) {
 
 	apns.EXPECT().Send(gomock.Eq(device), gomock.Any()).Return(nil)
 
+	mock.
+		ExpectPrepare("^INSERT (.+)").
+		ExpectExec().
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
 	w.Start()
 
 	queue := <-pool

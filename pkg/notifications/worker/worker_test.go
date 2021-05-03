@@ -9,6 +9,7 @@ import (
 	"github.com/golang/mock/gomock"
 
 	"github.com/soapboxsocial/soapbox/mocks"
+	"github.com/soapboxsocial/soapbox/pkg/analytics"
 	"github.com/soapboxsocial/soapbox/pkg/devices"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/notifications/worker"
@@ -40,10 +41,11 @@ func TestWorker(t *testing.T) {
 	w := worker.NewWorker(
 		pool,
 		&worker.Config{
-			APNS:    apns,
-			Limiter: notifications.NewLimiter(rdb, rooms.NewCurrentRoomBackend(db)),
-			Devices: devices.NewBackend(db),
-			Store:   notifications.NewStorage(rdb),
+			APNS:      apns,
+			Limiter:   notifications.NewLimiter(rdb, rooms.NewCurrentRoomBackend(db)),
+			Devices:   devices.NewBackend(db),
+			Store:     notifications.NewStorage(rdb),
+			Analytics: analytics.NewBackend(db),
 		},
 	)
 
@@ -104,10 +106,11 @@ func TestWorker_WithUnregistered(t *testing.T) {
 	w := worker.NewWorker(
 		pool,
 		&worker.Config{
-			APNS:    apns,
-			Limiter: notifications.NewLimiter(rdb, rooms.NewCurrentRoomBackend(db)),
-			Devices: devices.NewBackend(db),
-			Store:   notifications.NewStorage(rdb),
+			APNS:      apns,
+			Limiter:   notifications.NewLimiter(rdb, rooms.NewCurrentRoomBackend(db)),
+			Devices:   devices.NewBackend(db),
+			Store:     notifications.NewStorage(rdb),
+			Analytics: analytics.NewBackend(db),
 		},
 	)
 

@@ -1,6 +1,7 @@
 package analytics
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -41,11 +42,12 @@ func (e *Endpoint) openedNotification(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := e.backend.MarkNotificationRead(userID, id)
-	if err != nil {
-		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeMissingParameter, "invalid")
-		return
-	}
+	go func() {
+		err := e.backend.MarkNotificationRead(userID, id)
+		if err != nil {
+			log.Printf("backend.MarkNotificationRead err: %s", err)
+		}
+	}()
 
 	httputil.JsonSuccess(w)
 }

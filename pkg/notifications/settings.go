@@ -49,7 +49,7 @@ func (s *Settings) GetSettingsForRecentlyActiveUsers() ([]Target, error) {
 		        SELECT user_id FROM user_active_times WHERE last_active > (NOW() - INTERVAL '15 MINUTE')
 			) foo GROUP BY user_id) active
 		ON notification_settings.user_id = active.user_id
-		INNER JOIN user_room_time ON user_room_time.user_id = active.user_id  WHERE seconds >= 36000 AND visibility = 'public'`,
+		INNER JOIN user_room_time ON user_room_time.user_id = active.user_id  WHERE seconds >= 36000 AND visibility = 'public' AND active.user_id NOT IN (1, 75, 962);`,
 	)
 }
 

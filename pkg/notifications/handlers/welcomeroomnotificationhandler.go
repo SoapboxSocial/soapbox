@@ -40,8 +40,8 @@ func (w WelcomeRoomNotificationHandler) Targets(*pubsub.Event) ([]notifications.
 		log.Printf("settings.GetSettingsForRecentlyActiveUsers err: %s", err)
 	}
 
-	if len(targets) > 6 {
-		targets = targets[:5]
+	if len(targets) > 7 {
+		targets = targets[:6]
 	}
 
 	return append(targets, staticTargets...), nil

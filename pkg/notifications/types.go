@@ -28,6 +28,7 @@ type Target struct {
 	ID            int       `json:"-"`
 	RoomFrequency Frequency `json:"room_frequency"`
 	Follows       bool      `json:"follows"`
+	WelcomeRooms  bool      `json:"welcome_rooms"`
 }
 
 type Alert struct {

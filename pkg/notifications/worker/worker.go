@@ -32,7 +32,7 @@ type Worker struct {
 }
 
 func NewWorker(pool chan<- chan Job, config *Config) *Worker {
-	return &Worker{
+	w := &Worker{
 		workers:      pool,
 		jobs:         make(chan Job),
 		quit:         make(chan bool),
@@ -40,6 +40,10 @@ func NewWorker(pool chan<- chan Job, config *Config) *Worker {
 		config:       config,
 		maxRetries:   5,
 	}
+
+	go w.wipeDevices()
+
+	return w
 }
 
 func (w *Worker) Start() {

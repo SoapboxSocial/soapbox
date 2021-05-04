@@ -23,7 +23,7 @@ func (s *Settings) GetSettingsFor(user int) (*Target, error) {
 	row := stmt.QueryRow(user)
 
 	target := &Target{}
-	err = row.Scan(&target.ID, &target.RoomFrequency, &target.Follows)
+	err = row.Scan(&target.ID, &target.RoomFrequency, &target.Follows, &target.WelcomeRooms)
 	if err != nil {
 		return nil, err
 	}

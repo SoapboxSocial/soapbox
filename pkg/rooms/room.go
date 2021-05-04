@@ -681,6 +681,14 @@ func (r *Room) onOpenMini(from int, mini *pb.Command_OpenMini) {
 		return
 	}
 
+	r.mux.RLock()
+	link := r.link
+	r.mux.RUnlock()
+
+	if link != "" {
+		return
+	}
+
 	_ = r.queue.Publish(
 		pubsub.RoomTopic,
 		pubsub.NewRoomOpenMiniEvent(from, int(mini.Id), r.id),

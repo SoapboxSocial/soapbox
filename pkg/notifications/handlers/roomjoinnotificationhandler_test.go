@@ -61,7 +61,7 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 		{
 			event: pubsub.NewRoomJoinEvent("xyz", 1, pubsub.Public),
 			state: &pb.RoomState{Name: "Test", Members: []*pb.RoomState_RoomMember{
-				{DisplayName: "foo"},
+				{DisplayName: "foo", Id: 1},
 			}},
 			notification: &notifications.PushNotification{
 				Category: notifications.ROOM_JOINED,
@@ -76,7 +76,7 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 		{
 			event: pubsub.NewRoomJoinEvent("xyz", 1, pubsub.Public),
 			state: &pb.RoomState{Members: []*pb.RoomState_RoomMember{
-				{DisplayName: "foo"},
+				{DisplayName: "foo", Id: 1},
 			}},
 			notification: &notifications.PushNotification{
 				Category: notifications.ROOM_JOINED,
@@ -91,7 +91,7 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 		{
 			event: pubsub.NewRoomJoinEvent("xyz", 1, pubsub.Public),
 			state: &pb.RoomState{Name: "Test", Members: []*pb.RoomState_RoomMember{
-				{DisplayName: "foo"}, {DisplayName: "bar"},
+				{DisplayName: "foo", Id: 1}, {DisplayName: "bar"},
 			}},
 			notification: &notifications.PushNotification{
 				Category: notifications.ROOM_JOINED,
@@ -106,7 +106,7 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 		{
 			event: pubsub.NewRoomJoinEvent("xyz", 1, pubsub.Public),
 			state: &pb.RoomState{Name: "Test", Members: []*pb.RoomState_RoomMember{
-				{DisplayName: "foo"}, {DisplayName: "bar"}, {DisplayName: "baz"},
+				{DisplayName: "foo", Id: 1}, {DisplayName: "bar"}, {DisplayName: "baz"},
 			}},
 			notification: &notifications.PushNotification{
 				Category: notifications.ROOM_JOINED,

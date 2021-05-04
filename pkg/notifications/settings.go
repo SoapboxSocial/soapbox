@@ -32,32 +32,15 @@ func (s *Settings) GetSettingsFor(user int) (*Target, error) {
 }
 
 func (s *Settings) GetSettingsFollowingUser(user int) ([]Target, error) {
-	stmt, err := s.db.Prepare("SELECT notification_settings.user_id, notification_settings.room_frequency, notification_settings.follows FROM notification_settings INNER JOIN followers ON (notification_settings.user_id = followers.follower) WHERE followers.user_id = $1")
-	if err != nil {
-		return nil, err
-	}
-
-	rows, err := stmt.Query(user)
-	if err != nil {
-		return nil, err
-	}
-
-	targets := make([]Target, 0)
-	for rows.Next() {
-		target := Target{}
-		err = rows.Scan(&target.ID, &target.RoomFrequency, &target.Follows)
-		if err != nil {
-			continue
-		}
-
-		targets = append(targets, target)
-	}
-
-	return targets, nil
+	return s.getSettings(
+		"SELECT notification_settings.user_id, notification_settings.room_frequency, notification_settings.follows FROM notification_settings INNER JOIN followers ON (notification_settings.user_id = followers.follower) WHERE followers.user_id = $1",
+		user,
+	)
 }
 
 func (s *Settings) GetSettingsForRecentlyActiveUsers() ([]Target, error) {
-	query := `SELECT notification_settings.user_id, notification_settings.room_frequency, notification_settings.follows FROM notification_settings
+	return s.getSettings(
+		`SELECT notification_settings.user_id, notification_settings.room_frequency, notification_settings.follows FROM notification_settings
 		INNER JOIN (
 			SELECT user_id
 		    FROM (
@@ -66,9 +49,8 @@ func (s *Settings) GetSettingsForRecentlyActiveUsers() ([]Target, error) {
 		        SELECT user_id FROM user_active_times WHERE last_active > (NOW() - INTERVAL '15 MINUTE')
 			) foo GROUP BY user_id) active
 		ON notification_settings.user_id = active.user_id
-		INNER JOIN user_room_time ON user_room_time.user_id = active.user_id  WHERE seconds >= 36000 AND visibility = 'public'`
-
-	return nil, nil
+		INNER JOIN user_room_time ON user_room_time.user_id = active.user_id  WHERE seconds >= 36000 AND visibility = 'public'`,
+	)
 }
 
 func (s *Settings) GetSettingsForUsers(users []int64) ([]Target, error) {
@@ -77,12 +59,16 @@ func (s *Settings) GetSettingsForUsers(users []int64) ([]Target, error) {
 		join(users, ","),
 	)
 
+	return s.getSettings(query)
+}
+
+func (s *Settings) getSettings(query string, args ...interface{}) ([]Target, error) {
 	stmt, err := s.db.Prepare(query)
 	if err != nil {
 		return nil, err
 	}
 
-	rows, err := stmt.Query()
+	rows, err := stmt.Query(args...)
 	if err != nil {
 		return nil, err
 	}

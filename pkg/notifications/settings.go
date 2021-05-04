@@ -15,7 +15,7 @@ func NewSettings(db *sql.DB) *Settings {
 }
 
 func (s *Settings) GetSettingsFor(user int) (*Target, error) {
-	stmt, err := s.db.Prepare("SELECT user_id, room_frequency, follows FROM notification_settings WHERE user_id = $1;")
+	stmt, err := s.db.Prepare("SELECT user_id, room_frequency, follows, welcome_rooms FROM notification_settings WHERE user_id = $1;")
 	if err != nil {
 		return nil, err
 	}
@@ -33,14 +33,14 @@ func (s *Settings) GetSettingsFor(user int) (*Target, error) {
 
 func (s *Settings) GetSettingsFollowingUser(user int) ([]Target, error) {
 	return s.getSettings(
-		"SELECT notification_settings.user_id, notification_settings.room_frequency, notification_settings.follows FROM notification_settings INNER JOIN followers ON (notification_settings.user_id = followers.follower) WHERE followers.user_id = $1",
+		"SELECT notification_settings.user_id, notification_settings.room_frequency, notification_settings.follows, notification_settings.welcome_rooms FROM notification_settings INNER JOIN followers ON (notification_settings.user_id = followers.follower) WHERE followers.user_id = $1",
 		user,
 	)
 }
 
 func (s *Settings) GetSettingsForRecentlyActiveUsers() ([]Target, error) {
 	return s.getSettings(
-		`SELECT notification_settings.user_id, notification_settings.room_frequency, notification_settings.follows FROM notification_settings
+		`SELECT notification_settings.user_id, notification_settings.room_frequency, notification_settings.follows, notification_settings.welcome_rooms FROM notification_settings
 		INNER JOIN (
 			SELECT user_id
 		    FROM (
@@ -55,20 +55,20 @@ func (s *Settings) GetSettingsForRecentlyActiveUsers() ([]Target, error) {
 
 func (s *Settings) GetSettingsForUsers(users []int64) ([]Target, error) {
 	query := fmt.Sprintf(
-		"SELECT notification_settings.user_id, notification_settings.room_frequency, notification_settings.follows FROM notification_settings WHERE user_id IN (%s)",
+		"SELECT notification_settings.user_id, notification_settings.room_frequency, notification_settings.follows, notification_settings.welcome_rooms FROM notification_settings WHERE user_id IN (%s)",
 		join(users, ","),
 	)
 
 	return s.getSettings(query)
 }
 
-func (s *Settings) UpdateSettingsFor(user int, frequency Frequency, follows bool) error {
-	stmt, err := s.db.Prepare("UPDATE notification_settings SET room_frequency = $1, follows = $2 WHERE user_id = $3;")
+func (s *Settings) UpdateSettingsFor(user int, frequency Frequency, follows, welcomeRooms bool) error {
+	stmt, err := s.db.Prepare("UPDATE notification_settings SET room_frequency = $1, follows = $2, welcome_rooms = $3 WHERE user_id = $4;")
 	if err != nil {
 		return err
 	}
 
-	_, err = stmt.Exec(frequency, follows, user)
+	_, err = stmt.Exec(frequency, follows, welcomeRooms, user)
 	return err
 }
 
@@ -103,7 +103,7 @@ func (s *Settings) getSettings(query string, args ...interface{}) ([]Target, err
 	targets := make([]Target, 0)
 	for rows.Next() {
 		target := Target{}
-		err = rows.Scan(&target.ID, &target.RoomFrequency, &target.Follows)
+		err = rows.Scan(&target.ID, &target.RoomFrequency, &target.Follows, &target.WelcomeRooms)
 		if err != nil {
 			continue
 		}

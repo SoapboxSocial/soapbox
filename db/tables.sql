@@ -196,6 +196,7 @@ CREATE TABLE IF NOT EXISTS notification_settings (
     user_id INT NOT NULL,
     room_frequency INT NOT NULL DEFAULT 2,
     follows BOOLEAN NOT NULL DEFAULT true,
+    welcome_rooms BOOLEAN NOT NULL DEFAULT true,
     CHECK (room_frequency IN (0, 1, 2, 3)), -- 0 = off, 1 - infrequent, 2 - normal, 3 - frequent
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );

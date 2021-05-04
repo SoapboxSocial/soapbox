@@ -74,6 +74,10 @@ func (r RoomJoinNotificationHandler) Build(event *pubsub.Event) (*notifications.
 		return nil, errNoRoomMembers
 	}
 
+	if !contains(state.Members, int64(creator)) {
+		return nil, errMemberNoLongerPresent
+	}
+
 	translation := "join_room_with_"
 	args := make([]string, 0)
 
@@ -136,4 +140,14 @@ func members(members []*pb.RoomState_RoomMember, first int) []string {
 	names = append(names, members[0].DisplayName, members[1].DisplayName)
 
 	return names
+}
+
+func contains(members []*pb.RoomState_RoomMember, id int64) bool {
+	for _, member := range members {
+		if member.Id == id {
+			return true
+		}
+	}
+
+	return false
 }

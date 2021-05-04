@@ -62,31 +62,6 @@ func (s *Settings) GetSettingsForUsers(users []int64) ([]Target, error) {
 	return s.getSettings(query)
 }
 
-func (s *Settings) getSettings(query string, args ...interface{}) ([]Target, error) {
-	stmt, err := s.db.Prepare(query)
-	if err != nil {
-		return nil, err
-	}
-
-	rows, err := stmt.Query(args...)
-	if err != nil {
-		return nil, err
-	}
-
-	targets := make([]Target, 0)
-	for rows.Next() {
-		target := Target{}
-		err = rows.Scan(&target.ID, &target.RoomFrequency, &target.Follows)
-		if err != nil {
-			continue
-		}
-
-		targets = append(targets, target)
-	}
-
-	return targets, nil
-}
-
 func (s *Settings) UpdateSettingsFor(user int, frequency Frequency, follows bool) error {
 	stmt, err := s.db.Prepare("UPDATE notification_settings SET room_frequency = $1, follows = $2 WHERE user_id = $3;")
 	if err != nil {
@@ -112,4 +87,29 @@ func join(elems []int64, sep string) string {
 	}
 
 	return res
+}
+
+func (s *Settings) getSettings(query string, args ...interface{}) ([]Target, error) {
+	stmt, err := s.db.Prepare(query)
+	if err != nil {
+		return nil, err
+	}
+
+	rows, err := stmt.Query(args...)
+	if err != nil {
+		return nil, err
+	}
+
+	targets := make([]Target, 0)
+	for rows.Next() {
+		target := Target{}
+		err = rows.Scan(&target.ID, &target.RoomFrequency, &target.Follows)
+		if err != nil {
+			continue
+		}
+
+		targets = append(targets, target)
+	}
+
+	return targets, nil
 }

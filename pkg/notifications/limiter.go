@@ -9,11 +9,14 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/rooms"
 )
 
+// @TODO MAYBE PUT LIMITS INTO DB? MAKES THEM EASIER TO QUERY.
+
 var (
 	followerCooldown     = 15 * time.Minute
 	roomInviteCooldown   = 3 * time.Minute
 	roomMemberCooldown   = 5 * time.Minute
 	roomCooldown         = 10 * time.Minute
+	welcomeRoomCooldown  = 30 * time.Minute
 	reEngagementCooldown = (24 * time.Hour) * 7
 )
 
@@ -60,7 +63,15 @@ func (l *Limiter) ShouldSendNotification(target Target, notification *PushNotifi
 	case REENGAGEMENT:
 		return !l.isLimited(limiterKeyForFollower(target.ID, notification))
 	case WELCOME_ROOM:
-		return true // @TODO
+		if target.ID == 1 || target.ID == 75 || target.ID == 962 {
+			return true
+		}
+
+		if !target.WelcomeRooms {
+			return false
+		}
+
+		return !l.isLimited(limiterKeyForWelcomeRoom(target.ID))
 	case TEST:
 		return target.ID == 1 || target.ID == 75
 	default:
@@ -81,6 +92,12 @@ func (l *Limiter) SentNotification(target Target, notification *PushNotification
 		l.limit(limiterKeyForFollower(target.ID, notification), followerCooldown)
 	case REENGAGEMENT:
 		l.limit(limiterKeyForReEngagement(target.ID), reEngagementCooldown)
+	case WELCOME_ROOM:
+		if target.ID == 1 || target.ID == 75 || target.ID == 962 {
+			return
+		}
+
+		l.limit(limiterKeyForWelcomeRoom(target.ID), welcomeRoomCooldown)
 	}
 }
 
@@ -124,6 +141,10 @@ func limiterKeyForFollower(target int, notification *PushNotification) string {
 
 func limiterKeyForReEngagement(target int) string {
 	return fmt.Sprintf("notifications_limit_%d_re_engagement", target)
+}
+
+func limiterKeyForWelcomeRoom(target int) string {
+	return fmt.Sprintf("notifications_limit_%d_welcome_room", target)
 }
 
 func getLimitForRoomFrequency(frequency Frequency, base time.Duration) time.Duration {

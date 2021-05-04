@@ -12,8 +12,6 @@ var staticTargets = []notifications.Target{
 	{ID: 1},
 	{ID: 75},
 	{ID: 962},
-	{ID: 13},
-	{ID: 6},
 }
 
 type WelcomeRoomNotificationHandler struct {

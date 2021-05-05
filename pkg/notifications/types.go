@@ -12,6 +12,7 @@ const (
 	WELCOME_ROOM NotificationCategory = "WELCOME_ROOM"
 	REENGAGEMENT NotificationCategory = "REENGAGEMENT"
 	TEST         NotificationCategory = "TEST"
+	INFO         NotificationCategory = "INFO"
 )
 
 type Frequency int

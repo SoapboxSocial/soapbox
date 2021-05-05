@@ -224,7 +224,7 @@ CREATE TABLE IF NOT EXISTS sent_notifications (
     opened TIMESTAMPTZ,
     room VARCHAR(27),
     FOREIGN KEY (target) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (origin) REFERENCES users(id)
+    FOREIGN KEY (origin) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE UNIQUE INDEX idx_sent_notifications ON sent_notifications (id, target);

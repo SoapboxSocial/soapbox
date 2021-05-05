@@ -319,7 +319,13 @@ func (m *Endpoint) updateNotificationSettings(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	err = m.targets.UpdateSettingsFor(id, notifications.Frequency(frequency), follows)
+	welcomeRooms, err := strconv.ParseBool(r.Form.Get("welcome_rooms"))
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	err = m.targets.UpdateSettingsFor(id, notifications.Frequency(frequency), follows, welcomeRooms)
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
 		return

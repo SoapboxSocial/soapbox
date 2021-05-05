@@ -1,18 +1,28 @@
 package handlers
 
 import (
+	"log"
+
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
-type WelcomeRoomNotificationHandler struct {
-	users *users.UserBackend
+var staticTargets = []notifications.Target{
+	{ID: 1},
+	{ID: 75},
+	{ID: 962},
 }
 
-func NewWelcomeRoomNotificationHandler(u *users.UserBackend) *WelcomeRoomNotificationHandler {
+type WelcomeRoomNotificationHandler struct {
+	users    *users.UserBackend
+	settings *notifications.Settings
+}
+
+func NewWelcomeRoomNotificationHandler(u *users.UserBackend, settings *notifications.Settings) *WelcomeRoomNotificationHandler {
 	return &WelcomeRoomNotificationHandler{
-		users: u,
+		users:    u,
+		settings: settings,
 	}
 }
 
@@ -24,14 +34,17 @@ func (w WelcomeRoomNotificationHandler) Origin(*pubsub.Event) (int, error) {
 	return 0, ErrNoCreator
 }
 
-func (w WelcomeRoomNotificationHandler) Targets(event *pubsub.Event) ([]notifications.Target, error) {
-	return []notifications.Target{
-		{ID: 1},
-		{ID: 75},
-		{ID: 962},
-		{ID: 13},
-		{ID: 6},
-	}, nil
+func (w WelcomeRoomNotificationHandler) Targets(*pubsub.Event) ([]notifications.Target, error) {
+	targets, err := w.settings.GetSettingsForRecentlyActiveUsers()
+	if err != nil {
+		log.Printf("settings.GetSettingsForRecentlyActiveUsers err: %s", err)
+	}
+
+	if len(targets) > 7 {
+		targets = targets[:6]
+	}
+
+	return append(targets, staticTargets...), nil
 }
 
 func (w WelcomeRoomNotificationHandler) Build(event *pubsub.Event) (*notifications.PushNotification, error) {

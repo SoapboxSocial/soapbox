@@ -33,7 +33,7 @@ func TestFollowerNotificationHandler_Targets(t *testing.T) {
 	mock.
 		ExpectPrepare("SELECT").
 		ExpectQuery().
-		WillReturnRows(mock.NewRows([]string{"user_id", "room_frequency", "follows"}).FromCSVString("1,2,false"))
+		WillReturnRows(mock.NewRows([]string{"user_id", "room_frequency", "follows", "welcome_rooms"}).FromCSVString("1,2,false,false"))
 
 	target, err := handler.Targets(event)
 	if err != nil {
@@ -41,7 +41,7 @@ func TestFollowerNotificationHandler_Targets(t *testing.T) {
 	}
 
 	expected := []notifications.Target{
-		{ID: 1, RoomFrequency: 2, Follows: false},
+		{ID: 1, RoomFrequency: 2, Follows: false, WelcomeRooms: false},
 	}
 
 	if !reflect.DeepEqual(target, expected) {

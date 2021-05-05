@@ -177,7 +177,7 @@ func setupHandlers(db *sqldb.DB, roomsAddr conf.AddrConf, settings *notification
 	join := handlers.NewRoomJoinNotificationHandler(settings, metadata)
 	notificationHandlers[join.Type()] = join
 
-	welcome := handlers.NewWelcomeRoomNotificationHandler(userBackend)
+	welcome := handlers.NewWelcomeRoomNotificationHandler(userBackend, settings)
 	notificationHandlers[welcome.Type()] = welcome
 
 	return notificationHandlers

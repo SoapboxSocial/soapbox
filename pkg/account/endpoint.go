@@ -42,6 +42,7 @@ func (e *Endpoint) delete(w http.ResponseWriter, r *http.Request) {
 
 	err := e.backend.DeleteAccount(id)
 	if err != nil {
+		log.Printf("backend.DeleteAccount err: %s", err)
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeNotFound, "failed to delete")
 		return
 	}

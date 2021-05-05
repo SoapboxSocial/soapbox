@@ -36,7 +36,7 @@ func TestRoomJoinNotificationHandler_Targets(t *testing.T) {
 	mock.
 		ExpectPrepare("SELECT").
 		ExpectQuery().
-		WillReturnRows(mock.NewRows([]string{"user_id", "room_frequency", "follows"}).FromCSVString("1,2,false"))
+		WillReturnRows(mock.NewRows([]string{"user_id", "room_frequency", "follows", "welcome_rooms"}).FromCSVString("1,2,false,false"))
 
 	target, err := handler.Targets(event)
 	if err != nil {
@@ -44,7 +44,7 @@ func TestRoomJoinNotificationHandler_Targets(t *testing.T) {
 	}
 
 	expected := []notifications.Target{
-		{ID: 1, RoomFrequency: 2, Follows: false},
+		{ID: 1, RoomFrequency: 2, Follows: false, WelcomeRooms: false},
 	}
 
 	if !reflect.DeepEqual(target, expected) {
@@ -61,7 +61,7 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 		{
 			event: pubsub.NewRoomJoinEvent("xyz", 1, pubsub.Public),
 			state: &pb.RoomState{Name: "Test", Members: []*pb.RoomState_RoomMember{
-				{DisplayName: "foo"},
+				{DisplayName: "foo", Id: 1},
 			}},
 			notification: &notifications.PushNotification{
 				Category: notifications.ROOM_JOINED,
@@ -76,7 +76,7 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 		{
 			event: pubsub.NewRoomJoinEvent("xyz", 1, pubsub.Public),
 			state: &pb.RoomState{Members: []*pb.RoomState_RoomMember{
-				{DisplayName: "foo"},
+				{DisplayName: "foo", Id: 1},
 			}},
 			notification: &notifications.PushNotification{
 				Category: notifications.ROOM_JOINED,
@@ -91,7 +91,7 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 		{
 			event: pubsub.NewRoomJoinEvent("xyz", 1, pubsub.Public),
 			state: &pb.RoomState{Name: "Test", Members: []*pb.RoomState_RoomMember{
-				{DisplayName: "foo"}, {DisplayName: "bar"},
+				{DisplayName: "foo", Id: 1}, {DisplayName: "bar"},
 			}},
 			notification: &notifications.PushNotification{
 				Category: notifications.ROOM_JOINED,
@@ -106,7 +106,7 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 		{
 			event: pubsub.NewRoomJoinEvent("xyz", 1, pubsub.Public),
 			state: &pb.RoomState{Name: "Test", Members: []*pb.RoomState_RoomMember{
-				{DisplayName: "foo"}, {DisplayName: "bar"}, {DisplayName: "baz"},
+				{DisplayName: "foo", Id: 1}, {DisplayName: "bar"}, {DisplayName: "baz"},
 			}},
 			notification: &notifications.PushNotification{
 				Category: notifications.ROOM_JOINED,

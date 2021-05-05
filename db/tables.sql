@@ -207,6 +207,7 @@ CREATE TABLE IF NOT EXISTS notification_settings (
     user_id INT NOT NULL,
     room_frequency INT NOT NULL DEFAULT 2,
     follows BOOLEAN NOT NULL DEFAULT true,
+    welcome_rooms BOOLEAN NOT NULL DEFAULT true,
     CHECK (room_frequency IN (0, 1, 2, 3)), -- 0 = off, 1 - infrequent, 2 - normal, 3 - frequent
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
@@ -234,7 +235,7 @@ CREATE TABLE IF NOT EXISTS sent_notifications (
     opened TIMESTAMPTZ,
     room VARCHAR(27),
     FOREIGN KEY (target) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (origin) REFERENCES users(id)
+    FOREIGN KEY (origin) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE UNIQUE INDEX idx_sent_notifications ON sent_notifications (id, target);

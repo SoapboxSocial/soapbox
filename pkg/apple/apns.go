@@ -52,7 +52,7 @@ func (a *APNS) Send(target string, notification notifications.PushNotification) 
 		return notifications.ErrRetryRequired
 	}
 
-	if resp.Reason == apns2.ReasonUnregistered {
+	if resp.Reason == apns2.ReasonUnregistered || resp.Reason == apns2.ReasonBadDeviceToken {
 		return notifications.ErrDeviceUnregistered
 	}
 

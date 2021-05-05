@@ -17,12 +17,13 @@ import (
 type Member struct {
 	mux sync.RWMutex
 
-	id       int
-	name     string
-	username string
-	image    string
-	muted    bool
-	role     pb.RoomState_RoomMember_Role
+	id        int
+	name      string
+	username  string
+	image     string
+	muted     bool
+	connected bool
+	role      pb.RoomState_RoomMember_Role
 
 	joined time.Time
 
@@ -40,6 +41,7 @@ func NewMember(id int, name, username, image string, peer *sfu.Peer, signal sign
 		username:    username,
 		image:       image,
 		muted:       true,
+		connected:   false,
 		peer:        peer,
 		signal:      signal,
 		role:        pb.RoomState_RoomMember_ROLE_REGULAR,
@@ -49,6 +51,12 @@ func NewMember(id int, name, username, image string, peer *sfu.Peer, signal sign
 
 	m.setup()
 	return m
+}
+
+func (m *Member) IsConnected() bool {
+	m.mux.RLock()
+	defer m.mux.RUnlock()
+	return m.connected
 }
 
 func (m *Member) Joined() time.Time {
@@ -67,6 +75,13 @@ func (m *Member) Unmute() {
 	defer m.mux.Unlock()
 
 	m.muted = false
+}
+
+func (m *Member) MarkConnected() {
+	m.mux.Lock()
+	defer m.mux.Unlock()
+
+	m.connected = true
 }
 
 func (m *Member) SetRole(role pb.RoomState_RoomMember_Role) {

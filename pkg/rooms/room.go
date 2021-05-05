@@ -270,12 +270,17 @@ func (r *Room) Handle(me *Member) {
 	r.mux.Unlock()
 
 	me.peer.OnICEConnectionStateChange = func(state webrtc.ICEConnectionState) {
-		log.Printf("connection state changed %d", state)
+		log.Printf("connection state changed %d for peer %d", state, me.id)
 
 		switch state {
 		case webrtc.ICEConnectionStateConnected:
+			if me.IsConnected() {
+				return
+			}
+
 			r.onJoinHandlerFunc(r, me, isNew)
 			r.SetConnectionState(open)
+			me.MarkConnected()
 
 			r.notify(&pb.Event{
 				From: int64(me.id),

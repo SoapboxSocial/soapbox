@@ -215,7 +215,6 @@ func main() {
 	minisEndpoint := minis.NewEndpoint(minisBackend)
 
 	minisRouter := minisEndpoint.Router()
-	minisRouter.Use(amw.Middleware)
 	mount(r, "/v1/minis", minisRouter)
 
 	analyticsBackend := analytics.NewBackend(db)

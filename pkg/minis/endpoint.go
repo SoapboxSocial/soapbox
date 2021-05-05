@@ -11,6 +11,7 @@ import (
 
 type Endpoint struct {
 	backend *Backend
+
 }
 
 func NewEndpoint(backend *Backend) *Endpoint {
@@ -23,6 +24,8 @@ func (e *Endpoint) Router() *mux.Router {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/", e.listMinis).Methods("GET")
+
+	r.HandleFunc("/scores", e.saveScores).Methods("POST")
 
 	return r
 }
@@ -42,4 +45,6 @@ func (e *Endpoint) listMinis(w http.ResponseWriter, r *http.Request) {
 
 func (e *Endpoint) saveScores(w http.ResponseWriter, r *http.Request) {
 
+
+	httputil.JsonSuccess(w)
 }

@@ -7,25 +7,27 @@ import (
 	"github.com/gorilla/mux"
 
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
+	"github.com/soapboxsocial/soapbox/pkg/http/middlewares"
 )
 
 type Endpoint struct {
 	backend *Backend
-
+	auth    *middlewares.AuthenticationMiddleware
 }
 
-func NewEndpoint(backend *Backend) *Endpoint {
+func NewEndpoint(backend *Backend, auth *middlewares.AuthenticationMiddleware) *Endpoint {
 	return &Endpoint{
 		backend: backend,
+		auth:    auth,
 	}
 }
 
 func (e *Endpoint) Router() *mux.Router {
 	r := mux.NewRouter()
 
-	r.HandleFunc("/", e.listMinis).Methods("GET")
-
 	r.HandleFunc("/scores", e.saveScores).Methods("POST")
+
+	r.Path("/").Methods("GET").Handler(e.auth.Middleware(http.HandlerFunc(e.listMinis)))
 
 	return r
 }
@@ -44,7 +46,6 @@ func (e *Endpoint) listMinis(w http.ResponseWriter, r *http.Request) {
 }
 
 func (e *Endpoint) saveScores(w http.ResponseWriter, r *http.Request) {
-
 
 	httputil.JsonSuccess(w)
 }

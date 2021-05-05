@@ -212,7 +212,7 @@ func main() {
 	mount(r, "/v1/search", searchRouter)
 
 	minisBackend := minis.NewBackend(db)
-	minisEndpoint := minis.NewEndpoint(minisBackend)
+	minisEndpoint := minis.NewEndpoint(minisBackend, amw)
 
 	minisRouter := minisEndpoint.Router()
 	mount(r, "/v1/minis", minisRouter)

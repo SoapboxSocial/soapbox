@@ -71,3 +71,7 @@ func (s *Service) RegisterWelcomeRoom(_ context.Context, request *pb.RegisterWel
 
 	return &pb.RegisterWelcomeRoomResponse{Id: id}, nil
 }
+
+func (s *Service) FilterUsersThatCanJoin(_ context.Context, request *pb.FilterUsersThatCanJoinRequest) (*pb.FilterUsersThatCanJoinResponse, error) {
+
+}

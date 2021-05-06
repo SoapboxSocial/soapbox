@@ -26,6 +26,8 @@ type RoomServiceClient interface {
 	CloseRoom(ctx context.Context, in *CloseRoomRequest, opts ...grpc.CallOption) (*CloseRoomResponse, error)
 	// Registers a welcome room on the server and returns its ID.
 	RegisterWelcomeRoom(ctx context.Context, in *RegisterWelcomeRoomRequest, opts ...grpc.CallOption) (*RegisterWelcomeRoomResponse, error)
+	// Checks if users can join a room.
+	FilterUsersThatCanJoin(ctx context.Context, in *FilterUsersThatCanJoinRequest, opts ...grpc.CallOption) (*FilterUsersThatCanJoinResponse, error)
 }
 
 type roomServiceClient struct {
@@ -72,6 +74,15 @@ func (c *roomServiceClient) RegisterWelcomeRoom(ctx context.Context, in *Registe
 	return out, nil
 }
 
+func (c *roomServiceClient) FilterUsersThatCanJoin(ctx context.Context, in *FilterUsersThatCanJoinRequest, opts ...grpc.CallOption) (*FilterUsersThatCanJoinResponse, error) {
+	out := new(FilterUsersThatCanJoinResponse)
+	err := c.cc.Invoke(ctx, "/soapbox.v1.RoomService/FilterUsersThatCanJoin", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RoomServiceServer is the server API for RoomService service.
 // All implementations must embed UnimplementedRoomServiceServer
 // for forward compatibility
@@ -84,6 +95,8 @@ type RoomServiceServer interface {
 	CloseRoom(context.Context, *CloseRoomRequest) (*CloseRoomResponse, error)
 	// Registers a welcome room on the server and returns its ID.
 	RegisterWelcomeRoom(context.Context, *RegisterWelcomeRoomRequest) (*RegisterWelcomeRoomResponse, error)
+	// Checks if users can join a room.
+	FilterUsersThatCanJoin(context.Context, *FilterUsersThatCanJoinRequest) (*FilterUsersThatCanJoinResponse, error)
 	mustEmbedUnimplementedRoomServiceServer()
 }
 
@@ -102,6 +115,9 @@ func (UnimplementedRoomServiceServer) CloseRoom(context.Context, *CloseRoomReque
 }
 func (UnimplementedRoomServiceServer) RegisterWelcomeRoom(context.Context, *RegisterWelcomeRoomRequest) (*RegisterWelcomeRoomResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RegisterWelcomeRoom not implemented")
+}
+func (UnimplementedRoomServiceServer) FilterUsersThatCanJoin(context.Context, *FilterUsersThatCanJoinRequest) (*FilterUsersThatCanJoinResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FilterUsersThatCanJoin not implemented")
 }
 func (UnimplementedRoomServiceServer) mustEmbedUnimplementedRoomServiceServer() {}
 
@@ -188,6 +204,24 @@ func _RoomService_RegisterWelcomeRoom_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RoomService_FilterUsersThatCanJoin_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FilterUsersThatCanJoinRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RoomServiceServer).FilterUsersThatCanJoin(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/soapbox.v1.RoomService/FilterUsersThatCanJoin",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RoomServiceServer).FilterUsersThatCanJoin(ctx, req.(*FilterUsersThatCanJoinRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // RoomService_ServiceDesc is the grpc.ServiceDesc for RoomService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -210,6 +244,10 @@ var RoomService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RegisterWelcomeRoom",
 			Handler:    _RoomService_RegisterWelcomeRoom_Handler,
+		},
+		{
+			MethodName: "FilterUsersThatCanJoin",
+			Handler:    _RoomService_FilterUsersThatCanJoin_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

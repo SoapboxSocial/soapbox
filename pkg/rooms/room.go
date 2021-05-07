@@ -362,15 +362,14 @@ func (r *Room) ContainsUsers(users []int) bool {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
 
-	return has(r.members, func(me *Member) bool {
-		for _, id := range users {
-			if id == me.id {
-				return true
-			}
+	for _, id := range users {
+		_, ok := r.members[id]
+		if ok {
+			return true
 		}
+	}
 
-		return false
-	})
+	return false
 }
 
 func has(members map[int]*Member, fn func(*Member) bool) bool {

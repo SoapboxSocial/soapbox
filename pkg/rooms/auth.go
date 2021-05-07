@@ -30,7 +30,7 @@ func (a *Auth) CanJoin(room string, user int) bool {
 		return false
 	}
 
-	return a.containsBlockers(r, user)
+	return !a.containsBlockers(r, user)
 }
 
 // FilterWhoCanJoin checks for a set of users who can join a room.

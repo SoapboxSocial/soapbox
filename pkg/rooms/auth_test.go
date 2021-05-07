@@ -84,9 +84,9 @@ func TestAuth_FilterWhoCanJoin(t *testing.T) {
 	user := int64(12)
 
 	tests := []struct {
-		Kicked     bool
-		Blocked     bool
-		Expected   []int64
+		Kicked   bool
+		Blocked  bool
+		Expected []int64
 	}{
 		{Kicked: false, Blocked: false, Expected: []int64{user}},
 		{Kicked: true, Blocked: false, Expected: []int64{}},

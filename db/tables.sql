@@ -184,7 +184,7 @@ CREATE TRIGGER insert_notification_settings_trigger
     FOR EACH ROW
     EXECUTE PROCEDURE insert_notification_settings();
 
-CREATE TABLE IF NOT EXISTS sent_notifications (
+CREATE TABLE IF NOT EXISTS notification_analytics (
     id VARCHAR(36) NOT NULL,
     target INT NOT NULL,
     origin INT,
@@ -196,4 +196,4 @@ CREATE TABLE IF NOT EXISTS sent_notifications (
     FOREIGN KEY (origin) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE UNIQUE INDEX idx_sent_notifications ON sent_notifications (id, target);
+CREATE UNIQUE INDEX idx_notification_analytics ON notification_analytics (id, target);

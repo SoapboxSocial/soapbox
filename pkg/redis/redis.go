@@ -2,6 +2,7 @@
 package redis
 
 import (
+	"crypto/tls"
 	"fmt"
 
 	"github.com/go-redis/redis/v8"
@@ -12,8 +13,9 @@ import (
 // NewRedis returns a new redis instance created using the config
 func NewRedis(config conf.RedisConf) *redis.Client {
 	return redis.NewClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%d", config.Host, config.Port),
-		Password: config.Password,
-		DB:       config.Database,
+		Addr:      fmt.Sprintf("%s:%d", config.Host, config.Port),
+		Password:  config.Password,
+		DB:        config.Database,
+		TLSConfig: &tls.Config{},
 	})
 }

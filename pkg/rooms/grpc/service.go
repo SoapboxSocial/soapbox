@@ -75,5 +75,14 @@ func (s *Service) RegisterWelcomeRoom(_ context.Context, request *pb.RegisterWel
 }
 
 func (s *Service) FilterUsersThatCanJoin(_ context.Context, request *pb.FilterUsersThatCanJoinRequest) (*pb.FilterUsersThatCanJoinResponse, error) {
+	if request == nil || request.Room == "" {
+		return nil, errors.New("no message")
+	}
 
+	if request.Ids == nil || len(request.Ids) == 0 {
+		return &pb.FilterUsersThatCanJoinResponse{Ids: []int64{}}, nil
+	}
+
+	users := s.auth.FilterWhoCanJoin(request.Room, request.Ids)
+	return &pb.FilterUsersThatCanJoinResponse{Ids: users}, nil
 }

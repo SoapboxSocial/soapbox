@@ -45,7 +45,35 @@ func (r RoomJoinNotificationHandler) Targets(event *pubsub.Event) ([]notificatio
 		return nil, err
 	}
 
-	return targets, nil
+	ids := make([]int64, 0)
+	for _, target := range targets {
+		ids = append(ids, int64(target.ID))
+	}
+
+	room := event.Params["id"].(string)
+
+	resp, err := r.metadata.FilterUsersThatCanJoin(
+		context.TODO(),
+		&pb.FilterUsersThatCanJoinRequest{Room: room, Ids: ids},
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(ids) == len(resp.Ids) {
+		return targets, nil
+	}
+
+	res := make([]notifications.Target, 0)
+	for _, target := range targets {
+		if containsId(resp.Ids, int64(target.ID)) {
+			res = append(res, target)
+			continue
+		}
+	}
+
+	return res, nil
 }
 
 func (r RoomJoinNotificationHandler) Build(event *pubsub.Event) (*notifications.PushNotification, error) {
@@ -125,6 +153,16 @@ func (r RoomJoinNotificationHandler) Build(event *pubsub.Event) (*notifications.
 	}
 
 	return notification, nil
+}
+
+func containsId(arr []int64, id int64) bool {
+	for _, allowed := range arr {
+		if id == allowed {
+			return true
+		}
+	}
+
+	return false
 }
 
 func members(members []*pb.RoomState_RoomMember, first int) []string {

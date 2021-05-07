@@ -33,8 +33,8 @@ func (a *Auth) CanJoin(room string, user int) bool {
 	return a.containsBlockers(r, user)
 }
 
-// CanMultiJoin checks for a set of users who can join a room.
-func (a *Auth) CanMultiJoin(room string, users []int64) []int64 {
+// FilterWhoCanJoin checks for a set of users who can join a room.
+func (a *Auth) FilterWhoCanJoin(room string, users []int64) []int64 {
 	r, err := a.rooms.Get(room)
 	if err != nil {
 		return []int64{}

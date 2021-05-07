@@ -23,7 +23,7 @@ func (r RoomInviteNotificationHandler) Type() pubsub.EventType {
 }
 
 func (r RoomInviteNotificationHandler) Origin(event *pubsub.Event) (int, error) {
-	creator, err := event.GetInt("creator")
+	creator, err := event.GetInt("from")
 	if err != nil {
 		return 0, err
 	}

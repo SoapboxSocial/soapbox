@@ -23,8 +23,9 @@ func TestTimeoutStore(t *testing.T) {
 	}
 
 	rdb := redis.NewRedis(conf.RedisConf{
-		Port: port,
-		Host: mr.Host(),
+		Port:       port,
+		Host:       mr.Host(),
+		DisableTLS: true,
 	})
 
 	ts := redis.NewTimeoutStore(rdb)

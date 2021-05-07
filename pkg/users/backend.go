@@ -101,7 +101,7 @@ func (ub *UserBackend) GetUserForSearchEngine(id int) (*SearchUser, error) {
 	query := `SELECT 
        id, display_name, username, image, bio,
        (SELECT COUNT(*) FROM followers WHERE user_id = id) AS followers, 
-       (SELECT CAST(FLOOR(SUM(EXTRACT(EPOCH FROM (left_time - join_time)))) as INT) FROM user_room_logs WHERE user_id = id AND join_time <= NOW() - INTERVAL '7 DAYS' AND visibility = 'public') FROM users WHERE id = $1;`
+       (SELECT CAST(FLOOR(SUM(EXTRACT(EPOCH FROM (left_time - join_time)))) as INT) FROM user_room_logs WHERE user_id = id AND join_time >= NOW() - INTERVAL '7 DAYS' AND visibility = 'public') FROM users WHERE id = $1;`
 
 	stmt, err := ub.db.Prepare(query)
 	if err != nil {

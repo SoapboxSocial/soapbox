@@ -65,6 +65,7 @@ func runServer(*cobra.Command, []string) error {
 	repository := rooms.NewRepository()
 	sm := sessions.NewSessionManager(rdb)
 	ws := rooms.NewWelcomeStore(rdb)
+	auth := rooms.NewAuth(repository, blocks.NewBackend(db))
 
 	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", config.GRPC.Host, config.GRPC.Port))
 	if err != nil {
@@ -74,7 +75,7 @@ func runServer(*cobra.Command, []string) error {
 	gs := grpc.NewServer()
 	pb.RegisterRoomServiceServer(
 		gs,
-		roomGRPC.NewService(repository, ws),
+		roomGRPC.NewService(repository, ws, auth),
 	)
 
 	go func() {
@@ -103,11 +104,11 @@ func runServer(*cobra.Command, []string) error {
 		rooms.NewCurrentRoomBackend(db),
 		ws,
 		repository,
-		blocks.NewBackend(db),
 		minis.NewBackend(db),
+		auth,
 	)
 
-	endpoint := rooms.NewEndpoint(repository, server)
+	endpoint := rooms.NewEndpoint(repository, server, auth)
 	router := endpoint.Router()
 
 	amw := middlewares.NewAuthenticationMiddleware(sm)

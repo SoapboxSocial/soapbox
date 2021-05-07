@@ -14,12 +14,14 @@ type Service struct {
 
 	repository *rooms.Repository
 	ws         *rooms.WelcomeStore
+	auth       *rooms.Auth
 }
 
-func NewService(repository *rooms.Repository, ws *rooms.WelcomeStore) *Service {
+func NewService(repository *rooms.Repository, ws *rooms.WelcomeStore, auth *rooms.Auth) *Service {
 	return &Service{
 		repository: repository,
 		ws:         ws,
+		auth:       auth,
 	}
 }
 

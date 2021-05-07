@@ -114,7 +114,7 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if s.auth.CanJoin(join.Room, user.ID) {
+		if !s.auth.CanJoin(join.Room, user.ID) {
 			_ = conn.WriteError(in.Id, pb.SignalReply_ERROR_NOT_INVITED)
 			return
 		}

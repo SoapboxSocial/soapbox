@@ -168,6 +168,8 @@ func (r *Room) IsKicked(id int) bool {
 }
 
 func (r *Room) IsInvited(id int) bool {
+	r.mux.RLock()
+	defer r.mux.RUnlock()
 	return r.invited[id]
 }
 

@@ -25,7 +25,7 @@ func TestService_RegisterWelcomeRoom(t *testing.T) {
 	repository := rooms.NewRepository()
 	ws := rooms.NewWelcomeStore(rdb)
 
-	service := grpc.NewService(repository, ws)
+	service := grpc.NewService(repository, ws, nil)
 
 	userID := int64(1)
 	resp, err := service.RegisterWelcomeRoom(context.Background(), &pb.RegisterWelcomeRoomRequest{UserId: userID})

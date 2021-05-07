@@ -161,15 +161,14 @@ func (r *Room) Visibility() pb.Visibility {
 	return r.visibility
 }
 
-func (r *Room) CanJoin(id int) bool {
+func (r *Room) IsKicked(id int) bool {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
+	return r.kicked[id]
+}
 
-	if r.visibility == pb.Visibility_VISIBILITY_PRIVATE {
-		return r.invited[id]
-	}
-
-	return !r.kicked[id]
+func (r *Room) IsInvited(id int) bool {
+	return r.invited[id]
 }
 
 func (r *Room) isAdmin(id int) bool {
@@ -363,15 +362,14 @@ func (r *Room) ContainsUsers(users []int) bool {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
 
-	return has(r.members, func(me *Member) bool {
-		for _, id := range users {
-			if id == me.id {
-				return true
-			}
+	for _, id := range users {
+		_, ok := r.members[id]
+		if ok {
+			return true
 		}
+	}
 
-		return false
-	})
+	return false
 }
 
 func has(members map[int]*Member, fn func(*Member) bool) bool {

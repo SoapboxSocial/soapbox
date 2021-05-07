@@ -40,6 +40,10 @@ func (r RoomCreationNotificationHandler) Origin(event *pubsub.Event) (int, error
 }
 
 func (r RoomCreationNotificationHandler) Targets(event *pubsub.Event) ([]notifications.Target, error) {
+	if pubsub.RoomVisibility(event.Params["visibility"].(string)) == pubsub.Private {
+		return []notifications.Target{}, nil
+	}
+
 	creator, err := event.GetInt("creator")
 	if err != nil {
 		return nil, err

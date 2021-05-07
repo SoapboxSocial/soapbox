@@ -26,12 +26,14 @@ type RoomMember struct {
 type Endpoint struct {
 	repository *Repository
 	server     *Server
+	auth       *Auth
 }
 
-func NewEndpoint(repository *Repository, server *Server) *Endpoint {
+func NewEndpoint(repository *Repository, server *Server, auth *Auth) *Endpoint {
 	return &Endpoint{
 		repository: repository,
 		server:     server,
+		auth:       auth,
 	}
 }
 
@@ -59,7 +61,7 @@ func (e *Endpoint) rooms(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if !e.server.canJoin(userID, room) {
+		if !e.auth.CanJoin(room.id, userID) {
 			return
 		}
 
@@ -87,7 +89,7 @@ func (e *Endpoint) room(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !e.server.canJoin(userID, room) {
+	if !e.auth.CanJoin(room.id, userID) {
 		httputil.JsonError(w, http.StatusNotFound, httputil.ErrorCodeNotFound, "not found")
 		return
 	}

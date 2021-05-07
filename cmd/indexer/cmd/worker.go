@@ -26,6 +26,8 @@ var worker = &cobra.Command{
 
 var errNoRequestHandler = errors.New("no request handler for event")
 
+// @TODO OPTIMIZE SO WORKER ONLY UPDATES ROOM TIME.
+
 func runWorker(*cobra.Command, []string) error {
 	rdb := redis.NewRedis(config.Redis)
 

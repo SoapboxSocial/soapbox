@@ -35,19 +35,3 @@ withstats = false
 audiolevelthreshold = 40
 audiolevelinterval=500
 audiolevelfilter = 20
-
-#Birds
-[[mini]]
-key = "03ba569d-1577-43f0-8acb-602f0c2ca720"
-id = 12
-
-#Trivia
-[[mini]]
-key = "198ba444-55b7-47c6-8cb5-5cc912f83ea4"
-id = 10
-
-#Draw with Friends
-[[mini]]
-key = "349c0163-8049-4453-a067-aca72bb51254"
-id = 14
-

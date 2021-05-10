@@ -60,6 +60,10 @@ type Conf struct {
 	GRPC   conf.AddrConf     `mapstructure:"grpc"`
 	Listen conf.AddrConf     `mapstructure:"listen"`
 	Login  login.Config      `mapstructure:"login"`
+	Minis []struct{
+		Key string `mapstructure:"key"`
+		ID int `mapstructure:"id"`
+	} `mapstructure:"mini"`
 }
 
 func parse() (*Conf, error) {
@@ -199,7 +203,13 @@ func main() {
 	mount(r, "/v1/search", searchRouter)
 
 	minisBackend := minis.NewBackend(db)
-	minisEndpoint := minis.NewEndpoint(minisBackend, amw, nil)
+
+	keys := make(minis.AuthKeys)
+	for _, m := range config.Minis {
+		keys[m.Key] = m.ID
+	}
+
+	minisEndpoint := minis.NewEndpoint(minisBackend, amw, keys)
 
 	minisRouter := minisEndpoint.Router()
 	mount(r, "/v1/minis", minisRouter)

@@ -17,6 +17,7 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/stories"
 	"github.com/soapboxsocial/soapbox/pkg/users"
+	"github.com/soapboxsocial/soapbox/pkg/users/types"
 )
 
 type Endpoint struct {
@@ -38,7 +39,7 @@ type Settings struct {
 // Me is returned to the user calling the `/me` endpoint.
 // It contains the user and additional information.
 type Me struct {
-	*users.User
+	*types.User
 
 	HasNotifications bool `json:"has_notifications"`
 }

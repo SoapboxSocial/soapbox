@@ -24,6 +24,7 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
 	"github.com/soapboxsocial/soapbox/pkg/users"
+	"github.com/soapboxsocial/soapbox/pkg/users/types"
 )
 
 // Contains the login handlers
@@ -42,7 +43,7 @@ type Config struct {
 // @todo better names
 type loginState struct {
 	State     string      `json:"state"`
-	User      *users.User `json:"user,omitempty"`
+	User      *types.User `json:"user,omitempty"`
 	ExpiresIn *int        `json:"expires_in,omitempty"`
 	Token     *string     `json:"token,omitempty"`
 }
@@ -380,7 +381,7 @@ func (e *Endpoint) register(w http.ResponseWriter, r *http.Request) {
 
 	e.state.RemoveState(token)
 
-	user := users.User{
+	user := types.User{
 		ID:          lastID,
 		DisplayName: name,
 		Username:    username,

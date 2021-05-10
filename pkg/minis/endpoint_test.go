@@ -1,6 +1,8 @@
 package minis_test
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"io/ioutil"
 	"log"
@@ -114,6 +116,53 @@ func TestEndpoint_ListMinis_Error(t *testing.T) {
 	handler.ServeHTTP(rr, req)
 
 	if status := rr.Code; status != http.StatusNotFound {
+		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusNotFound)
+	}
+}
+
+func TestEndpoint_SaveScores(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	scores := make(minis.Scores)
+	scores[1] = 10
+
+	key := "12345"
+	mini := 10
+	keys := make(minis.AuthKeys)
+	keys[key] = mini
+
+	endpoint := minis.NewEndpoint(minis.NewBackend(db), middlewares.NewAuthenticationMiddleware(nil), keys)
+
+	rr := httptest.NewRecorder()
+	handler := endpoint.Router()
+
+	mock.ExpectBegin()
+
+	mock.
+		ExpectPrepare("^INSERT (.+)").
+		ExpectExec().
+		WithArgs(mini, 1, 10).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	mock.ExpectCommit()
+
+	body, err := json.Marshal(scores)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	req, err := http.NewRequest("POST", "/scores?token=" + key, bytes.NewBuffer(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	handler.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusNotFound)
 	}
 }

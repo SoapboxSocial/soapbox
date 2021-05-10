@@ -185,9 +185,17 @@ func main() {
 		config.Twitter.Secret,
 	)
 
-	pb := linkedaccounts.NewLinkedAccountsBackend(db)
+	meEndpoint := me.NewEndpoint(me.Parameters{
+		Users:                 ub,
+		NotificationsStorage:  ns,
+		OauthConfig:           oauth,
+		LinkedAccountsBackend: linkedaccounts.NewLinkedAccountsBackend(db),
+		StoriesBackend:        storiesBackend,
+		Queue:                 queue,
+		ActiveUsersBackend:    activeusers.NewBackend(db),
+		NotificationSettings:  notifications.NewSettings(db),
+	})
 
-	meEndpoint := me.NewEndpoint(ub, ns, oauth, pb, storiesBackend, queue, activeusers.NewBackend(db), notifications.NewSettings(db))
 	meRoutes := meEndpoint.Router()
 
 	meRoutes.Use(amw.Middleware)

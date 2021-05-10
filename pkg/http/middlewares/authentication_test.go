@@ -89,7 +89,7 @@ func TestAuthenticationHandler(t *testing.T) {
 	}
 
 	sess := "123"
-	sm.NewSession(sess, 1, 0)
+	_ = sm.NewSession(sess, 1, 0)
 
 	r.Header.Set("Authorization", sess)
 

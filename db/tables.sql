@@ -130,7 +130,7 @@ INSERT INTO minis (name, image, slug, size, developer_id) VALUES ('Polls', '', '
 CREATE TABLE IF NOT EXISTS mini_scores (
     mini_id INT NOT NULL,
     user_id INT NOT NULL,
-    time TIMESTAMPTZ NOT NULL,
+    time TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     score INT NOT NULL,
     FOREIGN KEY (mini_id) REFERENCES minis(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE

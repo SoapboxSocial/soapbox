@@ -1,6 +1,7 @@
 package minis
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 
@@ -13,12 +14,14 @@ import (
 type Endpoint struct {
 	backend *Backend
 	auth    *middlewares.AuthenticationMiddleware
+	keys    AuthKeys
 }
 
-func NewEndpoint(backend *Backend, auth *middlewares.AuthenticationMiddleware) *Endpoint {
+func NewEndpoint(backend *Backend, auth *middlewares.AuthenticationMiddleware, keys AuthKeys) *Endpoint {
 	return &Endpoint{
 		backend: backend,
 		auth:    auth,
+		keys:    keys,
 	}
 }
 
@@ -32,7 +35,7 @@ func (e *Endpoint) Router() *mux.Router {
 	return r
 }
 
-func (e *Endpoint) listMinis(w http.ResponseWriter, r *http.Request) {
+func (e *Endpoint) listMinis(w http.ResponseWriter, _ *http.Request) {
 	minis, err := e.backend.ListMinis()
 	if err != nil {
 		httputil.JsonError(w, http.StatusNotFound, httputil.ErrorCodeNotFound, "not found")
@@ -46,6 +49,25 @@ func (e *Endpoint) listMinis(w http.ResponseWriter, r *http.Request) {
 }
 
 func (e *Endpoint) saveScores(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Query().Get("token")
+	id, ok := e.keys[token]
+	if !ok {
+		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeUnauthorized, "unauthorized")
+		return
+	}
+
+	var scores Scores
+	err := json.NewDecoder(r.Body).Decode(&scores)
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "bad request")
+		return
+	}
+
+	err = e.backend.SaveScores(id, scores)
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "failed")
+		return
+	}
 
 	httputil.JsonSuccess(w)
 }

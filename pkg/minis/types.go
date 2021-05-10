@@ -1,5 +1,6 @@
 package minis
 
+// Scores maps user id to score
 type Scores map[int]int
 
 // AuthKeys maps an access token to a game ID.

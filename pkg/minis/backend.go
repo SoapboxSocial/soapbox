@@ -72,3 +72,32 @@ func (b *Backend) GetMiniWithID(id int) (*Mini, error) {
 
 	return mini, nil
 }
+
+func (b *Backend) SaveScores(mini int, scores Scores) error {
+	tx, err := b.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	stmt, err := tx.Prepare("INSERT INTO mini_scores(mini_id, user_id, score) VALUES ($1, $2, $3)")
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	for user, score := range scores {
+		_, err = stmt.Exec(mini, user, score)
+		if err != nil {
+			_ = tx.Rollback()
+			return err
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	return nil
+}

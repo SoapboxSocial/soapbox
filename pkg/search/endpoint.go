@@ -17,7 +17,7 @@ import (
 
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/search/internal"
-	"github.com/soapboxsocial/soapbox/pkg/users"
+	"github.com/soapboxsocial/soapbox/pkg/users/types"
 )
 
 // @TODO maybe do a type?
@@ -26,7 +26,7 @@ const (
 )
 
 type Response struct {
-	Users []*users.User `json:"users,omitempty"`
+	Users []*types.User `json:"users,omitempty"`
 }
 
 type Endpoint struct {
@@ -46,7 +46,7 @@ func (e *Endpoint) Router() *mux.Router {
 }
 
 func (e *Endpoint) Search(w http.ResponseWriter, r *http.Request) {
-	indexes, err := types(r.URL.Query())
+	indexes, err := indexTypes(r.URL.Query())
 	if err != nil {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
 		return
@@ -90,7 +90,7 @@ func (e *Endpoint) Search(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func types(query url.Values) ([]string, error) {
+func indexTypes(query url.Values) ([]string, error) {
 	indexes := query.Get("type")
 	if indexes == "" {
 		return nil, errors.New("no indexes")
@@ -106,15 +106,15 @@ func types(query url.Values) ([]string, error) {
 	return vals, nil
 }
 
-func (e *Endpoint) searchUsers(query string, limit, offset int) ([]*users.User, error) {
+func (e *Endpoint) searchUsers(query string, limit, offset int) ([]*types.User, error) {
 	res, err := e.search("users", query, limit, offset)
 	if err != nil {
 		return nil, err
 	}
 
-	data := make([]*users.User, 0)
+	data := make([]*types.User, 0)
 	for _, hit := range res.Hits.Hits {
-		user := &users.User{}
+		user := &types.User{}
 		err := json.Unmarshal(hit.Source, user)
 		if err != nil {
 			continue

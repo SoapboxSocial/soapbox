@@ -10,7 +10,6 @@ import (
 
 	"github.com/soapboxsocial/soapbox/pkg/http/middlewares"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
-	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
 func TestAuthenticationHandler_WithoutAuth(t *testing.T) {
@@ -90,7 +89,7 @@ func TestAuthenticationHandler(t *testing.T) {
 	}
 
 	sess := "123"
-	sm.NewSession(sess, users.User{ID: 1}, 0)
+	_ = sm.NewSession(sess, 1, 0)
 
 	r.Header.Set("Authorization", sess)
 

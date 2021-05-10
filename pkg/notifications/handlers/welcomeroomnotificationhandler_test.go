@@ -59,7 +59,7 @@ func TestWelcomeRoomNotificationHandler_Build(t *testing.T) {
 	}
 	defer db.Close()
 
-	handler := handlers.NewWelcomeRoomNotificationHandler(users.NewUserBackend(db), nil)
+	handler := handlers.NewWelcomeRoomNotificationHandler(users.NewBackend(db), nil)
 
 	displayName := "foo"
 	user := 12

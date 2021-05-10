@@ -95,7 +95,7 @@ func TestRoomInviteNotificationHandler_Build(t *testing.T) {
 
 			handler := handlers.NewRoomInviteNotificationHandler(
 				notifications.NewSettings(db),
-				users.NewUserBackend(db),
+				users.NewBackend(db),
 			)
 
 			mock.

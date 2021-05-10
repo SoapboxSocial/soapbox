@@ -20,6 +20,7 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/rooms/signal"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
 	"github.com/soapboxsocial/soapbox/pkg/users"
+	"github.com/soapboxsocial/soapbox/pkg/users/types"
 )
 
 const MAX_PEERS = 16
@@ -32,7 +33,7 @@ var upgrader = websocket.Upgrader{
 type Server struct {
 	sfu   *sfu.SFU
 	sm    *sessions.SessionManager
-	ub    *users.UserBackend
+	ub    *users.Backend
 	queue *pubsub.Queue
 	minis *minis.Backend
 
@@ -46,7 +47,7 @@ type Server struct {
 func NewServer(
 	sfu *sfu.SFU,
 	sm *sessions.SessionManager,
-	ub *users.UserBackend,
+	ub *users.Backend,
 	queue *pubsub.Queue,
 	currentRoom *CurrentRoomBackend,
 	ws *WelcomeStore,
@@ -344,7 +345,7 @@ func (s *Server) createRoom(id, name string, owner int, visibility pb.Visibility
 	return room
 }
 
-func (s *Server) userForSession(r *http.Request) (*users.User, error) {
+func (s *Server) userForSession(r *http.Request) (*types.User, error) {
 	userID, ok := httputil.GetUserIDFromContext(r.Context())
 	if !ok {
 		return nil, errors.New("not authenticated")

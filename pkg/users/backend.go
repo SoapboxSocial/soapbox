@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"strings"
+
+	"github.com/soapboxsocial/soapbox/pkg/users/types"
 )
 
 // SearchUser is used for our search engine.
@@ -15,15 +17,6 @@ type SearchUser struct {
 	Bio         string `json:"bio"`
 	Followers   int    `json:"followers"`
 	RoomTime    int    `json:"room_time"`
-}
-
-type User struct {
-	ID          int     `json:"id"`
-	DisplayName string  `json:"display_name"`
-	Username    string  `json:"username"`
-	Image       string  `json:"image"`
-	Bio         string  `json:"bio"`
-	Email       *string `json:"email,omitempty"`
 }
 
 type LinkedAccount struct {
@@ -55,18 +48,18 @@ type NotificationUser struct {
 	Image    string `json:"image"`
 }
 
-type UserBackend struct {
+type Backend struct {
 	db *sql.DB
 }
 
-func NewUserBackend(db *sql.DB) *UserBackend {
-	return &UserBackend{
+func NewBackend(db *sql.DB) *Backend {
+	return &Backend{
 		db: db,
 	}
 }
 
-func (ub *UserBackend) GetIDForUsername(username string) (int, error) {
-	stmt, err := ub.db.Prepare("SELECT id FROM users WHERE username = $1;")
+func (b *Backend) GetIDForUsername(username string) (int, error) {
+	stmt, err := b.db.Prepare("SELECT id FROM users WHERE username = $1;")
 	if err != nil {
 		return 0, err
 	}
@@ -80,13 +73,13 @@ func (ub *UserBackend) GetIDForUsername(username string) (int, error) {
 	return id, nil
 }
 
-func (ub *UserBackend) GetUserByUsername(username string) (*User, error) {
-	stmt, err := ub.db.Prepare("SELECT id, display_name, image, bio FROM users WHERE username = $1;")
+func (b *Backend) GetUserByUsername(username string) (*types.User, error) {
+	stmt, err := b.db.Prepare("SELECT id, display_name, image, bio FROM users WHERE username = $1;")
 	if err != nil {
 		return nil, err
 	}
 
-	user := &User{}
+	user := &types.User{}
 	err = stmt.QueryRow(username).Scan(&user.ID, &user.DisplayName, &user.Image, &user.Bio)
 	if err != nil {
 		return nil, err
@@ -97,13 +90,13 @@ func (ub *UserBackend) GetUserByUsername(username string) (*User, error) {
 	return user, nil
 }
 
-func (ub *UserBackend) GetUserForSearchEngine(id int) (*SearchUser, error) {
+func (b *Backend) GetUserForSearchEngine(id int) (*SearchUser, error) {
 	query := `SELECT 
        id, display_name, username, image, bio,
        (SELECT COUNT(*) FROM followers WHERE user_id = id) AS followers, 
        (SELECT CAST(FLOOR(SUM(EXTRACT(EPOCH FROM (left_time - join_time)))) as INT) FROM user_room_logs WHERE user_id = id AND join_time >= NOW() - INTERVAL '7 DAYS' AND visibility = 'public') FROM users WHERE id = $1;`
 
-	stmt, err := ub.db.Prepare(query)
+	stmt, err := b.db.Prepare(query)
 	if err != nil {
 		return nil, err
 	}
@@ -134,13 +127,13 @@ func (ub *UserBackend) GetUserForSearchEngine(id int) (*SearchUser, error) {
 	return profile, nil
 }
 
-func (ub *UserBackend) GetMyProfile(id int) (*Profile, error) {
+func (b *Backend) GetMyProfile(id int) (*Profile, error) {
 	query := `SELECT 
        id, display_name, username, image, bio,
        (SELECT COUNT(*) FROM followers WHERE user_id = id) AS followers,
        (SELECT COUNT(*) FROM followers WHERE follower = id) AS following FROM users WHERE id = $1;`
 
-	stmt, err := ub.db.Prepare(query)
+	stmt, err := b.db.Prepare(query)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +152,7 @@ func (ub *UserBackend) GetMyProfile(id int) (*Profile, error) {
 		return nil, err
 	}
 
-	accounts, err := ub.LinkedAccounts(id)
+	accounts, err := b.LinkedAccounts(id)
 	if err == nil {
 		profile.LinkedAccounts = accounts
 	}
@@ -167,7 +160,7 @@ func (ub *UserBackend) GetMyProfile(id int) (*Profile, error) {
 	return profile, nil
 }
 
-func (ub *UserBackend) ProfileByID(id, from int) (*Profile, error) {
+func (b *Backend) ProfileByID(id, from int) (*Profile, error) {
 	query := `SELECT 
        id, display_name, username, image, bio,
        (SELECT COUNT(*) FROM followers WHERE user_id = id) AS followers,
@@ -176,7 +169,7 @@ func (ub *UserBackend) ProfileByID(id, from int) (*Profile, error) {
        (SELECT COUNT(*) FROM followers WHERE follower = $1 AND user_id = id) AS is_following,
        (SELECT COUNT(*) FROM blocks WHERE user_id = $1 AND blocked = id) AS is_following FROM users WHERE id = $2;`
 
-	stmt, err := ub.db.Prepare(query)
+	stmt, err := b.db.Prepare(query)
 	if err != nil {
 		return nil, err
 	}
@@ -208,7 +201,7 @@ func (ub *UserBackend) ProfileByID(id, from int) (*Profile, error) {
 	profile.FollowedBy = &followed
 	profile.IsBlocked = &blocked
 
-	accounts, err := ub.LinkedAccounts(id)
+	accounts, err := b.LinkedAccounts(id)
 	if err == nil {
 		profile.LinkedAccounts = accounts
 	}
@@ -216,10 +209,10 @@ func (ub *UserBackend) ProfileByID(id, from int) (*Profile, error) {
 	return profile, nil
 }
 
-func (ub *UserBackend) NotificationUserFor(id int) (*NotificationUser, error) {
+func (b *Backend) NotificationUserFor(id int) (*NotificationUser, error) {
 	query := `SELECT id, username, image FROM users WHERE id = $1;`
 
-	stmt, err := ub.db.Prepare(query)
+	stmt, err := b.db.Prepare(query)
 	if err != nil {
 		return nil, err
 	}
@@ -239,8 +232,8 @@ func (ub *UserBackend) NotificationUserFor(id int) (*NotificationUser, error) {
 	return profile, nil
 }
 
-func (ub *UserBackend) IsAppleIDAccount(email string) (bool, error) {
-	stmt, err := ub.db.Prepare("SELECT COUNT(*) FROM apple_authentication WHERE user_id = (SELECT id FROM users WHERE email = $1);")
+func (b *Backend) IsAppleIDAccount(email string) (bool, error) {
+	stmt, err := b.db.Prepare("SELECT COUNT(*) FROM apple_authentication WHERE user_id = (SELECT id FROM users WHERE email = $1);")
 	if err != nil {
 		return false, err
 	}
@@ -254,13 +247,13 @@ func (ub *UserBackend) IsAppleIDAccount(email string) (bool, error) {
 	return id == 1, nil
 }
 
-func (ub *UserBackend) FindByAppleID(id string) (*User, error) {
-	stmt, err := ub.db.Prepare("SELECT id, display_name, username, image, bio, email FROM users INNER JOIN apple_authentication ON users.id = apple_authentication.user_id WHERE apple_authentication.apple_user = $1;")
+func (b *Backend) FindByAppleID(id string) (*types.User, error) {
+	stmt, err := b.db.Prepare("SELECT id, display_name, username, image, bio, email FROM users INNER JOIN apple_authentication ON users.id = apple_authentication.user_id WHERE apple_authentication.apple_user = $1;")
 	if err != nil {
 		return nil, err
 	}
 
-	user := &User{}
+	user := &types.User{}
 	err = stmt.QueryRow(id).Scan(&user.ID, &user.DisplayName, &user.Username, &user.Image, &user.Bio, &user.Email)
 	if err != nil {
 		return nil, err
@@ -269,13 +262,13 @@ func (ub *UserBackend) FindByAppleID(id string) (*User, error) {
 	return user, nil
 }
 
-func (ub *UserBackend) FindByID(id int) (*User, error) {
-	stmt, err := ub.db.Prepare("SELECT id, display_name, username, image, bio, email FROM users WHERE id = $1;")
+func (b *Backend) FindByID(id int) (*types.User, error) {
+	stmt, err := b.db.Prepare("SELECT id, display_name, username, image, bio, email FROM users WHERE id = $1;")
 	if err != nil {
 		return nil, err
 	}
 
-	user := &User{}
+	user := &types.User{}
 	err = stmt.QueryRow(id).Scan(&user.ID, &user.DisplayName, &user.Username, &user.Image, &user.Bio, &user.Email)
 	if err != nil {
 		return nil, err
@@ -284,8 +277,8 @@ func (ub *UserBackend) FindByID(id int) (*User, error) {
 	return user, nil
 }
 
-func (ub *UserBackend) IsRegistered(email string) (bool, error) {
-	stmt, err := ub.db.Prepare("SELECT COUNT(*) FROM users WHERE email = $1;")
+func (b *Backend) IsRegistered(email string) (bool, error) {
+	stmt, err := b.db.Prepare("SELECT COUNT(*) FROM users WHERE email = $1;")
 	if err != nil {
 		return false, err
 	}
@@ -299,13 +292,13 @@ func (ub *UserBackend) IsRegistered(email string) (bool, error) {
 	return id == 1, nil
 }
 
-func (ub *UserBackend) FindByEmail(email string) (*User, error) {
-	stmt, err := ub.db.Prepare("SELECT id, display_name, username, image, bio, email FROM users WHERE email = $1;")
+func (b *Backend) FindByEmail(email string) (*types.User, error) {
+	stmt, err := b.db.Prepare("SELECT id, display_name, username, image, bio, email FROM users WHERE email = $1;")
 	if err != nil {
 		return nil, err
 	}
 
-	user := &User{}
+	user := &types.User{}
 	err = stmt.QueryRow(email).Scan(&user.ID, &user.DisplayName, &user.Username, &user.Image, &user.Bio, &user.Email)
 	if err != nil {
 		return nil, err
@@ -314,8 +307,8 @@ func (ub *UserBackend) FindByEmail(email string) (*User, error) {
 	return user, nil
 }
 
-func (ub *UserBackend) CreateUser(email, displayName, bio, image, username string) (int, error) {
-	stmt, err := ub.db.Prepare("INSERT INTO users (display_name, username, email, bio, image) VALUES ($1, $2, $3, $4, $5) RETURNING id;")
+func (b *Backend) CreateUser(email, displayName, bio, image, username string) (int, error) {
+	stmt, err := b.db.Prepare("INSERT INTO users (display_name, username, email, bio, image) VALUES ($1, $2, $3, $4, $5) RETURNING id;")
 	if err != nil {
 		return 0, err
 	}
@@ -329,9 +322,9 @@ func (ub *UserBackend) CreateUser(email, displayName, bio, image, username strin
 	return id, nil
 }
 
-func (ub *UserBackend) CreateUserWithAppleLogin(email, displayName, bio, image, username, appleID string) (int, error) {
+func (b *Backend) CreateUserWithAppleLogin(email, displayName, bio, image, username, appleID string) (int, error) {
 	ctx := context.Background()
-	tx, err := ub.db.BeginTx(ctx, nil)
+	tx, err := b.db.BeginTx(ctx, nil)
 	if err != nil {
 		return 0, err
 	}
@@ -368,10 +361,10 @@ func (ub *UserBackend) CreateUserWithAppleLogin(email, displayName, bio, image, 
 	return id, nil
 }
 
-func (ub *UserBackend) UpdateUser(id int, displayName, bio, image string) error {
+func (b *Backend) UpdateUser(id int, displayName, bio, image string) error {
 	query := "UPDATE users SET display_name = $1, bio = $2, image = $3 WHERE id = $4;"
 
-	stmt, err := ub.db.Prepare(query)
+	stmt, err := b.db.Prepare(query)
 	if err != nil {
 		return err
 	}
@@ -380,8 +373,8 @@ func (ub *UserBackend) UpdateUser(id int, displayName, bio, image string) error 
 	return err
 }
 
-func (ub *UserBackend) GetProfileImage(id int) (string, error) {
-	stmt, err := ub.db.Prepare("SELECT image FROM users WHERE id = $1;")
+func (b *Backend) GetProfileImage(id int) (string, error) {
+	stmt, err := b.db.Prepare("SELECT image FROM users WHERE id = $1;")
 	if err != nil {
 		return "", err
 	}
@@ -397,8 +390,8 @@ func (ub *UserBackend) GetProfileImage(id int) (string, error) {
 	return name, err
 }
 
-func (ub *UserBackend) LinkedAccounts(id int) ([]LinkedAccount, error) {
-	stmt, err := ub.db.Prepare("SELECT profile_id, username, provider FROM linked_accounts WHERE user_id = $1;")
+func (b *Backend) LinkedAccounts(id int) ([]LinkedAccount, error) {
+	stmt, err := b.db.Prepare("SELECT profile_id, username, provider FROM linked_accounts WHERE user_id = $1;")
 	if err != nil {
 		return nil, err
 	}

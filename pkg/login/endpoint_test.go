@@ -53,7 +53,7 @@ func TestLoginEndpoint_LoginWithTestAccount(t *testing.T) {
 	defer ctrl.Finish()
 
 	endpoint := login.NewEndpoint(
-		users.NewUserBackend(db),
+		users.NewBackend(db),
 		login.NewStateManager(rdb),
 		sessions.NewSessionManager(rdb),
 		mail.NewMailService(&sendgrid.Client{}),
@@ -110,7 +110,7 @@ func TestLoginEndpoint_PinSubmission(t *testing.T) {
 	defer ctrl.Finish()
 
 	endpoint := login.NewEndpoint(
-		users.NewUserBackend(db),
+		users.NewBackend(db),
 		state,
 		sessions.NewSessionManager(rdb),
 		mail.NewMailService(&sendgrid.Client{}),
@@ -179,7 +179,7 @@ func TestLoginEndpoint_RegistrationCompleted(t *testing.T) {
 	sm := sessions.NewSessionManager(rdb)
 
 	endpoint := login.NewEndpoint(
-		users.NewUserBackend(db),
+		users.NewBackend(db),
 		login.NewStateManager(rdb),
 		sm,
 		mail.NewMailService(&sendgrid.Client{}),
@@ -198,7 +198,7 @@ func TestLoginEndpoint_RegistrationCompleted(t *testing.T) {
 	session := "1234"
 	userID := 1
 
-	err = sm.NewSession(session, users.User{ID: userID}, 0)
+	err = sm.NewSession(session, userID, 0)
 	if err != nil {
 		t.Fatal(err)
 	}

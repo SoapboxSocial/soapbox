@@ -127,6 +127,18 @@ CREATE TABLE IF NOT EXISTS minis (
 INSERT INTO mini_developers (name) VALUES ('Soapbox');
 INSERT INTO minis (name, image, slug, size, developer_id) VALUES ('Polls', '', '/polls', 1, 1);
 
+CREATE TABLE IF NOT EXISTS mini_scores (
+    room VARCHAR(27) NOT NULL,
+    mini_id INT NOT NULL,
+    user_id INT NOT NULL,
+    time TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    score INT NOT NULL,
+    FOREIGN KEY (mini_id) REFERENCES minis(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+)
+
+CREATE UNIQUE INDEX idx_mini_scores ON mini_scores (user_id, mini_id, room, time);
+
 CREATE TABLE IF NOT EXISTS user_room_logs (
     user_id INT NOT NULL,
     room VARCHAR(27) NOT NULL,

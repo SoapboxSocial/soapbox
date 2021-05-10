@@ -35,4 +35,3 @@ withstats = false
 audiolevelthreshold = 40
 audiolevelinterval=500
 audiolevelfilter = 20
-

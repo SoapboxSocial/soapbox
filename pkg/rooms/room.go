@@ -62,7 +62,7 @@ type Room struct {
 	onInviteHandlerFunc       InviteHandlerFunc
 	onJoinHandlerFunc         JoinHandlerFunc
 
-	session *sfu.Session
+	session sfu.Session
 
 	queue *pubsub.Queue
 }
@@ -72,7 +72,7 @@ func NewRoom(
 	name string,
 	owner int,
 	visibility pb.Visibility,
-	session *sfu.Session,
+	session sfu.Session,
 	queue *pubsub.Queue,
 	backend *minis.Backend,
 ) *Room {
@@ -114,7 +114,7 @@ func NewRoom(
 		r.onMessage(user, m)
 	})
 
-	session.AddDataChannel(dc)
+	session.AddDataChannelMiddleware(dc)
 
 	return r
 }

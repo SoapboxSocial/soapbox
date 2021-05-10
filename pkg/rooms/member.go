@@ -28,13 +28,13 @@ type Member struct {
 	joined time.Time
 
 	// @TODO MIGHT MAKE SENSE TO MOVE THIS INTO A CLASS THAT MANAGES CONNECTION STUFF SIMILAR TO HOW IT WORKS ON CLIENT.
-	peer   *sfu.Peer
+	peer   *sfu.PeerLocal
 	signal signal.Transport
 
 	dataChannel *BufferedDataChannel
 }
 
-func NewMember(id int, name, username, image string, peer *sfu.Peer, signal signal.Transport) *Member {
+func NewMember(id int, name, username, image string, peer *sfu.PeerLocal, signal signal.Transport) *Member {
 	m := &Member{
 		id:          id,
 		name:        name,

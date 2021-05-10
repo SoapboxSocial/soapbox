@@ -20,6 +20,7 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/rooms/signal"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
 	"github.com/soapboxsocial/soapbox/pkg/users"
+	"github.com/soapboxsocial/soapbox/pkg/users/types"
 )
 
 const MAX_PEERS = 16
@@ -344,7 +345,7 @@ func (s *Server) createRoom(id, name string, owner int, visibility pb.Visibility
 	return room
 }
 
-func (s *Server) userForSession(r *http.Request) (*users.User, error) {
+func (s *Server) userForSession(r *http.Request) (*types.User, error) {
 	userID, ok := httputil.GetUserIDFromContext(r.Context())
 	if !ok {
 		return nil, errors.New("not authenticated")

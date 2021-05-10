@@ -20,11 +20,11 @@ import (
 )
 
 type Endpoint struct {
-	ub          *Backend
-	fb          *followers.FollowersBackend
-	sm          *sessions.SessionManager
-	ib          *images.Backend
-	stories     *stories.Backend
+	ub      *Backend
+	fb      *followers.FollowersBackend
+	sm      *sessions.SessionManager
+	ib      *images.Backend
+	stories *stories.Backend
 
 	queue *pubsub.Queue
 }
@@ -38,12 +38,12 @@ func NewEndpoint(
 	stories *stories.Backend,
 ) *Endpoint {
 	return &Endpoint{
-		ub:          ub,
-		fb:          fb,
-		sm:          sm,
-		ib:          ib,
-		queue:       queue,
-		stories:     stories,
+		ub:      ub,
+		fb:      fb,
+		sm:      sm,
+		ib:      ib,
+		queue:   queue,
+		stories: stories,
 	}
 }
 

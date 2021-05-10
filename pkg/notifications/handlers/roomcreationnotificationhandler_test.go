@@ -70,7 +70,7 @@ func TestRoomCreationNotificationHandler_Build(t *testing.T) {
 
 	m := mocks.NewMockRoomServiceClient(ctrl)
 
-	handler := handlers.NewRoomCreationNotificationHandler(notifications.NewSettings(nil), users.NewUserBackend(db), m)
+	handler := handlers.NewRoomCreationNotificationHandler(notifications.NewSettings(nil), users.NewBackend(db), m)
 
 	displayName := "foo"
 	user := 12

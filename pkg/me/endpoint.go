@@ -20,7 +20,7 @@ import (
 )
 
 type Endpoint struct {
-	users       *users.UserBackend
+	users       *users.Backend
 	ns          *notifications.Storage
 	oauthConfig *oauth1.Config
 	la          *linkedaccounts.Backend
@@ -55,7 +55,7 @@ type Notification struct {
 }
 
 func NewEndpoint(
-	users *users.UserBackend,
+	users *users.Backend,
 	ns *notifications.Storage,
 	config *oauth1.Config,
 	la *linkedaccounts.Backend,

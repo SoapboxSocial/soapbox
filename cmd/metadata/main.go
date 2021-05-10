@@ -47,7 +47,7 @@ func main() {
 		log.Fatalf("failed to open db: %s", err)
 	}
 
-	usersBackend := users.NewUserBackend(db)
+	usersBackend := users.NewBackend(db)
 
 	conn, err := grpc.Dial(fmt.Sprintf("%s:%d", config.GRPC.Host, config.GRPC.Port), grpc.WithInsecure())
 	if err != nil {

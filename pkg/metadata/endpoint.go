@@ -13,12 +13,12 @@ import (
 )
 
 type Endpoint struct {
-	usersBackend *users.UserBackend
+	usersBackend *users.Backend
 
 	roomService pb.RoomServiceClient
 }
 
-func NewEndpoint(usersBackend *users.UserBackend, roomService pb.RoomServiceClient) *Endpoint {
+func NewEndpoint(usersBackend *users.Backend, roomService pb.RoomServiceClient) *Endpoint {
 	return &Endpoint{
 		usersBackend: usersBackend,
 		roomService:  roomService,

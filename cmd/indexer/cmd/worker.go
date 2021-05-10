@@ -44,7 +44,7 @@ func runWorker(*cobra.Command, []string) error {
 	queue := pubsub.NewQueue(rdb)
 	events := queue.Subscribe(pubsub.UserTopic)
 
-	userBackend = users.NewUserBackend(db)
+	userBackend = users.NewBackend(db)
 
 	for event := range events {
 		go handleEvent(event)

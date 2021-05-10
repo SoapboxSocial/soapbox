@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
 
@@ -14,40 +15,56 @@ import (
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/images"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
-	"github.com/soapboxsocial/soapbox/pkg/rooms"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
-	"github.com/soapboxsocial/soapbox/pkg/users"
+	"github.com/soapboxsocial/soapbox/pkg/stories"
 )
 
-type UsersEndpoint struct {
-	ub          *users.UserBackend
+type Endpoint struct {
+	ub          *Backend
 	fb          *followers.FollowersBackend
 	sm          *sessions.SessionManager
 	ib          *images.Backend
-	currentRoom *rooms.CurrentRoomBackend
+	stories     *stories.Backend
 
 	queue *pubsub.Queue
 }
 
-func NewUsersEndpoint(
-	ub *users.UserBackend,
+func NewEndpoint(
+	ub *Backend,
 	fb *followers.FollowersBackend,
 	sm *sessions.SessionManager,
 	ib *images.Backend,
 	queue *pubsub.Queue,
-	cr *rooms.CurrentRoomBackend,
-) *UsersEndpoint {
-	return &UsersEndpoint{
+	stories *stories.Backend,
+) *Endpoint {
+	return &Endpoint{
 		ub:          ub,
 		fb:          fb,
 		sm:          sm,
 		ib:          ib,
 		queue:       queue,
-		currentRoom: cr,
+		stories:     stories,
 	}
 }
 
-func (u *UsersEndpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {
+func (e *Endpoint) Router() *mux.Router {
+	r := mux.NewRouter()
+
+	r.Path("/{id:[0-9]+}").Methods("GET").HandlerFunc(e.GetUserByID)
+	r.Path("/{username:[a-z0-9_]+}").Methods("GET").HandlerFunc(e.GetUserByUsername)
+	r.Path("/{id:[0-9]+}/followers").Methods("GET").HandlerFunc(e.GetFollowersForUser)
+	r.Path("/{id:[0-9]+}/following").Methods("GET").HandlerFunc(e.GetFollowedByForUser)
+	r.Path("/{id:[0-9]+}/friends").Methods("GET").HandlerFunc(e.GetFriends)
+	r.Path("/follow").Methods("POST").HandlerFunc(e.FollowUser)
+	r.Path("/unfollow").Methods("POST").HandlerFunc(e.UnfollowUser)
+	r.Path("/multi-follow").Methods("POST").HandlerFunc(e.MultiFollowUsers)
+	r.Path("/edit").Methods("POST").HandlerFunc(e.EditUser)
+	r.Path("/{id:[0-9]+}/stories").Methods("GET").HandlerFunc(e.GetStoriesForUser)
+
+	return r
+}
+
+func (e *Endpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	id, err := strconv.Atoi(params["id"])
@@ -56,15 +73,15 @@ func (u *UsersEndpoint) GetUserByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u.handleUserRetrieval(id, w, r)
+	e.handleUserRetrieval(id, w, r)
 }
 
-func (u *UsersEndpoint) GetUserByUsername(w http.ResponseWriter, r *http.Request) {
+func (e *Endpoint) GetUserByUsername(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	username := params["username"]
 
-	id, err := u.ub.GetIDForUsername(username)
+	id, err := e.ub.GetIDForUsername(username)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			httputil.JsonError(w, http.StatusNotFound, httputil.ErrorCodeUserNotFound, "user not found")
@@ -75,23 +92,23 @@ func (u *UsersEndpoint) GetUserByUsername(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	u.handleUserRetrieval(id, w, r)
+	e.handleUserRetrieval(id, w, r)
 }
 
-func (u *UsersEndpoint) handleUserRetrieval(id int, w http.ResponseWriter, r *http.Request) {
+func (e *Endpoint) handleUserRetrieval(id int, w http.ResponseWriter, r *http.Request) {
 	caller, ok := httputil.GetUserIDFromContext(r.Context())
 	if !ok {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
 		return
 	}
 
-	var user *users.Profile
+	var user *Profile
 	var err error
 
 	if caller == id {
-		user, err = u.ub.GetMyProfile(id)
+		user, err = e.ub.GetMyProfile(id)
 	} else {
-		user, err = u.ub.ProfileByID(id, caller)
+		user, err = e.ub.ProfileByID(id, caller)
 	}
 
 	if err != nil {
@@ -105,7 +122,7 @@ func (u *UsersEndpoint) handleUserRetrieval(id int, w http.ResponseWriter, r *ht
 	}
 
 	// @TODO READD LATER
-	//cr, err := u.currentRoom.GetCurrentRoomForUser(id)
+	//cr, err := e.currentRoom.GetCurrentRoomForUser(id)
 	//if err != nil && err.Error() != "redis: nil" {
 	//	log.Println("current room retrieval error", err.Error())
 	//}
@@ -121,7 +138,7 @@ func (u *UsersEndpoint) handleUserRetrieval(id int, w http.ResponseWriter, r *ht
 }
 
 // @todo think about moving these 2 endpoints into a follower specific thing?
-func (u *UsersEndpoint) GetFollowersForUser(w http.ResponseWriter, r *http.Request) {
+func (e *Endpoint) GetFollowersForUser(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	id, err := strconv.Atoi(params["id"])
@@ -133,7 +150,7 @@ func (u *UsersEndpoint) GetFollowersForUser(w http.ResponseWriter, r *http.Reque
 	limit := httputil.GetInt(r.URL.Query(), "limit", 10)
 	offset := httputil.GetInt(r.URL.Query(), "offset", 0)
 
-	result, err := u.fb.GetAllUsersFollowing(id, limit, offset)
+	result, err := e.fb.GetAllUsersFollowing(id, limit, offset)
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToGetFollowers, "")
 		return
@@ -145,7 +162,7 @@ func (u *UsersEndpoint) GetFollowersForUser(w http.ResponseWriter, r *http.Reque
 	}
 }
 
-func (u *UsersEndpoint) GetFollowedByForUser(w http.ResponseWriter, r *http.Request) {
+func (e *Endpoint) GetFollowedByForUser(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	id, err := strconv.Atoi(params["id"])
@@ -157,7 +174,7 @@ func (u *UsersEndpoint) GetFollowedByForUser(w http.ResponseWriter, r *http.Requ
 	limit := httputil.GetInt(r.URL.Query(), "limit", 10)
 	offset := httputil.GetInt(r.URL.Query(), "offset", 0)
 
-	result, err := u.fb.GetAllUsersFollowedBy(id, limit, offset)
+	result, err := e.fb.GetAllUsersFollowedBy(id, limit, offset)
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToGetFollowers, "")
 		return
@@ -169,7 +186,7 @@ func (u *UsersEndpoint) GetFollowedByForUser(w http.ResponseWriter, r *http.Requ
 	}
 }
 
-func (u *UsersEndpoint) GetFriends(w http.ResponseWriter, r *http.Request) {
+func (e *Endpoint) GetFriends(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	id, err := strconv.Atoi(params["id"])
@@ -178,7 +195,7 @@ func (u *UsersEndpoint) GetFriends(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := u.fb.GetFriends(id)
+	result, err := e.fb.GetFriends(id)
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToGetFollowers, "")
 		return
@@ -190,7 +207,7 @@ func (u *UsersEndpoint) GetFriends(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (u *UsersEndpoint) FollowUser(w http.ResponseWriter, r *http.Request) {
+func (e *Endpoint) FollowUser(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
@@ -209,7 +226,7 @@ func (u *UsersEndpoint) FollowUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = u.follow(userID, id)
+	err = e.follow(userID, id)
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "failed to follow")
 		return
@@ -219,7 +236,7 @@ func (u *UsersEndpoint) FollowUser(w http.ResponseWriter, r *http.Request) {
 }
 
 // @TODO, ERROR HANDLER DOESN'T SEEM NICE HERE
-func (u *UsersEndpoint) MultiFollowUsers(w http.ResponseWriter, r *http.Request) {
+func (e *Endpoint) MultiFollowUsers(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
@@ -240,7 +257,7 @@ func (u *UsersEndpoint) MultiFollowUsers(w http.ResponseWriter, r *http.Request)
 			return
 		}
 
-		err = u.follow(userID, id)
+		err = e.follow(userID, id)
 		if err != nil {
 			continue
 		}
@@ -249,7 +266,7 @@ func (u *UsersEndpoint) MultiFollowUsers(w http.ResponseWriter, r *http.Request)
 	httputil.JsonSuccess(w)
 }
 
-func (u *UsersEndpoint) UnfollowUser(w http.ResponseWriter, r *http.Request) {
+func (e *Endpoint) UnfollowUser(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
@@ -268,7 +285,7 @@ func (u *UsersEndpoint) UnfollowUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = u.fb.UnfollowUser(userID, id)
+	err = e.fb.UnfollowUser(userID, id)
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "failed to unfollow")
 		return
@@ -277,7 +294,7 @@ func (u *UsersEndpoint) UnfollowUser(w http.ResponseWriter, r *http.Request) {
 	httputil.JsonSuccess(w)
 }
 
-func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
+func (e *Endpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(10 << 20)
 	if err != nil {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
@@ -302,7 +319,7 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	oldPath, err := u.ub.GetProfileImage(userID)
+	oldPath, err := e.ub.GetProfileImage(userID)
 	if err != nil {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
 		return
@@ -316,24 +333,24 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 
 	image := oldPath
 	if file != nil {
-		image, err = u.processProfilePicture(file)
+		image, err = e.processProfilePicture(file)
 		if err != nil {
 			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
 			return
 		}
 	}
 
-	err = u.ub.UpdateUser(userID, name, bio, image)
+	err = e.ub.UpdateUser(userID, name, bio, image)
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
 		return
 	}
 
 	if image != oldPath {
-		_ = u.ib.Remove(oldPath)
+		_ = e.ib.Remove(oldPath)
 	}
 
-	err = u.queue.Publish(pubsub.UserTopic, pubsub.NewUserUpdateEvent(userID))
+	err = e.queue.Publish(pubsub.UserTopic, pubsub.NewUserUpdateEvent(userID))
 	if err != nil {
 		log.Printf("queue.Publish err: %v\n", err)
 	}
@@ -341,14 +358,35 @@ func (u *UsersEndpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 	httputil.JsonSuccess(w)
 }
 
-func (u *UsersEndpoint) follow(userID, id int) error {
-	err := u.fb.FollowUser(userID, id)
+func (e *Endpoint) GetStoriesForUser(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	id, err := strconv.Atoi(params["id"])
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	s, err := e.stories.GetStoriesForUser(id, time.Now().Unix())
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	err = httputil.JsonEncode(w, s)
+	if err != nil {
+		log.Printf("failed to write story response: %s\n", err.Error())
+	}
+}
+
+func (e *Endpoint) follow(userID, id int) error {
+	err := e.fb.FollowUser(userID, id)
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		err = u.queue.Publish(pubsub.UserTopic, pubsub.NewFollowerEvent(userID, id))
+		err = e.queue.Publish(pubsub.UserTopic, pubsub.NewFollowerEvent(userID, id))
 		if err != nil {
 			log.Printf("queue.Publish err: %v\n", err)
 		}
@@ -357,13 +395,13 @@ func (u *UsersEndpoint) follow(userID, id int) error {
 	return nil
 }
 
-func (u *UsersEndpoint) processProfilePicture(file multipart.File) (string, error) {
+func (e *Endpoint) processProfilePicture(file multipart.File) (string, error) {
 	pngBytes, err := images.MultipartFileToPng(file)
 	if err != nil {
 		return "", err
 	}
 
-	name, err := u.ib.Store(pngBytes)
+	name, err := e.ib.Store(pngBytes)
 	if err != nil {
 		return "", err
 	}

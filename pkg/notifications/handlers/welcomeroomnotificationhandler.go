@@ -15,11 +15,11 @@ var staticTargets = []notifications.Target{
 }
 
 type WelcomeRoomNotificationHandler struct {
-	users    *users.UserBackend
+	users    *users.Backend
 	settings *notifications.Settings
 }
 
-func NewWelcomeRoomNotificationHandler(u *users.UserBackend, settings *notifications.Settings) *WelcomeRoomNotificationHandler {
+func NewWelcomeRoomNotificationHandler(u *users.Backend, settings *notifications.Settings) *WelcomeRoomNotificationHandler {
 	return &WelcomeRoomNotificationHandler{
 		users:    u,
 		settings: settings,

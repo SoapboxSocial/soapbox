@@ -8,10 +8,10 @@ import (
 
 type RoomInviteNotificationHandler struct {
 	targets *notifications.Settings
-	users   *users.UserBackend
+	users   *users.Backend
 }
 
-func NewRoomInviteNotificationHandler(targets *notifications.Settings, u *users.UserBackend) *RoomInviteNotificationHandler {
+func NewRoomInviteNotificationHandler(targets *notifications.Settings, u *users.Backend) *RoomInviteNotificationHandler {
 	return &RoomInviteNotificationHandler{
 		targets: targets,
 		users:   u,

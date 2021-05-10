@@ -99,7 +99,7 @@ func runServer(*cobra.Command, []string) error {
 	server := rooms.NewServer(
 		s,
 		sm,
-		users.NewUserBackend(db),
+		users.NewBackend(db),
 		pubsub.NewQueue(rdb),
 		rooms.NewCurrentRoomBackend(db),
 		ws,

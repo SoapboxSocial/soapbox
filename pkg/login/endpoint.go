@@ -51,7 +51,7 @@ type Endpoint struct {
 	sync.Mutex
 
 	state    *StateManager
-	users    *users.UserBackend
+	users    *users.Backend
 	sessions *sessions.SessionManager
 
 	ib *images.Backend
@@ -67,7 +67,7 @@ type Endpoint struct {
 }
 
 func NewEndpoint(
-	ub *users.UserBackend,
+	ub *users.Backend,
 	state *StateManager,
 	manager *sessions.SessionManager,
 	mail *mail.Service,
@@ -217,7 +217,7 @@ func (e *Endpoint) loginWithApple(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = e.sessions.NewSession(token, *user, expiration)
+	err = e.sessions.NewSession(token, user.ID, expiration)
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToLogin, "")
 		return
@@ -265,7 +265,7 @@ func (e *Endpoint) submitPin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = e.sessions.NewSession(token, *user, expiration)
+	err = e.sessions.NewSession(token, user.ID, expiration)
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToLogin, "")
 		return
@@ -388,7 +388,7 @@ func (e *Endpoint) register(w http.ResponseWriter, r *http.Request) {
 		Image:       image,
 	}
 
-	err = e.sessions.NewSession(token, user, expiration)
+	err = e.sessions.NewSession(token, user.ID, expiration)
 	if err != nil {
 		_ = e.ib.Remove(image)
 

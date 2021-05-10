@@ -5,8 +5,6 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-
-	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
 type SessionManager struct {
@@ -17,8 +15,8 @@ func NewSessionManager(db *redis.Client) *SessionManager {
 	return &SessionManager{db: db}
 }
 
-func (sm *SessionManager) NewSession(id string, user users.User, expiration time.Duration) error {
-	return sm.db.Set(sm.db.Context(), generateSessionKey(id), user.ID, expiration).Err()
+func (sm *SessionManager) NewSession(id string, user int, expiration time.Duration) error {
+	return sm.db.Set(sm.db.Context(), generateSessionKey(id), user, expiration).Err()
 }
 
 func (sm *SessionManager) GetUserIDForSession(id string) (int, error) {

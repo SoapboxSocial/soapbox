@@ -8,10 +8,10 @@ import (
 
 type FollowerNotificationHandler struct {
 	targets *notifications.Settings
-	users   *users.UserBackend
+	users   *users.Backend
 }
 
-func NewFollowerNotificationHandler(targets *notifications.Settings, u *users.UserBackend) *FollowerNotificationHandler {
+func NewFollowerNotificationHandler(targets *notifications.Settings, u *users.Backend) *FollowerNotificationHandler {
 	return &FollowerNotificationHandler{
 		targets: targets,
 		users:   u,

@@ -27,10 +27,11 @@ type PostgresConf struct {
 
 // PostgresConf describes a default configuration for the redis.
 type RedisConf struct {
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
-	Password string `mapstructure:"password"`
-	Database int    `mapstructure:"database"`
+	Host       string `mapstructure:"host"`
+	Port       int    `mapstructure:"port"`
+	Password   string `mapstructure:"password"`
+	Database   int    `mapstructure:"database"`
+	DisableTLS bool   `mapstructure:"tls-disabled"`
 }
 
 // AddrConf describes a default configuration for host addresses.

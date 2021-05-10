@@ -108,27 +108,6 @@ func (e *Endpoint) DeleteStory(w http.ResponseWriter, r *http.Request) {
 	httputil.JsonSuccess(w)
 }
 
-func (e *Endpoint) GetStoriesForUser(w http.ResponseWriter, r *http.Request) {
-	params := mux.Vars(r)
-
-	id, err := strconv.Atoi(params["id"])
-	if err != nil {
-		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "invalid id")
-		return
-	}
-
-	stories, err := e.backend.GetStoriesForUser(id, time.Now().Unix())
-	if err != nil {
-		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
-		return
-	}
-
-	err = httputil.JsonEncode(w, stories)
-	if err != nil {
-		log.Printf("failed to write story response: %s\n", err.Error())
-	}
-}
-
 func (e *Endpoint) Reacted(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseForm()
 	if err != nil {

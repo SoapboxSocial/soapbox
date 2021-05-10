@@ -1,6 +1,6 @@
 package stories
 
-import "github.com/soapboxsocial/soapbox/pkg/users"
+import "github.com/soapboxsocial/soapbox/pkg/users/types"
 
 // Reaction represents the reactions users submitted to the story.
 type Reaction struct {
@@ -18,6 +18,6 @@ type Story struct {
 
 // StoryFeed represents all of a users stories.
 type StoryFeed struct {
-	User    users.User `json:"user"`
+	User    types.User `json:"user"`
 	Stories []Story    `json:"stories"`
 }

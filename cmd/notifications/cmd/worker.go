@@ -154,7 +154,7 @@ func runServer(addr conf.AddrConf, dispatcher *worker.Dispatcher, settings *noti
 }
 
 func setupHandlers(db *sqldb.DB, roomsAddr conf.AddrConf, settings *notifications.Settings) map[pubsub.EventType]handlers.Handler {
-	userBackend := users.NewUserBackend(db)
+	userBackend := users.NewBackend(db)
 
 	notificationHandlers := make(map[pubsub.EventType]handlers.Handler)
 

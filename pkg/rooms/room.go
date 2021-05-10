@@ -62,7 +62,7 @@ type Room struct {
 	onInviteHandlerFunc       InviteHandlerFunc
 	onJoinHandlerFunc         JoinHandlerFunc
 
-	session *sfu.Session
+	session sfu.Session
 
 	queue *pubsub.Queue
 }
@@ -72,7 +72,7 @@ func NewRoom(
 	name string,
 	owner int,
 	visibility pb.Visibility,
-	session *sfu.Session,
+	session sfu.Session,
 	queue *pubsub.Queue,
 	backend *minis.Backend,
 ) *Room {
@@ -114,7 +114,7 @@ func NewRoom(
 		r.onMessage(user, m)
 	})
 
-	session.AddDataChannel(dc)
+	session.AddDataChannelMiddleware(dc)
 
 	return r
 }
@@ -161,15 +161,16 @@ func (r *Room) Visibility() pb.Visibility {
 	return r.visibility
 }
 
-func (r *Room) CanJoin(id int) bool {
+func (r *Room) IsKicked(id int) bool {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
+	return r.kicked[id]
+}
 
-	if r.visibility == pb.Visibility_VISIBILITY_PRIVATE {
-		return r.invited[id]
-	}
-
-	return !r.kicked[id]
+func (r *Room) IsInvited(id int) bool {
+	r.mux.RLock()
+	defer r.mux.RUnlock()
+	return r.invited[id]
 }
 
 func (r *Room) isAdmin(id int) bool {
@@ -270,12 +271,17 @@ func (r *Room) Handle(me *Member) {
 	r.mux.Unlock()
 
 	me.peer.OnICEConnectionStateChange = func(state webrtc.ICEConnectionState) {
-		log.Printf("connection state changed %d", state)
+		log.Printf("connection state changed %d for peer %d", state, me.id)
 
 		switch state {
 		case webrtc.ICEConnectionStateConnected:
+			if me.IsConnected() {
+				return
+			}
+
 			r.onJoinHandlerFunc(r, me, isNew)
 			r.SetConnectionState(open)
+			me.MarkConnected()
 
 			r.notify(&pb.Event{
 				From: int64(me.id),
@@ -358,15 +364,14 @@ func (r *Room) ContainsUsers(users []int) bool {
 	r.mux.RLock()
 	defer r.mux.RUnlock()
 
-	return has(r.members, func(me *Member) bool {
-		for _, id := range users {
-			if id == me.id {
-				return true
-			}
+	for _, id := range users {
+		_, ok := r.members[id]
+		if ok {
+			return true
 		}
+	}
 
-		return false
-	})
+	return false
 }
 
 func has(members map[int]*Member, fn func(*Member) bool) bool {

@@ -115,6 +115,26 @@ func (mr *MockRoomServiceClientMockRecorder) RegisterWelcomeRoom(ctx, in interfa
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterWelcomeRoom", reflect.TypeOf((*MockRoomServiceClient)(nil).RegisterWelcomeRoom), varargs...)
 }
 
+// FilterUsersThatCanJoin mocks base method
+func (m *MockRoomServiceClient) FilterUsersThatCanJoin(ctx context.Context, in *pb.FilterUsersThatCanJoinRequest, opts ...grpc.CallOption) (*pb.FilterUsersThatCanJoinResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "FilterUsersThatCanJoin", varargs...)
+	ret0, _ := ret[0].(*pb.FilterUsersThatCanJoinResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FilterUsersThatCanJoin indicates an expected call of FilterUsersThatCanJoin
+func (mr *MockRoomServiceClientMockRecorder) FilterUsersThatCanJoin(ctx, in interface{}, opts ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FilterUsersThatCanJoin", reflect.TypeOf((*MockRoomServiceClient)(nil).FilterUsersThatCanJoin), varargs...)
+}
+
 // MockRoomServiceServer is a mock of RoomServiceServer interface
 type MockRoomServiceServer struct {
 	ctrl     *gomock.Controller
@@ -196,6 +216,21 @@ func (m *MockRoomServiceServer) RegisterWelcomeRoom(arg0 context.Context, arg1 *
 func (mr *MockRoomServiceServerMockRecorder) RegisterWelcomeRoom(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RegisterWelcomeRoom", reflect.TypeOf((*MockRoomServiceServer)(nil).RegisterWelcomeRoom), arg0, arg1)
+}
+
+// FilterUsersThatCanJoin mocks base method
+func (m *MockRoomServiceServer) FilterUsersThatCanJoin(arg0 context.Context, arg1 *pb.FilterUsersThatCanJoinRequest) (*pb.FilterUsersThatCanJoinResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FilterUsersThatCanJoin", arg0, arg1)
+	ret0, _ := ret[0].(*pb.FilterUsersThatCanJoinResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FilterUsersThatCanJoin indicates an expected call of FilterUsersThatCanJoin
+func (mr *MockRoomServiceServerMockRecorder) FilterUsersThatCanJoin(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FilterUsersThatCanJoin", reflect.TypeOf((*MockRoomServiceServer)(nil).FilterUsersThatCanJoin), arg0, arg1)
 }
 
 // mustEmbedUnimplementedRoomServiceServer mocks base method

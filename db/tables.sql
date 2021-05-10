@@ -150,37 +150,6 @@ CREATE TABLE IF NOT EXISTS user_room_logs (
 
 CREATE UNIQUE INDEX idx_user_room_logs_user_join ON user_room_logs (user_id, room, join_time);
 
-CREATE TABLE IF NOT EXISTS user_room_time (
-    user_id INT NOT NULL,
-    seconds INT NOT NULL,
-    visibility VARCHAR(7),
-    CHECK (visibility IN ('public', 'private')),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE UNIQUE INDEX idx_user_room_time ON user_room_time (user_id, visibility);
-
-CREATE OR REPLACE FUNCTION update_user_room_time()
-    RETURNS TRIGGER
-    AS $user_room_time$
-    BEGIN
-        -- This inserts or updates the time a user has spent in a specific room type.
-        INSERT INTO user_room_time(user_id, seconds, visibility)
-        VALUES(NEW.user_id, EXTRACT(EPOCH FROM (NEW.left_time - NEW.join_time)), NEW.visibility)
-            ON CONFLICT (user_id, visibility)
-            DO
-                UPDATE SET seconds = user_room_time.seconds + EXTRACT(EPOCH FROM (NEW.left_time - NEW.join_time));
-        RETURN NEW;
-    END;
-    $user_room_time$
-    LANGUAGE PLPGSQL;
-
-CREATE TRIGGER calculate_room_time
-    AFTER INSERT
-    ON user_room_logs
-    FOR EACH ROW
-    EXECUTE PROCEDURE update_user_room_time();
-
 CREATE TABLE IF NOT EXISTS user_active_times (
     user_id INT NOT NULL,
     last_active TIMESTAMPTZ,
@@ -226,7 +195,7 @@ CREATE TRIGGER insert_notification_settings_trigger
     FOR EACH ROW
     EXECUTE PROCEDURE insert_notification_settings();
 
-CREATE TABLE IF NOT EXISTS sent_notifications (
+CREATE TABLE IF NOT EXISTS notification_analytics (
     id VARCHAR(36) NOT NULL,
     target INT NOT NULL,
     origin INT,
@@ -238,4 +207,4 @@ CREATE TABLE IF NOT EXISTS sent_notifications (
     FOREIGN KEY (origin) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE UNIQUE INDEX idx_sent_notifications ON sent_notifications (id, target);
+CREATE UNIQUE INDEX idx_notification_analytics ON notification_analytics (id, target);

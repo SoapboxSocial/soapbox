@@ -28,15 +28,26 @@ func TestRoomJoinNotificationHandler_Targets(t *testing.T) {
 	}
 	defer db.Close()
 
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	m := mocks.NewMockRoomServiceClient(ctrl)
+
 	handler := handlers.NewRoomJoinNotificationHandler(
 		notifications.NewSettings(db),
-		nil,
+		m,
 	)
 
 	mock.
 		ExpectPrepare("SELECT").
 		ExpectQuery().
-		WillReturnRows(mock.NewRows([]string{"user_id", "room_frequency", "follows", "welcome_rooms"}).FromCSVString("1,2,false,false"))
+		WillReturnRows(
+			mock.NewRows([]string{"user_id", "room_frequency", "follows", "welcome_rooms"}).
+				AddRow(1, 2, false, false).
+				AddRow(2, 2, false, false),
+		)
+
+	m.EXPECT().FilterUsersThatCanJoin(gomock.Any(), gomock.Any()).Return(&pb.FilterUsersThatCanJoinResponse{Ids: []int64{1}}, nil)
 
 	target, err := handler.Targets(event)
 	if err != nil {

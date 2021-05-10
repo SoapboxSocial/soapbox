@@ -74,6 +74,8 @@ func (l *Limiter) ShouldSendNotification(target Target, notification *PushNotifi
 		return !l.isLimited(limiterKeyForWelcomeRoom(target.ID))
 	case TEST:
 		return target.ID == 1 || target.ID == 75
+	case INFO:
+		return true
 	default:
 		return false
 	}

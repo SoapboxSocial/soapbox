@@ -14,11 +14,11 @@ const testAccountID = 19
 
 type RoomCreationNotificationHandler struct {
 	targets  *notifications.Settings
-	users    *users.UserBackend
+	users    *users.Backend
 	metadata pb.RoomServiceClient
 }
 
-func NewRoomCreationNotificationHandler(targets *notifications.Settings, u *users.UserBackend, metadata pb.RoomServiceClient) *RoomCreationNotificationHandler {
+func NewRoomCreationNotificationHandler(targets *notifications.Settings, u *users.Backend, metadata pb.RoomServiceClient) *RoomCreationNotificationHandler {
 	return &RoomCreationNotificationHandler{
 		targets:  targets,
 		users:    u,
@@ -40,6 +40,10 @@ func (r RoomCreationNotificationHandler) Origin(event *pubsub.Event) (int, error
 }
 
 func (r RoomCreationNotificationHandler) Targets(event *pubsub.Event) ([]notifications.Target, error) {
+	if pubsub.RoomVisibility(event.Params["visibility"].(string)) == pubsub.Private {
+		return []notifications.Target{}, nil
+	}
+
 	creator, err := event.GetInt("creator")
 	if err != nil {
 		return nil, err

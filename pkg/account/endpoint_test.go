@@ -18,7 +18,6 @@ import (
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
-	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
 func TestMain(m *testing.M) {
@@ -59,7 +58,7 @@ func TestAccountEndpoint_Delete(t *testing.T) {
 	session := "1234"
 	userID := 1
 
-	err = sm.NewSession(session, users.User{ID: userID}, 0)
+	err = sm.NewSession(session, userID, 0)
 	if err != nil {
 		t.Fatal(err)
 	}

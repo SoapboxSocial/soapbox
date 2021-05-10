@@ -18,7 +18,6 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/account"
 	"github.com/soapboxsocial/soapbox/pkg/activeusers"
 	"github.com/soapboxsocial/soapbox/pkg/analytics"
-	usersapi "github.com/soapboxsocial/soapbox/pkg/api/users"
 	"github.com/soapboxsocial/soapbox/pkg/apple"
 	"github.com/soapboxsocial/soapbox/pkg/blocks"
 	"github.com/soapboxsocial/soapbox/pkg/conf"
@@ -35,7 +34,6 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/redis"
-	"github.com/soapboxsocial/soapbox/pkg/rooms"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 	"github.com/soapboxsocial/soapbox/pkg/search"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
@@ -93,7 +91,7 @@ func main() {
 	}
 
 	s := sessions.NewSessionManager(rdb)
-	ub := users.NewUserBackend(db)
+	ub := users.NewBackend(db)
 	fb := followers.NewFollowersBackend(db)
 	ns := notifications.NewStorage(rdb)
 
@@ -146,35 +144,24 @@ func main() {
 	loginRouter := loginEndpoints.Router()
 	mount(r, "/v1/login", loginRouter)
 
-	userRoutes := r.PathPrefix("/v1/users").Subrouter()
+	storiesBackend := stories.NewBackend(db)
 
-	usersEndpoints := usersapi.NewUsersEndpoint(
+	usersEndpoints := users.NewEndpoint(
 		ub,
 		fb,
 		s,
 		ib,
 		queue,
-		rooms.NewCurrentRoomBackend(db),
+		storiesBackend,
 	)
+	usersRouter := usersEndpoints.Router()
+	usersRouter.Use(amw.Middleware)
+	mount(r, "/v1/users", usersRouter)
 
-	storiesBackend := stories.NewBackend(db)
 	storiesEndpoint := stories.NewEndpoint(storiesBackend, stories.NewFileBackend(config.CDN.Stories), queue)
 	storiesRouter := storiesEndpoint.Router()
 	storiesRouter.Use(amw.Middleware)
 	mount(r, "/v1/stories", storiesRouter)
-
-	userRoutes.HandleFunc("/{id:[0-9]+}", usersEndpoints.GetUserByID).Methods("GET")
-	userRoutes.HandleFunc("/{username:[a-z0-9_]+}", usersEndpoints.GetUserByUsername).Methods("GET")
-	userRoutes.HandleFunc("/{id:[0-9]+}/followers", usersEndpoints.GetFollowersForUser).Methods("GET")
-	userRoutes.HandleFunc("/{id:[0-9]+}/following", usersEndpoints.GetFollowedByForUser).Methods("GET")
-	userRoutes.HandleFunc("/{id:[0-9]+}/friends", usersEndpoints.GetFriends).Methods("GET")
-	userRoutes.HandleFunc("/follow", usersEndpoints.FollowUser).Methods("POST")
-	userRoutes.HandleFunc("/unfollow", usersEndpoints.UnfollowUser).Methods("POST")
-	userRoutes.HandleFunc("/multi-follow", usersEndpoints.MultiFollowUsers).Methods("POST")
-	userRoutes.HandleFunc("/edit", usersEndpoints.EditUser).Methods("POST")
-	userRoutes.HandleFunc("/{id:[0-9]+}/stories", storiesEndpoint.GetStoriesForUser).Methods("GET")
-
-	userRoutes.Use(amw.Middleware)
 
 	devicesEndpoint := devices.NewEndpoint(devicesBackend)
 	devicesRoutes := devicesEndpoint.Router()

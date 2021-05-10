@@ -12,7 +12,6 @@ import (
 	"github.com/pion/ion-sfu/pkg/sfu"
 	"github.com/pion/webrtc/v3"
 
-	"github.com/soapboxsocial/soapbox/pkg/blocks"
 	httputil "github.com/soapboxsocial/soapbox/pkg/http"
 	"github.com/soapboxsocial/soapbox/pkg/minis"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
@@ -21,6 +20,7 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/rooms/signal"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
 	"github.com/soapboxsocial/soapbox/pkg/users"
+	"github.com/soapboxsocial/soapbox/pkg/users/types"
 )
 
 const MAX_PEERS = 16
@@ -31,29 +31,29 @@ var upgrader = websocket.Upgrader{
 }
 
 type Server struct {
-	sfu     *sfu.SFU
-	sm      *sessions.SessionManager
-	ub      *users.UserBackend
-	queue   *pubsub.Queue
-	blocked *blocks.Backend
-	minis   *minis.Backend
+	sfu   *sfu.SFU
+	sm    *sessions.SessionManager
+	ub    *users.Backend
+	queue *pubsub.Queue
+	minis *minis.Backend
 
 	ws          *WelcomeStore
 	currentRoom *CurrentRoomBackend
 
 	repository *Repository
+	auth       *Auth
 }
 
 func NewServer(
 	sfu *sfu.SFU,
 	sm *sessions.SessionManager,
-	ub *users.UserBackend,
+	ub *users.Backend,
 	queue *pubsub.Queue,
 	currentRoom *CurrentRoomBackend,
 	ws *WelcomeStore,
 	repository *Repository,
-	blocked *blocks.Backend,
 	minis *minis.Backend,
+	auth *Auth,
 ) *Server {
 	return &Server{
 		sfu:         sfu,
@@ -63,8 +63,8 @@ func NewServer(
 		currentRoom: currentRoom,
 		ws:          ws,
 		repository:  repository,
-		blocked:     blocked,
 		minis:       minis,
+		auth:        auth,
 	}
 }
 
@@ -115,7 +115,7 @@ func (s *Server) Signal(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if !s.canJoin(user.ID, r) {
+		if !s.auth.CanJoin(join.Room, user.ID) {
 			_ = conn.WriteError(in.Id, pb.SignalReply_ERROR_NOT_INVITED)
 			return
 		}
@@ -345,24 +345,7 @@ func (s *Server) createRoom(id, name string, owner int, visibility pb.Visibility
 	return room
 }
 
-func (s *Server) canJoin(peer int, room *Room) bool {
-	if !room.CanJoin(peer) {
-		return false
-	}
-
-	blockingUsers, err := s.blocked.GetUsersWhoBlocked(peer)
-	if err != nil {
-		fmt.Printf("failed to get blocked users who blocked: %+v", err)
-	}
-
-	if room.ContainsUsers(blockingUsers) {
-		return false
-	}
-
-	return true
-}
-
-func (s *Server) userForSession(r *http.Request) (*users.User, error) {
+func (s *Server) userForSession(r *http.Request) (*types.User, error) {
 	userID, ok := httputil.GetUserIDFromContext(r.Context())
 	if !ok {
 		return nil, errors.New("not authenticated")

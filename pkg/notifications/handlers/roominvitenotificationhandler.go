@@ -8,10 +8,10 @@ import (
 
 type RoomInviteNotificationHandler struct {
 	targets *notifications.Settings
-	users   *users.UserBackend
+	users   *users.Backend
 }
 
-func NewRoomInviteNotificationHandler(targets *notifications.Settings, u *users.UserBackend) *RoomInviteNotificationHandler {
+func NewRoomInviteNotificationHandler(targets *notifications.Settings, u *users.Backend) *RoomInviteNotificationHandler {
 	return &RoomInviteNotificationHandler{
 		targets: targets,
 		users:   u,
@@ -23,7 +23,7 @@ func (r RoomInviteNotificationHandler) Type() pubsub.EventType {
 }
 
 func (r RoomInviteNotificationHandler) Origin(event *pubsub.Event) (int, error) {
-	creator, err := event.GetInt("creator")
+	creator, err := event.GetInt("from")
 	if err != nil {
 		return 0, err
 	}

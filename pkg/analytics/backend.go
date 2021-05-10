@@ -13,7 +13,7 @@ func NewBackend(db *sql.DB) *Backend {
 }
 
 func (b *Backend) AddSentNotification(user int, notification Notification) error {
-	stmt, err := b.db.Prepare("INSERT INTO sent_notifications (id, target, origin, category, sent, room) VALUES($1, $2, $3, $4, NOW(), $5);")
+	stmt, err := b.db.Prepare("INSERT INTO notification_analytics (id, target, origin, category, sent, room) VALUES($1, $2, $3, $4, NOW(), $5);")
 	if err != nil {
 		return err
 	}
@@ -23,7 +23,7 @@ func (b *Backend) AddSentNotification(user int, notification Notification) error
 }
 
 func (b *Backend) MarkNotificationRead(user int, uuid string) error {
-	stmt, err := b.db.Prepare("UPDATE sent_notifications SET opened = NOW() WHERE target = $1 AND id = $2;")
+	stmt, err := b.db.Prepare("UPDATE notification_analytics SET opened = NOW() WHERE target = $1 AND id = $2;")
 	if err != nil {
 		return err
 	}

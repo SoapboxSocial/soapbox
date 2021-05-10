@@ -49,10 +49,17 @@ func (e *Endpoint) listMinis(w http.ResponseWriter, _ *http.Request) {
 }
 
 func (e *Endpoint) saveScores(w http.ResponseWriter, r *http.Request) {
-	token := r.URL.Query().Get("token")
+	query := r.URL.Query()
+	token := query.Get("token")
 	id, ok := e.keys[token]
 	if !ok {
 		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeUnauthorized, "unauthorized")
+		return
+	}
+
+	room := query.Get("room")
+	if room == "" {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "bad request")
 		return
 	}
 
@@ -63,7 +70,7 @@ func (e *Endpoint) saveScores(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = e.backend.SaveScores(id, scores)
+	err = e.backend.SaveScores(id, room, scores)
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "failed")
 		return

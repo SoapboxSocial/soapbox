@@ -131,6 +131,7 @@ func TestEndpoint_SaveScores(t *testing.T) {
 	scores[1] = 10
 
 	key := "12345"
+	room := "1235"
 	mini := 10
 	keys := make(minis.AuthKeys)
 	keys[key] = mini
@@ -145,7 +146,7 @@ func TestEndpoint_SaveScores(t *testing.T) {
 	mock.
 		ExpectPrepare("^INSERT (.+)").
 		ExpectExec().
-		WithArgs(mini, 1, 10).
+		WithArgs(mini, room, 1, 10).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
 	mock.ExpectCommit()
@@ -155,7 +156,7 @@ func TestEndpoint_SaveScores(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	req, err := http.NewRequest("POST", "/scores?token=" + key, bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", "/scores?token=" + key + "&room=" + room, bytes.NewBuffer(body))
 	if err != nil {
 		t.Fatal(err)
 	}

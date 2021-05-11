@@ -135,7 +135,7 @@ CREATE TABLE IF NOT EXISTS mini_scores (
     score INT NOT NULL,
     FOREIGN KEY (mini_id) REFERENCES minis(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-)
+);
 
 CREATE UNIQUE INDEX idx_mini_scores ON mini_scores (user_id, mini_id, room, time);
 

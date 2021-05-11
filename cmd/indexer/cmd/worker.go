@@ -26,6 +26,8 @@ var worker = &cobra.Command{
 
 var errNoRequestHandler = errors.New("no request handler for event")
 
+// @TODO OPTIMIZE SO WORKER ONLY UPDATES ROOM TIME.
+
 func runWorker(*cobra.Command, []string) error {
 	rdb := redis.NewRedis(config.Redis)
 
@@ -42,7 +44,7 @@ func runWorker(*cobra.Command, []string) error {
 	queue := pubsub.NewQueue(rdb)
 	events := queue.Subscribe(pubsub.UserTopic)
 
-	userBackend = users.NewUserBackend(db)
+	userBackend = users.NewBackend(db)
 
 	for event := range events {
 		go handleEvent(event)

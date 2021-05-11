@@ -1,5 +1,7 @@
 package notifications
 
+import "github.com/soapboxsocial/soapbox/pkg/analytics"
+
 type NotificationCategory string
 
 const (
@@ -8,6 +10,9 @@ const (
 	ROOM_INVITE  NotificationCategory = "ROOM_INVITE"
 	ROOM_JOINED  NotificationCategory = "ROOM_JOINED"
 	WELCOME_ROOM NotificationCategory = "WELCOME_ROOM"
+	REENGAGEMENT NotificationCategory = "REENGAGEMENT"
+	TEST         NotificationCategory = "TEST"
+	INFO         NotificationCategory = "INFO"
 )
 
 type Frequency int
@@ -24,6 +29,7 @@ type Target struct {
 	ID            int       `json:"-"`
 	RoomFrequency Frequency `json:"room_frequency"`
 	Follows       bool      `json:"follows"`
+	WelcomeRooms  bool      `json:"welcome_rooms"`
 }
 
 type Alert struct {
@@ -37,6 +43,7 @@ type PushNotification struct {
 	Category   NotificationCategory   `json:"category"`
 	Alert      Alert                  `json:"alert"`
 	Arguments  map[string]interface{} `json:"arguments"`
+	UUID       string                 `json:"uuid"`
 	CollapseID string                 `json:"-"`
 }
 
@@ -48,14 +55,14 @@ type Notification struct {
 	Arguments map[string]interface{} `json:"arguments"`
 }
 
-func NewRoomNotification(id, creator string) *PushNotification {
+func NewRoomNotification(id, creator string, creatorID int) *PushNotification {
 	return &PushNotification{
 		Category: NEW_ROOM,
 		Alert: Alert{
 			Key:       "new_room_notification",
 			Arguments: []string{creator},
 		},
-		Arguments:  map[string]interface{}{"id": id},
+		Arguments:  map[string]interface{}{"id": id, "creator": creatorID},
 		CollapseID: id,
 	}
 }
@@ -93,5 +100,12 @@ func NewRoomInviteNotificationWithName(id, from, room string) *PushNotification 
 		},
 		Arguments:  map[string]interface{}{"id": id},
 		CollapseID: id,
+	}
+}
+
+func (n PushNotification) AnalyticsNotification() analytics.Notification {
+	return analytics.Notification{
+		ID:       n.UUID,
+		Category: string(n.Category),
 	}
 }

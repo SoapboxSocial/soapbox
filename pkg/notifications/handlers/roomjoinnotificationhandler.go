@@ -2,19 +2,11 @@ package handlers
 
 import (
 	"context"
-	"errors"
 	"strconv"
 
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
-)
-
-var (
-	errRoomPrivate   = errors.New("room is private")
-	errNoRoomMembers = errors.New("room is empty")
-	errFailedToSort  = errors.New("failed to sort")
-	errEmptyResponse = errors.New("empty response")
 )
 
 type RoomJoinNotificationHandler struct {
@@ -33,6 +25,15 @@ func (r RoomJoinNotificationHandler) Type() pubsub.EventType {
 	return pubsub.EventTypeRoomJoin
 }
 
+func (r RoomJoinNotificationHandler) Origin(event *pubsub.Event) (int, error) {
+	creator, err := event.GetInt("creator")
+	if err != nil {
+		return 0, err
+	}
+
+	return creator, nil
+}
+
 func (r RoomJoinNotificationHandler) Targets(event *pubsub.Event) ([]notifications.Target, error) {
 	creator, err := event.GetInt("creator")
 	if err != nil {
@@ -44,7 +45,35 @@ func (r RoomJoinNotificationHandler) Targets(event *pubsub.Event) ([]notificatio
 		return nil, err
 	}
 
-	return targets, nil
+	ids := make([]int64, 0)
+	for _, target := range targets {
+		ids = append(ids, int64(target.ID))
+	}
+
+	room := event.Params["id"].(string)
+
+	resp, err := r.metadata.FilterUsersThatCanJoin(
+		context.TODO(),
+		&pb.FilterUsersThatCanJoinRequest{Room: room, Ids: ids},
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(ids) == len(resp.Ids) {
+		return targets, nil
+	}
+
+	res := make([]notifications.Target, 0)
+	for _, target := range targets {
+		if containsId(resp.Ids, int64(target.ID)) {
+			res = append(res, target)
+			continue
+		}
+	}
+
+	return res, nil
 }
 
 func (r RoomJoinNotificationHandler) Build(event *pubsub.Event) (*notifications.PushNotification, error) {
@@ -71,6 +100,10 @@ func (r RoomJoinNotificationHandler) Build(event *pubsub.Event) (*notifications.
 
 	if len(state.Members) == 0 {
 		return nil, errNoRoomMembers
+	}
+
+	if !contains(state.Members, int64(creator)) {
+		return nil, errMemberNoLongerPresent
 	}
 
 	translation := "join_room_with_"
@@ -116,10 +149,20 @@ func (r RoomJoinNotificationHandler) Build(event *pubsub.Event) (*notifications.
 			Arguments: args,
 		},
 		CollapseID: room,
-		Arguments:  map[string]interface{}{"id": room},
+		Arguments:  map[string]interface{}{"id": room, "creator": creator},
 	}
 
 	return notification, nil
+}
+
+func containsId(arr []int64, id int64) bool {
+	for _, allowed := range arr {
+		if id == allowed {
+			return true
+		}
+	}
+
+	return false
 }
 
 func members(members []*pb.RoomState_RoomMember, first int) []string {
@@ -135,4 +178,14 @@ func members(members []*pb.RoomState_RoomMember, first int) []string {
 	names = append(names, members[0].DisplayName, members[1].DisplayName)
 
 	return names
+}
+
+func contains(members []*pb.RoomState_RoomMember, id int64) bool {
+	for _, member := range members {
+		if member.Id == id {
+			return true
+		}
+	}
+
+	return false
 }

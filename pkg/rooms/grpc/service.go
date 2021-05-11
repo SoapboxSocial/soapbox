@@ -14,12 +14,14 @@ type Service struct {
 
 	repository *rooms.Repository
 	ws         *rooms.WelcomeStore
+	auth       *rooms.Auth
 }
 
-func NewService(repository *rooms.Repository, ws *rooms.WelcomeStore) *Service {
+func NewService(repository *rooms.Repository, ws *rooms.WelcomeStore, auth *rooms.Auth) *Service {
 	return &Service{
 		repository: repository,
 		ws:         ws,
+		auth:       auth,
 	}
 }
 
@@ -70,4 +72,17 @@ func (s *Service) RegisterWelcomeRoom(_ context.Context, request *pb.RegisterWel
 	}
 
 	return &pb.RegisterWelcomeRoomResponse{Id: id}, nil
+}
+
+func (s *Service) FilterUsersThatCanJoin(_ context.Context, request *pb.FilterUsersThatCanJoinRequest) (*pb.FilterUsersThatCanJoinResponse, error) {
+	if request == nil || request.Room == "" {
+		return nil, errors.New("no message")
+	}
+
+	if request.Ids == nil || len(request.Ids) == 0 {
+		return &pb.FilterUsersThatCanJoinResponse{Ids: []int64{}}, nil
+	}
+
+	users := s.auth.FilterWhoCanJoin(request.Room, request.Ids)
+	return &pb.FilterUsersThatCanJoinResponse{Ids: users}, nil
 }

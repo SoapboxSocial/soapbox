@@ -27,7 +27,7 @@ func runWriter(*cobra.Command, []string) error {
 	}
 
 	queue := pubsub.NewQueue(rdb)
-	userBackend = users.NewUserBackend(db)
+	userBackend = users.NewBackend(db)
 
 	rows, err := db.Query("SELECT id FROM users;")
 	if err != nil {

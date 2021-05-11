@@ -1,1 +1,2 @@
 0 * * * * sh /usr/local/bin/stories -c /conf/services/stories.toml >> /var/log/stories.log 2>&1
+0 12 * * * sh /usr/local/bin/indexer writer -c /conf/services/indexer.toml >> /var/log/indexer.log 2>&1

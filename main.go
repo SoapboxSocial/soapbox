@@ -17,7 +17,7 @@ import (
 
 	"github.com/soapboxsocial/soapbox/pkg/account"
 	"github.com/soapboxsocial/soapbox/pkg/activeusers"
-	usersapi "github.com/soapboxsocial/soapbox/pkg/api/users"
+	"github.com/soapboxsocial/soapbox/pkg/analytics"
 	"github.com/soapboxsocial/soapbox/pkg/apple"
 	"github.com/soapboxsocial/soapbox/pkg/blocks"
 	"github.com/soapboxsocial/soapbox/pkg/conf"
@@ -34,7 +34,6 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/redis"
-	"github.com/soapboxsocial/soapbox/pkg/rooms"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 	"github.com/soapboxsocial/soapbox/pkg/search"
 	"github.com/soapboxsocial/soapbox/pkg/sessions"
@@ -61,6 +60,10 @@ type Conf struct {
 	GRPC   conf.AddrConf     `mapstructure:"grpc"`
 	Listen conf.AddrConf     `mapstructure:"listen"`
 	Login  login.Config      `mapstructure:"login"`
+	Minis []struct{
+		Key string `mapstructure:"key"`
+		ID int `mapstructure:"id"`
+	} `mapstructure:"mini"`
 }
 
 func parse() (*Conf, error) {
@@ -92,7 +95,7 @@ func main() {
 	}
 
 	s := sessions.NewSessionManager(rdb)
-	ub := users.NewUserBackend(db)
+	ub := users.NewBackend(db)
 	fb := followers.NewFollowersBackend(db)
 	ns := notifications.NewStorage(rdb)
 
@@ -145,35 +148,24 @@ func main() {
 	loginRouter := loginEndpoints.Router()
 	mount(r, "/v1/login", loginRouter)
 
-	userRoutes := r.PathPrefix("/v1/users").Subrouter()
+	storiesBackend := stories.NewBackend(db)
 
-	usersEndpoints := usersapi.NewUsersEndpoint(
+	usersEndpoints := users.NewEndpoint(
 		ub,
 		fb,
 		s,
 		ib,
 		queue,
-		rooms.NewCurrentRoomBackend(db),
+		storiesBackend,
 	)
+	usersRouter := usersEndpoints.Router()
+	usersRouter.Use(amw.Middleware)
+	mount(r, "/v1/users", usersRouter)
 
-	storiesBackend := stories.NewBackend(db)
 	storiesEndpoint := stories.NewEndpoint(storiesBackend, stories.NewFileBackend(config.CDN.Stories), queue)
 	storiesRouter := storiesEndpoint.Router()
 	storiesRouter.Use(amw.Middleware)
 	mount(r, "/v1/stories", storiesRouter)
-
-	userRoutes.HandleFunc("/{id:[0-9]+}", usersEndpoints.GetUserByID).Methods("GET")
-	userRoutes.HandleFunc("/{username:[a-z0-9_]+}", usersEndpoints.GetUserByUsername).Methods("GET")
-	userRoutes.HandleFunc("/{id:[0-9]+}/followers", usersEndpoints.GetFollowersForUser).Methods("GET")
-	userRoutes.HandleFunc("/{id:[0-9]+}/following", usersEndpoints.GetFollowedByForUser).Methods("GET")
-	userRoutes.HandleFunc("/{id:[0-9]+}/friends", usersEndpoints.GetFriends).Methods("GET")
-	userRoutes.HandleFunc("/follow", usersEndpoints.FollowUser).Methods("POST")
-	userRoutes.HandleFunc("/unfollow", usersEndpoints.UnfollowUser).Methods("POST")
-	userRoutes.HandleFunc("/multi-follow", usersEndpoints.MultiFollowUsers).Methods("POST")
-	userRoutes.HandleFunc("/edit", usersEndpoints.EditUser).Methods("POST")
-	userRoutes.HandleFunc("/{id:[0-9]+}/stories", storiesEndpoint.GetStoriesForUser).Methods("GET")
-
-	userRoutes.Use(amw.Middleware)
 
 	devicesEndpoint := devices.NewEndpoint(devicesBackend)
 	devicesRoutes := devicesEndpoint.Router()
@@ -211,11 +203,22 @@ func main() {
 	mount(r, "/v1/search", searchRouter)
 
 	minisBackend := minis.NewBackend(db)
-	minisEndpoint := minis.NewEndpoint(minisBackend)
+
+	keys := make(minis.AuthKeys)
+	for _, m := range config.Minis {
+		keys[m.Key] = m.ID
+	}
+
+	minisEndpoint := minis.NewEndpoint(minisBackend, amw, keys)
 
 	minisRouter := minisEndpoint.Router()
-	minisRouter.Use(amw.Middleware)
 	mount(r, "/v1/minis", minisRouter)
+
+	analyticsBackend := analytics.NewBackend(db)
+	analyticsEndpoint := analytics.NewEndpoint(analyticsBackend)
+	analyticsRouter := analyticsEndpoint.Router()
+	analyticsRouter.Use(amw.Middleware)
+	mount(r, "/v1/analytics", analyticsRouter)
 
 	err = http.ListenAndServe(fmt.Sprintf(":%d", config.Listen.Port), httputil.CORS(r))
 	if err != nil {

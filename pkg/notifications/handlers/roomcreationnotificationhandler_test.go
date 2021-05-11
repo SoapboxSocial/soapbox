@@ -5,10 +5,13 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/golang/mock/gomock"
 
+	"github.com/soapboxsocial/soapbox/mocks"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/notifications/handlers"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
+	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 )
 
@@ -25,15 +28,21 @@ func TestRoomCreationNotificationHandler_Targets(t *testing.T) {
 	}
 	defer db.Close()
 
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	m := mocks.NewMockRoomServiceClient(ctrl)
+
 	handler := handlers.NewRoomCreationNotificationHandler(
 		notifications.NewSettings(db),
 		nil,
+		m,
 	)
 
 	mock.
 		ExpectPrepare("SELECT").
 		ExpectQuery().
-		WillReturnRows(mock.NewRows([]string{"user_id", "room_frequency", "follows"}).FromCSVString("1,2,false"))
+		WillReturnRows(mock.NewRows([]string{"user_id", "room_frequency", "follows", "welcome_rooms"}).FromCSVString("1,2,false,false"))
 
 	target, err := handler.Targets(event)
 	if err != nil {
@@ -41,7 +50,7 @@ func TestRoomCreationNotificationHandler_Targets(t *testing.T) {
 	}
 
 	expected := []notifications.Target{
-		{ID: 1, RoomFrequency: 2, Follows: false},
+		{ID: 1, RoomFrequency: 2, Follows: false, WelcomeRooms: false},
 	}
 
 	if !reflect.DeepEqual(target, expected) {
@@ -56,7 +65,12 @@ func TestRoomCreationNotificationHandler_Build(t *testing.T) {
 	}
 	defer db.Close()
 
-	handler := handlers.NewRoomCreationNotificationHandler(notifications.NewSettings(nil), users.NewUserBackend(db))
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	m := mocks.NewMockRoomServiceClient(ctrl)
+
+	handler := handlers.NewRoomCreationNotificationHandler(notifications.NewSettings(nil), users.NewBackend(db), m)
 
 	displayName := "foo"
 	user := 12
@@ -68,6 +82,8 @@ func TestRoomCreationNotificationHandler_Build(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	m.EXPECT().GetRoom(gomock.Any(), gomock.Any(), gomock.Any()).Return(&pb.GetRoomResponse{State: &pb.RoomState{Id: "123"}}, nil)
 
 	mock.
 		ExpectPrepare("SELECT").
@@ -85,7 +101,7 @@ func TestRoomCreationNotificationHandler_Build(t *testing.T) {
 			Key:       "new_room_notification",
 			Arguments: []string{displayName},
 		},
-		Arguments:  map[string]interface{}{"id": room},
+		Arguments:  map[string]interface{}{"id": room, "creator": user},
 		CollapseID: room,
 	}
 

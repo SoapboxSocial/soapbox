@@ -28,15 +28,26 @@ func TestRoomJoinNotificationHandler_Targets(t *testing.T) {
 	}
 	defer db.Close()
 
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	m := mocks.NewMockRoomServiceClient(ctrl)
+
 	handler := handlers.NewRoomJoinNotificationHandler(
 		notifications.NewSettings(db),
-		nil,
+		m,
 	)
 
 	mock.
 		ExpectPrepare("SELECT").
 		ExpectQuery().
-		WillReturnRows(mock.NewRows([]string{"user_id", "room_frequency", "follows"}).FromCSVString("1,2,false"))
+		WillReturnRows(
+			mock.NewRows([]string{"user_id", "room_frequency", "follows", "welcome_rooms"}).
+				AddRow(1, 2, false, false).
+				AddRow(2, 2, false, false),
+		)
+
+	m.EXPECT().FilterUsersThatCanJoin(gomock.Any(), gomock.Any()).Return(&pb.FilterUsersThatCanJoinResponse{Ids: []int64{1}}, nil)
 
 	target, err := handler.Targets(event)
 	if err != nil {
@@ -44,7 +55,7 @@ func TestRoomJoinNotificationHandler_Targets(t *testing.T) {
 	}
 
 	expected := []notifications.Target{
-		{ID: 1, RoomFrequency: 2, Follows: false},
+		{ID: 1, RoomFrequency: 2, Follows: false, WelcomeRooms: false},
 	}
 
 	if !reflect.DeepEqual(target, expected) {
@@ -61,7 +72,7 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 		{
 			event: pubsub.NewRoomJoinEvent("xyz", 1, pubsub.Public),
 			state: &pb.RoomState{Name: "Test", Members: []*pb.RoomState_RoomMember{
-				{DisplayName: "foo"},
+				{DisplayName: "foo", Id: 1},
 			}},
 			notification: &notifications.PushNotification{
 				Category: notifications.ROOM_JOINED,
@@ -69,14 +80,14 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 					Key:       "join_room_name_with_1_notification",
 					Arguments: []string{"Test", "foo"},
 				},
-				Arguments:  map[string]interface{}{"id": "xyz"},
+				Arguments:  map[string]interface{}{"id": "xyz", "creator": 1},
 				CollapseID: "xyz",
 			},
 		},
 		{
 			event: pubsub.NewRoomJoinEvent("xyz", 1, pubsub.Public),
 			state: &pb.RoomState{Members: []*pb.RoomState_RoomMember{
-				{DisplayName: "foo"},
+				{DisplayName: "foo", Id: 1},
 			}},
 			notification: &notifications.PushNotification{
 				Category: notifications.ROOM_JOINED,
@@ -84,14 +95,14 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 					Key:       "join_room_with_1_notification",
 					Arguments: []string{"foo"},
 				},
-				Arguments:  map[string]interface{}{"id": "xyz"},
+				Arguments:  map[string]interface{}{"id": "xyz", "creator": 1},
 				CollapseID: "xyz",
 			},
 		},
 		{
 			event: pubsub.NewRoomJoinEvent("xyz", 1, pubsub.Public),
 			state: &pb.RoomState{Name: "Test", Members: []*pb.RoomState_RoomMember{
-				{DisplayName: "foo"}, {DisplayName: "bar"},
+				{DisplayName: "foo", Id: 1}, {DisplayName: "bar"},
 			}},
 			notification: &notifications.PushNotification{
 				Category: notifications.ROOM_JOINED,
@@ -99,14 +110,14 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 					Key:       "join_room_name_with_2_notification",
 					Arguments: []string{"Test", "foo", "bar"},
 				},
-				Arguments:  map[string]interface{}{"id": "xyz"},
+				Arguments:  map[string]interface{}{"id": "xyz", "creator": 1},
 				CollapseID: "xyz",
 			},
 		},
 		{
 			event: pubsub.NewRoomJoinEvent("xyz", 1, pubsub.Public),
 			state: &pb.RoomState{Name: "Test", Members: []*pb.RoomState_RoomMember{
-				{DisplayName: "foo"}, {DisplayName: "bar"}, {DisplayName: "baz"},
+				{DisplayName: "foo", Id: 1}, {DisplayName: "bar"}, {DisplayName: "baz"},
 			}},
 			notification: &notifications.PushNotification{
 				Category: notifications.ROOM_JOINED,
@@ -114,7 +125,7 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 					Key:       "join_room_name_with_3_notification",
 					Arguments: []string{"Test", "foo", "bar", "baz"},
 				},
-				Arguments:  map[string]interface{}{"id": "xyz"},
+				Arguments:  map[string]interface{}{"id": "xyz", "creator": 1},
 				CollapseID: "xyz",
 			},
 		},
@@ -129,7 +140,7 @@ func TestRoomJoinNotificationBuilder_Build(t *testing.T) {
 					Key:       "join_room_name_with_3_and_more_notification",
 					Arguments: []string{"Test", "foo", "bar", "baz", "1"},
 				},
-				Arguments:  map[string]interface{}{"id": "xyz"},
+				Arguments:  map[string]interface{}{"id": "xyz", "creator": 1},
 				CollapseID: "xyz",
 			},
 		},

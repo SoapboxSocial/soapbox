@@ -17,10 +17,11 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
 	"github.com/soapboxsocial/soapbox/pkg/stories"
 	"github.com/soapboxsocial/soapbox/pkg/users"
+	"github.com/soapboxsocial/soapbox/pkg/users/types"
 )
 
 type Endpoint struct {
-	users       *users.UserBackend
+	users       *users.Backend
 	ns          *notifications.Storage
 	oauthConfig *oauth1.Config
 	la          *linkedaccounts.Backend
@@ -38,7 +39,7 @@ type Settings struct {
 // Me is returned to the user calling the `/me` endpoint.
 // It contains the user and additional information.
 type Me struct {
-	*users.User
+	*types.User
 
 	HasNotifications bool `json:"has_notifications"`
 }
@@ -55,7 +56,7 @@ type Notification struct {
 }
 
 func NewEndpoint(
-	users *users.UserBackend,
+	users *users.Backend,
 	ns *notifications.Storage,
 	config *oauth1.Config,
 	la *linkedaccounts.Backend,
@@ -319,7 +320,13 @@ func (m *Endpoint) updateNotificationSettings(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	err = m.targets.UpdateSettingsFor(id, notifications.Frequency(frequency), follows)
+	welcomeRooms, err := strconv.ParseBool(r.Form.Get("welcome_rooms"))
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	err = m.targets.UpdateSettingsFor(id, notifications.Frequency(frequency), follows, welcomeRooms)
 	if err != nil {
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
 		return

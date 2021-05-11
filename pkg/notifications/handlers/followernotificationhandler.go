@@ -8,10 +8,10 @@ import (
 
 type FollowerNotificationHandler struct {
 	targets *notifications.Settings
-	users   *users.UserBackend
+	users   *users.Backend
 }
 
-func NewFollowerNotificationHandler(targets *notifications.Settings, u *users.UserBackend) *FollowerNotificationHandler {
+func NewFollowerNotificationHandler(targets *notifications.Settings, u *users.Backend) *FollowerNotificationHandler {
 	return &FollowerNotificationHandler{
 		targets: targets,
 		users:   u,
@@ -20,6 +20,15 @@ func NewFollowerNotificationHandler(targets *notifications.Settings, u *users.Us
 
 func (f FollowerNotificationHandler) Type() pubsub.EventType {
 	return pubsub.EventTypeNewFollower
+}
+
+func (f FollowerNotificationHandler) Origin(event *pubsub.Event) (int, error) {
+	follower, err := event.GetInt("follower")
+	if err != nil {
+		return 0, err
+	}
+
+	return follower, nil
 }
 
 func (f FollowerNotificationHandler) Targets(event *pubsub.Event) ([]notifications.Target, error) {

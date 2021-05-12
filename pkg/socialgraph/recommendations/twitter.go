@@ -56,7 +56,13 @@ func (t *Twitter) FindUsersToFollowFor(user int) ([]int, error) {
 }
 
 func isFollowedOnTwitter(account linkedaccounts.LinkedAccount, friendships []twitter.FriendshipResponse) bool {
+	for _, friendship := range friendships {
+		if friendship.ID == account.ProfileID {
+			return true
+		}
+	}
 
+	return false
 }
 
 func request(client *twitter.Client, accounts []linkedaccounts.LinkedAccount) ([]twitter.FriendshipResponse, error) {

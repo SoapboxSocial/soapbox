@@ -17,13 +17,10 @@ type Twitter struct {
 }
 
 func (t *Twitter) FindUsersToFollowFor(user int) ([]int, error) {
-	account, err := t.backend.GetTwitterProfileFor(user)
+	client, err := t.getClientForUser(user)
 	if err != nil {
 		return nil, err
 	}
-
-	access := oauth1.NewToken(account.Token, account.Secret)
-	httpClient := t.oauth.Client(oauth1.NoContext, access)
 
 	accounts, err := t.backend.GetAllTwitterProfilesForUsersNotFollowedBy(user)
 	if err != nil {
@@ -31,8 +28,6 @@ func (t *Twitter) FindUsersToFollowFor(user int) ([]int, error) {
 	}
 
 	parts := chunkAccounts(accounts, 100)
-
-	client := twitter.NewClient(httpClient)
 
 	friendships := make([]twitter.FriendshipResponse, 0)
 	for _, part := range parts {
@@ -53,6 +48,17 @@ func (t *Twitter) FindUsersToFollowFor(user int) ([]int, error) {
 	}
 
 	return ids, nil
+}
+
+func (t *Twitter) getClientForUser(id int) (*twitter.Client, error) {
+	account, err := t.backend.GetTwitterProfileFor(id)
+	if err != nil {
+		return nil, err
+	}
+
+	access := oauth1.NewToken(account.Token, account.Secret)
+	httpClient := t.oauth.Client(oauth1.NoContext, access)
+	return twitter.NewClient(httpClient), nil
 }
 
 func isFollowedOnTwitter(account linkedaccounts.LinkedAccount, friendships []twitter.FriendshipResponse) bool {

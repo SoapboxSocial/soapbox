@@ -60,9 +60,9 @@ type Conf struct {
 	GRPC   conf.AddrConf     `mapstructure:"grpc"`
 	Listen conf.AddrConf     `mapstructure:"listen"`
 	Login  login.Config      `mapstructure:"login"`
-	Minis []struct{
+	Minis  []struct {
 		Key string `mapstructure:"key"`
-		ID int `mapstructure:"id"`
+		ID  int    `mapstructure:"id"`
 	} `mapstructure:"mini"`
 }
 
@@ -144,7 +144,17 @@ func main() {
 
 	roomService := pb.NewRoomServiceClient(conn)
 
-	loginEndpoints := login.NewEndpoint(ub, loginState, s, ms, ib, queue, appleClient, roomService, config.Login)
+	loginEndpoints := login.NewEndpoint(login.Parameters{
+		Users:                    ub,
+		State:                    loginState,
+		Sessions:                 s,
+		Mail:                     ms,
+		Images:                   ib,
+		Queue:                    queue,
+		SignInWithApple:          appleClient,
+		RoomService:              roomService,
+		EmailRegistrationEnabled: config.Login.RegisterWithEmailEnabled,
+	})
 	loginRouter := loginEndpoints.Router()
 	mount(r, "/v1/login", loginRouter)
 
@@ -189,9 +199,17 @@ func main() {
 		config.Twitter.Secret,
 	)
 
-	pb := linkedaccounts.NewLinkedAccountsBackend(db)
+	meEndpoint := me.NewEndpoint(me.Parameters{
+		Users:                 ub,
+		NotificationsStorage:  ns,
+		OauthConfig:           oauth,
+		LinkedAccountsBackend: linkedaccounts.NewLinkedAccountsBackend(db),
+		StoriesBackend:        storiesBackend,
+		Queue:                 queue,
+		ActiveUsersBackend:    activeusers.NewBackend(db),
+		NotificationSettings:  notifications.NewSettings(db),
+	})
 
-	meEndpoint := me.NewEndpoint(ub, ns, oauth, pb, storiesBackend, queue, activeusers.NewBackend(db), notifications.NewSettings(db))
 	meRoutes := meEndpoint.Router()
 
 	meRoutes.Use(amw.Middleware)

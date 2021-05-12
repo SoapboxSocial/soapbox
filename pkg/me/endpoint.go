@@ -55,25 +55,27 @@ type Notification struct {
 	Category  notifications.NotificationCategory `json:"category"`
 }
 
-func NewEndpoint(
-	users *users.Backend,
-	ns *notifications.Storage,
-	config *oauth1.Config,
-	la *linkedaccounts.Backend,
-	backend *stories.Backend,
-	queue *pubsub.Queue,
-	actives *activeusers.Backend,
-	targets *notifications.Settings,
-) *Endpoint {
+type Parameters struct {
+	Users                 *users.Backend
+	NotificationsStorage  *notifications.Storage
+	OauthConfig           *oauth1.Config
+	LinkedAccountsBackend *linkedaccounts.Backend
+	StoriesBackend        *stories.Backend
+	Queue                 *pubsub.Queue
+	ActiveUsersBackend    *activeusers.Backend
+	NotificationSettings  *notifications.Settings
+}
+
+func NewEndpoint(p Parameters) *Endpoint {
 	return &Endpoint{
-		users:       users,
-		ns:          ns,
-		oauthConfig: config,
-		la:          la,
-		stories:     backend,
-		queue:       queue,
-		actives:     actives,
-		targets:     targets,
+		users:       p.Users,
+		ns:          p.NotificationsStorage,
+		oauthConfig: p.OauthConfig,
+		la:          p.LinkedAccountsBackend,
+		stories:     p.StoriesBackend,
+		queue:       p.Queue,
+		actives:     p.ActiveUsersBackend,
+		targets:     p.NotificationSettings,
 	}
 }
 

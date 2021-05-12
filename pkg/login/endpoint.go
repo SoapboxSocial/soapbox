@@ -64,30 +64,32 @@ type Endpoint struct {
 	signInWithApple apple.SignInWithApple
 	roomService     pb.RoomServiceClient
 
-	config Config
+	emailRegistrationEnabled bool
 }
 
-func NewEndpoint(
-	ub *users.Backend,
-	state *StateManager,
-	manager *sessions.SessionManager,
-	mail *mail.Service,
-	ib *images.Backend,
-	queue *pubsub.Queue,
-	signInWithApple apple.SignInWithApple,
-	roomService pb.RoomServiceClient,
-	config Config,
-) Endpoint {
+type Parameters struct {
+	Users                    *users.Backend
+	State                    *StateManager
+	Sessions                 *sessions.SessionManager
+	Mail                     *mail.Service
+	Images                   *images.Backend
+	Queue                    *pubsub.Queue
+	SignInWithApple          apple.SignInWithApple
+	RoomService              pb.RoomServiceClient
+	EmailRegistrationEnabled bool
+}
+
+func NewEndpoint(params Parameters) Endpoint {
 	return Endpoint{
-		users:           ub,
-		state:           state,
-		sessions:        manager,
-		mail:            mail,
-		ib:              ib,
-		queue:           queue,
-		signInWithApple: signInWithApple,
-		roomService:     roomService,
-		config:          config,
+		users:                    params.Users,
+		state:                    params.State,
+		sessions:                 params.Sessions,
+		mail:                     params.Mail,
+		ib:                       params.Images,
+		queue:                    params.Queue,
+		signInWithApple:          params.SignInWithApple,
+		roomService:              params.RoomService,
+		emailRegistrationEnabled: params.EmailRegistrationEnabled,
 	}
 }
 
@@ -148,7 +150,7 @@ func (e *Endpoint) start(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !e.config.RegisterWithEmailEnabled {
+	if !e.emailRegistrationEnabled {
 		isRegistered, err := e.users.IsRegistered(email)
 		if err != nil {
 			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")

@@ -60,9 +60,9 @@ type Conf struct {
 	GRPC   conf.AddrConf     `mapstructure:"grpc"`
 	Listen conf.AddrConf     `mapstructure:"listen"`
 	Login  login.Config      `mapstructure:"login"`
-	Minis []struct{
+	Minis  []struct {
 		Key string `mapstructure:"key"`
-		ID int `mapstructure:"id"`
+		ID  int    `mapstructure:"id"`
 	} `mapstructure:"mini"`
 }
 
@@ -144,7 +144,17 @@ func main() {
 
 	roomService := pb.NewRoomServiceClient(conn)
 
-	loginEndpoints := login.NewEndpoint(ub, loginState, s, ms, ib, queue, appleClient, roomService, config.Login)
+	loginEndpoints := login.NewEndpoint(login.Parameters{
+		Users:                    ub,
+		State:                    loginState,
+		Sessions:                 s,
+		Mail:                     ms,
+		Images:                   ib,
+		Queue:                    queue,
+		SignInWithApple:          appleClient,
+		RoomService:              roomService,
+		EmailRegistrationEnabled: config.Login.RegisterWithEmailEnabled,
+	})
 	loginRouter := loginEndpoints.Router()
 	mount(r, "/v1/login", loginRouter)
 

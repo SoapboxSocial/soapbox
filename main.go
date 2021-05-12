@@ -60,9 +60,9 @@ type Conf struct {
 	GRPC   conf.AddrConf     `mapstructure:"grpc"`
 	Listen conf.AddrConf     `mapstructure:"listen"`
 	Login  login.Config      `mapstructure:"login"`
-	Minis []struct{
+	Minis  []struct {
 		Key string `mapstructure:"key"`
-		ID int `mapstructure:"id"`
+		ID  int    `mapstructure:"id"`
 	} `mapstructure:"mini"`
 }
 

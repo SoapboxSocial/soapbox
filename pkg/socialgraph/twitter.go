@@ -1,6 +1,9 @@
 package socialgraph
 
 import (
+	"errors"
+	"log"
+
 	"github.com/dghubble/go-twitter/twitter"
 	"github.com/dghubble/oauth1"
 
@@ -13,7 +16,7 @@ type Twitter struct {
 	backend linkedaccounts.Backend
 }
 
-func (t *Twitter) FindFriendsFor(user int) ([]int, error) {
+func (t *Twitter) FindPeopleToFollowFor(user int) ([]int, error) {
 	account, err := t.backend.GetTwitterProfileFor(user)
 	if err != nil {
 		return nil, err
@@ -21,8 +24,6 @@ func (t *Twitter) FindFriendsFor(user int) ([]int, error) {
 
 	access := oauth1.NewToken(account.Token, account.Secret)
 	httpClient := t.oauth.Client(oauth1.NoContext, access)
-
-	// @TODO paginate
 
 	accounts, err := t.backend.GetAllTwitterProfilesForUsersNotFollowedBy(user)
 	if err != nil {
@@ -33,14 +34,32 @@ func (t *Twitter) FindFriendsFor(user int) ([]int, error) {
 
 	client := twitter.NewClient(httpClient)
 
+	friendships := make([]twitter.FriendshipResponse, 0)
 	for _, part := range parts {
-		_ = request(client, part)
+		resp, err := request(client, part)
+		if err != nil {
+			log.Printf("request err: %s\n", err)
+			continue
+		}
+
+		friendships = append(friendships, resp...)
 	}
 
-	return nil, nil
+	ids := make([]int, 0)
+	for _, account := range accounts {
+		if isFollowedOnTwitter(account, friendships) {
+			ids = append(ids, account.ID)
+		}
+	}
+
+	return ids, nil
 }
 
-func request(client *twitter.Client, accounts []linkedaccounts.LinkedAccount) []linkedaccounts.LinkedAccount {
+func isFollowedOnTwitter(account linkedaccounts.LinkedAccount, friendships []twitter.FriendshipResponse) bool {
+
+}
+
+func request(client *twitter.Client, accounts []linkedaccounts.LinkedAccount) ([]twitter.FriendshipResponse, error) {
 	ids := make([]int64, 0)
 	for _, account := range accounts {
 		ids = append(ids, account.ProfileID)
@@ -48,24 +67,14 @@ func request(client *twitter.Client, accounts []linkedaccounts.LinkedAccount) []
 
 	res, _, err := client.Friendships.Lookup(&twitter.FriendshipLookupParams{UserID: ids}) // @Todo
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
-	ret := make([]linkedaccounts.LinkedAccount, 0)
-
-	OUTER:
-	for _, account := range accounts {
-		for _, resp := range *res {
-			if resp.ID == account.ProfileID {
-				continue OUTER
-			}
-		}
-
-		ret = append(ret, account)
-
+	if res == nil {
+		return nil, errors.New("no response")
 	}
 
-	return ret
+	return *res, nil
 }
 
 func chunkAccounts(accounts []linkedaccounts.LinkedAccount, chunkSize int) [][]linkedaccounts.LinkedAccount {

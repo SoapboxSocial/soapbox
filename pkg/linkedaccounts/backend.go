@@ -3,6 +3,7 @@ package linkedaccounts
 import "database/sql"
 
 type LinkedAccount struct {
+	ID        int
 	Provider  string
 	ProfileID int64
 	Token     string

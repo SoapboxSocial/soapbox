@@ -1,4 +1,4 @@
-package socialgraph
+package recommendations
 
 import (
 	"errors"
@@ -16,7 +16,7 @@ type Twitter struct {
 	backend linkedaccounts.Backend
 }
 
-func (t *Twitter) FindPeopleToFollowFor(user int) ([]int, error) {
+func (t *Twitter) FindUsersToFollowFor(user int) ([]int, error) {
 	account, err := t.backend.GetTwitterProfileFor(user)
 	if err != nil {
 		return nil, err

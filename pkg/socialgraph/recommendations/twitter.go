@@ -3,6 +3,7 @@ package recommendations
 import (
 	"errors"
 	"log"
+	"sync"
 
 	"github.com/dghubble/go-twitter/twitter"
 	"github.com/dghubble/oauth1"
@@ -37,15 +38,25 @@ func (t *Twitter) FindUsersToFollowFor(user int) ([]int, error) {
 	parts := chunkAccounts(accounts, 100)
 
 	friendships := make([]twitter.FriendshipResponse, 0)
-	for _, part := range parts {
-		resp, err := request(client, part)
-		if err != nil {
-			log.Printf("request err: %s\n", err)
-			continue
-		}
 
-		friendships = append(friendships, resp...)
+	var wg sync.WaitGroup
+	for _, part := range parts {
+		wg.Add(1)
+
+		go func(accounts []linkedaccounts.LinkedAccount) {
+			defer wg.Done()
+
+			resp, err := request(client, accounts)
+			if err != nil {
+				log.Printf("request err: %s\n", err)
+				return
+			}
+
+			friendships = append(friendships, resp...)
+		}(part)
 	}
+
+	wg.Wait()
 
 	ids := make([]int, 0)
 	for _, account := range accounts {

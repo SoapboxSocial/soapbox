@@ -11,9 +11,16 @@ import (
 )
 
 type Twitter struct {
-	oauth oauth1.Config
+	oauth *oauth1.Config
 
-	backend linkedaccounts.Backend
+	backend *linkedaccounts.Backend
+}
+
+func NewTwitter(oauth *oauth1.Config, backend *linkedaccounts.Backend) *Twitter {
+	return &Twitter{
+		oauth: oauth,
+		backend: backend,
+	}
 }
 
 func (t *Twitter) FindUsersToFollowFor(user int) ([]int, error) {
@@ -63,8 +70,14 @@ func (t *Twitter) getClientForUser(id int) (*twitter.Client, error) {
 
 func isFollowedOnTwitter(account linkedaccounts.LinkedAccount, friendships []twitter.FriendshipResponse) bool {
 	for _, friendship := range friendships {
-		if friendship.ID == account.ProfileID {
-			return true
+		if friendship.ID != account.ProfileID {
+			continue
+		}
+
+		for _, conn := range friendship.Connections {
+			if conn == "following" {
+				return true
+			}
 		}
 	}
 

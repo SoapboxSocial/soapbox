@@ -10,7 +10,7 @@ func NewBackend(db *sql.DB) *Backend {
 	return &Backend{db: db}
 }
 
-func (b *Backend) AddRecommendations(user int, recommendations []int) error {
+func (b *Backend) AddRecommendationsFor(user int, recommendations []int) error {
 	tx, err := b.db.Begin()
 	if err != nil {
 		return err
@@ -36,5 +36,9 @@ func (b *Backend) AddRecommendations(user int, recommendations []int) error {
 		return err
 	}
 
+	return nil
+}
+
+func (b *Backend) SetLastUpdatedFor(user int) error {
 	return nil
 }

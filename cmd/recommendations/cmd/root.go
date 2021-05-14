@@ -13,7 +13,7 @@ var (
 )
 
 func init() {
-
+	rootCmd.AddCommand(follows)
 }
 
 // Execute executes the root command.

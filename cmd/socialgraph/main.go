@@ -12,9 +12,7 @@ import (
 )
 
 func main() {
-	db, err := sql.Open(conf.PostgresConf{
-
-	})
+	db, err := sql.Open(conf.PostgresConf{})
 
 	if err != nil {
 		log.Fatal(err)

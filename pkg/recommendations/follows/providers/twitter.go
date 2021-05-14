@@ -19,7 +19,7 @@ type Twitter struct {
 
 func NewTwitter(oauth *oauth1.Config, backend *linkedaccounts.Backend) *Twitter {
 	return &Twitter{
-		oauth: oauth,
+		oauth:   oauth,
 		backend: backend,
 	}
 }

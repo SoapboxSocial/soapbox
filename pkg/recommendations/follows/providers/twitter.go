@@ -1,4 +1,4 @@
-package recommendations
+package providers
 
 import (
 	"errors"

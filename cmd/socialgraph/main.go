@@ -7,7 +7,7 @@ import (
 
 	"github.com/soapboxsocial/soapbox/pkg/conf"
 	"github.com/soapboxsocial/soapbox/pkg/linkedaccounts"
-	"github.com/soapboxsocial/soapbox/pkg/socialgraph/recommendations"
+	"github.com/soapboxsocial/soapbox/pkg/recommendations/follows/providers"
 	"github.com/soapboxsocial/soapbox/pkg/sql"
 )
 
@@ -25,7 +25,7 @@ func main() {
 		"sFQEQ2cjJZSJgepUMmNyeTxiGggFXA1EKfSYAXpbARTu3CXBQY",
 	)
 
-	twitter := recommendations.NewTwitter(oauth, linkedaccounts.NewLinkedAccountsBackend(db))
+	twitter := providers.NewTwitter(oauth, linkedaccounts.NewLinkedAccountsBackend(db))
 
 	row := db.QueryRow("SELECT COUNT(user_id) FROM linked_accounts")
 

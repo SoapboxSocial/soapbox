@@ -81,6 +81,10 @@ func (r RoomCreationNotificationHandler) Build(event *pubsub.Event) (*notificati
 		return nil, errEmptyResponse
 	}
 
+	if response.State.Visibility == pb.Visibility_VISIBILITY_PRIVATE {
+		return nil, errors.New("room is private")
+	}
+
 	displayName, err := r.getDisplayName(creator)
 	if err != nil {
 		return nil, err

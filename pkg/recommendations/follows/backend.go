@@ -49,7 +49,18 @@ func (b *Backend) AddRecommendationsFor(user int, recommendations []int) error {
 }
 
 func (b *Backend) LastUpdatedFor(user int) (*time.Time, error) {
-	return nil, nil
+	stmt, err := b.db.Prepare("SELECT last_recommended FROM last_follow_recommended WHERE user_id = $1;")
+	if err != nil {
+		return nil, err
+	}
+
+	timestamp := &time.Time{}
+	err = stmt.QueryRow(user).Scan(timestamp)
+	if err != nil {
+		return nil, err
+	}
+
+	return timestamp, nil
 }
 
 func (b *Backend) SetLastUpdatedFor(user int) error {

@@ -226,3 +226,5 @@ CREATE TABLE IF NOT EXISTS last_follow_recommended (
 );
 
 CREATE UNIQUE INDEX idx_last_follow_recommended ON last_follow_recommended (user_id);
+
+-- @TODO A TRIGGER THAT DELETES FOLLOW RECOMMENDATIONS UPON FOLLOW

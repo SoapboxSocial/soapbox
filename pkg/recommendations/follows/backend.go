@@ -64,5 +64,15 @@ func (b *Backend) LastUpdatedFor(user int) (*time.Time, error) {
 }
 
 func (b *Backend) SetLastUpdatedFor(user int) error {
+	stmt, err := b.db.Prepare("INSERT INTO last_follow_recommended (user_id, last_recommended) VALUES ($1, $2);")
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(user, time.Now())
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

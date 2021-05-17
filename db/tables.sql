@@ -213,6 +213,7 @@ CREATE UNIQUE INDEX idx_notification_analytics ON notification_analytics (id, ta
 CREATE TABLE IF NOT EXISTS follow_recommendations (
     user_id INT NOT NULL,
     recommendation INT NOT NULL,
+    recommended TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (recommendation) REFERENCES users(id) ON DELETE CASCADE
 )

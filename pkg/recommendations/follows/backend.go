@@ -1,6 +1,10 @@
 package follows
 
-import "database/sql"
+import (
+	"database/sql"
+
+	"github.com/soapboxsocial/soapbox/pkg/users/types"
+)
 
 type Backend struct {
 	db *sql.DB
@@ -8,6 +12,10 @@ type Backend struct {
 
 func NewBackend(db *sql.DB) *Backend {
 	return &Backend{db: db}
+}
+
+func (b *Backend) RecommendationsFor(user int) ([]types.User, error) {
+	return nil, nil
 }
 
 func (b *Backend) AddRecommendationsFor(user int, recommendations []int) error {

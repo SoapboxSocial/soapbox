@@ -22,6 +22,7 @@ const (
 	EventTypeRoomLinkShare
 	EventTypeRoomOpenMini
 	EventTypeDeleteUser
+	EventTypeFollowRecommendations
 )
 
 type RoomVisibility string
@@ -139,6 +140,13 @@ func NewRoomOpenMiniEvent(user, mini int, room string) Event {
 func NewDeleteUserEvent(user int) Event {
 	return Event{
 		Type:   EventTypeDeleteUser,
+		Params: map[string]interface{}{"id": user},
+	}
+}
+
+func NewFollowRecommendationsEvent(user int) Event {
+	return Event{
+		Type:   EventTypeFollowRecommendations,
 		Params: map[string]interface{}{"id": user},
 	}
 }

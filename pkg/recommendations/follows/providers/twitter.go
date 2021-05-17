@@ -30,7 +30,7 @@ func (t *Twitter) FindUsersToFollowFor(user int) ([]int, error) {
 		return nil, err
 	}
 
-	accounts, err := t.backend.GetAllTwitterProfilesForUsersNotFollowedBy(user)
+	accounts, err := t.backend.GetAllTwitterProfilesForUsersNotRecommendedAndNotFollowedBy(user)
 	if err != nil {
 		return nil, err
 	}

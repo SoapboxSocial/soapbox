@@ -67,8 +67,13 @@ func (pb *Backend) GetTwitterProfileFor(user int) (*LinkedAccount, error) {
 	return account, nil
 }
 
-func (pb *Backend) GetAllTwitterProfilesForUsersNotFollowedBy(user int) ([]LinkedAccount, error) {
-	stmt, err := pb.db.Prepare("SELECT user_id, profile_id, token, secret, username FROM linked_accounts WHERE user_id NOT IN (SELECT user_id FROM followers WHERE follower = $1) AND user_id != $1")
+func (pb *Backend) GetAllTwitterProfilesForUsersNotRecommendedToAndNotFollowedBy(user int) ([]LinkedAccount, error) {
+	query := `
+		SELECT user_id, profile_id, token, secret, username FROM linked_accounts 
+		WHERE user_id NOT IN (SELECT user_id FROM followers WHERE follower = $1) 
+   		AND user_id NOT IN (SELECT recommendation FROM follow_recommendations WHERE user_id = $1) AND user_id != $1`
+
+	stmt, err := pb.db.Prepare(query)
 	if err != nil {
 		return nil, err
 	}

@@ -2,6 +2,7 @@ package follows
 
 import (
 	"database/sql"
+	"time"
 
 	"github.com/soapboxsocial/soapbox/pkg/users/types"
 )
@@ -45,6 +46,10 @@ func (b *Backend) AddRecommendationsFor(user int, recommendations []int) error {
 	}
 
 	return nil
+}
+
+func (b *Backend) LastUpdatedFor(user int) (*time.Time, error) {
+	return nil, nil
 }
 
 func (b *Backend) SetLastUpdatedFor(user int) error {

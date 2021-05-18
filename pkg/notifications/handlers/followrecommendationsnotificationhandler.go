@@ -15,9 +15,10 @@ type FollowRecommendationsNotificationHandler struct {
 	backend *follows.Backend
 }
 
-func NewFollowRecommendationsNotificationHandler(targets *notifications.Settings) *FollowRecommendationsNotificationHandler {
+func NewFollowRecommendationsNotificationHandler(targets *notifications.Settings, backend *follows.Backend) *FollowRecommendationsNotificationHandler {
 	return &FollowRecommendationsNotificationHandler{
 		targets: targets,
+		backend: backend,
 	}
 }
 

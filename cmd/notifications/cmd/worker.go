@@ -180,5 +180,8 @@ func setupHandlers(db *sqldb.DB, roomsAddr conf.AddrConf, settings *notification
 	welcome := handlers.NewWelcomeRoomNotificationHandler(userBackend, settings)
 	notificationHandlers[welcome.Type()] = welcome
 
+	recommendations := handlers.NewFollowRecommendationsNotificationHandler(settings)
+	notificationHandlers[recommendations.Type()] = recommendations
+
 	return notificationHandlers
 }

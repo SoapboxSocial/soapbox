@@ -222,10 +222,24 @@ CREATE UNIQUE INDEX idx_follow_recommendations ON follow_recommendations (user_i
 
 CREATE TABLE IF NOT EXISTS last_follow_recommended (
     user_id INT NOT NULL,
-    last_recommended TIMESTAMPTZ NOT NULL,
+    last_recommended TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE UNIQUE INDEX idx_last_follow_recommended ON last_follow_recommended (user_id);
+
+CREATE OR REPLACE FUNCTION insert_last_follow_recommended() RETURNS TRIGGER AS
+    $last_follow_recommended$
+    BEGIN
+        INSERT INTO last_follow_recommended(user_id) VALUES(new.id);
+        RETURN new;
+    END;
+    $last_follow_recommended$
+    language plpgsql;
+
+CREATE TRIGGER insert_last_follow_recommended_trigger
+    AFTER INSERT ON users
+    FOR EACH ROW
+    EXECUTE PROCEDURE insert_last_follow_recommended();
 
 -- @TODO A TRIGGER THAT DELETES FOLLOW RECOMMENDATIONS UPON FOLLOW

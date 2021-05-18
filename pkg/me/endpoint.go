@@ -15,20 +15,22 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/linkedaccounts"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
+	"github.com/soapboxsocial/soapbox/pkg/recommendations/follows"
 	"github.com/soapboxsocial/soapbox/pkg/stories"
 	"github.com/soapboxsocial/soapbox/pkg/users"
 	"github.com/soapboxsocial/soapbox/pkg/users/types"
 )
 
 type Endpoint struct {
-	users       *users.Backend
-	ns          *notifications.Storage
-	oauthConfig *oauth1.Config
-	la          *linkedaccounts.Backend
-	stories     *stories.Backend
-	queue       *pubsub.Queue
-	actives     *activeusers.Backend
-	targets     *notifications.Settings
+	users           *users.Backend
+	ns              *notifications.Storage
+	oauthConfig     *oauth1.Config
+	la              *linkedaccounts.Backend
+	stories         *stories.Backend
+	queue           *pubsub.Queue
+	actives         *activeusers.Backend
+	targets         *notifications.Settings
+	recommendations *follows.Backend
 }
 
 // Settings represents a users settings
@@ -87,6 +89,7 @@ func (m *Endpoint) Router() *mux.Router {
 	r.HandleFunc("/feed", m.feed).Methods("GET")
 	r.HandleFunc("/feed/actives", m.activeUsers).Methods("GET")
 	r.HandleFunc("/settings", m.settings).Methods("GET")
+	r.HandleFunc("/following/recommendations", m.followingRecommendations).Methods("GET")
 	r.HandleFunc("/settings/notifications", m.updateNotificationSettings).Methods("POST")
 
 	return r
@@ -333,4 +336,20 @@ func (m *Endpoint) updateNotificationSettings(w http.ResponseWriter, r *http.Req
 	}
 
 	httputil.JsonSuccess(w)
+}
+
+func (m *Endpoint) followingRecommendations(w http.ResponseWriter, r *http.Request) {
+	id, ok := httputil.GetUserIDFromContext(r.Context())
+	if !ok {
+		httputil.JsonError(w, http.StatusUnauthorized, httputil.ErrorCodeInvalidRequestBody, "unauthorized")
+		return
+	}
+
+	res, err := m.recommendations.RecommendationsFor(id)
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	httputil.JsonEncode(w, res)
 }

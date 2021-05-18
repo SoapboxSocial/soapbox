@@ -216,7 +216,7 @@ CREATE TABLE IF NOT EXISTS follow_recommendations (
     recommended TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (recommendation) REFERENCES users(id) ON DELETE CASCADE
-)
+);
 
 CREATE UNIQUE INDEX idx_follow_recommendations ON follow_recommendations (user_id, recommendation);
 

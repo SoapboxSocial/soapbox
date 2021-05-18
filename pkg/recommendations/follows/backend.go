@@ -16,7 +16,7 @@ func NewBackend(db *sql.DB) *Backend {
 }
 
 func (b *Backend) RecommendationsFor(user int) ([]types.User, error) {
-	stmt, err := b.db.Prepare("SELECT id, display_name, username FROM users WHERE id IN (SELECT recommendation FROM follow_recommendations WHERE id = $1);")
+	stmt, err := b.db.Prepare("SELECT id, display_name, username FROM users WHERE id IN (SELECT recommendation FROM follow_recommendations WHERE user_id = $1);")
 	if err != nil {
 		return nil, err
 	}

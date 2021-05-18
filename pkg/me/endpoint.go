@@ -66,16 +66,18 @@ func NewEndpoint(
 	queue *pubsub.Queue,
 	actives *activeusers.Backend,
 	targets *notifications.Settings,
+	recommendations *follows.Backend,
 ) *Endpoint {
 	return &Endpoint{
-		users:       users,
-		ns:          ns,
-		oauthConfig: config,
-		la:          la,
-		stories:     backend,
-		queue:       queue,
-		actives:     actives,
-		targets:     targets,
+		users:           users,
+		ns:              ns,
+		oauthConfig:     config,
+		la:              la,
+		stories:         backend,
+		queue:           queue,
+		actives:         actives,
+		targets:         targets,
+		recommendations: recommendations,
 	}
 }
 

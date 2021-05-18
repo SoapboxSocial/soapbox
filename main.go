@@ -33,6 +33,7 @@ import (
 	"github.com/soapboxsocial/soapbox/pkg/minis"
 	"github.com/soapboxsocial/soapbox/pkg/notifications"
 	"github.com/soapboxsocial/soapbox/pkg/pubsub"
+	"github.com/soapboxsocial/soapbox/pkg/recommendations/follows"
 	"github.com/soapboxsocial/soapbox/pkg/redis"
 	"github.com/soapboxsocial/soapbox/pkg/rooms/pb"
 	"github.com/soapboxsocial/soapbox/pkg/search"
@@ -191,7 +192,7 @@ func main() {
 
 	pb := linkedaccounts.NewLinkedAccountsBackend(db)
 
-	meEndpoint := me.NewEndpoint(ub, ns, oauth, pb, storiesBackend, queue, activeusers.NewBackend(db), notifications.NewSettings(db))
+	meEndpoint := me.NewEndpoint(ub, ns, oauth, pb, storiesBackend, queue, activeusers.NewBackend(db), notifications.NewSettings(db), follows.NewBackend(db))
 	meRoutes := meEndpoint.Router()
 
 	meRoutes.Use(amw.Middleware)

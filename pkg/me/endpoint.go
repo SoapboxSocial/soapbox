@@ -353,5 +353,5 @@ func (m *Endpoint) followingRecommendations(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	httputil.JsonEncode(w, res)
+	_ = httputil.JsonEncode(w, res)
 }

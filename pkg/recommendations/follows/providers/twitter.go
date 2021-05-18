@@ -1,8 +1,10 @@
 package providers
 
 import (
+	"context"
 	"errors"
 	"log"
+	"net/http"
 	"sync"
 
 	"github.com/dghubble/go-twitter/twitter"
@@ -14,13 +16,16 @@ import (
 type Twitter struct {
 	oauth *oauth1.Config
 
+	transport *http.Client
+
 	backend *linkedaccounts.Backend
 }
 
-func NewTwitter(oauth *oauth1.Config, backend *linkedaccounts.Backend) *Twitter {
+func NewTwitter(oauth *oauth1.Config, backend *linkedaccounts.Backend, transport *http.Client) *Twitter {
 	return &Twitter{
-		oauth:   oauth,
-		backend: backend,
+		oauth:     oauth,
+		backend:   backend,
+		transport: transport,
 	}
 }
 
@@ -75,7 +80,13 @@ func (t *Twitter) getClientForUser(id int) (*twitter.Client, error) {
 	}
 
 	access := oauth1.NewToken(account.Token, account.Secret)
-	httpClient := t.oauth.Client(oauth1.NoContext, access)
+
+	ctx := oauth1.NoContext
+	if t.transport != nil {
+		ctx = context.WithValue(ctx, oauth1.HTTPClient, t.transport)
+	}
+
+	httpClient := t.oauth.Client(ctx, access)
 	return twitter.NewClient(httpClient), nil
 }
 

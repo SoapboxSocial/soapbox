@@ -68,7 +68,7 @@ func (w *Worker) handle(job *Job) {
 		return
 	}
 
-	if time.Now().Sub(*last) >= 14*(24*time.Hour) {
+	if time.Now().Sub(*last) < 14*(24*time.Hour) {
 		log.Println("week not passed")
 		return
 	}

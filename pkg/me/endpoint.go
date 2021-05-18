@@ -143,13 +143,15 @@ func (m *Endpoint) notifications(w http.ResponseWriter, r *http.Request) {
 	for _, notification := range list {
 		populatedNotification := Notification{Timestamp: notification.Timestamp, Category: notification.Category}
 
-		from, err := m.users.NotificationUserFor(notification.From)
-		if err != nil {
-			log.Printf("users.NotificationUserFor err: %v\n", err)
-			continue
-		}
+		if notification.From != 0 {
+			from, err := m.users.NotificationUserFor(notification.From)
+			if err != nil {
+				log.Printf("users.NotificationUserFor err: %v\n", err)
+				continue
+			}
 
-		populatedNotification.From = from
+			populatedNotification.From = from
+		}
 
 		if notification.Category == notifications.WELCOME_ROOM {
 			room := notification.Arguments["room"].(string)

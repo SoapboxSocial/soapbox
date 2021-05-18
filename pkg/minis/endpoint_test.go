@@ -156,7 +156,7 @@ func TestEndpoint_SaveScores(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	req, err := http.NewRequest("POST", "/scores?token=" + key + "&room=" + room, bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", "/scores?token="+key+"&room="+room, bytes.NewBuffer(body))
 	if err != nil {
 		t.Fatal(err)
 	}

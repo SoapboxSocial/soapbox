@@ -189,6 +189,12 @@ func getNotificationForStore(notification *notifications.PushNotification) *noti
 			Category:  notification.Category,
 			Arguments: map[string]interface{}{"room": notification.Arguments["id"]},
 		}
+	case notifications.FOLLOW_RECOMMENDATIONS:
+		return &notifications.Notification{
+			Timestamp: time.Now().Unix(),
+			From:      0,
+			Category:  notification.Category,
+		}
 	default:
 		return nil
 	}

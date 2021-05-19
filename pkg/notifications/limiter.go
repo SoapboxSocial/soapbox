@@ -76,6 +76,8 @@ func (l *Limiter) ShouldSendNotification(target Target, notification *PushNotifi
 		return target.ID == 1 || target.ID == 75
 	case INFO:
 		return true
+	case FOLLOW_RECOMMENDATIONS:
+		return true
 	default:
 		return false
 	}

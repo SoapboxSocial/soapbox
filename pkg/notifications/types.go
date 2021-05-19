@@ -5,14 +5,15 @@ import "github.com/soapboxsocial/soapbox/pkg/analytics"
 type NotificationCategory string
 
 const (
-	NEW_ROOM     NotificationCategory = "NEW_ROOM"
-	NEW_FOLLOWER NotificationCategory = "NEW_FOLLOWER"
-	ROOM_INVITE  NotificationCategory = "ROOM_INVITE"
-	ROOM_JOINED  NotificationCategory = "ROOM_JOINED"
-	WELCOME_ROOM NotificationCategory = "WELCOME_ROOM"
-	REENGAGEMENT NotificationCategory = "REENGAGEMENT"
-	TEST         NotificationCategory = "TEST"
-	INFO         NotificationCategory = "INFO"
+	NEW_ROOM               NotificationCategory = "NEW_ROOM"
+	NEW_FOLLOWER           NotificationCategory = "NEW_FOLLOWER"
+	ROOM_INVITE            NotificationCategory = "ROOM_INVITE"
+	ROOM_JOINED            NotificationCategory = "ROOM_JOINED"
+	WELCOME_ROOM           NotificationCategory = "WELCOME_ROOM"
+	REENGAGEMENT           NotificationCategory = "REENGAGEMENT"
+	TEST                   NotificationCategory = "TEST"
+	INFO                   NotificationCategory = "INFO"
+	FOLLOW_RECOMMENDATIONS NotificationCategory = "FOLLOW_RECOMMENDATIONS"
 )
 
 type Frequency int

@@ -242,4 +242,16 @@ CREATE TRIGGER insert_last_follow_recommended_trigger
     FOR EACH ROW
     EXECUTE PROCEDURE insert_last_follow_recommended();
 
--- @TODO A TRIGGER THAT DELETES FOLLOW RECOMMENDATIONS UPON FOLLOW
+CREATE OR REPLACE FUNCTION delete_follow_recommendations() RETURNS TRIGGER AS
+    $follow_recommendations$
+    BEGIN
+        DELETE FROM last_follow_recommended WHERE follower = new.user_id AND user_id = new.recommendation;
+        RETURN new;
+    END;
+    $follow_recommendations$
+language plpgsql;
+
+CREATE TRIGGER delete_follow_recommendations_trigger
+    AFTER INSERT ON followers
+    FOR EACH ROW
+    EXECUTE PROCEDURE delete_follow_recommendations();

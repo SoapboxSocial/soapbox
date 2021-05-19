@@ -35,7 +35,7 @@ func runFollows(*cobra.Command, []string) error {
 		config.Twitter.Secret,
 	)
 
-	dispatch := worker.NewDispatcher(3, &worker.Config{
+	dispatch := worker.NewDispatcher(2, &worker.Config{
 		Twitter:         providers.NewTwitter(oauth, linkedaccounts.NewLinkedAccountsBackend(db), nil),
 		Recommendations: follows.NewBackend(db),
 		Queue:           pubsub.NewQueue(rdb),

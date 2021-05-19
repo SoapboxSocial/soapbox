@@ -245,7 +245,7 @@ CREATE TRIGGER insert_last_follow_recommended_trigger
 CREATE OR REPLACE FUNCTION delete_follow_recommendations() RETURNS TRIGGER AS
     $follow_recommendations$
     BEGIN
-        DELETE FROM last_follow_recommended WHERE follower = new.user_id AND user_id = new.recommendation;
+        DELETE FROM follow_recommendations WHERE follower = new.user_id AND user_id = new.recommendation;
         RETURN new;
     END;
     $follow_recommendations$

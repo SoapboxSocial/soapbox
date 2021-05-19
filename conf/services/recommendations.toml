@@ -1,0 +1,16 @@
+[twitter]
+key = "nAzgMi6loUf3cl0hIkkXhZSth"
+secret = "sFQEQ2cjJZSJgepUMmNyeTxiGggFXA1EKfSYAXpbARTu3CXBQY"
+
+[redis]
+host = "localhost"
+port = 6379
+database = 0
+
+[db]
+host = "127.0.0.1"
+port = 5432
+user = "voicely"
+password = "voicely"
+database = "voicely"
+ssl = "disable"

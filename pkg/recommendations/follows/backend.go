@@ -16,7 +16,7 @@ func NewBackend(db *sql.DB) *Backend {
 }
 
 func (b *Backend) RecommendationsFor(user int) ([]types.User, error) {
-	stmt, err := b.db.Prepare("SELECT id, display_name, username FROM users WHERE id IN (SELECT recommendation FROM follow_recommendations WHERE user_id = $1);")
+	stmt, err := b.db.Prepare("SELECT id, display_name, username, image FROM users WHERE id IN (SELECT recommendation FROM follow_recommendations WHERE user_id = $1);")
 	if err != nil {
 		return nil, err
 	}
@@ -31,7 +31,7 @@ func (b *Backend) RecommendationsFor(user int) ([]types.User, error) {
 	for rows.Next() {
 		user := types.User{}
 
-		err := rows.Scan(&user.ID, &user.DisplayName, &user.Username)
+		err := rows.Scan(&user.ID, &user.DisplayName, &user.Username, &user.Image)
 		if err != nil {
 			return nil, err // @todo
 		}

@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"sync"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/dghubble/go-twitter/twitter"
 	"github.com/dghubble/oauth1"
 
@@ -44,24 +46,24 @@ func (t *Twitter) FindUsersToFollowFor(user int) ([]int, error) {
 
 	friendships := make([]twitter.FriendshipResponse, 0)
 
-	var wg sync.WaitGroup
+	var wg errgroup.Group
 	for _, part := range parts {
-		wg.Add(1)
-
-		go func(accounts []linkedaccounts.LinkedAccount) {
-			defer wg.Done()
-
+		accounts := part
+		wg.Go(func() error {
 			resp, err := request(client, accounts)
-			if err != nil {
-				log.Printf("request err: %s\n", err)
-				return
+			if err != nil { // @TODO check if the error is twitter error with old account, if yes we delete.
+				return err
 			}
 
 			friendships = append(friendships, resp...)
-		}(part)
+			return nil
+		})
 	}
 
-	wg.Wait()
+	err = wg.Wait()
+	if err != nil {
+		log.Printf("request err: %s\n", err)
+	}
 
 	ids := make([]int, 0)
 	for _, account := range accounts {

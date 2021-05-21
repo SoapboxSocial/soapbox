@@ -5,7 +5,6 @@ import (
 	"errors"
 	"log"
 	"net/http"
-	"sync"
 
 	"golang.org/x/sync/errgroup"
 

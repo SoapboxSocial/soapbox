@@ -485,6 +485,8 @@ github.com/smartystreets/goconvey v1.6.4 h1:fv0U8FUIMPNf1L9lnHLvLhgicrIVChEkdzIK
 github.com/smartystreets/goconvey v1.6.4/go.mod h1:syvi0/a8iFYH4r/RixwvyeAJjdLS9QV7WQ/tjFTllLA=
 github.com/soapboxsocial/go-twitter v0.0.0-20210420133809-a2bf09574cbe h1:+EvgthnFNOE7ihXHvvCgDBbvWCjivdY//SSfySWyMDw=
 github.com/soapboxsocial/go-twitter v0.0.0-20210420133809-a2bf09574cbe/go.mod h1:xfg4uS5LEzOj8PgZV7SQYRHbG7jPUnelEiaAVJxmhJE=
+github.com/soapboxsocial/go-twitter v0.0.0-20210524185127-b3a4d352fece h1:F5ZqjELN3fLYQj4IHW6dlHYA9qeVl9Aj9VlniDKqdFk=
+github.com/soapboxsocial/go-twitter v0.0.0-20210524185127-b3a4d352fece/go.mod h1:xfg4uS5LEzOj8PgZV7SQYRHbG7jPUnelEiaAVJxmhJE=
 github.com/soapboxsocial/ion-sfu v1.8.2-0.20210511094523-fa2bbed8eb0d h1:deVt5kBiQ12WeJrl3X8pQgiaZ+wsPzHKQUN0cmfbuAo=
 github.com/soapboxsocial/ion-sfu v1.8.2-0.20210511094523-fa2bbed8eb0d/go.mod h1:h+fFswPFzE5pa8zjiJ5dlbe3USJ52j85iKzjfLaEplU=
 github.com/soheilhy/cmux v0.1.4/go.mod h1:IM3LyeVVIOuxMH7sFAkER9+bJ4dT7Ms6E4xg4kGIyLM=

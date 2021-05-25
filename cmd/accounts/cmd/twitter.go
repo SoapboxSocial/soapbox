@@ -25,7 +25,7 @@ var (
 
 	twitterCmd = &cobra.Command{
 		Use:   "twitter",
-		Short: "twitter account management",
+		Short: "twitter account management used for deleting and updating out-of-date twitter accounts",
 		RunE:  runTwitter,
 	}
 )

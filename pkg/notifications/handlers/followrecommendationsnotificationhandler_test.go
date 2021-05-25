@@ -60,7 +60,7 @@ func TestFollowRecommendationsNotificationHandler_Build(t *testing.T) {
 		{
 			event: pubsub.NewRoomJoinEvent("xyz", 1, pubsub.Public),
 			users: [][]driver.Value{
-				{1, "bob", "bob"},
+				{1, "bob", "bob", ""},
 			},
 			notification: &notifications.PushNotification{
 				Category: notifications.FOLLOW_RECOMMENDATIONS,
@@ -74,8 +74,8 @@ func TestFollowRecommendationsNotificationHandler_Build(t *testing.T) {
 		{
 			event: pubsub.NewRoomJoinEvent("xyz", 1, pubsub.Public),
 			users: [][]driver.Value{
-				{1, "bob", "bob"},
-				{2, "pew", "pew"},
+				{1, "bob", "bob", ""},
+				{2, "pew", "pew", ""},
 			},
 			notification: &notifications.PushNotification{
 				Category: notifications.FOLLOW_RECOMMENDATIONS,
@@ -89,9 +89,9 @@ func TestFollowRecommendationsNotificationHandler_Build(t *testing.T) {
 		{
 			event: pubsub.NewRoomJoinEvent("xyz", 1, pubsub.Public),
 			users: [][]driver.Value{
-				{1, "bob", "bob"},
-				{2, "pew", "pew"},
-				{3, "den", "den"},
+				{1, "bob", "bob", ""},
+				{2, "pew", "pew", ""},
+				{3, "den", "den", ""},
 			},
 			notification: &notifications.PushNotification{
 				Category: notifications.FOLLOW_RECOMMENDATIONS,
@@ -105,10 +105,10 @@ func TestFollowRecommendationsNotificationHandler_Build(t *testing.T) {
 		{
 			event: pubsub.NewRoomJoinEvent("xyz", 1, pubsub.Public),
 			users: [][]driver.Value{
-				{1, "bob", "bob"},
-				{2, "pew", "pew"},
-				{3, "den", "den"},
-				{4, "n", "n"},
+				{1, "bob", "bob", ""},
+				{2, "pew", "pew", ""},
+				{3, "den", "den", ""},
+				{4, "n", "n", ""},
 			},
 			notification: &notifications.PushNotification{
 				Category: notifications.FOLLOW_RECOMMENDATIONS,
@@ -141,7 +141,7 @@ func TestFollowRecommendationsNotificationHandler_Build(t *testing.T) {
 				follows.NewBackend(db),
 			)
 
-			rows := mock.NewRows([]string{"id", "display_name", "username"})
+			rows := mock.NewRows([]string{"id", "display_name", "username", "image"})
 			for _, user := range tt.users {
 				rows.AddRow(user...)
 			}

@@ -1,0 +1,11 @@
+[twitter]
+key = "nAzgMi6loUf3cl0hIkkXhZSth"
+secret = "sFQEQ2cjJZSJgepUMmNyeTxiGggFXA1EKfSYAXpbARTu3CXBQY"
+
+[db]
+host = "127.0.0.1"
+port = 5432
+user = "voicely"
+password = "voicely"
+database = "voicely"
+ssl = "disable"

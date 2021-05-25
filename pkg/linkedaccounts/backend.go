@@ -49,6 +49,16 @@ func (pb *Backend) UnlinkTwitterProfile(user int) error {
 	return nil
 }
 
+func (pb *Backend) UpdateTwitterUsernameFor(user int, username string) error {
+	stmt, err := pb.db.Prepare("UPDATE linked_accounts SET username = $1 WHERE user_id = $2 AND provider = $3")
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(username, user, "twitter")
+	return err
+}
+
 func (pb *Backend) GetTwitterProfileFor(user int) (*LinkedAccount, error) {
 	stmt, err := pb.db.Prepare("SELECT profile_id, token, secret, username FROM linked_accounts WHERE user_id = $1 AND provider = $2")
 	if err != nil {

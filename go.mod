@@ -56,6 +56,6 @@ require (
 	gopkg.in/ini.v1 v1.62.0 // indirect
 )
 
-replace github.com/dghubble/go-twitter => github.com/soapboxsocial/go-twitter v0.0.0-20210420133809-a2bf09574cbe
+replace github.com/dghubble/go-twitter => github.com/soapboxsocial/go-twitter v0.0.0-20210524185127-b3a4d352fece
 
 replace github.com/pion/ion-sfu => github.com/soapboxsocial/ion-sfu v1.8.2-0.20210511094523-fa2bbed8eb0d

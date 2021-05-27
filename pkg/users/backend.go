@@ -307,14 +307,14 @@ func (b *Backend) FindByEmail(email string) (*types.User, error) {
 	return user, nil
 }
 
-func (b *Backend) CreateUser(email, displayName, bio, image, username string) (int, error) {
+func (b *Backend) CreateUser(email, displayName, bio, username string) (int, error) {
 	stmt, err := b.db.Prepare("INSERT INTO users (display_name, username, email, bio, image) VALUES ($1, $2, $3, $4, $5) RETURNING id;")
 	if err != nil {
 		return 0, err
 	}
 
 	var id int
-	err = stmt.QueryRow(displayName, strings.ToLower(username), email, bio, image).Scan(&id)
+	err = stmt.QueryRow(displayName, strings.ToLower(username), email, bio, "").Scan(&id)
 	if err != nil {
 		return 0, err
 	}
@@ -322,7 +322,7 @@ func (b *Backend) CreateUser(email, displayName, bio, image, username string) (i
 	return id, nil
 }
 
-func (b *Backend) CreateUserWithAppleLogin(email, displayName, bio, image, username, appleID string) (int, error) {
+func (b *Backend) CreateUserWithAppleLogin(email, displayName, bio, username, appleID string) (int, error) {
 	ctx := context.Background()
 	tx, err := b.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -331,7 +331,7 @@ func (b *Backend) CreateUserWithAppleLogin(email, displayName, bio, image, usern
 
 	res := tx.QueryRow(
 		"INSERT INTO users (display_name, username, email, bio, image) VALUES ($1, $2, $3, $4, $5) RETURNING id;",
-		displayName, strings.ToLower(username), email, bio, image,
+		displayName, strings.ToLower(username), email, bio, "",
 	)
 
 	var id int

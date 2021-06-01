@@ -404,6 +404,8 @@ func (e *Endpoint) UploadProfilePhoto(w http.ResponseWriter, r *http.Request) {
 		_ = e.ib.Remove(oldPath)
 	}
 
+	// @TODO add image id to success
+
 	httputil.JsonSuccess(w)
 }
 

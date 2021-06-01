@@ -58,7 +58,9 @@ func (e *Endpoint) Router() *mux.Router {
 	r.Path("/follow").Methods("POST").HandlerFunc(e.FollowUser)
 	r.Path("/unfollow").Methods("POST").HandlerFunc(e.UnfollowUser)
 	r.Path("/multi-follow").Methods("POST").HandlerFunc(e.MultiFollowUsers)
+	// @TODO next 2 functions should be in account?
 	r.Path("/edit").Methods("POST").HandlerFunc(e.EditUser)
+	r.Path("/upload").Methods("POST").HandlerFunc(e.UploadProfilePhoto)
 	r.Path("/{id:[0-9]+}/stories").Methods("GET").HandlerFunc(e.GetStoriesForUser)
 
 	return r
@@ -353,6 +355,53 @@ func (e *Endpoint) EditUser(w http.ResponseWriter, r *http.Request) {
 	err = e.queue.Publish(pubsub.UserTopic, pubsub.NewUserUpdateEvent(userID))
 	if err != nil {
 		log.Printf("queue.Publish err: %v\n", err)
+	}
+
+	httputil.JsonSuccess(w)
+}
+
+func (e *Endpoint) UploadProfilePhoto(w http.ResponseWriter, r *http.Request) {
+	err := r.ParseMultipartForm(10 << 20)
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	userID, ok := httputil.GetUserIDFromContext(r.Context())
+	if !ok {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "invalid id")
+		return
+	}
+
+	oldPath, err := e.ub.GetProfileImage(userID)
+	if err != nil {
+		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	file, _, err := r.FormFile("profile")
+	if err != nil && err != http.ErrMissingFile {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	image := oldPath
+	if file != nil {
+		image, err = e.processProfilePicture(file)
+		if err != nil {
+			httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+			return
+		}
+	}
+
+	err = e.ub.UpdateUserPhoto(userID, image)
+	if err != nil {
+		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
+		return
+	}
+
+	if image != oldPath {
+		_ = e.ib.Remove(oldPath)
 	}
 
 	httputil.JsonSuccess(w)

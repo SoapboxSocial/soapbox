@@ -373,6 +373,18 @@ func (b *Backend) UpdateUser(id int, displayName, bio, image string) error {
 	return err
 }
 
+func (b *Backend) UpdateUserPhoto(id int, image string) error {
+	query := "UPDATE users SET image = $1 WHERE id = $2;"
+
+	stmt, err := b.db.Prepare(query)
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(image, id)
+	return err
+}
+
 func (b *Backend) GetProfileImage(id int) (string, error) {
 	stmt, err := b.db.Prepare("SELECT image FROM users WHERE id = $1;")
 	if err != nil {

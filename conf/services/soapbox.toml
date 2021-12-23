@@ -1,9 +1,9 @@
 [twitter]
-key = "nAzgMi6loUf3cl0hIkkXhZSth"
-secret = "sFQEQ2cjJZSJgepUMmNyeTxiGggFXA1EKfSYAXpbARTu3CXBQY"
+key = ""
+secret = ""
 
 [sendgrid]
-key = "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"
+key = ""
 
 [cdn]
 images = "/cdn/images"
@@ -11,8 +11,8 @@ stories = "/cdn/stories"
 
 [apple]
 path = "/conf/sign-in-key.p8"
-key = "G9F2GMYU4Y"
-team = "Z9LC5GZ33U"
+key = ""
+team = ""
 bundle = "app.social.soapbox"
 
 [redis]

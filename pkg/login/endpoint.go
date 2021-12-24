@@ -317,7 +317,7 @@ func (e *Endpoint) enterAppleRegistrationState(w http.ResponseWriter, token, ema
 }
 
 func (e *Endpoint) register(w http.ResponseWriter, r *http.Request) {
-	err := r.ParseMultipartForm(10 << 20)
+	err := r.ParseForm()
 	if err != nil {
 		httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeInvalidRequestBody, "")
 		return
@@ -347,29 +347,15 @@ func (e *Endpoint) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	file, _, err := r.FormFile("profile")
-	if err != nil {
-		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
-		return
-	}
-
-	image, err := e.processProfilePicture(file)
-	if err != nil {
-		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeInvalidRequestBody, "")
-		return
-	}
-
 	var lastID int
 	if state.AppleUserID != "" {
-		lastID, err = e.users.CreateUserWithAppleLogin(state.Email, name, "", image, username, state.AppleUserID)
+		lastID, err = e.users.CreateUserWithAppleLogin(state.Email, name, "", username, state.AppleUserID)
 	} else {
-		lastID, err = e.users.CreateUser(state.Email, name, "", image, username)
+		lastID, err = e.users.CreateUser(state.Email, name, "", username)
 	}
 
 	// @TODO ALLOW BIO DURING ON-BOARDING
 	if err != nil {
-		_ = e.ib.Remove(image)
-
 		if err.Error() == "pq: duplicate key value violates unique constraint \"idx_username\"" {
 			httputil.JsonError(w, http.StatusBadRequest, httputil.ErrorCodeUsernameAlreadyExists, "username already exists")
 			return
@@ -386,13 +372,10 @@ func (e *Endpoint) register(w http.ResponseWriter, r *http.Request) {
 		DisplayName: name,
 		Username:    username,
 		Email:       &state.Email,
-		Image:       image,
 	}
 
 	err = e.sessions.NewSession(token, user.ID, expiration)
 	if err != nil {
-		_ = e.ib.Remove(image)
-
 		log.Println("failed to create session: ", err.Error())
 		httputil.JsonError(w, http.StatusInternalServerError, httputil.ErrorCodeFailedToLogin, "")
 		return

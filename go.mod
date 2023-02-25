@@ -45,11 +45,7 @@ require (
 	github.com/tideland/golib v4.24.2+incompatible // indirect
 	github.com/tideland/gorest v2.15.5+incompatible // indirect
 	github.com/yuin/gopher-lua v0.0.0-20200816102855-ee81675732da // indirect
-	go.opentelemetry.io/otel v0.20.0 // indirect
-	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a // indirect
-	golang.org/x/net v0.0.0-20210510120150-4163338589ed // indirect
-	golang.org/x/sys v0.0.0-20210514084401-e8d321eab015 // indirect
-	golang.org/x/term v0.0.0-20210503060354-a79de5458b56 // indirect
+	golang.org/x/net v0.7.0 // indirect
 	google.golang.org/genproto v0.0.0-20210517163617-5e0236093d7a // indirect
 	google.golang.org/grpc v1.37.1
 	google.golang.org/protobuf v1.26.0

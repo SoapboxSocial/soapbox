@@ -289,7 +289,7 @@ func (r *Room) Handle(me *Member) {
 					Joined: &pb.Event_Joined{User: me.ToProto()},
 				},
 			})
-		case webrtc.ICEConnectionStateClosed, webrtc.ICEConnectionStateFailed:
+		case webrtc.ICEConnectionStateClosed:
 			r.onDisconnected(int64(me.id))
 		}
 	}

@@ -6,6 +6,9 @@ import (
 	"github.com/pion/webrtc/v3"
 )
 
+// @TODO: Probably for restarts, we do not want to close this channel.
+// Instead we want to start and stop buffering depending on the state.
+
 type BufferedDataChannel struct {
 	channel  *webrtc.DataChannel
 	msgQueue chan []byte
